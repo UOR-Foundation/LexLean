@@ -644,4 +644,54 @@ public structure Decimal where
 
 @[expose] public def checkArguments (spec : ByteArray) (adts : Ty) (parameters : List (List (Nat))) (types : Ty) (results : Ty) (bodies : Expr) (entry : Nat) (arguments : Value) : Except (ByteArray) (Unit) := (let program : Program := ({ spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies } : Program); (match functionTypes (program) (entry) with | Option.none => Except.error (undeclaredFunction (entry)) | Option.some declared => (let yes137 : Except (ByteArray) (Unit) := valueOk (program) (arguments) (declared) (2); (let no138 : Except (ByteArray) (Unit) := Except.error (cat (text ("function ")) (cat (decimal (entry)) (cat (text (" takes ")) (cat (decimal (tyChainLength (declared))) (cat (text (" argument(s), received ")) (decimal (valueChainLength (arguments)))))))); (if (Nat.beq (valueChainLength (arguments)) (tyChainLength (declared))) then yes137 else no138)))))
 
+@[expose] public def inferTy (program : Program) (expr : Expr) (scope : List ((Prod (Nat) (Ty)))) : Ty := (match walk (program) (expr) (scope) (0) (Ty.TNil) (Ty.TNil) (text ("")) (0) (([] : List (Shape))) with | Outcome.OTyped found => found | Outcome.OFailed _ => Ty.TNil | Outcome.OCovered _ => Ty.TNil | Outcome.OFine => Ty.TNil)
+
+@[expose] public def armFields (program : Program) (shape : Shape) (subject : Ty) : Ty := (match shapeFields (program) (shape) (subject) with | Except.ok fields => fields | Except.error _ => Ty.TNil)
+
+@[expose] public def siteTree : (program : Program) -> (expr : Expr) -> (scope : List ((Prod (Nat) (Ty)))) -> (subject : Ty) -> (position : Nat) -> Ty
+  | _program, Expr.EValue _ _, _scope, _subject, _position => Ty.TNil
+  | _program, Expr.EVar _, _scope, _subject, _position => Ty.TNil
+  | program, Expr.ELet name ty bound body, scope, _subject, _position => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (bound) (scope) (Ty.TNil) (0)) (Ty.TCons (siteTree (program) (body) (extendScope (name) (ty) (scope)) (Ty.TNil) (0)) (Ty.TNil)))
+  | program, Expr.ECond condition thenBranch elseBranch, scope, _subject, _position => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (condition) (scope) (Ty.TNil) (0)) (Ty.TCons (siteTree (program) (thenBranch) (scope) (Ty.TNil) (0)) (Ty.TCons (siteTree (program) (elseBranch) (scope) (Ty.TNil) (0)) (Ty.TNil))))
+  | program, Expr.EMatch _ scrutinee arms, scope, _subject, _position => (let seen : Ty := inferTy (program) (scrutinee) (scope); Ty.TPair (seen) (Ty.TCons (siteTree (program) (scrutinee) (scope) (Ty.TNil) (0)) (Ty.TCons (siteTree (program) (arms) (scope) (seen) (0)) (Ty.TNil))))
+  | program, Expr.EBuild _ _ operands, scope, _subject, _position => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (operands) (scope) (Ty.TNil) (0)) (Ty.TNil))
+  | program, Expr.ECall _ operands, scope, _subject, _position => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (operands) (scope) (Ty.TNil) (0)) (Ty.TNil))
+  | program, Expr.EClosure _ captures, scope, _subject, _position => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (captures) (scope) (Ty.TNil) (0)) (Ty.TNil))
+  | program, Expr.EApply target operands, scope, _subject, _position => Ty.TPair (inferTy (program) (target) (scope)) (Ty.TCons (siteTree (program) (target) (scope) (Ty.TNil) (0)) (Ty.TCons (siteTree (program) (operands) (scope) (Ty.TNil) (0)) (Ty.TNil)))
+  | program, Expr.EPrim _ operands, scope, _subject, _position => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (operands) (scope) (Ty.TNil) (0)) (Ty.TNil))
+  | program, Expr.EFirst value, scope, _subject, _position => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (value) (scope) (Ty.TNil) (0)) (Ty.TNil))
+  | program, Expr.ESecond value, scope, _subject, _position => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (value) (scope) (Ty.TNil) (0)) (Ty.TNil))
+  | program, Expr.EField value _, scope, _subject, _position => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (value) (scope) (Ty.TNil) (0)) (Ty.TNil))
+  | _program, Expr.ENil, _scope, _subject, _position => Ty.TNil
+  | program, Expr.ECons head tail, scope, subject, position => (match position with | Nat.zero => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (head) (scope) (subject) (0)) (Ty.TCons (siteTree (program) (tail) (scope) (subject) (0)) (Ty.TNil))) | Nat.succ previous => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (head) (bindAll (functionNames (program) (previous)) (functionTypesOr (program) (previous)) (([] : List ((Prod (Nat) (Ty)))))) (Ty.TNil) (0)) (Ty.TCons (siteTree (program) (tail) (scope) (subject) ((position + 1))) (Ty.TNil))))
+  | program, Expr.EArm shape binders body, scope, subject, _position => Ty.TPair (Ty.TNil) (Ty.TCons (siteTree (program) (body) (bindAll (binders) (armFields (program) (shape) (subject)) (scope)) (Ty.TNil) (0)) (Ty.TNil))
+
+@[expose] public def siteTrees (spec : ByteArray) (adts : Ty) (parameters : List (List (Nat))) (types : Ty) (results : Ty) (bodies : Expr) : Ty := siteTree (({ spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies } : Program)) (bodies) (([] : List ((Prod (Nat) (Ty))))) (Ty.TNil) (1)
+
+@[expose] public def siteNode (own : Ty) (head : Ty) (tail : Ty) : Ty := Ty.TPair (own) (Ty.TCons (head) (tail))
+
+@[expose] public def siteOne (head : Ty) : Ty := Ty.TPair (Ty.TNil) (Ty.TCons (head) (Ty.TNil))
+
+@[expose] public def siteOwn (own : Ty) (tree : Ty) : Ty := Ty.TPair (own) ((if isNilTy (tree) then Ty.TNil else tySecond (tree)))
+
+@[expose] public def useTree : (program : Program) -> (expr : Expr) -> (scope : List ((Prod (Nat) (Ty)))) -> (subject : Ty) -> (position : Nat) -> Ty
+  | _program, Expr.EValue _ _, _scope, _subject, _position => Ty.TNil
+  | _program, Expr.EVar _, _scope, _subject, _position => Ty.TNil
+  | program, Expr.ELet name ty bound body, scope, _subject, _position => siteNode (Ty.TNil) (useTree (program) (bound) (scope) (Ty.TNil) (0)) (Ty.TCons (useTree (program) (body) (extendScope (name) (ty) (scope)) (Ty.TNil) (0)) (Ty.TNil))
+  | program, Expr.ECond condition thenBranch elseBranch, scope, _subject, _position => siteNode (Ty.TNil) (useTree (program) (condition) (scope) (Ty.TNil) (0)) (Ty.TCons (useTree (program) (thenBranch) (scope) (Ty.TNil) (0)) (Ty.TCons (useTree (program) (elseBranch) (scope) (Ty.TNil) (0)) (Ty.TNil)))
+  | program, Expr.EMatch _ scrutinee arms, scope, _subject, _position => (let seen : Ty := inferTy (program) (scrutinee) (scope); siteNode (Ty.TNil) (useTree (program) (scrutinee) (scope) (Ty.TNil) (0)) (Ty.TCons (useTree (program) (arms) (scope) (seen) (0)) (Ty.TNil)))
+  | program, Expr.EBuild _ _ operands, scope, _subject, _position => siteOne (useTree (program) (operands) (scope) (Ty.TNil) (0))
+  | program, Expr.ECall _ operands, scope, _subject, _position => siteOne (useTree (program) (operands) (scope) (Ty.TNil) (0))
+  | program, Expr.EClosure _ captures, scope, _subject, _position => siteOne (useTree (program) (captures) (scope) (Ty.TNil) (0))
+  | program, Expr.EApply target operands, scope, _subject, _position => siteNode (Ty.TNil) (useTree (program) (target) (scope) (Ty.TNil) (0)) (Ty.TCons (useTree (program) (operands) (scope) (Ty.TNil) (0)) (Ty.TNil))
+  | program, Expr.EPrim _ operands, scope, _subject, _position => siteOne (useTree (program) (operands) (scope) (Ty.TUnit) (0))
+  | program, Expr.EFirst value, scope, _subject, _position => siteOne (useTree (program) (value) (scope) (Ty.TNil) (0))
+  | program, Expr.ESecond value, scope, _subject, _position => siteOne (useTree (program) (value) (scope) (Ty.TNil) (0))
+  | program, Expr.EField value _, scope, _subject, _position => siteOne (siteOwn (inferTy (program) (value) (scope)) (useTree (program) (value) (scope) (Ty.TNil) (0)))
+  | _program, Expr.ENil, _scope, _subject, _position => Ty.TNil
+  | program, Expr.ECons head tail, scope, subject, position => (match position with | Nat.zero => (let one : Ty := useTree (program) (head) (scope) (subject) (0); siteNode (Ty.TNil) ((if isNilTy (subject) then one else siteOwn (inferTy (program) (head) (scope)) (one))) (Ty.TCons (useTree (program) (tail) (scope) (subject) (0)) (Ty.TNil))) | Nat.succ previous => siteNode (Ty.TNil) (useTree (program) (head) (bindAll (functionNames (program) (previous)) (functionTypesOr (program) (previous)) (([] : List ((Prod (Nat) (Ty)))))) (Ty.TNil) (0)) (Ty.TCons (useTree (program) (tail) (scope) (subject) ((position + 1))) (Ty.TNil)))
+  | program, Expr.EArm shape binders body, scope, subject, _position => siteNode (Ty.TNil) (useTree (program) (body) (bindAll (binders) (armFields (program) (shape) (subject)) (scope)) (Ty.TNil) (0)) (Ty.TNil)
+
+@[expose] public def useTrees (spec : ByteArray) (adts : Ty) (parameters : List (List (Nat))) (types : Ty) (results : Ty) (bodies : Expr) : Ty := useTree (({ spec := spec, adts := adts, parameters := parameters, types := types, results := results, bodies := bodies } : Program)) (bodies) (([] : List ((Prod (Nat) (Ty))))) (Ty.TNil) (1)
+
 end LexLeanBoot.CalculusCheck

@@ -1,11 +1,41 @@
 {
   "remainder": "rest",
   "parts": {
+    "bootstrap-bodies": [
+      "BS-11"
+    ],
+    "bootstrap-succeed": [
+      "BS-12"
+    ],
+    "bootstrap-loops": [
+      "BS-13"
+    ],
+    "bootstrap-assemble": [
+      "BS-14"
+    ],
+    "bootstrap-package": [
+      "BS-15"
+    ],
     "bootstrap-check": [
       "BS-04"
     ],
+    "bootstrap-lower": [
+      "BS-07"
+    ],
+    "bootstrap-moves": [
+      "BS-08"
+    ],
     "bootstrap-print": [
       "BS-06"
+    ],
+    "bootstrap-runtime": [
+      "BS-09"
+    ],
+    "bootstrap-terms": [
+      "BS-10"
+    ],
+    "bootstrap-tooling-latex": [
+      "BS-20"
     ],
     "bootstrap-validate": [
       "BS-05"
@@ -51,6 +81,18 @@
       "SP-12",
       "SP-13",
       "SP-14"
+    ],
+    "preservation-lists": [
+      "SP-15"
+    ],
+    "preservation-runtime": [
+      "SP-22"
+    ],
+    "preservation-support": [
+      "SP-25"
+    ],
+    "preservation-prims": [
+      "SP-28"
     ],
     "production": [
       "CL-01",

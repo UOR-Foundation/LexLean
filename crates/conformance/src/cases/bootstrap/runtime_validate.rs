@@ -405,6 +405,12 @@ fn enc_item(item: &Item) -> Value {
                 enc_types(types),
             ],
         ),
+        Item::Defined(path) => i("IDefined", vec![text(path)]),
+        Item::Mod(name, members) => i(
+            "IMod",
+            vec![text(name), list(members.iter().map(enc_item).collect())],
+        ),
+        Item::InnerAttr(name, args) => i("IAttr", vec![text(name), texts(args)]),
         Item::Enum(name, generics, derives, variants) => i(
             "IEnum",
             vec![
@@ -426,7 +432,7 @@ fn enc_crate(krate: &Crate) -> Value {
 
 /// A run of `validateRuntime`: the crate and what the Rust validator makes
 /// of it.
-fn run_of(krate: &Crate) -> Run {
+pub(super) fn run_of(krate: &Crate) -> Run {
     (
         vec![enc_crate(krate)],
         verdict(rt_validate::validate(krate)),
@@ -443,7 +449,7 @@ fn read(path: &str) -> String {
 /// A named crate for each refusal and acceptance the runtime's own cases
 /// state: the two shipped crates, the profiles they are valid in, and every
 /// plant of `RB-17` and `RB-19`.
-fn named() -> Vec<(String, Crate)> {
+pub(super) fn named() -> Vec<(String, Crate)> {
     let support = read(SUPPORT);
     let probe = read(PROBE);
     let base = rt_decode::decode(&support).expect("the support crate decodes");
@@ -863,6 +869,6 @@ pub(super) fn case() {
 // The counts the specification states, over the committed tree: SPEC.md
 // §17.23, the register statement of BS-09, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
-const NAMED: usize = 103;
-const REFUSED: usize = 564;
-const WITHIN: usize = 703;
+const NAMED: usize = 117;
+const REFUSED: usize = 576;
+const WITHIN: usize = 717;

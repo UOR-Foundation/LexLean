@@ -153,6 +153,8 @@ The following are outside the LexLean 1.0 language and MUST be rejected rather t
 - a claim that successful Rust generation alone establishes a theorem;
 - a claim that imported libraries are proved by LexLean.
 
+The list above is the language-1.0 boundary and is frozen with it (§30.2). Languages 1.1 and 1.2 extend the closed language through semantic modules (§17), for example with document-defined inductive types, recursive definitions, and instances, which the list marks unsupported for 1.0; what each of them admits is fixed by §17 and its language data, not by this list.
+
 Complex Lean objects that LexLean 1.0 cannot define MAY be imported as closed external glossary entries. Their guarantees belong to their upstream repositories. LexLean verifies only that the generated declarations elaborate and check in the pinned environment and that their observed axiom dependencies satisfy their explicit policies.
 
 ---
@@ -680,7 +682,7 @@ Its image MUST install the pinned Rust and Lean toolchains at build, so that not
 
 `ci.yml` MUST run every recipe of `just vv` from a clean checkout on Linux x86-64. It MUST install the exact Rust toolchain, Lean 4.32.1 through `elan`, `just`, and `cargo-deny`.
 
-**What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft is the `rest` leg and nothing else: a head pushed again before it is final costs one job and not the gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. A ready pull request, a `workflow_dispatch`, and a push to `main` or to a release line are the whole gate, every job below. One push to `main` or to a release line is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main` or to a release line, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` runs `just vv` whole and reads no earlier run. `RP-14` runs the script against planted events and a plant in it fails the case, and reads the three workflows' push triggers, which name `main` and `release/**`.
+**What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft is the `rest` leg and nothing else: a head pushed again before it is final costs one job and not the gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. So is a ready pull request whose base branch is neither `main` nor a `release/*` line (a stacked pull request, whose base is another feature branch): only a pull request into `main` or a release line can land on a line, that pull request runs the whole gate on the tree it lands, and the stacked run says in its step summary that the base is why it is the `rest` leg alone. A ready pull request into `main` or a release line, a `workflow_dispatch`, and a push to `main` or to a release line are the whole gate, every job below. One push to `main` or to a release line is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main` or to a release line, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` runs `just vv` whole and reads no earlier run. `RP-14` runs the script against planted events, among them a ready pull request into a feature branch, into a release line, and into `main`, and a plant in it fails the case, and reads the three workflows' push triggers, which name `main` and `release/**`.
 
 **Release lines.** A release line is the branch `release/vX.Y` of the release X.Y: it is cut from `main` when work on X.Y begins, every pull request for the milestone X.Y targets it, each `vX.Y.Z` tag is made from it, and it is merged forward, by merge commit, into the next release line after each landing so that the next line carries every fix of the one before it. `main` is the newest released line: a release line is merged into `main` when its release is tagged, and nothing else lands on `main`. A release line is held to the same gate as `main`: a push to it is the whole gate under the rule above, and a pull request against it is a pull request of this repository.
 
@@ -4354,7 +4356,7 @@ reproducibility gates of §28.6. No meaning is read from rendered Rust text.
 `.lex.tex` modules `TargetSyntax`, `TargetSemantics`, `TargetOracle`,
 `RustSyntax`, `RustSemantics`, the reasoning oracles, and `Main`, and the
 project's configuration (which is the production example's under its own name,
-checked against it), are written and edited as `.lex.tex` (§17.21). No program
+without the example's titles glossary, checked against it), are written and edited as `.lex.tex` (§17.21). No program
 generates or compares them with its own output. What is generated from them,
 and compared byte for byte by `cargo xtask check-calculus`, are the fixtures and
 the modules that state them, the Rust packages, and the shipped copies of the
@@ -4544,7 +4546,7 @@ linked with a harness, and run; its output must equal the denotation's, its
 work count must not exceed the steps, and planted value and work
 discrepancies must be detected. This is `build` evidence for the renderings,
 not a proof of them; preservation of meaning from LexLean to the calculus is
-§17.17, and from the calculus to Rust is a separate obligation.
+§17.17, which also states what certificates B and E establish about a rendering on the declared Rust machine; that `rustc` agrees with that machine is `build` evidence there, not a proof.
 
 ### 17.15 GNAF requests over the calculus
 
@@ -5003,17 +5005,19 @@ of one language-1.2 semantic module, `RustPackage`, written in the authoring
 notation at `language/package-1.2/library/src/RustPackage.lex.tex`. It is under `language/`,
 so the language-1.2 compiler-semantics ID (§21.2) covers it, and a changed
 lint, edition, or gate changes LexLean's identity. The renderer reads it, and
-neither evaluates it nor splices it into a rendering (the library's path is
-not in it: `src/lib.rs` is the package's layout, `package::LIBRARY_PATH`, which
-the provenance schema also fixes): `rust::scaffold` decodes
+neither evaluates it nor splices it into a rendering (the library's path,
+`src/lib.rs`, is its `library` field, which `Cargo.toml`'s `[lib] path`, the
+file the renderer writes, and the provenance schema's file list all read):
+`rust::scaffold` decodes
 the module's semantic data, accepting exactly the shapes the module uses and
 the declarations it names, and `package.rs` prints `Cargo.toml` over the
 record. The crate attributes are derived, not stored: `#![no_std]` is the
 target row of `language/production-1.2.toml` with `allocation = false`, and
 `#![forbid(lint)]` restates each gate on rustc's lints at level `forbid` (so
 `#![forbid(unsafe_code)]` and `unsafe_code = "forbid"` come from one row, and
-a `lib.rs` built outside Cargo still forbids unsafe code). No source of the
-renderer holds a string the module states (`scaffold::audit`). The module
+a `lib.rs` built outside Cargo still forbids unsafe code). No file under
+`calculus/rust/` that prints Rust, the renderer's and the runtime's printer, decoder, and validator alike, holds a
+string the module states (`scaffold::audit`). The module
 states that no allowed lint is in Clippy's `correctness` group as a theorem
 over the same list. The reader refuses a lint in that group and checks the
 theorem by its shape (the predicate is false exactly on `correctness`, and the
@@ -5021,6 +5025,15 @@ theorem equates it over the list with `true`); the module is the project
 `language/package-1.2/library`, whose check types it, and the kernel's replay
 of the theorem's proof is that of `verify`, which no gate of this repository
 runs on it.
+
+**The printer's own grammar.** Three kinds of text are the printer's, neither data of the module nor runtime text:
+the section and key names of `Cargo.toml` (`[package]`, `name`, `version`, `edition`, `publish`, `[lib]`, `path`,
+`[lints.rust]`, `[lints.clippy]`), the two shapes of a lint line (`lint = "level"` and `lint = { level = "level",
+priority = n }`), and the shape of a crate attribute line (`#![name]` and `#![name(args)]`); and the one-call templates
+of the closed `Machine` primitives (`u8::checked_add(a, b)`, `List::length(&a)`, and the rest), among them the two
+compound ones, `IntRem` and `CheckedIntQuot`, which bind their operands once and test the divisor. They are declared
+here as the grammar of the printer, as `fn` and `match` are the grammar of the AST printer; each holds no value the
+module states, and the audit above holds the files that print them to that.
 
 | Lint | Clippy group | Reason |
 | --- | --- | --- |
@@ -5886,7 +5899,7 @@ The heap constructs (`RB-19`). `RuntimeSyntax` grows by exactly the constructs t
 (`probeCrate`, shipped byte for byte at `language/rust-runtime-1.2/RuntimeProbe.lex.tex`) whose
 printed functions the pinned rustc compiles under `warnings = deny` and a harness checks against an
 independent computation. *Items:* a tuple struct, a record struct, and an enum with unit, tuple, and
-record variants, each with generic parameters and derives. *Types:* `u128` and `i128`, `usize`,
+record variants, each with generic parameters and derives; a `pub mod` of functions and of definitions that the crate's `RustSyntax` module gives, named by path (`RtItem.moduleItem`, `RtItem.defined`); and an inner attribute of the crate header, `no_std` or `forbid` of named lints (`RtItem.innerAttribute`). *Types:* `u128` and `i128`, `usize`,
 `char`, `str`, a slice `[T]`, and `&mut T`. *Literals:* a character and a string. *Patterns:* a
 `mut` binding, a tuple, a tuple struct, a struct (or a record variant) with named fields, and a
 literal; a `match` arm may carry a guard. *Expressions:* `let` with an optional type, which binds for
@@ -5899,9 +5912,9 @@ rewrite to the original. The closed table of the standard library (51 names): `R
 of `from` or `try_from` is also admitted for every integer type. The names of the table that allocate
 (`Rc`, `Vec`, `String`, `Rc::new`, `Rc::from`, `Rc::try_unwrap`, `Rc::get_mut`, `Vec::new`,
 `Vec::with_capacity`, `String::new`, `push`, `pop`, `truncate`, `push_str`, `extend_from_slice`,
-`to_string`, `collect`) are refused in the core profile as `hidden-allocation`. Sixteen rules join the
-24 of `RB-17`, 40 in all: `assign-immutable`, `assign-place`, `break-position`, `char-literal`, `derive`,
-`hidden-allocation`, `identifier`, `let-position`, `param-duplicate`, `pattern-duplicate`, `pattern-fields`,
+`to_string`, `collect`) are refused in the core profile as `hidden-allocation`. Twenty-one rules join the
+24 of `RB-17`, 45 in all: `assign-immutable`, `assign-place`, `attribute-args`, `attribute-name`, `attribute-position`, `break-position`, `char-literal`, `defined-path`, `derive`,
+`hidden-allocation`, `identifier`, `let-position`, `module-member`, `param-duplicate`, `pattern-duplicate`, `pattern-fields`,
 `struct-fields`, `struct-head`, `tuple-arity`, `type-scope`, and `variant-name`; each is planted, and each site of a
 rule is: the printer writes every name as it is, so every name it writes is an identifier that is not a keyword (an
 item, a generic, a field, a variant, a parameter, a binding, a field by name, a segment of a path or of a `use`, and
@@ -6065,10 +6078,13 @@ Every runtime item has its refinement statement (`SP-30`). The compiler's table 
 
 The runtime text is never held (`RB-21`). No string literal in the sources of the `lexlean` crate holds the head of
 a runtime item as the printer writes it: a line that starts, after an optional `pub`, with `fn`, `struct`, `enum`,
-`trait`, `macro_rules!`, or `impl` and a name (a placeholder where the name stands, or doubled braces, as in a format string, is a printer's template and not
-runtime text). The case scans every `.rs` file under `crates/lexlean/src`, strings of the test modules among them, with a
+`trait`, `macro_rules!`, `impl`, `type`, `mod`, `static`, `const`, or `use` of a path and a name. A head is a printer's
+template, and not runtime text, only when it stands in the format argument of a formatting macro (`format!`, `write!`,
+`writeln!`, `print!`, and the like) and holds a substitution (`{}`, `{name}`, `{0}`); doubled braces alone do not make a
+template, and a head with a literal name in a format string is found. The case scans every `.rs` file under
+`crates/lexlean/src`, strings of the test modules among them, with a
 reader of comments, character literals, and strings that is its own; it must read `runtime.rs`, `rt.rs`, and `ast.rs`
-and more than a thousand literals, so a scan that reads nothing is refused, and each of five planted constants is found in
+and more than a thousand literals, so a scan that reads nothing is refused, and each of ten planted constants is found in
 the copy of `runtime.rs` it is planted in and only there. There is no list of literals the scan lets pass. The oracle
 directory `tests/rust-runtime-oracle/` is absent. The golden transcript is one file,
 `tests/rust-runtime-golden/transcript.txt`: a header that names the format and the SHA-256 of the lines after it
@@ -8062,24 +8078,24 @@ the claim, and a crate whose exported name or origin element holds a non-ASCII
 or non-printable scalar is outside it.
 
 `BS-05` holds both roots to the oracle. The crates are those the renderer
-lowers (`rust::lower`) from the 173 distinct programs among the 256 committed
+lowers (`rust::lower`) from the 200 distinct programs among the 283 committed
 package manifests of `compiler/rust` and `tests/production-export` and the 122
-fixtures of `compiler/fixtures` (232 distinct crates over both profiles, with
-the `elements` the renderer realizes), a rule corpus that reaches each of the
-48 refusals a crate of the closed AST can reach three times (132 `validateCrate`
+fixtures of `compiler/fixtures` (259 distinct crates over both profiles, with
+the `elements` the renderer realizes), a rule corpus that reaches 47 of the
+48 refusals a crate of the closed AST can reach three times each (129 `validateCrate`
 runs and 12 `correspondCrate` runs, asserted: the corpus fails if its draws run
 out first), 17 crates by hand for the merge of moved sets at an `if` and a
-`match`, 34 by hand for the loop rules, and 55 by hand for the machine callee and
+`match`, 34 by hand for the loop rules, one by hand for the 48th, a list match under `rust-core`, which the mutants reach too rarely to rely on, and 55 by hand for the machine callee and
 the overflow value (a call of each of the 44 families of machine primitives with
 one operand too many, three with the right count, a propagating call, the overflow
 value alone, one in an `Err`, one function that takes the error type of the runtime, one that takes `i128`, and the failure of a runtime function: a fallible function whose tail is `Err::<T, Overflow>(Overflow)`, which both validators accept, and the same `Err` with another payload and with another error type, which both refuse), which reach the three refusals no mutant of a
 committed crate reaches (an operand count, a stray overflow value, and the
-construct `call:machine`, which no row of the table has); that is 470 runs of
-`validateCrate` (213 refused) and 333 of `correspondCrate` (100 refused), and the case asserts
+construct `call:machine`, which no row of the table has); that is 495 runs of
+`validateCrate` (211 refused) and 360 of `correspondCrate` (100 refused), and the case asserts
 these counts. On every host, the rendered `rust-std` packages of both
 roots (§17.16), compiled by the pinned rustc, are run on all of them. On the
 normative host, the lowered programs of both roots are run under the calculus
-evaluator (§17.14) on the crates of at most 400 expressions (201 of the 232;
+evaluator (§17.14) on the crates of at most 400 expressions (208 of the 259;
 the larger ones are the compiler's own packages and are held to the oracle by
 the compiled run) with the rule corpus, and on 500 seeded mutants of the
 crates of at most 80 expressions (a node replaced by another of the crate, a
@@ -8135,22 +8151,22 @@ oracle indexes past) are outside the claim.
 `BS-06` holds both roots to the oracle. The counts here are the case's own
 report: it asserts them, so a tree that no longer gives them fails the case.
 The tree is the one with the packages of the two roots of this component and
-of the three roots of `Buffer` (`SL-05`) committed, so the committed manifests
-are 256; `BS-05` asserts the same corpus. On every host
-the rendered packages, compiled by the pinned rustc, run 2,710 vectors: 627
-of `printCrate` (464 the distinct crates the renderer lowers from the 173
-distinct programs among the 256 committed manifests and 122 fixtures and the
-crates of the 256 committed packages, the hand-built crates of every item and
-profile, the real header of each profile, and 61 runs with a capacity one byte
-short of the output) and 2,083 of `printExpr` (1,532 hand-built expressions of
+of the three roots of `Buffer` (`SL-05`), the five roots of `Numeral` (`SL-09`), the five roots of `Order` (`SL-10`), and those of the roots of
+`BS-07` to `BS-15` and `BS-20` (seventeen) committed, so the committed manifests are 283; `BS-05` asserts the same corpus. On every host
+the rendered packages, compiled by the pinned rustc, run 2,829 vectors: 684
+of `printCrate` (518 the distinct crates the renderer lowers from the 200
+distinct programs among the 283 committed manifests and 122 fixtures and the
+crates of the 283 committed packages, the hand-built crates of every item and
+profile, the real header of each profile, and 64 runs with a capacity one byte
+short of the output) and 2,145 of `printExpr` (1,532 hand-built expressions of
 every construct, literal, runtime row and machine primitive, and the function
-bodies of the committed crates). The items of each of the 256 committed
+bodies of the committed crates). The items of each of the 283 committed
 libraries are the oracle's printed items; the header before them is the
 runtime of the committed export, which the regeneration of the records moves
-with the runtime. On the normative host the evaluator agrees on 562 and 2,083
+with the runtime. On the normative host the evaluator agrees on 582 and 2,145
 of those vectors (the crates of at most 6,000 nodes of data) and on 400 and
-399 seeded mutants of the crates of at most 80 expressions, the rendered
-packages agree on 2,984 further mutants, thirteen planted defects in the source
+394 seeded mutants of the crates of at most 80 expressions, the rendered
+packages agree on 2,989 further mutants, thirteen planted defects in the source
 are each detected, and the production export (§24.7) certifies both roots
 beside the others under `tests/production-export/bootstrap/`.
 
@@ -8160,22 +8176,380 @@ chains (a statement list, an argument list, and a list of arms are each a chain 
 and `Cons`, and a `let` statement a `LetS` that binds for the rest), a record is the one constructor of
 its structure, and the tables of types, calls, methods, type-argument methods, standard traits, and
 integers are read from the oracle's source by the generator of the module, so the two cannot drift. The
-constructors an encoder names are read by the case from the module's own text. The corpus is 703
-crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 99 crates
+constructors an encoder names are read by the case from the module's own text. The corpus is 717
+crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 107 crates
 that break one rule, or one site of a rule, each (the text plants of `RB-17` on the module, its nine plants on the decoded
-crate, the eighteen of `RB-19` on the probe, and its 55 site plants, which are crates of names, derives, literals, heads,
-type scopes, and the five sites of `hidden-allocation`), and 600 seeded mutants of the two committed modules
-(a string, a constructor of the same enum, a mutable flag, a visibility, or a type parameter replaced by another of the module's), 564 of the 703 refused, so that the
-refusals are by each of the 40 rules the oracle names and by no other. The module carries what the five rules added by `RB-19`
+crate, the twenty-four of `RB-19` on the probe, and its 63 site plants, which are crates of names, derives, literals, heads,
+type scopes, the lint names of an inner attribute and the segments of a `defined` path (#308), and the five sites of `hidden-allocation`), and 600 seeded mutants of the two committed modules
+(a string, a constructor of the same enum, a mutable flag, a visibility, or a type parameter replaced by another of the module's), 576 of the 717 refused, so that the
+refusals are by each of the 45 rules the oracle names and by no other. The module carries what the five rules added by `RB-19`
 (`identifier`, `derive`, `char-literal`, `struct-head`, `type-scope`) read: a literal its number of scalar values, a binary
 operator its code, an item its derives. The outcome of a run is the
 result and, for a refusal, the message, and one difference fails the case. On every host the rendered
 `rust-std` package, compiled by the pinned rustc, is run on all of them; on the normative host the
-calculus evaluator (§17.14) also runs on all 703 and eight planted defects in the source (a name
+calculus evaluator (§17.14) also runs on all 717 and eight planted defects in the source (a name
 declared twice, a tuple of one, a `break` outside a loop, a private free function, a `std` use under
 `rust-core`, an assignment to an immutable name, a match with no arm, and a heap type under
 `rust-core`, each accepted) are each detected by the differential. Under the pinned Lean the production
 export certifies the root beside the others and its package is the committed one.
+
+The seventh component is the failure typing and the types of the lowering
+(§17.16), which are `calculus::rust::fallible_functions` and the enums and
+dispatch of the crate that `rust::lower` builds (`BS-07`, the first two slices
+of the lowering, step 4 of issue 92). The analysis reads the checker's types at two kinds of
+site only, the type of a match scrutinee and the type of an applied target, and
+one call of `CalculusCheck`'s `walk` per site is what made a single root's
+certificate larger than the file limit: the measured part of one root holding
+the whole analysis was 4,465,840 bytes against `max_file_bytes` of 4,194,304.
+The analysis is therefore roots that the host composes, each held to the oracle
+on the same vectors:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.CalculusCheck.siteTrees` | the program | the tree of typing sites | `calculus::sites::trees` |
+| `LexLeanBoot.RustLower.deadFunctions` | the program, the tree | which functions have a parameter no value inhabits | the functions of the crate `rust::lower` renders as an empty match |
+| `LexLeanBoot.RustLower.fallibleFunctions` | the program, the tree, the dead functions | which functions can overflow | `calculus::rust::fallible_functions` |
+| `LexLeanBoot.RustLower.lowerTypes` | the program, the tree, the dead functions, the failing functions | the items of the crate that declare its types, a `RustAst.Def` chain | the items of the crate of `rust::lower` before its first function |
+
+The tree has the shape of the program's own chains: a node is the pair of its
+own type (nil when it reads none) and the chain of its children, a leaf is nil,
+and the bodies of the functions are chained as a chain of terms is. The two
+consumers read it with their own recursion over the program and never call
+`walk`, so their closures do not carry it. The typing root is `walk` and
+`inferTy` of `CalculusCheck`, the single copy `checkProgram` runs on, and no
+type is computed by the host: each leg is held to the oracle on the same
+vectors, so the host's composition of the roots gives the oracle's result on every
+vector, leg by leg.
+
+The second slice, `lowerTypes`, is the first root of the lowering that returns
+the Rust AST: the `Enum` item of each ADT (a row per constructor, a field boxed
+in `Rc` where its in-place storage reaches its owner again), then the `Enum` and
+the `Apply` item of each function type in the order the oracle numbers them (a
+row and a dispatch arm per live closure of that type in the order the closures
+are met, a capture read as unit, unbox, copy, or clone, and an application
+fallible when some closure of the type is). The numbering is the oracle's: the
+types of each function and its result before its body, a closure's type and
+record before its captures, and the fields of the ADTs last; the collector the
+consumers share follows it, and the numbers appear only in this root's output.
+A root that returns a value of a recursive sort needed no encoding: certificate
+B accepts the `Def` chain (a probe root returning a chain of `n` items
+certified with parts of 48,495 and 40,258 bytes before the slice was built).
+
+The four fixpoints of `RustLower` are `iterate_until` calls with a fuel, which
+returns the state it has when the fuel runs out, so each fuel is stated here
+because the source has no place for a comment (the notation has no comments,
+`LLL1002`). Each step of a fixpoint that does not return `none` adds at least
+one member to a set that only grows, and the set is finite, so the number of
+members, plus one for the step that returns `none`, is enough: the dead
+functions of `livenessStep` and the failing functions of `fallibleFunctions`
+are flags over the functions, so `1 + count` of them; the inhabited owners of
+`inhabitation` are over the owners (the ADTs and the function types), so
+`1 + |owners|`; and the closed edges of `closeEdges` are pairs of owners, so
+`1 + |owners|^2`. A fuel too small would stop with a partial state, which the
+differential on the vectors sees as a disagreement with the oracle, and the
+plant "the failures are followed one round" is that defect.
+
+The measured largest part of a certificate is, in bytes: 3,144,673 for
+`siteTrees` (1,055 below three quarters of `max_file_bytes`, 3,145,728; the
+fold of the chain of function bodies into the site recursion bought the
+12,000 bytes over that its first build had), 1,273,118 for `deadFunctions`,
+1,058,398 for `fallibleFunctions`, and 1,535,849 for `lowerTypes` (the
+consumers grew by 22,000 and 55,000 bytes with the numbering of the second
+slice); the closure of `walk` alone measured
+2,977,029. The rule for the later slices of `BS-07`: nothing is added to the
+closure of `siteTrees`; a slice that needs more of the typing root splits it,
+by item or by kind of site, and measures, rather than growing it. The room for
+the remaining slices is in the consumers.
+
+`BS-07` holds the four roots to the oracle. On every host the rendered
+packages, compiled by the pinned rustc, run 1,336 vectors (334 per root: the
+committed target programs, the 22 programs of the rules of the analysis, the
+programs of the corpora of `BS-04` that the checker accepts); on the normative
+host the evaluator agrees on the 281 of them of at most 300 nodes and on 150
+seeded mutants, the rendered packages agree on 6,000 further runs (1,500
+seeded mutants per root), twenty planted defects in the source are each
+detected (three in the typing root, seven in the types), and the production
+export (§24.7) certifies the four roots. The bound of 300 nodes is a
+measurement: the evaluator takes 117 seconds for the four roots within it
+(with the 150 mutants), and 874 seconds for `siteTrees` alone with all 309
+vectors of the first slice, against 39 within the bound: the programs it leaves
+out are the largest, on the root that carries `walk`.
+
+The eighth component is the first pass of the function bodies of the lowering
+(§17.16): the last-use moves, `calculus::rust::moves::apply` (`BS-08`, the
+third slice of the lowering, step 4 of issue 92), the module `RustMoves` with
+one production root for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.RustMoves.applyMoves` | the items of a crate, a `RustAst.Def` chain | the same items with every function body rewritten | `calculus::rust::moves::apply` on each function body |
+
+A read of a binding that nothing after it reads is a move, and the projection
+of a pair component that nothing after it reads moves that component out of
+the pair. The pass runs backwards through the evaluation order with the set of
+what is read later (a count for the binding as a whole and a count for each
+component, the most on any path where two alternatives meet). It is written as
+two recursions over the expression, the reads of an expression given what is
+read after it, and the rewrite of an expression given the same, because a
+value that holds a recursive sort is not returned beside the set. The oracle
+function is public, so this pass is held to it directly, on any block, to the
+byte; the passes that follow it (the folds, the loops, the lowering of terms)
+are private to the renderer and are carried by their own rows, held by their
+composition to the final functions of `rust::lower`, with no change to the
+renderer. An exported name in an expression (`Ident::Export`) is outside the
+claim: the pass identifies the names of a lowered body, which are never
+exported names.
+
+The measured largest part of the certificate of `applyMoves` is 565,927
+bytes (part B; part A is 551,083), 13.5% of `max_file_bytes`; the oracle source
+is 218 lines, so the pass costs about 2,600 bytes of certificate per line, the
+calibration for the passes after it. `BS-08` holds the root to the oracle on 393 crates (the
+hand-built crates of every rule of the pass, the hand-built crates of
+`BS-05`, and the crates the renderer lowers from the 283 committed manifests),
+on the normative host the evaluator on the 342 of them of at most 400
+expressions and on 150 seeded mutants of the crates of at most 80
+expressions, the rendered package on 1,500 further mutants, eight planted
+defects in the source, and the production export (§24.7).
+
+The ninth component begins the lowering of terms (§17.16): the literal values,
+`Lowering::value` (`BS-10`, the fourth slice of the lowering, step 4 of issue
+92), the module `RustTerms` with one production root for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.RustTerms.lowerValueAt` | a program as in `BS-07`, the tree of `siteTrees`, and the index of a function | the `RustAst.Expr` of the literal that is the body of that function, or none when the body is no literal | the tail of that function in the crate `rust::lower` returns |
+
+`Lowering::value` is private to the renderer, whose files the
+compiler-semantics digest frames, so it is not edited to be exposed. The
+function of a literal body is, in the crate the renderer returns, the literal
+and nothing else: no later pass (the folds, the moves, the loops) changes a
+block of one expression, and the case asserts that it has no binding. The
+root is therefore held to that tail, to the byte, by composition. The same
+function lowers the literals nested in a term, which the later passes call;
+the root is its entry point for a program and carries the same analysis as
+`lowerTypes` (the numbering of the function types and the edges that decide
+which field of an ADT is boxed), because a literal of an ADT stores a field in
+place or behind a box as the type items do. A literal is read as the checker
+accepts it (canonical decimal text, a minus only for a negative number,
+lower-case hexadecimal of even length): the text the checker refuses
+(`+5`, `007`, upper-case or odd hexadecimal, a magnitude beyond 64 bits) is no
+vector, and the corpora measure that the checker refuses every literal the
+lowering would (none of the 358 explicit and 1,650 seeded runs is a refusal).
+
+The measured largest part of the certificate of `lowerValueAt` is 2,004,962
+bytes (part A; part B is 1,879,973 and part E 247,001), 47.8% of
+`max_file_bytes`. `BS-10` holds the root to the oracle on 358 explicit runs
+(every scalar literal at the ends of its range in each of five contexts, the
+composite literals, the literals of ADTs that hold themselves or each other,
+and the absent option of a function type), on the normative host the evaluator
+on those and on 150 seeded runs, the rendered package on 1,500 further seeded
+runs, ten planted defects in the source, and the production export (§24.7).
+
+The tenth component continues the lowering of terms (§17.16) with the terms
+themselves, `Lowering::expr` with its operands, conditionals, matches and
+arms, builds, calls, closures, applications, primitives, and projections, and
+the `fold` of `lower` (`BS-11`, the fifth slice of the lowering, step 4 of
+issue 92), the module `RustBodies` with three production roots for `rust-std`
+and one more of `CalculusCheck`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.CalculusCheck.useTrees` | a program and the tree of `siteTrees` | the types of the operands of each primitive and of the value each field is read from | `calculus::sites::uses` |
+| `LexLeanBoot.RustBodies.lowerFrame` | a program as in `BS-07` | what the analysis knows that the terms read: the numbered function types, the boxed fields, the inhabited types, the closures of the live functions | the analysis `rust::lower` runs |
+| `LexLeanBoot.RustBodies.lowerBodies` | the program, the two trees, the dead and the failing functions, the frame, and the counter the fresh names continue from | the body of each live function as `lower` holds it before its fold, a dead function's place being the empty chain, and the counter after them | the Function items of `rust::lower` before the fold |
+| `LexLeanBoot.RustBodies.foldBodies` | those bodies | the bodies folded | the Function items of `rust::lower` |
+
+`Lowering::expr` is private to the renderer, whose files the
+compiler-semantics digest frames, so it is held by composition and not exposed:
+the bodies the roots return, put in place of the bodies of the Function items
+of the crate and given to `applyMoves` of `BS-08`, give the items of the crate
+`rust::lower` returns to the byte. The fresh names the lowering takes are
+numbered by one counter that the roots thread through the terms in the order
+the renderer takes them. The claim is for the programs in which no function can
+overflow (`succeed`) and none loops (`tail::looped`, which takes names from
+the same counter), because the smallest row that holds anything to the oracle
+is the one that a vector reaches; both are the rows that follow. The
+terms are one recursion family (each kind of term lowers through the same
+operands, the same choice of a conditional or a match, and the same arms), so
+the row is not cut further: `lowerBodies` is the largest root of the project,
+and the measured largest part of its certificate is 5,328,431 bytes (part A;
+part B is 4,235,313 and part E 293,138), 84.7% of `max_file_bytes`, under the
+budget of 5,505,024 (87.5%) that the row states instead of the 75% of the rule
+of issue 92, the headroom being the 15% that remains, measured at every
+landing. The other parts are 3,145,029 for `useTrees`, 1,223,291 for
+`lowerFrame`, and 356,815 for `foldBodies`. `BS-11` holds the roots to the
+oracle on 157 vectors and, on the normative host, the evaluator on those and
+on 281 seeded mutants, the rendered packages under the pinned rustc on the
+vectors, thirteen planted defects in the source, and the production export
+(§24.7).
+
+Certificate B (the `rust-std` rendering) of a function is refused by the Lean
+kernel when an arm of a match returns, as its whole body, a binder of the
+matched recursive type (issue 310); `RustBodies` hands such a binder through the
+identity functions `keepE` and `keepP` until that is fixed.
+
+The eleventh component continues the lowering of terms (§17.16) with the value
+a function that can overflow returns, `succeed` (`BS-12`, the sixth slice of the
+lowering, step 4 of issue 92), the module `RustSucceed` with one production
+root for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.RustSucceed.succeedBodies` | the result types of the program, the functions that can overflow, and the bodies `lowerBodies` of `BS-11` returns | those bodies, with `Ok` pushed into every tail of each function that can overflow | the Function items of `rust::lower`, before the fold |
+
+`succeed` is private to the renderer, whose files the compiler-semantics digest
+frames, so it is held by composition and not exposed: the bodies of `BS-11`,
+`succeedBodies`, and the fold, put in place of the bodies of the Function items
+and given to `applyMoves` of `BS-08`, give the items of the crate `rust::lower`
+returns to the byte. `Ok` is pushed into the tail of a block, both branches of a
+conditional, and every arm of a match; a call or an application in tail
+position that propagates returns its result instead; a unit literal is wrapped
+as it stands; and any other value of a function that returns unit is bound to
+the unit pattern first, since Rust's lint gate refuses a computed unit as an
+argument. The oracle also pushes `Ok` into a block that is itself a tail, which
+no vector reaches (the lowering merges a block into the block around it), so the
+root does not carry that branch. The claim is for the programs in which some
+function can overflow and none loops; loops are the next row. The measured
+largest part of the certificate of `succeedBodies` is 648,077 bytes (part A;
+part B is 483,088 and part E 150,401), 10.3% of `max_file_bytes`.
+
+The twelfth component finishes the passes of a function body that the lowering
+of terms (§17.16) owes to the terms with the loop, `tail::looped` (`BS-13`, the
+seventh slice of the lowering, step 4 of issue 92), the module `RustLoops` with
+one production root for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.RustLoops.loopFunction` | the position of a function, its parameters and result type as the lowering holds them, its body after the fold, and the counter of the fresh names | whether it loops, its parameters and body as the loop makes them, and the counter after | `tail::looped` in the crate `rust::lower` returns |
+
+In `lower` each function runs the terms, `succeed`, the fold, and `looped`, in
+this order and on one counter of fresh names, so the names of the next
+function's terms follow those `looped` took. The host therefore runs the roots
+of `BS-11` and `BS-12` and `loopFunction` function by function and passes the
+counter from one to the next; to make that possible `lowerBodies` of `BS-11`
+takes the counter its fresh names continue from and returns the counter after
+them, and with every other function marked dead it lowers one function. The host
+decides nothing else: the functions go in the oracle's order, the result of a
+function and the parameters it has before the loop (read back from the oracle's
+item, where the loop renamed the ones its state replaces) are given, and the
+case asserts that `loopFunction` finds a loop exactly where
+`calculus::rust::loops` does. The composition, put in place of the bodies and
+parameters of the Function items and given to `applyMoves` of `BS-08`, gives the
+items of the crate `rust::lower` returns to the byte. The oracle's checks that
+the condition of a conditional and the scrutinee of a match do not call the
+function, and its handling of a block that is itself a tail, are not carried:
+the lowering binds a condition and a scrutinee to a name before it uses them
+and merges a block into the block around it, so no program reaches them. The
+measured largest part of the certificate of `loopFunction` is 744,534 bytes
+(part A; part B is 623,883 and part E 160,793), 11.8% of `max_file_bytes`.
+
+The thirteenth component is the crate around the bodies, the last pass of the
+lowering of terms (§17.16) (`BS-14`, the eighth slice of the lowering, step 4 of
+issue 92), the module `RustAssemble` with two production roots for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.RustAssemble.functionShells` | a program as calculus data, the failing functions, and the frame of `BS-11` | a Function item of each function, in order: its parameters, its result type, and, for a function with an uninhabited parameter, its body | the Function items of `rust::lower`, before the passes |
+| `LexLeanBoot.RustAssemble.assembleItems` | the items of `lowerTypes` (`BS-07`), those shells, what `loopFunction` returned for each live function, and the dead functions | the chain of all the items, the types' first | the items of the crate `rust::lower` returns, before the moves |
+
+What `Lowering::lower` does outside the passes of the earlier rows is the order
+of the items; the parameters of a function, each a name when the body mentions
+it and its type is not unit; its result type, wrapped when the function can
+overflow; and the body of a function with a parameter no value inhabits, the
+empty match on the first such parameter, written at the origin `type:<kind>`.
+The set of inhabited types that decides that is the one the lowering reaches
+after it has left the closures of the dead functions out, so the root computes
+it again from the frame. The host runs the roots of `BS-07` and `BS-11` to
+`BS-13` and these, and compares the chain `assembleItems` returns, given to
+`applyMoves` of `BS-08`, with the whole chain of items of the crate to the byte,
+the items of the types too. What the Rust host still does is to thread the
+counter of the fresh names from one live function to the next, to supply the
+profile, and to call `applyMoves`; the case plants three hosts that do more (a
+counter that starts again at each function, functions lowered last to first,
+the items of the first live function left out) and requires the comparison to
+see each. The checks `rust::lower` runs on the crate afterwards (`validate`,
+`correspond`) are the roots of `BS-05` and `BS-06` and are not composed here.
+The measured largest part of the certificate of `functionShells` is 1,195,444
+bytes (part A; part B is 960,728 and part E 279,092), 19.0% of `max_file_bytes`;
+of `assembleItems` 169,057 bytes (part E; part B is 109,542 and part A 107,569).
+
+The fourteenth component is the package renderer (§17.16) (`BS-15`, the first
+slice of the package, step 4 of issue 92), the module `RustPackage` with two
+production roots for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.RustPackage.checkManifest` | a manifest's spec, crate name, version, profile, sources, and effects, and the registered effects | whether the profile is `rust-std`, or the refusal | the refusals `package::lower` gives before it reads the program |
+| `LexLeanBoot.RustPackage.renderPackage` | the scaffold record, the manifest's name, version, profile, sources, effects, and exports, the program's identity, the compiler-semantics identity, the core and std runtime texts, and the library | the `Cargo.toml` and the `provenance.json` | the two files of `package::package` |
+
+`package::lower` checks a manifest's own fields in a fixed order before it reads
+the program: the spec; the crate name, which is lowercase snake case of at most
+64 bytes, no Rust keyword, and no sysroot crate or `harness`; the version, three
+canonical decimals each at most `u64::MAX`; the profile; each source a lowercase
+SHA-256 hex identity, strictly ascending; and each effect registered, strictly
+ascending, with no `allocation` on `rust-core`. `checkManifest` makes the same
+checks in the same order and refuses with the same text. The case's oracle is
+`package::lower` itself, run on the manifest with its program and exports
+replaced by one function from `bool` to `bool` exported as `run`, which every
+later check accepts on either profile, so a refusal it gives is a refusal of the
+fields alone; that oracle agrees with every committed negative manifest whose
+refusal is one of the fields'. `renderPackage` prints `Cargo.toml` over the
+scaffold record (a lint's priority is a sign and a magnitude, as an `i64` is)
+and writes `provenance.json` in the canonical JSON of §21.7: its eleven keys in
+their byte order, every string escaped minimally, and one final LF. The runtime
+it digests is the core text, followed for `rust-std` by the std text. The
+scaffold record, the runtime texts, the registered effects, the
+compiler-semantics identity, and the program's identity are the host's inputs
+(decision 7 of issue 92), and the library is what `printCrate` (`BS-06`)
+prints. The program's identity, the checks of the program, the export wrappers,
+and the composition with the lowering are the next slices of the package.
+
+The bootstrap project's production export is the first project whose roots
+together approach `max_total_source_bytes` (§10.2): the limit counts the
+programs, the crates, and the certificates of every production root of the
+project, 67,815,299 bytes with this root against 67,108,864, so the bootstrap
+project configures `max_total_source_bytes = 134217728` (twice the default), the
+term-lowering passes needing about 100 MB in all.
+
+`BS-20` holds the LaTeX backend of the tooling modules (§17.20) to its oracle, `backend::tooling::latex_text`
+(the text `render_latex` emits), with one production root for `rust-std`, `renderToolingLatex` of
+`LexLeanBoot.ToolingLatex`:
+
+| Root | Oracle |
+| --- | --- |
+| `renderToolingLatex (capacity : Nat) (reserved : List Bytes) (typings : List Typing) (declarations : List Decl) : Result Bytes Bytes` | `backend::tooling::latex_text` |
+
+`ToolingAst` is the closed schema of the tooling module as first-order data: the declarations (`type`,
+`call`, `plumbing`, `function`, `command`, `invoke`, `evaluate`), the signatures, the types, and the terms,
+each list of a recursive sort a chain of the sort's own `Nil` and `Cons` constructors (`#208`, `#278`), so
+that the data holds no nested inductive. `typings` is what the checker infers for each call and function
+(the type parameters in order, which the printer reads to decide where a type argument is written and
+which application is explicit), and `reserved` is the table of reserved tokens of the pinned toolchain
+(`LEAN_RESERVED_TOKENS`), which decides whether a segment of a name is written in guillemets; both are
+arguments, so that the module reads no table the host does not give it. The text is written line by line:
+each line is built in a `Buffer` of its own (§17.22) with the capacity of the output, trimmed as the oracle
+trims it (the lines of a function, a command, an invoke, and an evaluate lose their trailing white space,
+as Rust's `char::is_whitespace` defines it, and those of a function, a command, and an invoke have each
+newline made a space; the lines of a type, a call, and a plumbing are not trimmed), escaped by the escaper of the oracle (`tex_escape`: the ten LaTeX specials, and `<U+XXXX>` in
+upper case at four hexadecimal digits at least for a scalar outside ASCII), and appended to the output. A line or an output
+that exceeds the capacity is `Result.error` of the refusal of the buffer, never a failure of the run. The
+checker, the decoder of the module, the source map of the emitted pieces, and the
+verification driver stay in the host; a module that the checker refuses has no typings and is outside the
+claim.
+
+`BS-20` holds the root to the oracle on the three committed tooling modules (`ToolingCommands`,
+`ToolingCore`, `ToolingTraversal`, whose committed `.tex` is equal to the oracle's text), on modules made
+from them by renaming a declaration, and a token of a command, to the strings that stress the quoting of
+a name, the literal of a string, the escaper, and the trimming of a line, on modules with a `Char` term at
+the scalars that stress its quoting, and on seeded mutants of the three; each at the exact capacity, one
+byte short, and with room to spare. On every host the rendered `rust-std` package, compiled by the pinned
+rustc, is run on the vectors; on the normative host the calculus evaluator (§17.14) also runs on them and on the seeded
+mutants, the rendered package on a larger seeded corpus, and seventeen planted defects in the source
+(an escape, the case and the width of the hexadecimal, the brackets of an implicit and an instance binder,
+the explicit application, the separator of a named argument, the indentation and the end of a function,
+the public marker and the visibility line, and the trimming of a line) are each detected. Under the
+pinned Lean the production export (§24.7) certifies the root beside the others and its package is the
+committed one.
 
 ## 18. Lean backend
 
@@ -8792,6 +9166,12 @@ production/<full-module-path>.eligibility.json
 
 The `production/` report exists only for a language-1.2 module that declares a
 production root (§17.13). Paths in manifests use `/` regardless of host OS.
+
+The language-1.2 runtime imported by generated modules is not included in
+this build layout. A Lake consumer supplies runtime sources generated from a
+compiler checkout with the same language-1.2 compiler-semantics ID; see
+[Use generated Lean from Lake](docs/LEAN-CONSUMER.md) for the current workflow
+and its distinction from the verification evidence of §22.
 
 ### 21.6 Build manifest
 
@@ -10641,7 +11021,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RP-11` | `repository` | Every public README capability claim is tied to a registered model ID and honesty level. | §27 |
 | `RP-12` | `repository` | A release is refused unless the complete release criterion and all required artifacts are satisfied. | §30 |
 | `RP-13` | `repository` | The ordinary workspace test phase excludes repo-conformance, the bdd phase alone runs its complete suite, and a test inventory proves that the two phases together equal the whole workspace test set with no test lost and none run twice, and that the parts of the committed bdd plan together equal the bdd phase with every test in exactly one part. | §9.2 |
-| `RP-14` | `repository` | The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request runs the rest leg and no other job, a ready pull request, a request, and a push to main or to a release line run every job, and a push to main or to a release line that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing. | §9.4 |
+| `RP-14` | `repository` | The normative CI job runs every recipe of just vv in parallel legs that each start from a clean checkout on the standard ubuntu-24.04 runner, each recipe exactly once but bdd, which runs once per part of its committed plan on the row that names the part, the examples leg at the verification resource profile its matrix row names and without UOR Atlas, which the Atlas jobs of the same run verify as the shards of the committed plan and a join at that profile, every process once and nothing across runs, and the other legs at the default, with no cache, path filter, or skipped recipe, and each job uploads its CI evidence; a plan job decides what a run is from the event alone: a draft pull request, and a ready pull request whose base is neither main nor a release line, run the rest leg and no other job, a ready pull request into main or a release line, a request, and a push to main or to a release line run every job, and a push to main or to a release line that merges a head whose tree it equals runs none when the whole gate passed on that head, and runs the whole gate when any job of that run did not pass, was skipped, or is missing. | §9.4 |
 | `RP-15` | `repository` | Every match over a closed semantic enum (the IR, the production realization calculus, and its Rust AST) that names at least five of the enum's variants names all of them, with no wildcard or binding catch-all arm, so that a variant added to the enum is a compile error in each Lean, LaTeX, validation, charge, and calculus consumer and never a silent fallback; the audit rejects a catch-all planted in each consumer group and fails when a consumer it must read has no such match left. | §27.2 |
 | `RP-16` | `repository` | The development container installs, at image build, exactly the Rust toolchain that rust-toolchain.toml pins and exactly the Lean toolchain that lean-toolchain pins and selects no other default, so that nothing is fetched when a session starts, and a Dockerfile that names another version of either, installs a second toolchain, or selects an unpinned default is refused. | §9.3 |
 | `RP-18` | `repository` | The release workflow packages the lexlean crate twice to the same bytes, runs cargo publish --dry-run, and refuses a crate whose SHA-256 differs from the one release/checksums.txt lists for it or from the bytes cargo would upload, or whose archive lacks the metadata and size crates.io requires, and uploads to crates.io only when a CARGO_REGISTRY_TOKEN secret or trusted publishing authorises it; a commit of a release line release/vX.Y is published as the pre-release X.Y.0-dev.N, N being its number of first-parent commits, and a plant in each of these checks is refused. | §30.3 |
@@ -10910,7 +11290,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `NE-06` | `extraction` | A proof-only dependency presented as a runtime closure member fails extraction with LLV7011 before any compiler input is published. | §22.10, §26.3 |
 | `TC-01` | `calculus` | Hand-constructed target programs have canonical bytes and a SHA-256 content identity, alpha-equivalent programs canonicalize to identical bytes and identity, an ill-typed program has neither, and every committed fixture validates against the target schemas. | §17.14, §21.7 |
 | `TC-02` | `calculus` | Every malformed target program or violated static rule fails closed with LLB6005, and an invalid program has neither a canonical form nor a rendering. | §17.14, §26.3 |
-| `TC-03` | `calculus` | The calculus denotation is a kernel-checked LexLean definition that charges every evaluator operation, Lean's kernel reduces every kernel-reducible fixture to its expected outcome with its exact step count, no fixture program is stuck on its stated arguments or on seeded random well-typed arguments at any sampled fuel, and a wrong expected outcome is rejected by Lean. | §17.14 |
+| `TC-03` | `calculus` | The calculus denotation is a kernel-checked LexLean definition that charges every evaluator operation, Lean's kernel reduces every kernel-reducible fixture to its expected outcome with its exact step count, no fixture program is stuck on its stated arguments or, on the normative Linux x86-64 host, on seeded random well-typed arguments at any sampled fuel, and a wrong expected outcome is rejected by Lean. | §17.14 |
 | `TC-04` | `calculus` | Lean's evaluator, running the published calculus sources compiled again by pinned Lean, reproduces every fixture's expected outcome and step count, including fixtures a reflexivity proof cannot decide, and the comparison refuses a fixture stated one step off. | §17.14 |
 | `TC-05` | `calculus` | Every realization library template has a fixture whose outcome the kernel proves equal to the value LexLean's own collection primitive computes, committed instances equal their templates, and a mutated template is rejected by Lean. | §17.12, §17.14 |
 | `TC-06` | `calculus` | Every runtime construct of the production registry has exactly one realization row naming existing calculus elements and requires allocation and implies recursion exactly when its realization does, and the fixtures exercise every calculus type, literal, expression, shape, primitive, and template, and every fixed-width primitive at every width it admits. | §17.13, §17.14 |
@@ -10924,7 +11304,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-07` | `rust-backend` | Packages are deterministic and content-addressed: renderings by two separate processes under different roots and environments are byte-identical to each other and to the committed package, every manifest and provenance validates against its schema, the provenance binds the SHA-256 of each file, the program identity, the runtime LexLean's semantics records, the sources, and the language-1.2 compiler-semantics ID, and every committed package's sources are the semantic ID of the verified build stating its program. | §17.16, §21.7 |
 | `RB-08` | `rust-backend` | A read of a binding that nothing after it reads is a move and a projection of a pair component that nothing after it reads moves the component out of the pair, every other read clones, and every clone a rendering keeps is one the ownership check requires; a list is a run of contiguous cells, and building or taking apart a cell is constant work on any list; a crate that reads or moves a binding after a component was moved out of it, or moves a component twice, is refused. | §17.16 |
 | `RB-09` | `rust-backend` | Every name the Rust runtime takes from Rust's library is a row of its library table, each a machine primitive with a stated meaning, stated in the closed AST over primitives, or a construct of the closed AST, and every primitive is cited by a row; a runtime that names anything else, a row it does not use, a row citing a name that is not a primitive, and a primitive no row cites are refused. | §17.16 |
-| `RB-10` | `rust-backend` | The scaffolding of a Rust package is data and not renderer text: the edition, whether the crate is published, the lint gates, and every allowed lint with its Clippy group and reason are read from the language-1.2 semantic module `RustPackage`, `#![no_std]` is the production target row's `allocation = false`, and `#![forbid(lint)]` restates each gate on rustc's lints at `forbid`; a renderer source holding a string of the module, a module that is not the shape the reader accepts, and a `Cargo.toml` or crate header that differs from the module are refused. | §17.16 |
+| `RB-10` | `rust-backend` | The scaffolding of a Rust package is data and not renderer text: the edition, whether the crate is published, the lint gates, and every allowed lint with its Clippy group and reason are read from the language-1.2 semantic module `RustPackage`, `#![no_std]` is the production target row's `allocation = false`, and `#![forbid(lint)]` restates each gate on rustc's lints at `forbid`, and the path of the library file is its `library` field; no file under `calculus/rust/` that prints Rust (the renderer's and the runtime's printer, decoder, and validator among them) may hold a string of the module, which a constant planted in any of them is refused for; a renderer source holding a string of the module, a module that is not the shape the reader accepts, and a `Cargo.toml` or crate header that differs from the module are refused. | §17.16 |
 | `RB-11` | `rust-backend` | Every lint a package allows states its Clippy group, none is in the `correctness` group, the module states the same as a theorem over the same list, which the reader checks by its shape and the module's project type-checks (`verify` replays its proof, this row does not), and the table of SPEC.md §17.16 equals the module's rows; an allowed lint in `correctness`, a specified row the module lacks, a module row the specification lacks, and a module without the theorem are refused. | §17.16 |
 | `RB-12` | `rust-backend` | The language-1.2 compiler-semantics ID covers the package scaffold: changing a lint row, the edition, or a gate of a copy of the embedded tree changes it, writing the module in its data form or reformatting its notation does not, and the module is outside the identities of languages 1.0 and 1.1. | §17.16, §21.2 |
 | `RB-13` | `rust-backend` | A package states the effects of its realization: `package.json` and `provenance.json` record them, ascending and registered, the production registry says that exhausting the stack aborts the process, and an unregistered or unordered list, or one that states allocation on `rust-core`, is refused. | §17.13, §17.16 |
@@ -10932,9 +11312,9 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `RB-15` | `rust-backend` | The Rust AST mirrors the machine callee and the overflow literal of RustSyntax: a crate whose functions call each machine primitive at each width is checked, printed, and compiled by the pinned rustc with warnings denied, each call prints as the Rust operation its primitive names, and each function computes on the boundary values of its width exactly what an independent computation over a wider integer states; a machine call with another number of operands than its primitive takes, and an overflow value outside the payload of an `Err`, are refused as LLB6005, and a lowered crate that holds a machine call is refused by the correspondence between a rendering and its program as a construct with no row, because machine calls appear only in the runtime profile. | §17.14, §17.16 |
 | `RB-16` | `rust-backend` | The core runtime every Rust package carries is the text of a base and of the functions the language-1.2 module `RustRuntime` defines: the compiler project's module, shipped byte for byte at `language/rust-runtime-1.2/RustRuntime.lex.tex`, defines `coreCrate`, a crate of `RustSyntax` that the Rust crate decodes, never evaluates, and prints where the handwritten function stood, and each printed function has, on the boundary and seeded values of its parameters, the result and the counted work that the handwritten function had (the `core` section of the golden transcript `tests/rust-runtime-golden/transcript.txt`, recorded from the handwritten runtime when both were compiled together by the pinned rustc with warnings denied and agreed), when it is compiled by the pinned rustc with warnings denied, and the decoded crate is checked by the validator that checks every rendering (`validate` and the normative `validateCrate`), with the runtime's reading of its arithmetic rule, so that a function of the core runtime fails only with an `Err` of the overflow value whose error type is the node `RustType.overflow` and allocates nothing; a module that names a constructor `RustSyntax` does not declare, gives a constructor a wrong number of arguments, refers to a definition it lacks, defines a datum with parameters, or lacks `coreCrate`, a function that returns an `Err` of another value or another error type, a heap type in the core runtime, a shipped copy that differs from the compiler project's module, a defined function that no differential covers, and a function whose body is changed to compute another result are each refused. | §17.16 |
 | `RB-17` | `rust-backend` | The core runtime's support items are the definitions of a second closed module: the language-1.2 module `RuntimeSupport` of the compiler project, shipped byte for byte at `language/rust-runtime-1.2/RuntimeSupport.lex.tex`, defines `supportCrate`, a crate of `RuntimeSyntax`, whose items are of a closed set (a `use`, a unit struct with derives, a type alias with parameters, a static atomic counter, a trait of method signatures, an impl of a trait or of a type with bounded parameters, a generic function with bounded parameters), whose expressions are of a closed set (a variable, a literal, a path, a call of a path, a method call, a field of a pair, a borrow, an equality, a match), and whose types, paths, and methods name a declared item or one entry of a closed table of the standard library; the Rust crate decodes it, never evaluates it, checks it with a validator of its own, and prints it where the handwritten text stood, so that the core runtime holds no handwritten Rust text, and `equal`, `compare`, `tick`, and `work` have the result and the counted work of the handwritten ones (the `support` section of the golden transcript `tests/rust-runtime-golden/transcript.txt`) on the boundary and seeded values of the core profile, and `compare` on seeded keys that nest pairs to depth two and three, when they are compiled by the pinned rustc with warnings denied; an item or expression outside the set, a name that is neither declared nor in the table, an impl that lacks a method of its trait or states another signature, a bound on a trait that is not declared, a heap type in the core runtime, a shipped copy that differs from the compiler project's module, and a changed body are each refused. | §17.16 |
-| `RB-19` | `rust-backend` | The closed module `RuntimeSyntax` carries the constructs the `rust-std` runtime is written in, and no others: items (a tuple struct, a record struct, and an enum with unit, tuple, and record variants, each generic and with derives, beside those of `RB-17`), types (a 128-bit width, `usize`, `char`, `str`, a slice, and a mutable reference), literals (a character and a string), patterns (a mutable binding, a tuple, a tuple struct, a struct, and a literal), and expressions (a `let` with an optional type, an assignment, an `if` with an `else`, a `while`, a `while let`, a `loop`, a `for`, a `break`, a `return`, a tuple, a struct literal, a binary operation over twelve operators, a negation, a cast, an index, a range slice, a dereference, a mutable borrow, a method call with type arguments, a block, and a `match` arm with a guard); the Rust crate decodes, validates, and prints a crate of them, the language-1.2 module `RuntimeProbe` of the compiler project, which holds one use of each construct and is shipped byte for byte, so that its functions, compiled by the pinned rustc with warnings denied and run on seeded values, return what an independent computation states; the validator names its rule for each refusal (a name that is neither declared nor in the closed table of the standard library, a call or method with another number of arguments, an associated function of a declared type that its impl does not state or that is called with another number of arguments, a variable not in scope, a `break` outside a loop, a struct literal that names a field the struct lacks, a tuple of one, a pattern that binds a name twice, an assignment to a name that is not mutable) and refuses in the core profile every type, path, and method of the table (51 names, which SPEC.md §17.16 lists and the case compares with the validator's) that allocates, as the hidden allocation the validator refuses in every `rust-core` crate; a constructor `RuntimeSyntax` lacks, a shipped copy that differs from the compiler project's module, and each refusal above are refused. | §17.16 |
-| `RB-20` | `rust-backend` | The std runtime every `rust-std` package carries is the text of the language-1.2 module `RuntimeStd` and of the functions the language-1.2 module `RustStd` defines: the compiler project's module `RuntimeStd`, shipped byte for byte at `language/rust-runtime-1.2/RuntimeStd.lex.tex`, defines `stdSupportCrate`, a `std` crate of `RuntimeSyntax` that holds the types `Str`, `Bytes`, `Node`, `Repr`, and `List` with their impls and the walks over them, the character count `chars`, the `Same` and `Key` impls of texts and byte strings, and the number text (`canonical_decimal` and the methods `Str::parse_int`, `Str::format_<width>`, and `Str::parse_<width>` of the eight fixed widths), and that the Rust crate decodes, never evaluates, checks with the validator of `RuntimeSyntax` together with the support items it stands on, and prints where the handwritten text stood; the compiler project's module `RustStd`, shipped byte for byte at `language/rust-runtime-1.2/RustStd.lex.tex`, defines `stdCrate`, a crate of `RustSyntax` with the std profile that the Rust crate decodes, never evaluates, checks with the validator that checks every rendering, and prints where the handwritten function stood, and each printed function, type, impl, and helper has the result and the counted work of the handwritten one (the `std` section of the golden transcript `tests/rust-runtime-golden/transcript.txt`, recorded from the handwritten runtime when both were compiled together and agreed) on lists of every length from 0 to 70 and of 1,000, 4,096 and 200,000 cells, and on byte strings and texts of the empty, the single, the multi-byte, the invalid, and the long, and on lists of texts of every shape, built fresh, after an uncons has made a unique buffer longer than its run, shared by a clone, and with cells in front, on the numerals of the number text, canonical and not, at the bounds of the eight widths, when it is compiled by the pinned rustc with warnings denied, where `format_int`, the function of the integers' decimal text that the handwritten runtime called as `format_i64`, has on the values of `format_i64` the digest the transcript records for `format_i64`; the changes this makes to the shipped crate are named and each has its plant: a type parameter of a signature (`RustType.param`, printed as the generic list `<T: Clone>`, a call of a function without it fails to compile), the machine primitives `Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, `bytesAppend`, `bytesLength`, `stringLength`, `bytesIndex`, `bytesSlice`, `utf8Encode`, `utf8Decode`, `bytesCompare`, `stringSplit`, `stringJoin`, `formatDecimal`, `parseDecimal`, `parseDecimalInt`, and `formatDecimalInt` (families 26 to 43, printed as calls of the methods of `List`, `Bytes`, and `Str` that hold the walks and the number text, for example `List::length(&a)`, `Bytes::slice(&a, start, count)`, `Str::format_u8(a)`, `Str::parse_int(&t)`, and `Str::format_i64(a)` for the integers, which the printed runtime holds as `i64`; a call with two operands of the one-operand length is refused by the validator), the decoder of the std crate (`stdCrate` of the std profile, a module without it or with another profile is refused), and the methods of `List`, `Bytes`, and `Str` that hold the walks, which `RuntimeStd` defines and whose miscount or extra tick the transcript finds; a defined function that the harness does not call, a function of the module that the generated runtime lacks, a shipped copy that differs from the compiler project's module, a `RuntimeStd` module that defines no `stdSupportCrate` or whose crate is not of the std profile or not valid, a function whose body is changed, and a `format_int` that formats another value are each refused. | §17.16 |
-| `RB-21` | `rust-backend` | The text of the Rust runtime is printed from the language-1.2 modules and never held as a string: no string literal in the sources of the `lexlean` crate holds the head of a runtime item as the printer writes it (a `fn`, `struct`, `enum`, `trait`, `impl`, or `macro_rules!` with a name), so that the core and std runtimes are the printed `RuntimeSupport`, `RustRuntime`, `RuntimeStd`, and `RustStd` and nothing beside them; the handwritten runtime that was kept at `tests/rust-runtime-oracle/` is removed, and what holds the printed runtime's behavior is one golden transcript, `tests/rust-runtime-golden/transcript.txt` (a section, a label, and the 64-bit digest of the results and counted work of the calls under the label, in three sections for `RB-16`, `RB-17`, and `RB-20`; its header names the SHA-256 of its lines, so it is content-addressed, and it is written by `cargo xtask check-golden --write` and never edited), recorded from the handwritten runtime at the last pass of the differential of the three cases, so that the comparison is against a recorded transcript of the removed oracle and not against the oracle; the scan must read the sources that print the runtime and more than a thousand literals; a constant that holds a function, a raw string that holds an impl, a macro definition held as a constant, a type held in a longer text, and a generic function on a line of a longer text, each planted in a copy of `runtime.rs`, are each found in it and only there, a printer's template with a placeholder where the name stands is not found, and the oracle directory present, a golden file whose digest, label, or header is changed, dropped, or added, and a scan that reads no source are each refused. | §17.17 |
+| `RB-19` | `rust-backend` | The closed module `RuntimeSyntax` carries the constructs the `rust-std` runtime is written in, and no others: items (a tuple struct, a record struct, and an enum with unit, tuple, and record variants, each generic and with derives, beside those of `RB-17`; a `pub mod` of functions and of definitions that the crate's `RustSyntax` module gives, named by path; and the inner attributes of the crate header, `no_std` and `forbid` of named lints), types (a 128-bit width, `usize`, `char`, `str`, a slice, and a mutable reference), literals (a character and a string), patterns (a mutable binding, a tuple, a tuple struct, a struct, and a literal), and expressions (a `let` with an optional type, an assignment, an `if` with an `else`, a `while`, a `while let`, a `loop`, a `for`, a `break`, a `return`, a tuple, a struct literal, a binary operation over twelve operators, a negation, a cast, an index, a range slice, a dereference, a mutable borrow, a method call with type arguments, a block, and a `match` arm with a guard); the Rust crate decodes, validates, and prints a crate of them, the language-1.2 module `RuntimeProbe` of the compiler project, which holds one use of each construct and is shipped byte for byte, so that its functions, compiled by the pinned rustc with warnings denied and run on seeded values, return what an independent computation states; the validator names its rule for each refusal (a name that is neither declared nor in the closed table of the standard library, a call or method with another number of arguments, an associated function of a declared type that its impl does not state or that is called with another number of arguments, a variable not in scope, a `break` outside a loop, a struct literal that names a field the struct lacks, a tuple of one, a pattern that binds a name twice, an assignment to a name that is not mutable, an inner attribute after an item or outside the closed set (`no_std`, `forbid`) or with arguments that do not fit it, a module that holds anything but a function or a definition, a definition named by an empty path or by a path with a segment, split at `::`, that is not an identifier, and an inner attribute that forbids a lint whose name is not an identifier) and refuses in the core profile every type, path, and method of the table (51 names, which SPEC.md §17.16 lists and the case compares with the validator's) that allocates, as the hidden allocation the validator refuses in every `rust-core` crate; a constructor `RuntimeSyntax` lacks, a shipped copy that differs from the compiler project's module, and each refusal above are refused. | §17.16 |
+| `RB-20` | `rust-backend` | The std runtime every `rust-std` package carries is the text of the language-1.2 module `RuntimeStd` and of the functions the language-1.2 module `RustStd` defines: the compiler project's module `RuntimeStd`, shipped byte for byte at `language/rust-runtime-1.2/RuntimeStd.lex.tex`, defines `stdSupportCrate`, a `std` crate of `RuntimeSyntax` that holds the types `Str`, `Bytes`, `Node`, `Repr`, and `List` with their impls and the walks over them, the character count `chars`, the `Same` and `Key` impls of texts and byte strings, and the number text (`canonical_decimal` and the methods `Str::parse_int`, `Str::format_<width>`, and `Str::parse_<width>` of the eight fixed widths), and that the Rust crate decodes, never evaluates, checks with the validator of `RuntimeSyntax` together with the support items it stands on, and prints where the handwritten text stood; the compiler project's module `RustStd`, shipped byte for byte at `language/rust-runtime-1.2/RustStd.lex.tex`, defines `stdCrate`, a crate of `RustSyntax` with the std profile that the Rust crate decodes, never evaluates, checks with the validator that checks every rendering, and prints where the handwritten function stood, and each printed function, type, impl, and helper has the result and the counted work of the handwritten one (the `std` section of the golden transcript `tests/rust-runtime-golden/transcript.txt`, recorded from the handwritten runtime when both were compiled together and agreed) on lists of every length from 0 to 70 and of 1,000, 4,096 and 200,000 cells, and on byte strings and texts of the empty, the single, the multi-byte, the invalid, and the long, and on lists of texts of every shape, built fresh, after an uncons has made a unique buffer longer than its run, shared by a clone, and with cells in front, on the numerals of the number text, canonical and not, at the bounds of the eight widths, when it is compiled by the pinned rustc with warnings denied, where `format_int`, the function of the integers' decimal text that the handwritten runtime called as `format_i64`, has on the values of `format_i64` the digest the transcript records for `format_i64`; the changes this makes to the shipped crate are named and each has its plant: a type parameter of a signature (`RustType.param`, printed as the generic list `<T: Clone>`, a call of a function without it fails to compile), the machine primitives `Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, `bytesAppend`, `bytesLength`, `stringLength`, `bytesIndex`, `bytesSlice`, `utf8Encode`, `utf8Decode`, `bytesCompare`, `stringSplit`, `stringJoin`, `formatDecimal`, `parseDecimal`, `parseDecimalInt`, and `formatDecimalInt` (families 26 to 43, printed as calls of the methods of `List`, `Bytes`, and `Str` that hold the walks and the number text, for example `List::length(&a)`, `Bytes::slice(&a, start, count)`, `Str::format_u8(a)`, `Str::parse_int(&t)`, and `Str::format_i64(a)` for the integers, which the printed runtime holds as `i64`; a call with two operands of the one-operand length is refused by the validator), the decoder of the std crate (`stdCrate` of the std profile, a module without it or with another profile is refused), and the methods of `List`, `Bytes`, and `Str` that hold the walks, which `RuntimeStd` defines and whose miscount or extra tick the transcript finds; a `RuntimeStd` that writes through a shared holder (`Rc::make_mut`) or names interior mutability (`RefCell`, `Cell`), which the closed table refuses by name, a defined function that the harness does not call, a function of the module that the generated runtime lacks, a shipped copy that differs from the compiler project's module, a `RuntimeStd` module that defines no `stdSupportCrate` or whose crate is not of the std profile or not valid, a function whose body is changed, and a `format_int` that formats another value are each refused. | §17.16 |
+| `RB-21` | `rust-backend` | The text of the Rust runtime is printed from the language-1.2 modules and never held as a string: no string literal in the sources of the `lexlean` crate holds the head of a runtime item as the printer writes it (a `fn`, `struct`, `enum`, `trait`, `impl`, `macro_rules!`, `use` of a path, `static`, `const`, `type`, or `mod` with a name), so that the core and std runtimes are the printed `RuntimeSupport`, `RustRuntime`, `RuntimeStd`, and `RustStd` and nothing beside them; the handwritten runtime that was kept at `tests/rust-runtime-oracle/` is removed, and what holds the printed runtime's behavior is one golden transcript, `tests/rust-runtime-golden/transcript.txt` (a section, a label, and the 64-bit digest of the results and counted work of the calls under the label, in three sections for `RB-16`, `RB-17`, and `RB-20`; its header names the SHA-256 of its lines, so it is content-addressed, and it is written by `cargo xtask check-golden --write` and never edited), recorded from the handwritten runtime at the last pass of the differential of the three cases, so that the comparison is against a recorded transcript of the removed oracle and not against the oracle; the scan must read the sources that print the runtime and more than a thousand literals; a constant that holds a function, a raw string that holds an impl, a macro definition held as a constant, a type held in a longer text, and a generic function on a line of a longer text, each planted in a copy of `runtime.rs`, are each found in it and only there, a whole item in a format string with a literal name, a `use`, a `static`, a type alias, and a module each held as a constant are found too, a printer's template (a head with a substitution in the format argument of a formatting macro) is not found, and the oracle directory present, a golden file whose digest, label, or header is changed, dropped, or added, and a scan that reads no source are each refused. | §17.17 |
 | `GN-01` | `gnaf` | Every committed GNAF request and fixture is canonical, validates against the GNAF schemas whose calculus definitions are the target program schema's, and states its components' universe identity; a malformed request, an invalid reference, plan, or realized program, a reference without a value on a domain argument, or a wrong universe identity fails closed with LLB6006, and a machine or request beyond the host's capacity fails closed with LLS8002. | §17.15, §26.3 |
 | `GN-02` | `gnaf` | The GNAF model is a kernel-checked LexLean definition, Lean's kernel reduces the universe, the system statuses, and the answer of every committed request to what the host transcription computes, and a wrong answer, an answer computed from a universe with a system omitted, a tie with a member dropped, and a universe with a system omitted are rejected by Lean. | §17.15 |
 | `GN-03` | `gnaf` | Candidate membership is the grammar's expansion, which a kernel-checked theorem proves equal to the grammar's well-formed selectors for every grammar, independent of evaluation and fixed by a universe identity before any optimizer, and optimizer-defined, discovered, cached, and internal-plan universes and missing, self-referential, or optimizer-citing completeness evidence are rejected. | §17.15 |
@@ -10955,7 +11335,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `GC-10` | `gnaf-certification` | The certification model, certificate fixtures, certificate module, and schemas are generated, deterministic, and content-addressed: they equal their generators, the compiler project reaches them from its entrypoint, certificate identities are recomputed from content, and a planted change to a premise, a bound, or a route changes the verdict or the identity. | §17.18 |
 | `GC-11` | `gnaf-certification` | The certification library is LexLean source: every module of its registry is one language-1.2 native core module of the library's own project, which holds no file of Lean source, no Lean file anywhere in the release tree declares the library's namespace or lies under its module root, and the registry lists only the modules; the declarations and their exact axiom policies are read from the native data, a module that imports anything but `Init`, an earlier module, the preservation core, or the generated and calculus modules it is stated against, or that does not pin its axioms exactly, is refused, and the Lean the compiler generates from the sources is, byte for byte, the Lean the certification library's kernel check compiles, so that neither a stale nor an edited generated module can stand in for the source and a planted drift of the source is visible in what is generated. The one Lean text a generated library module carries beside its data is the decoder of core module 2, which loads native modules. | §17.18 |
 | `SP-01` | `preservation` | Every production root of the committed examples lowers to a valid realization program in first-binding order, byte-identical across two lowerings, with an origin for every function and document type and exactly the root's eligibility closure; the lowering and certificate sources match no construct by default; a planted closure disagreement fails with LLI9001 and a planted default arm is refused. | §17.17 |
-| `SP-02` | `preservation` | Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected, and each such rejection lies in the declaration of the function mutated; and a root whose lowered program or certificates would exceed max_ir_nodes or max_file_bytes is refused with LLS8002 before the toolchain is touched: early, by a lower bound on each certificate from what the program states, the greatest of which is compared with the limit and none of which is above its certificate on the corpora, on families of programs that grow one dimension at a time, and on programs that grow several at once, so that a program whose certificates fit, a match on 240 constructors, a string of 450 000 characters, or both a wide match and a long string, is not refused by it (and a mixed shape that fits at its full scale of 256 is checked to fit and not edge-checked), and by a floor on certificate B from the entries its field reads print, which the lowering refuses before the Rust crate is built; during certificate B's derivation at 12 bytes a kernel node; and for every certificate by weighing the finished module in the authoring notation it is recorded in against max_file_bytes before any file is staged; the programs, crates, and certificates of all the roots of a project count together toward max_total_source_bytes, which a chain of roots calling one another passes before memory is exhausted; and a match on 180 constructors verifies through the whole pipeline. | §17.17 |
+| `SP-02` | `preservation` | Every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning has a certificate whose root theorem, that the lowered program converges on the encoded arguments to the encoded source value or to overflow exactly where the width predicate fails, compiles under the pinned Lean, replays through leanchecker, and depends on exactly Classical.choice, Quot.sound, and propext; a certificate generated against a program with a planted branch, arithmetic, constructor, recursion, or literal mutation is rejected, and each such rejection lies in the declaration of the function mutated; and a root whose lowered program or certificates would exceed max_ir_nodes or max_file_bytes is refused with LLS8002 before the toolchain is touched: early, by a lower bound on each certificate from what the program states, the greatest of which is compared with the limit and none of which is above its certificate on the corpora, on families of programs that grow one dimension at a time, and on programs that grow several at once, so that a program whose certificates fit, a match on 240 constructors, a string of 450 000 characters, or both a wide match and a long string, is not refused by it (and a mixed shape that fits at its full scale of 256 is checked to fit and not edge-checked), and by a floor on certificate B from the entries its field reads print, which the lowering refuses before the Rust crate is built; during certificate B's derivation at 12 bytes a kernel node; and for every certificate by weighing the finished module in the authoring notation it is recorded in against max_file_bytes before any file is staged; the programs, crates, and certificates of all the roots of a project count together toward max_total_source_bytes, which a chain of roots calling one another passes before memory is exhausted; and a match on 180 constructors verifies through the whole pipeline; every supported host checks the certificate bounds on the committed corpora and fixed small vectors, and the complete scaling and seeded stress families run on the normative Linux x86-64 host. | §17.17 |
 | `SP-03` | `preservation` | On seeded inputs to every production root of examples/production, examples/production-coverage, examples/models, and examples/reasoning, the calculus interpreter's outcome on the lowered program equals the certificate's observation evaluated by Lean, and a planted disagreement is detected. | §17.17 |
 | `SP-04` | `preservation` | Every declaration of the preservation library is a row of a native module that pins its axioms exactly and depends on exactly them under the pinned Lean, the statement vocabulary SPEC.md quotes equals what the pinned Lean prints of the generated library, the shipped calculus modules are byte-equal to the compiler project's golden modules, and a library module or certificate with a forbidden token, a disallowed option, or a foreign import is refused. | §17.17 |
 | `SP-05` | `preservation` | Verification checks certificate A for every production root after named-root extraction and publishes each certificate, its audit output and process records, and a preservation.json valid against its schema whose digest the attestation binds; the lowered program and each target's crate the certificates are about are published and bound by that record, which also states the function each crate is invoked through and agrees with certificate E and the crate; a certificate the pinned Lean rejects fails with LLV7013 and a drifted preservation environment with LLV7014, before publication; and a pinned Lean that gives up on a certificate by heartbeats or recursion depth is reported as that rejection unless the module is at least a quarter of max_file_bytes, in which case, as when it is killed or out of memory, it is an exhausted resource, LLS8002. | §17.17, §22.8, §22.9 |
@@ -11072,9 +11452,18 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `BS-02` | `bootstrap` | The preservation lexer and token audit of SPEC.md §17.17 are language-1.2 source in the `bootstrap/` project: `lex` and `auditTokens` of `TokenAudit` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `production::preserve::{lex, audit_tokens}` on every lexeme, position, and rejection message for the first 1,500 characters of every module of the shipped preservation library and calculus modules, the number-lexing corpus, and every token-audit unit vector; on the normative host, both roots' lowered programs under the calculus evaluator agree with the Rust oracle on those vectors and a seeded corpus, the rendered packages under the pinned rustc agree with the oracle on the large seeded corpus of generated and mutated Lean texts with no disagreement, a planted defect in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §17.17, §17.23 |
 | `BS-03` | `bootstrap` | The primitive scanner of SPEC.md §12.2 is language-1.2 source in the `bootstrap/` project: `scanSource` and `rejectAtoms` of `PrimitiveScan` are production roots eligible for `rust-std` with exactly their declared effects; on every host of the matrix, both roots' rendered `rust-std` packages under that host's pinned rustc agree with the Rust oracle `source::scan::{scan, reject_forbidden_atoms}` on every atom with its class, text, and byte, line, and column spans and on every rejection with its code, message, span, and help, for the deterministic vectors (the oracle's unit inputs, the atom limit at N and N+1, atom lists with gaps, payload strings, and notation bodies), a 128-byte window and a 2,048-byte prefix of every committed `.lex.tex` source, and the whole of each such source up to 8,192 bytes (up to 1,024 bytes, one source in four, for `rejectAtoms`); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the vectors and the 128-byte windows and on 80 seeded texts, the packages agree on 2,500 seeded texts, each of ten planted defects in the source is detected, and the certified packages the production export publishes for the project are the committed ones. | §12.2, §17.23 |
 | `BS-04` | `bootstrap` | The target calculus's checker of SPEC.md §17.14 (`lexlean::calculus::check`), for a program given as calculus data, each list of a recursive type carried as a chain of that type's own `Nil` and `Cons` constructors and decoded back to the program on every vector (reading a program from its canonical JSON is not part of this row), is language-1.2 source in the `bootstrap/` project: `checkProgram` and `checkArguments` of `CalculusCheck` are production roots eligible for `rust-std` with exactly their declared effects; on the normative host the lowered programs of both roots under the calculus evaluator agree with the Rust checker on acceptance and on the rejection message to the byte for every committed target program and the refusal edits of `TC-02` and for a seeded corpus of data-level mutations, and each planted defect in the source is detected; on every host the rendered `rust-std` packages of both roots under the pinned rustc agree with the Rust checker on the deterministic vectors, and on the normative host also on a larger seeded corpus with no disagreement; strings whose Rust `Debug` spelling escapes a non-ASCII scalar other than `U+0080`..`U+009F` are outside the claim; and the certified packages the production export publishes for the project are the committed ones. | §17.14, §17.23 |
-| `BS-05` | `bootstrap` | The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 232 distinct crates the renderer lowers from the 173 distinct programs among the 256 committed package manifests and 122 fixtures, for 132 `validateCrate` and 12 `correspondCrate` runs that reach each of the 48 reachable refusals three times, for 17 hand-built crates of the merge of moved sets, for 34 hand-built crates of the loop rules, and for 55 hand-built crates of the machine callee and the overflow value, whose three refusals no mutant reaches (452 `validateCrate` runs, 195 of them refusals, and 315 `correspondCrate` runs, 82 of them refusals); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (201) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, twenty planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
-| `BS-06` | `bootstrap` | The Rust printer of SPEC.md §17.16 (`calculus::rust::ast::{print, print_expr}`) is language-1.2 source in the `bootstrap/` project: `printCrate` and `printExpr` of `RustPrint`, over the closed Rust AST as first-order data with its literal payloads, exported names, runtime rows, and machine primitives (`RustAst`), each list of the AST carried as a chain of its own `Nil` and `Cons` constructors, are production roots eligible for `rust-std` with exactly their declared effects, and write their output into a `Buffer` of a given capacity, the capacity exceeded being the refusal of the buffer; the header of the library (the crate attributes and the runtime) is an argument; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle to the byte on 2,710 vectors, 627 of `printCrate` (61 of them refused for the capacity, 464 the distinct crates the renderer lowers from the 173 distinct programs among the 256 committed package manifests and 122 fixtures and the crates of the 256 committed packages) and 2,083 of `printExpr` (1,532 of them hand-built, the rest the function bodies of those crates), with the items of each of the 256 committed libraries equal to the oracle's printed items; on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on 562 and 2,083 of those vectors and on 400 and 399 seeded mutants, the rendered packages agree on 2,984 further seeded mutants, thirteen planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; a crate naming a non-ASCII or non-printable scalar in an exported name, a literal wider than 64 bits, and a machine call with fewer operands than its primitive, which the oracle indexes past, are outside the claim. | §17.16, §17.23 |
-| `BS-09` | `bootstrap` | The runtime syntax validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateRuntime` of `RuntimeValidate` is a production root eligible for `rust-std` with exactly its declared effects, and its rendered `rust-std` package under the pinned rustc agrees with the Rust oracle `calculus::rust::rt_validate::validate` on the exact outcome and message for each of 703 crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 99 crates that break one rule, or one site of a rule, each, built by changing the committed crates and from small crates, and 600 seeded mutants of the two committed modules, 564 of the 703 refused, so that the refusals reach each of the 40 rules the oracle names and no other; the evaluator agrees on all 703; each of eight planted defects in the source is detected, and the certified package the production export publishes for the project is the committed one; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
+| `BS-05` | `bootstrap` | The Rust crate validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateCrate` and `correspondCrate` of `RustValidate` are production roots eligible for `rust-std` with exactly their declared effects; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle `calculus::rust::validate::{validate, correspond}` on the exact outcome and message for the 259 distinct crates the renderer lowers from the 200 distinct programs among the 283 committed package manifests and 122 fixtures, for 129 `validateCrate` and 12 `correspondCrate` runs that reach 47 of the 48 reachable refusals three times each, for 17 hand-built crates of the merge of moved sets, for 34 hand-built crates of the loop rules, for one hand-built crate of the 48th, a list match under `rust-core`, and for 55 hand-built crates of the machine callee and the overflow value, whose three refusals no mutant reaches (495 `validateCrate` runs, 211 of them refusals, and 360 `correspondCrate` runs, 100 of them refusals); on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on the crates of at most 400 expressions (208) with the rule runs and on 500 seeded mutants of the crates of at most 80 expressions, the rendered packages under the pinned rustc agree on 2,000 further seeded mutants per root, twenty planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
+| `BS-06` | `bootstrap` | The Rust printer of SPEC.md §17.16 (`calculus::rust::ast::{print, print_expr}`) is language-1.2 source in the `bootstrap/` project: `printCrate` and `printExpr` of `RustPrint`, over the closed Rust AST as first-order data with its literal payloads, exported names, runtime rows, and machine primitives (`RustAst`), each list of the AST carried as a chain of its own `Nil` and `Cons` constructors, are production roots eligible for `rust-std` with exactly their declared effects, and write their output into a `Buffer` of a given capacity, the capacity exceeded being the refusal of the buffer; the header of the library (the crate attributes and the runtime) is an argument; on every host, both roots' rendered `rust-std` packages under the pinned rustc agree with the Rust oracle to the byte on 2,829 vectors, 684 of `printCrate` (64 of them refused for the capacity, 518 the distinct crates the renderer lowers from the 200 distinct programs among the 283 committed package manifests and 122 fixtures and the crates of the 283 committed packages) and 2,145 of `printExpr` (1,532 of them hand-built, the rest the function bodies of those crates), with the items of each of the 283 committed libraries equal to the oracle's printed items; on the normative host, both roots' lowered programs under the calculus evaluator agree with the oracle on 582 and 2,145 of those vectors and on 400 and 394 seeded mutants, the rendered packages agree on 2,989 further seeded mutants, thirteen planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; a crate naming a non-ASCII or non-printable scalar in an exported name, a literal wider than 64 bits, and a machine call with fewer operands than its primitive, which the oracle indexes past, are outside the claim. | §17.16, §17.23 |
+| `BS-07` | `bootstrap` | The failure typing and the types of the Rust lowering of SPEC.md §17.16 (`calculus::rust::fallible_functions`, and the enums and dispatch of the types of the crate that `rust::lower` builds) are language-1.2 source in the `bootstrap/` project as four production roots that the host composes: `siteTrees` of `CalculusCheck` (the type of each match scrutinee and of each applied target of a program, computed by the module's own `walk` and `inferTy`, the copy `checkProgram` runs on), `deadFunctions` and `fallibleFunctions` of `RustLower`, which read that tree as an argument and never call `walk`, and `lowerTypes` of `RustLower`, which returns the `Enum` item of each ADT and of each function type and the `Apply` item of each function type as a `Def` chain of `RustAst`, given the tree and the two flag lists; for a program given as calculus data that `checkProgram` accepts, each list of a recursive type carried as a chain of that type's own `Nil` and `Cons` constructors as in `BS-04`, each root is eligible for `rust-std` with exactly its declared effects and has no part of its certificates beyond three quarters of `max_file_bytes`; on every host the rendered `rust-std` packages of the four roots under the pinned rustc agree with the Rust oracle (the typing sites of `calculus::sites::trees`, the dead functions the crate of `rust::lower` shows, `fallible_functions`, and the type items of that crate, each given the legs before it) on 334 vectors, the committed target programs and the programs that exercise each rule of the analysis (a failing primitive, a successor, a call, an application of a function type one of whose closures fails, a function with an argument of a function type no closure inhabits, the closure of a dead function) and the programs of the corpora of `BS-04` that the checker accepts; on the normative host the lowered programs under the calculus evaluator agree with the oracle on the 281 of those vectors of at most 300 nodes and on 150 seeded mutants that `checkProgram` accepts, the rendered packages agree on 1,500 further seeded mutants, twenty planted defects in the source, three of them in the typing root and seven in the types, are each detected, and the certified packages the production export publishes for the project are the committed ones; the function bodies of the lowering and its composition with `checkProgram`, `validateCrate`, and `correspondCrate` are carried by the later roots of this row. | §17.16, §17.23 |
+| `BS-08` | `bootstrap` | The last-use moves of the Rust lowering of SPEC.md §17.16 (`calculus::rust::moves::apply`: a read of a binding that nothing after it reads becomes a move, and the projection of a pair component that nothing after it reads moves that component out of the pair) are language-1.2 source in the `bootstrap/` project, the first pass of the function bodies of the lowering: `applyMoves` of `RustMoves`, for the items of a crate given as the `Def` chain of `RustAst`, each list of the AST carried as a chain of its own `Nil` and `Cons` constructors as in `BS-06`, is a production root eligible for `rust-std` with exactly its declared effects and has no part of its certificate beyond three quarters of `max_file_bytes`; on every host its rendered `rust-std` package under the pinned rustc agrees with the oracle to the byte, on the function bodies of 393 crates (the hand-built crates of each rule of the pass, the hand-built crates of `BS-05`, and the crates the renderer lowers from the committed programs); on the normative host its lowered program under the calculus evaluator agrees with the oracle on the 342 of those crates of at most 400 expressions and on 150 seeded mutants of the crates of at most 80 expressions, the rendered package agrees on 1,500 further seeded mutants, eight planted defects in the source are each detected, and the certified package the production export publishes for the project is the committed one; an exported name in an expression and the passes of the function bodies that follow this one (the folds, the loops, and the lowering of terms, carried by their own rows and held by their composition to the final functions of `rust::lower`) are outside the claim. | §17.16, §17.23 |
+| `BS-09` | `bootstrap` | The runtime syntax validator of SPEC.md §17.16 is language-1.2 source in the `bootstrap/` project: `validateRuntime` of `RuntimeValidate` is a production root eligible for `rust-std` with exactly its declared effects, and its rendered `rust-std` package under the pinned rustc agrees with the Rust oracle `calculus::rust::rt_validate::validate` on the exact outcome and message for each of 717 crates: the committed `supportCrate` and `probeCrate` and each in the other profile, the 113 crates that break one rule, or one site of a rule, each, built by changing the committed crates and from small crates, and 600 seeded mutants of the two committed modules, 576 of the 717 refused, so that the refusals reach each of the 45 rules the oracle names and no other; the evaluator agrees on all 717; each of eight planted defects in the source is detected, and the certified package the production export publishes for the project is the committed one; lowering, printing, packaging, and crates naming a non-ASCII or non-printable scalar are outside the claim. | §17.16, §17.23 |
+| `BS-10` | `bootstrap` | The literal values of the Rust lowering of SPEC.md §17.16 (`Lowering::value`: the Rust expression of a literal of a type, with its origin, the box of a field that an ADT holds in place, and the width of a fixed-width literal) are language-1.2 source in the `bootstrap/` project, the first pass of the lowering of terms: `lowerValueAt` of `RustTerms`, for a program as in `BS-07`, the tree of `siteTrees`, and the index of a function whose body is a literal value, is a production root eligible for `rust-std` with exactly its declared effects and has no part of its certificate beyond three quarters of `max_file_bytes`; on every host its rendered `rust-std` package under the pinned rustc agrees with the oracle to the byte, the oracle being the tail of that function in the crate `rust::lower` builds, which no later pass of the lowering changes, on 358 explicit runs (every scalar literal at the ends of its range in each of five contexts, the composite literals, the literals of ADTs that hold themselves or each other, and the absent option of a function type); on the normative host its lowered program under the calculus evaluator agrees with the oracle on those and on 150 seeded runs, the rendered package agrees on 1,500 further seeded runs, ten planted defects in the source are each detected, and the certified package the production export publishes for the project is the committed one; a literal text the checker refuses (a sign but the minus of a negative number, a leading zero, upper-case or odd-length hexadecimal, a magnitude beyond 64 bits), the other terms of the lowering, and the passes of the function bodies that follow (carried by their own rows and held by their composition to the final functions of `rust::lower`) are outside the claim. | §17.16, §17.23 |
+| `BS-11` | `bootstrap` | The lowering of the terms of a function body in the Rust lowering of SPEC.md §17.16 (`Lowering::expr` with its operands, conditionals, matches and their arms, builds, calls, closures, applications, primitives, and projections, and the `fold` of `lower`) is language-1.2 source in the `bootstrap/` project, the second pass of the lowering of terms, as four production roots that the host composes: `useTrees` of `CalculusCheck`, the types the lowering reads beside the tree of `siteTrees` (those of the operands of each primitive and of the value each field is read from); `lowerFrame` of `RustBodies`, what the analysis of `BS-07` knows that the terms read (the numbered function types, the boxed fields, the inhabited types, the closures of the live functions); `lowerBodies` of `RustBodies`, which for a program as calculus data, the two trees, the dead and the failing functions, that frame, and the counter its fresh names continue from returns the body of each live function as `lower` holds it before its fold (a dead function's place is the empty chain), numbering the fresh names as the lowering does, and the counter after them; and `foldBodies` of `RustBodies`, the fold; each is eligible for `rust-std` with exactly its declared effects and has no part of its certificate beyond 5,505,024 bytes, seven eighths of `max_file_bytes`; for the programs that `rust::lower` lowers in which no function can overflow and none loops, on every host the rendered `useTrees` package under the pinned rustc agrees to the byte with `calculus::sites::uses` on 157 vectors (the programs of the rules of this row and of `BS-07`, of `BS-04`, and the committed ones that qualify); on the normative host the lowered programs under the calculus evaluator agree with the oracle on those vectors and on 281 seeded mutants (drawn 3,000 times from the smaller committed programs, of which the checker and these conditions keep that many), `useTrees` by its tree and the other three by composition (the frame, the bodies, and the fold they return, put in place of the bodies of the Function items of the crate and given to `applyMoves` of `BS-08`, give those items to the byte), the rendered packages of the three agree with the evaluator on the 156 vectors, thirteen planted defects in the source are each detected, and the certified packages the production export publishes for the project are the committed ones; functions that can overflow (`succeed`), functions that loop (`tail::looped`, which takes names from the counter the terms take theirs from), the parameters and results of a function, the bodies of the dead functions, and the crate around the bodies are outside the claim. | §17.16, §17.23 |
+| `BS-12` | `bootstrap` | The value a function that can overflow returns in the Rust lowering of SPEC.md §17.16 (`succeed`: `Ok` pushed into every tail of the body, a fallible call or application in tail position returning its result instead of propagating and rewrapping it, a computed unit bound before `Ok(())`) is language-1.2 source in the `bootstrap/` project, the third pass of the lowering of terms, as one production root, `succeedBodies` of `RustSucceed`, that the host composes after `lowerBodies` of `BS-11` and before its `foldBodies`; it is eligible for `rust-std` with exactly its declared effects and has no part of its certificate beyond 3,145,728 bytes; for the programs that `rust::lower` lowers in which some function can overflow and none loops, on the normative host the lowered program under the calculus evaluator agrees with the oracle (the frame, the bodies, the succeeded bodies, and the fold they return, put in place of the bodies of the Function items of the crate and given to `applyMoves` of `BS-08`, give those items to the byte) on 76 vectors and 149 seeded mutants, the rendered package agrees with the evaluator under the pinned rustc, eleven planted defects in the source are each detected, and the certified package the production export publishes for the project is the committed one; functions that loop (`tail::looped`, which takes names from the counter the terms take theirs from) and the crate around the bodies are outside the claim. | §17.16, §17.23 |
+| `BS-13` | `bootstrap` | The rendering of a function whose self calls are all tail calls as a loop in the Rust lowering of SPEC.md §17.16 (`tail::looped`: the state made of the parameters the self calls change, nested to the right; `Ok` of the next state at each tail self call and `Err` of the value at every other tail; the renamed parameters and the binding that holds the state) is language-1.2 source in the `bootstrap/` project, the fourth pass of the lowering of terms, as one production root, `loopFunction` of `RustLoops`, that the host composes after `foldBodies` function by function, passing on from one function to the next the counter of the fresh names that the terms and the loop both take; it is eligible for `rust-std` with exactly its declared effects and has no part of its certificate beyond 3,145,728 bytes; for the programs that `rust::lower` lowers in which some function loops, on the normative host the lowered program under the calculus evaluator agrees with the oracle (the frame, then for each live function the terms from the counter, the success, the fold, and the loop, put in place of the bodies and parameters of the Function items of the crate and given to `applyMoves` of `BS-08`, give those items to the byte), and says of each function that it loops exactly when `calculus::rust::loops` does, on 103 vectors and 108 seeded mutants, the rendered package agrees with the evaluator under the pinned rustc, 12 planted defects in the source are each detected, and the certified package the production export publishes for the project is the committed one; the parameters and the result type of a function, which the host gives, and the crate around the bodies are outside the claim. | §17.16, §17.23 |
+| `BS-14` | `bootstrap` | The crate around the bodies of the Rust lowering of SPEC.md §17.16 (the Function item of each function: its parameters, each a name when the body mentions it and its type is not unit; its result type, wrapped when the function can overflow; the body of a function with a parameter no value inhabits, which is the empty match on that parameter; and the order of all the items, the types' first) is language-1.2 source in the `bootstrap/` project, the last pass of the lowering, as two production roots of `RustAssemble` that the host composes with the roots of `BS-07` and `BS-11` to `BS-13`: `functionShells`, which for a program as calculus data, the failing functions, and the frame of `BS-11` returns a Function item of each function, complete for a function with an uninhabited parameter and with a placeholder body for the others, and `assembleItems`, which puts the items of `lowerTypes`, those shells, and the parameters and body that `loopFunction` returned for each live function into one chain of items; each is eligible for `rust-std` with exactly its declared effects and has no part of its certificate beyond 3,145,728 bytes; for the programs that `rust::lower` lowers, on the normative host the lowered programs under the calculus evaluator agree with the oracle (the chain `assembleItems` returns, given to `applyMoves` of `BS-08`, is the whole chain of items of the crate to the byte, the items of the types too, the host passing the counter of the fresh names from one live function to the next and the profile) on 338 vectors and 580 seeded mutants, the rendered packages agree with the evaluator under the pinned rustc, 11 planted defects in the source and three hosts that do more than thread the counter (one that starts it again at each function, one that lowers the functions last to first, one that leaves out the items of the first live function) are each detected, and the certified packages the production export publishes for the project are the committed ones; the checks that `rust::lower` runs on the crate (`validate` and `correspond`), which are the roots of `BS-05` and `BS-06`, are outside the claim. | §17.16, §17.23 |
+| `BS-15` | `bootstrap` | The package renderer of SPEC.md §17.16 (the checks `package::lower` makes of a manifest's own fields before it reads the program: the spec, the crate name against the Rust keywords and the reserved crates, the version, the profile, the form and the order of the sources, and the effects against the registry, with `allocation` refused on `rust-core`; the Cargo manifest over the scaffold record; and the provenance in canonical JSON with the digests of the runtime, the Cargo manifest, and the library) is language-1.2 source in the `bootstrap/` project, as two production roots of `RustPackage` that the host composes around the roots of `BS-04` to `BS-14`: `checkManifest`, which for the fields of a manifest and the registered effects returns whether the profile is `rust-std`, or the refusal of `package::lower` to the byte, and `renderPackage`, which for the scaffold record, the manifest's name, version, profile, sources, effects and exports, the program's identity, the compiler-semantics identity, the two runtime texts, and the library returns the `Cargo.toml` and the `provenance.json` of `package::package` to the byte; each is eligible for `rust-std` with exactly its declared effects and has no part of its certificate beyond 3,145,728 bytes; the oracle of `checkManifest` is `package::lower` on the manifest with its program and exports replaced by a pair every later check accepts, which agrees with each committed negative manifest's refusal, and the oracle of `renderPackage` is `package::package` on the 283 committed manifests it accepts and, on 137 hand-built inputs (names, exports, sources and effects that reach the escaper, and scaffold records that differ from the committed one) and 283 seeded mutants, `cargo_toml_of` and the canonical JSON of §21.7 by the recipe `package::package` is held to; on the normative host the lowered programs under the calculus evaluator agree with the oracle on the 302 committed manifests, 182 rule manifests and 2,000 seeded mutants, and on the 241 renders whose library is at most 16,384 bytes; the rendered packages agree with the oracle under the pinned rustc on all 3,184 runs; 21 planted defects in the source are each detected; and the certified packages the production export publishes for the project are the committed ones; the checks of the program, the exports and the crate, and the bytes of the library, which are the rows `BS-04` to `BS-14`, are outside the claim. | §17.16, §17.23 |
+| `BS-20` | `bootstrap` | The canonical LaTeX of a tooling module of SPEC.md §17.20 (`backend::tooling::render_latex`: the fixed document frame and, for each declaration in order, its title, its kind, and the lines the Lean printer of the same file spells for its types, signatures, and terms, every line escaped by `tex_escape`) is language-1.2 source in the `bootstrap/` project: `renderToolingLatex` of `ToolingLatex`, over the tooling module as first-order data with each list carried as a chain of its own `Nil` and `Cons` constructors and with the typings the checker infers as an argument, writing through the standard library's `Buffer` with an explicit capacity, is a production root eligible for `rust-std` with exactly its declared effects; its rendered `rust-std` package under the pinned rustc and its lowered program under the calculus evaluator agree with the Rust oracle on the text, to the byte, and on the refusal of a write past the capacity, on the committed tooling modules (whose committed `.tex` is equal to the text), on hand-built modules that reach every declaration, type, signature, and term form and every byte class of the escaper, and on seeded mutants, every planted defect is detected, and the certified package the production export publishes for the project is the committed one; the checker, the decoder of the module, and the source map of the emitted pieces stay in the host. | §17.20, §17.23 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
 | `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
 | `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
@@ -11091,7 +11480,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 461.
+**Total required capability IDs:** 470.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

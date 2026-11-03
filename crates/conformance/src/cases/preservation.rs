@@ -1621,7 +1621,24 @@ pub fn run(id: &str) {
             // read: the stress families (Rust only), the verification of a
             // wide match through the whole pipeline, and the certification
             // of the corpora, which the other cases share.
-            let stress = std::thread::spawn(stress_estimates);
+            let stress = support::normative_host().then(|| std::thread::spawn(stress_estimates));
+            if stress.is_none() {
+                // The host matrix checks certificate construction and bounds
+                // on fixed small vectors; the complete scaling grid belongs
+                // to the normative host, as the bootstrap differentials do.
+                for (name, project) in [
+                    ("let chain 4", crate::stress::let_chain_default(4)),
+                    ("wide match 2", crate::stress::wide_match_default(2)),
+                ] {
+                    let certified = preservation::certificates(&project);
+                    assert!(!certified.is_empty(), "{name} certifies");
+                    for entry in &certified {
+                        assert_floor(name, entry);
+                        assert_bounds(name, entry);
+                    }
+                }
+                eprintln!("SP-02: fixed certificate vectors ran; full scaling and seeded stress families run on the normative host (§8.3)");
+            }
             let wide = support::lean_host_available().then(|| {
                 std::thread::spawn(|| {
                     support::verify_ok(&crate::stress::wide_match_default(180));
@@ -1769,13 +1786,15 @@ pub fn run(id: &str) {
                 error.to_string().contains("recursion limit exceeded"),
                 "{error}"
             );
-            let quadratic = stress
-                .join()
-                .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
-            assert!(
-                quadratic > 100_000,
-                "the record-copy family has a certificate B far beyond A and E, which is what B's own limit is for"
-            );
+            if let Some(stress) = stress {
+                let quadratic = stress
+                    .join()
+                    .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+                assert!(
+                    quadratic > 100_000,
+                    "the record-copy family has a certificate B far beyond A and E, which is what B's own limit is for"
+                );
+            }
             if !support::lean_backed("SP-02") {
                 return;
             }
@@ -2494,7 +2513,8 @@ pub fn run(id: &str) {
         "SP-07" => {
             // The compiler project is configured as the production example,
             // under its own name (§17.14): the same toolchain, lexicon
-            // source, and limits.
+            // source, and limits. The example's titles glossary names its
+            // own modules, so the compiler does not take it.
             let production = |file: &str| {
                 std::fs::read_to_string(
                     repo_root()
@@ -2511,6 +2531,10 @@ pub fn run(id: &str) {
             assert_eq!(
                 compiler("lexlean.toml"),
                 production("lexlean.toml")
+                    .replace(
+                        "[[lexicon_source]]\npackage = \"production.titles\"\nkind = \"path\"\npath = \"glossary/production.titles\"\n\n",
+                        ""
+                    )
                     .replace("name = \"production\"", "name = \"compiler\"")
                     .replace(
                         "module_prefix = \"Production\"",

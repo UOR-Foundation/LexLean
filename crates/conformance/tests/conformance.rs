@@ -2231,8 +2231,53 @@ fn conformance_bs_06() {
 }
 
 #[test]
+fn conformance_bs_07() {
+    repo_conformance::cases::run("BS-07");
+}
+
+#[test]
+fn conformance_bs_08() {
+    repo_conformance::cases::run("BS-08");
+}
+
+#[test]
 fn conformance_bs_09() {
     repo_conformance::cases::run("BS-09");
+}
+
+#[test]
+fn conformance_bs_10() {
+    repo_conformance::cases::run("BS-10");
+}
+
+#[test]
+fn conformance_bs_11() {
+    repo_conformance::cases::run("BS-11");
+}
+
+#[test]
+fn conformance_bs_12() {
+    repo_conformance::cases::run("BS-12");
+}
+
+#[test]
+fn conformance_bs_13() {
+    repo_conformance::cases::run("BS-13");
+}
+
+#[test]
+fn conformance_bs_14() {
+    repo_conformance::cases::run("BS-14");
+}
+
+#[test]
+fn conformance_bs_15() {
+    repo_conformance::cases::run("BS-15");
+}
+
+#[test]
+fn conformance_bs_20() {
+    repo_conformance::cases::run("BS-20");
 }
 
 #[test]
