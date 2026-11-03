@@ -3066,6 +3066,18 @@ fn release_gate_decisions() {
         Ok(()),
         "the evidence satisfies the release criterion"
     );
+    // A complete listing can exceed a pipe buffer as the workflow grows.
+    // Matching a required row must still consume the rest of the listing.
+    let mut large = green.clone();
+    large.extend(
+        (0..1500).map(|index| stamp(&format!("additional successful job {index}"), "success")),
+    );
+    let (code, _, stderr) = decide(&head, &[(head.as_str(), run_line("19"))], &large);
+    assert_eq!(code, 0, "a large complete gate is accepted: {stderr}");
+    large.push(stamp("a failed job after every required row", "failure"));
+    let (code, evidence, stderr) = decide(&head, &[(head.as_str(), run_line("20"))], &large);
+    assert_eq!(code, 1, "a late failed job is refused: {stderr}");
+    assert!(evidence.is_empty(), "a late failure writes no evidence");
     // The merge of a head whose tree it lands unchanged: the head's run.
     let (code, evidence, stderr) = decide(&merge_equal, &[(head.as_str(), run_line("12"))], &green);
     assert_eq!(

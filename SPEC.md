@@ -5412,8 +5412,12 @@ independent (1500, 3000, 7000, and 14000 trivial functions take 56, 101, 223,
 and 435 MB), before any limit of this section or of `max_ir_nodes` is reached;
 a chain of calls is the case above. And a semantic module is JSON read with the
 reader's recursion limit of 128 levels: a term nested deeper than that (a chain
-of 130 nested `let`s) is `LLT4001`, `invalid semantic-module JSON: recursion
-limit exceeded`, whatever `max_scope_depth` says; a chain of 100 is read.
+of 130 nested `let`s) is `LLT4001` for excessive JSON nesting, whatever
+`max_scope_depth` says; a chain of 100 is read.
+The `LLT4001` nesting diagnostic names the unchanged 128-level bound and
+recommends splitting long lists into smaller definitions joined by `prim append`.
+It locates the semantic-module body, not the nested term; it does not report
+coordinates in generated JSON as positions in the authored source.
 
 **Proof.** The proof follows the source term construct by construct through
 the library's compatibility lemmas. A recursive definition's relation is
@@ -7416,7 +7420,9 @@ survive `fmt`.
   exact inverses over every committed module (`AU-08`, `AU-13`).
 - **Failing closed (`AU-03`).** Every single-token deletion, duplication, and
   replacement of a committed module either fails with a registered code or links
-  to a module that decodes.
+  to a module that decodes. Readable terms and types nested beyond the
+  notation bound are refused with `LLP2001` at the offending token, including
+  when their closing delimiters are missing.
 - **Tooling modules (`AU-05`).** The same laws for a tooling module: read and
   written back equal for every committed one, rendering with a source map that
   names the notation, `fmt` the identity on the notation, and every
@@ -11074,7 +11080,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-09` | `semantic-ir` | Linked IR has stable schema-tagged canonical JSON with alpha-safe binder serialization. | §17.9 |
 | `SM-10` | `semantic-ir` | Source ID and semantic ID use exactly the specified framed hash inputs. | §21.3, §21.4 |
 | `SM-11` | `semantic-ir` | Linked project result sets contain every selected module and imported module exactly once in stable order. | §17.5, §23.3 |
-| `SM-12` | `semantic-ir` | No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. | §6 I4, §17 |
+| `SM-12` | `semantic-ir` | No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. Semantic modules retain the 128-level JSON nesting limit and an over-deep list is refused with LLT4001 naming smaller definitions joined by prim append as the remedy. | §6 I4, §17 |
 | `SM-13` | `semantic-ir` | Inherited section parameters are represented explicitly and emitted only on declarations that use them. | §17.5, §18.3 |
 | `SM-14` | `semantic-ir` | A numeral without a unique expected type is rejected rather than defaulted. | §15.5 |
 | `SM-15` | `semantic-ir` | A native core module is closed typed DAG data shared by both backends, carries explicit declaration policies, and accepts no backend source text. | §17.10 |
@@ -11397,7 +11403,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `TL-11` | `tooling` | Tooling modules are deterministic and content-addressed: each committed fixture's published build tree equals its golden byte for byte and across two clean builds in different directories, changing any declaration, registry row, source pin, or term changes the semantic ID, and the schema lies outside `schemas/` and so outside the compiler-semantics ID, which the committed locks of the three languages still record. | §17.20, §21.2, §28.3, §28.4 |
 | `AU-01` | `authoring` | Every value of the closed semantic-module schema has one notation and the notation reads back to the value: every alternative of the declaration, term, type, and proof unions, with and without its optional members, is written and read back equal, a node that no readable form carries exactly is written generically, the notation is its own canonical form, and every committed semantic module is written and read back equal to its data. | §17.21 |
 | `AU-02` | `authoring` | A language-1.2 semantic module written in the authoring notation builds, with source maps that relate each declaration to its text in the notation; fmt leaves the notation unchanged and restores its canonical layout from another layout, and the notation under language 1.1 is refused with LLP2003; its data form is not a language-1.2 source (AU-13). | §17.21 |
-| `AU-03` | `authoring` | Malformed notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a literal that is not canonical, an unknown kind, and every single-token deletion, duplication, and replacement of a committed module fail with a registered code at a position in the notation or link to a module that decodes, and a numeral with a redundant leading zero is LLL1003 outside a string and is not one inside it. | §17.21 |
+| `AU-03` | `authoring` | Malformed notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a literal that is not canonical, an unknown kind, a readable term or type nested beyond the notation bound, and every single-token deletion, duplication, and replacement of a committed module fail with a registered code at a position in the notation or link to a module that decodes, and a numeral with a redundant leading zero is LLL1003 outside a string and is not one inside it. | §17.21 |
 | `AU-04` | `authoring` | No language-1.2 source of the product is written as data: every committed language-1.2 source with a semantic, tooling, or core module, in the compiler, the language libraries, the examples, and the positive fixtures, is written in the authoring notation and is canonical, the data form remains only under language 1.0 and 1.1 and in refused fixtures whose payload the notation cannot spell, and a refused fixture whose payload the notation can spell is a defect. | §17.21 |
 | `AU-05` | `authoring` | A language-1.2 tooling module written in the authoring notation renders, with source maps that relate each declaration to its text in the notation; the notation and the canonical JSON of every committed tooling module are in bijection and the notation is its own canonical form; fmt leaves the notation unchanged; and malformed notation, and every single-token deletion and duplication of a committed tooling module, fails with a position or decodes, and nothing panics. | §17.20, §17.21 |
 | `AU-06` | `authoring` | The compiler-semantics ID does not depend on the form a module of the embedded tree is written in: a semantic, tooling, or core module in the authoring notation contributes its data form, so the committed tree and the same tree with every such module written as data have one ID, a change to a module's meaning changes the ID in either form, the identity a preservation record states for the native library is over the same data forms, so it is the committed one, and the embedded tree holds at least one module written in the notation. | §17.21, §21.2 |

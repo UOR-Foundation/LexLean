@@ -13,7 +13,7 @@ Feature: authoring
     Then each builds, the source maps relate each declaration to its text in the notation, fmt leaves the notation unchanged and restores the layout, and language 1.1 refuses it
 
   @AU-03 @build
-  Scenario: Malformed notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a literal that is not canonical, an unknown kind, and every single-token deletion, duplication, and replacement of a committed module fail with a registered code at a position in the notation or link to a module that decodes, and a numeral with a redundant leading zero is LLL1003 outside a string and is not one inside it.
+  Scenario: Malformed notation fails closed and never panics: an unclosed delimiter, a keyword used as a name, a literal that is not canonical, an unknown kind, a readable term or type nested beyond the notation bound, and every single-token deletion, duplication, and replacement of a committed module fail with a registered code at a position in the notation or link to a module that decodes, and a numeral with a redundant leading zero is LLL1003 outside a string and is not one inside it.
     Given a committed language-1.2 module in the notation
     When it is malformed in each way named, and each of its tokens is deleted, duplicated, and replaced in turn, and numerals with a redundant leading zero are written outside and inside a string
     Then each is refused with a registered code at a position or links to a module that decodes, nothing panics, and only the numeral outside a string is LLL1003
