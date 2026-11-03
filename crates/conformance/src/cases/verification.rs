@@ -46,7 +46,12 @@ pub(crate) fn run(id: &str) {
         return;
     }
     match id {
-        "VR-28" => binding_record_round_trip(),
+        "VR-28" => {
+            binding_record_round_trip();
+            if support::lean_backed(id) {
+                kernel_false_replay_regression();
+            }
+        }
         // §22.1: every stage runs; no suppression option exists.
         "VR-01" => {
             let fixture = support::verified();
@@ -1433,21 +1438,23 @@ fn replay_binding_guard_plants(mut compile: lexlean::verify::child::ChildRecord)
     };
     check(&[compile.clone(), replay.clone()], &staged).expect("same module and complete bytes");
     let certificates = [module.clone()].into_iter().collect();
+    check_replay_bindings(&[compile.clone(), replay.clone()], &staged, &certificates)
+        .expect("certificate tail binds staged artifacts before scratch cleanup");
     check_replay_bindings(
         &[compile.clone(), replay.clone()],
-        &staged,
+        &BTreeMap::new(),
         &certificates,
     )
-    .expect("certificate tail binds staged artifacts before scratch cleanup");
-    check_replay_bindings(&[compile.clone(), replay.clone()], &BTreeMap::new(), &certificates)
-        .expect_err("a certificate without its staged tuple refuses publication");
+    .expect_err("a certificate without its staged tuple refuses publication");
     let refuse = |records: &[lexlean::verify::child::ChildRecord], published: &BTreeMap<_, _>| {
         let error = check(records, published).expect_err("a binding hole refuses publication");
         assert_eq!(error.code.as_str(), "LLI9001");
     };
     refuse(&[], &staged);
     let mut unflagged = compile.clone();
-    unflagged.argv.retain(|arg| arg != "-D" && arg != "debug.skipKernelTC=true");
+    unflagged
+        .argv
+        .retain(|arg| arg != "-D" && arg != "debug.skipKernelTC=true");
     refuse(&[unflagged, replay.clone()], &staged);
     check_replay_bindings(&[], &BTreeMap::new(), &certificates)
         .expect_err("dropping the complete certificate tail refuses publication");
@@ -1515,4 +1522,167 @@ fn replay_binding_guard_plants(mut compile: lexlean::verify::child::ChildRecord)
     let mut orphan = compile.clone();
     orphan.olean.as_mut().expect("bound").server = None;
     refuse(&[orphan, replay], &staged);
+}
+
+/// Exercise ordinary `Lean.addDecl`, rather than a source elaboration error.
+/// The source is test-only and never receives a generated-source exemption.
+fn kernel_false_replay_regression() {
+    use lexlean::verify::child::{self, ChildHome, ChildSpec, Normalizer};
+    use lexlean::verify::{leanchecker, toolchain};
+    let project = P::example();
+    project.relock();
+    let limits = support::limits_of(&project);
+    let guard = support::env_shared();
+    let tools = toolchain::preflight(&limits).expect("real pinned toolchain");
+    let scratch = project.root.join("kernel-false");
+    std::fs::create_dir_all(&scratch).expect("scratch");
+    let source = scratch.join("VR28KernelFalse.lean");
+    // No module header: keep theorem bodies. forceExpose also explicitly
+    // retains this ordinary addDecl theorem's body for the real checker.
+    let witness = r#"import Lean
+run_elab do
+  Lean.addDecl (.thmDecl { name := `VR28KernelFalse.bad, levelParams := [], type := Lean.mkConst ``False, value := Lean.mkConst ``True.intro }) true
+"#;
+    std::fs::write(&source, witness).expect("witness source");
+    let main = scratch.join("VR28KernelFalse.olean");
+    let normalizer = Normalizer::new(&scratch, &project.root, &project.root, &tools.root);
+    let bin = tools.root.join("bin");
+    let compile = |skip: bool| {
+        let mut argv = vec!["env".to_owned(), tools.lean.path.to_string()];
+        if skip {
+            argv.push("-Ddebug.skipKernelTC=true".to_owned());
+        }
+        argv.extend(["-o".to_owned(), main.to_string(), source.to_string()]);
+        child::run(
+            &ChildSpec {
+                tool: "lean",
+                module: Some("VR28KernelFalse".to_owned()),
+                program: &tools.lake.path,
+                executable_sha256: tools.lean.sha256,
+                argv,
+                cwd: &project.root,
+                extra_env: Vec::new(),
+                home: ChildHome::Toolchain {
+                    toolchain_bin: &bin,
+                },
+            },
+            &limits,
+            &normalizer,
+        )
+        .expect("bounded real Lean")
+    };
+    let checked = compile(false);
+    assert_ne!(
+        checked.exit_code, 0,
+        "the ordinary kernel rejects False with True.intro"
+    );
+    let skipped = compile(true);
+    assert_eq!(
+        skipped.exit_code, 0,
+        "the skip flag must produce the actual bad artifact: {}{}",
+        skipped.stdout, skipped.stderr
+    );
+    assert!(skipped
+        .argv
+        .iter()
+        .any(|arg| arg == "-Ddebug.skipKernelTC=true"));
+    let actual = leanchecker::capture_olean_parts(&main).expect("actual complete tuple");
+    let replay = leanchecker::run_bound_leanchecker(
+        &tools,
+        "VR28KernelFalse",
+        scratch.as_str(),
+        &project.root,
+        &limits,
+        &normalizer,
+        leanchecker::ReplayInput {
+            search_path: std::slice::from_ref(&scratch),
+            staged: &main,
+        },
+    )
+    .expect("real pinned checker ran");
+    assert_ne!(
+        replay.exit_code, 0,
+        "the real kernel checker must reject that artifact"
+    );
+    let rejection = format!("{}{}", replay.stdout, replay.stderr);
+    assert!(
+        rejection.contains("VR28KernelFalse.bad"),
+        "the checker rejects the planted declaration, rather than missing its input: {rejection}"
+    );
+    assert_eq!(replay.executable_sha256, tools.leanchecker.sha256);
+    assert_eq!(replay.olean, Some(actual));
+    assert_eq!(replay.argv[2], "VR28KernelFalse");
+    drop(guard);
+
+    if !support::posix_shell_backed("VR-28") {
+        return;
+    }
+    // Reuse the existing test wrapper transport, changing only lake. Both
+    // Lean and leanchecker remain symlinks to the real pinned executables.
+    let quote = |value: &str| format!("'{}'", value.replace('\'', "'\\''"));
+    let flag_seen = scratch.join("flag-seen");
+    let compile_status = scratch.join("compile-status");
+    let checker_seen = scratch.join("checker-seen");
+    let script = format!(
+        r#"#!/bin/sh
+real={real_lake}
+if [ "$1" = env ] && [ "$2" = lean ]; then
+  for argument in "$@"; do
+    case "$argument" in
+      */lean-src/LexLeanExample/Main.lean)
+        case " $* " in
+          *" -Ddebug.skipKernelTC=true "*) printf '%s\n' yes > {flag_seen} ;;
+          *) exit 97 ;;
+        esac
+        cat {source} > "$argument"
+        "$real" "$@"
+        status=$?
+        printf '%s\n' "$status" > {compile_status}
+        exit "$status"
+        ;;
+    esac
+  done
+fi
+if [ "$1" = env ] && [ "$3" = LexLeanExample.Main ]; then
+  case "$2" in */leanchecker) printf '%s\n' "$2" > {checker_seen} ;; esac
+fi
+exec "$real" "$@"
+"#,
+        real_lake = quote(tools.lake.path.as_str()),
+        flag_seen = quote(flag_seen.as_str()),
+        source = quote(source.as_str()),
+        compile_status = quote(compile_status.as_str()),
+        checker_seen = quote(checker_seen.as_str())
+    );
+    let wrapped = support::fake_toolchain(&[("lake", &script)]);
+    let wrapped_home = wrapped.path().to_str().expect("utf8 fake home");
+    support::with_env(&[("ELAN_HOME", Some(wrapped_home))], || {
+        let rejected = project.verify_fails_with("LLV7003");
+        assert!(
+            format!("{rejected}").contains("VR28KernelFalse.bad"),
+            "the pipeline rejects the actual planted declaration: {rejected}"
+        );
+        assert_eq!(
+            std::fs::read_to_string(&flag_seen)
+                .expect("eligible flag seen")
+                .trim(),
+            "yes"
+        );
+        assert_eq!(
+            std::fs::read_to_string(&compile_status)
+                .expect("real Lean compiled bad artifact")
+                .trim(),
+            "0"
+        );
+        let checker =
+            std::fs::read_to_string(&checker_seen).expect("actual pipeline invoked checker");
+        assert_eq!(
+            std::fs::canonicalize(checker.trim()).expect("checker path"),
+            std::fs::canonicalize(tools.leanchecker.path.as_std_path()).expect("real checker")
+        );
+        assert!(
+            support::file_set(&project.root.join(".lexlean/verified")).is_empty(),
+            "kernel-false artifact publishes nothing"
+        );
+    });
 }

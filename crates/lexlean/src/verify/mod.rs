@@ -2843,16 +2843,23 @@ pub fn run_part(
     let mut staged_artifacts = BTreeMap::new();
     for module in &build.modules {
         let main = olean_root.join(format!("{}.olean", module.lean_module.replace('.', "/")));
-        staged_artifacts.insert(module.lean_module.clone(), leanchecker::capture_olean_parts(&main).map_err(fail)?);
+        staged_artifacts.insert(
+            module.lean_module.clone(),
+            leanchecker::capture_olean_parts(&main).map_err(fail)?,
+        );
     }
     for (module, main) in &certificate_artifacts {
-        staged_artifacts.insert(module.clone(), leanchecker::capture_olean_parts(main).map_err(fail)?);
+        staged_artifacts.insert(
+            module.clone(),
+            leanchecker::capture_olean_parts(main).map_err(fail)?,
+        );
     }
     leanchecker::check_replay_bindings(
         &process_records,
         &staged_artifacts,
         &certificate_artifacts.keys().cloned().collect(),
-    ).map_err(fail)?;
+    )
+    .map_err(fail)?;
 
     // Stage 14: no unexpected absolute paths in successful output (§22.7),
     // over every process record.

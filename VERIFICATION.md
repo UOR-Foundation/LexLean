@@ -12537,3 +12537,51 @@ certificate tail, removed flag, shard replay-record substitution/removal,
 and a companion replaced after import. These edits have not been compiled
 or executed while the Host writer owns the shared phase lock. No measurement,
 full acceptance, publication, or regenerated product identity is claimed.
+
+VR-28's next unexecuted regression source now exercises a real kernel-false
+artifact. A scratch Lean file uses ordinary `Lean.addDecl` with a theorem
+whose type is `False` and value is `True.intro`, retaining its body through
+`forceExpose`; it contains no module header. The same source must fail the
+unflagged compile and pass the flagged compile. The bounded runner captures
+the actual companion tuple, then the real pinned checker must reject that
+artifact and name its planted declaration. This uses neither an unchecked
+API nor a production source-audit allowance.
+
+The pipeline plant reuses the existing test toolchain wrapper mechanism,
+replacing only Lake's test wrapper. After source audit it substitutes that
+scratch source into the eligible project compilation, delegates to real
+Lean, and requires the real compile to exit zero with the skip flag present.
+It records the actual checker invocation, requires its path to resolve to
+the real pinned checker, and expects LLV7003 naming the planted declaration
+with no verified publication. Existing Lean-backed and POSIX host helpers
+remain unchanged. This new regression source has not yet been compiled or
+executed while the Host writer owns the shared lock.
+
+The admitted focused phase then executed these source changes. All three
+partition units passed, including the actual shard round-trip binding and
+missing/substituted replay or changed companion refusal plants. Correct-root
+exact VR-28 passed in 5.53 seconds. Its direct witness assertions establish
+unflagged kernel refusal, flagged real-Lean compilation success, capture of
+the produced main/server/private tuple, and real pinned-checker refusal naming
+`VR28KernelFalse.bad`. The pipeline assertions establish a flagged real-Lean
+compile exit of zero, invocation of the real pinned checker, LLV7003 naming
+the planted declaration, and no verified publication after post-audit
+substitution. The test wrapper uses the already preflighted, quoted Lake
+path and the existing POSIX-backed host gate; no production audit exemption,
+fake checker, or helper bypass was introduced.
+
+The first real attempt exposed a test-source monad error: `run_elab` expects
+`TermElabM`, while the explicit command-elaborator lift returned
+`CommandElabM`. The corrected witness uses ordinary `run_elab do` and the
+standard lift of `Lean.addDecl`; the theorem and its expected outcomes were
+unchanged. Clippy also required a borrowed singleton slice instead of a
+clone. After those ordinary fixes, focused lexlean/repo-conformance Clippy
+with warnings denied, formatting, and diff checks passed. The shared phase
+lock was released before the Host writer resumed; frozen Host binaries were
+untouched. Existing model-helper provenance was already this worktree;
+an unnecessary small package-only rebuild in this phase added no evidence
+and is not a repeated validation requirement. No committed example lock,
+product identity, or generated artifact changed. Positive production
+certificate acceptance and diagnostic fixtures, shard/join width invariance,
+controlled measurements, coordinated identities/artifacts, and the full gate
+remain required; these focused results are not complete VR-28 acceptance.

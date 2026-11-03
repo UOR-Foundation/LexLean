@@ -158,12 +158,16 @@ pub fn check_replay_bindings(
     }
     for certificate in certificates {
         if !staged_artifacts.contains_key(certificate) {
-            return Err(hole(format!("`{certificate}` has no staged certificate artifacts")));
+            return Err(hole(format!(
+                "`{certificate}` has no staged certificate artifacts"
+            )));
         }
     }
     for expected in staged_artifacts.keys().chain(certificates) {
         if !compiled.contains(expected.as_str()) {
-            return Err(hole(format!("`{expected}` has no flagged compilation record")));
+            return Err(hole(format!(
+                "`{expected}` has no flagged compilation record"
+            )));
         }
     }
     Ok(())

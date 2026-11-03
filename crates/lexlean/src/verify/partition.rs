@@ -520,7 +520,11 @@ mod tests {
         let record = ChildRecord {
             tool: "lean".to_owned(),
             module: Some("X.M".to_owned()),
-            argv: vec!["env".to_owned(), "lean".to_owned(), "-Ddebug.skipKernelTC=true".to_owned()],
+            argv: vec![
+                "env".to_owned(),
+                "lean".to_owned(),
+                "-Ddebug.skipKernelTC=true".to_owned(),
+            ],
             exit_code: 0,
             stdout: "\n".to_owned(),
             stderr: String::new(),
@@ -539,7 +543,11 @@ mod tests {
         };
         let replay_record = ChildRecord {
             tool: "leanchecker".to_owned(),
-            argv: vec!["env".to_owned(), "$TOOLCHAIN/bin/leanchecker".to_owned(), "X.M".to_owned()],
+            argv: vec![
+                "env".to_owned(),
+                "$TOOLCHAIN/bin/leanchecker".to_owned(),
+                "X.M".to_owned(),
+            ],
             executable_sha256: crate::artifact::content_id::Sha256Digest::of(b"another lean"),
             ..record.clone()
         };
@@ -600,16 +608,51 @@ mod tests {
         );
         // The publication guard consumes the actual shard transport, not a
         // second association format. Substitution after transport is refused.
-        let staged = [("X.M".to_owned(), crate::verify::leanchecker::capture_olean_parts(&olean_root.join("X/M.olean")).expect("parts"))].into_iter().collect();
-        let joined = [imported.lean["X.M"].clone(), imported.leanchecker["X.M"].clone()];
-        crate::verify::leanchecker::check_replay_bindings(&joined, &staged, &BTreeSet::new()).expect("joined binding");
+        let staged = [(
+            "X.M".to_owned(),
+            crate::verify::leanchecker::capture_olean_parts(&olean_root.join("X/M.olean"))
+                .expect("parts"),
+        )]
+        .into_iter()
+        .collect();
+        let joined = [
+            imported.lean["X.M"].clone(),
+            imported.leanchecker["X.M"].clone(),
+        ];
+        crate::verify::leanchecker::check_replay_bindings(&joined, &staged, &BTreeSet::new())
+            .expect("joined binding");
         let mut changed = joined.clone();
         changed[1].olean.as_mut().expect("bound").private = None;
-        assert!(crate::verify::leanchecker::check_replay_bindings(&changed, &staged, &BTreeSet::new()).is_err());
-        assert!(crate::verify::leanchecker::check_replay_bindings(&joined[..1], &staged, &BTreeSet::new()).is_err());
-        std::fs::write(olean_root.join("X/M.olean.server"), b"replaced after import").expect("replace");
-        let replaced = [("X.M".to_owned(), crate::verify::leanchecker::capture_olean_parts(&olean_root.join("X/M.olean")).expect("parts"))].into_iter().collect();
-        assert!(crate::verify::leanchecker::check_replay_bindings(&joined, &replaced, &BTreeSet::new()).is_err());
+        assert!(crate::verify::leanchecker::check_replay_bindings(
+            &changed,
+            &staged,
+            &BTreeSet::new()
+        )
+        .is_err());
+        assert!(crate::verify::leanchecker::check_replay_bindings(
+            &joined[..1],
+            &staged,
+            &BTreeSet::new()
+        )
+        .is_err());
+        std::fs::write(
+            olean_root.join("X/M.olean.server"),
+            b"replaced after import",
+        )
+        .expect("replace");
+        let replaced = [(
+            "X.M".to_owned(),
+            crate::verify::leanchecker::capture_olean_parts(&olean_root.join("X/M.olean"))
+                .expect("parts"),
+        )]
+        .into_iter()
+        .collect();
+        assert!(crate::verify::leanchecker::check_replay_bindings(
+            &joined,
+            &replaced,
+            &BTreeSet::new()
+        )
+        .is_err());
         // The same part imported twice is a process that ran twice.
         let again = import(&[output.clone(), output.clone()], &olean_root, false);
         assert!(again.is_err(), "a duplicate olean is refused");
