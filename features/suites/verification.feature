@@ -81,6 +81,8 @@ Feature: verification
     And the em fixture verified under \allowaxioms{Classical.choice;Quot.sound;propext} records the sorted observed set Classical.choice, Quot.sound, propext
     And the same em fixture under \allowaxioms{Classical.choice} fails with LLV7005 naming the excess propext and Quot.sound
     And an exact policy passes only when the observed set matches and fails with LLV7005 on any mismatch
+    And three wrong language-1.2 declaration policies report all three LLV7005 diagnostics in source order in JSON output
+    And each policy diagnostic names its declaration source span and no verified artifact is published
 
   @VR-12 @build
   Scenario: Child process output is normalized with the exact path and line rules before hashing.

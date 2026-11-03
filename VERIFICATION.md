@@ -12274,3 +12274,37 @@ draws up to a fixed count. `BS-05`, `BS-06`, `BS-08` and `BS-15` read only manif
 and fixtures. The three failing cases assert the count before their plants, so that
 run did not reach the plants on the new draws. A package that adds records should
 set these counts with its records in the tree, on the same commit.
+
+## Policy failures are collected before publication (`VR-11`, #377)
+
+A language-1.2 module with two `join` definitions missing `propext` and a
+`utf8_decode` definition understating its exact policy previously reported
+only the first `LLV7005`, at `lexlean.toml:1:1`. Stage 11 now collects the
+six policy-check sites and returns the existing canonically sorted failure
+before extraction or publication. Missing audit records and process/internal
+failures remain immediate. Semantic declaration anchors reuse the renderer's
+notation/data source-range readers while the normalized sources are present.
+
+`VR-11` reuses its existing register row and adds this three-declaration
+fixture, checking the actual JSON command, source slices and absence
+of verified output. The regression deliberately performs one verification;
+the generic diagnostic formatter and limiter are unchanged.
+
+On Linux x86-64 with Lean 4.32.1 from the configured `ELAN_HOME`, direct CLI
+runs reported all three diagnostics at `src/Main.lex.tex` lines 5, 13 and 21,
+in both output formats (human run: 6.85 s). A one-off configuration with
+`max_diagnostics = 1` retained the first violation and reported `LLS8002`,
+configured 1, observed 3 (7.48 s); keeping only the third declaration gave
+one `LLV7005` at its source declaration (7.17 s). None published an
+attestation. The pre-fix CLI output contained only the first diagnostic.
+
+The focused renderer/runtime compiler-semantics fingerprint tests pass (two
+tests), and `conformance_rp_10` passes its embedded/disk identity and lock
+checks (6.33 s). All-target/all-feature checks and Clippy with warnings denied
+pass for `lexlean` and `repo-conformance`. This changes no embedded normative
+file or fingerprinted renderer
+source, so no compiler-semantics pin or artifact regeneration is needed.
+The full Lean-backed `VR-11` case was not run here: its host helper requires
+the toolchain under `HOME/.elan`, whereas this environment installs it under
+`/workspace/.setup/elan`; the direct CLI evidence above uses that installation
+without changing the host helper or home directory.
