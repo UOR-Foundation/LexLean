@@ -28,7 +28,6 @@ use crate::production_export as harness;
 use crate::support::{self, repo_root};
 
 const MODULE: &str = "LexLeanBoot.SurfaceGeneric";
-const SOURCE: &str = "bootstrap/src/SurfaceGeneric.lex.tex";
 const JSON_SOURCE: &str = "stdlib/src/Json.lex.tex";
 const ROOTS: [(&str, &[&str]); 2] = [
     ("parseGeneric", &["allocation", "overflow"]),
