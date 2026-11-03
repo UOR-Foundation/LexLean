@@ -10744,6 +10744,41 @@ ended at the start of the rustc stage with the host's 16 GB virtual machine
 reset, and the run with the bound passed that stage in 67 s. A library beyond the evaluator's bound now reaches rustc as
 its first 4,096 bytes, held to the recipe, as the shaped inputs do.
 
+`SL-11` holds `LexLeanStd.Json` (#276, member 3) to the compiler's own writer,
+`canonical_json::Json::to_canonical_string` and `to_file_bytes`: the three
+roots `writeJson`, `writeJsonFile`, and `escapeString` under the evaluator
+agree with it byte for byte on a seeded corpus of trees whose keys repeat, are
+prefixes of one another, and hold multibyte and control characters, and the
+rendered `rust-std` packages under the pinned rustc agree on a larger one.
+The oracle's object is a `BTreeMap`, so of a repeated key the last insertion
+stays; the module reaches the same by sorting the members stably and keeping
+the last of a run of equal keys. The plant, made by the case itself on a copy
+of the project on every run, keeps the first (`keepLast` returns `kept` where
+it returns `cons entry rest`):
+
+```text
+the planted writer disagrees on 24 of 300 runs, the first: run 11 on [Adt { constructor: 4, fields: [Adt { constructor: 7, fields: [Bytes { hex: "6b" }, … 1 …
+{"hex":"7b226a223a332c226b223a317d","kind":"bytes"} != {"hex":"7b226a223a332c226b223a347d","kind":"bytes"}
+```
+
+`7b226a223a332c226b223a317d` is `{"j":3,"k":1}` and
+`7b226a223a332c226b223a347d` is `{"j":3,"k":4}`: the tree `k:1, k:2, j:3, k:4`
+as the members were given. The plant still orders every key and escapes every
+byte, so the same writer agrees with the oracle on every tree in which no
+object repeats a key, which the case asserts; only a repeated key catches it.
+
+Removed: the plants are made on copies; the source was not changed.
+Validated on `member2-order` + this member: `check`, `build`, and `fmt --check`
+clean; the eligibility report has all three roots eligible for `rust-std` with
+exactly their declared effects (`escapeString` `[allocation, overflow]`,
+`writeJson` and `writeJsonFile` `[allocation, overflow, recursion]`);
+`conformance_sl_11` passes through the plant, 8.6 s, with the committed-exports
+check of `stack_bounds::observe` and the Lean export bypassed on this host
+(neither the three packages nor their stack-bound rows exist before the wave
+writes them); `cargo clippy -p repo-conformance -p xtask --all-targets
+--all-features -D warnings`, `validate-model` (461 ids), `validate-spec-links`
+(461 rows), `check-test-inventory`, and the five `bdd` meta-gate tests pass.
+
 ### the structural grammar is source and agrees with the oracle (BS-21)
 
 `BS-21` holds `LexLeanBoot.StructuralGrammar.parseModule`
@@ -10844,6 +10879,38 @@ The case has not run. It has not been compiled either, and `lexlean verify` has
 not been run on the module. It owes its first run, to pin the counts of its
 corpora, and the landing regeneration, which produces the `bootstrap/render_doc`
 package.
+
+### the generic notation is source and agrees with the oracle (BS-24)
+
+`BS-24` holds the two production roots of `LexLeanBoot.SurfaceGeneric`
+(`bootstrap/src/SurfaceGeneric.lex.tex`), `parseGeneric` and `printGeneric`, to
+`surface::generic::parse` and `surface::generic::print`, over the standard
+library's `Json` (`SL-11`, `SL-12`). It composes the lexer of `BS-22` and the
+layout algebra of `BS-23`. `parseGeneric` reads the tokens with an explicit stack
+of frames and admits no `recursion`; `printGeneric` walks the value by structural
+recursion over the three cases of `Json` and admits `recursion`. The case has the
+shape of its predecessors: hand-built texts that reach each error of the reader
+and the limit on nesting at 256 and 257, hand-built values of every kind and
+every key the printer orders, the committed JSON files printed and their printed
+texts read back, and seeded values and seeded edits. Each planted defect names the
+one vector that catches it, and the case asserts that the site of each plant
+occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceGeneric`: `lexlean check` and `lexlean build`
+pass, and the eligibility report gives `parseGeneric` exactly `allocation` and
+`overflow` and `printGeneric` exactly `allocation`, `overflow`, and `recursion`.
+On the project the lock is current and every module checks. The register agrees
+with the §31 table on 476 IDs, by the same parse `validate-spec-links` makes.
+
+The case has not run. It has not been compiled either, and `lexlean verify` has
+not been run on the module. `printGeneric` admits `recursion`, so
+`bootstrap/print_generic` owes a measured row in `tests/stack-bounds.json`
+(`PD-08`), which the case reads before it passes; the measurement is one of the
+heavy jobs the case owes, with its first run, to pin the counts of its corpora,
+and the landing regeneration, which produces the `bootstrap/parse_generic` and
+`bootstrap/print_generic` packages. The branch is stacked on `BS-22`, `BS-23`, and
+the standard library members `SL-11`, `SL-12`, and `SL-14`, and lands after them.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
@@ -12375,3 +12442,136 @@ draws up to a fixed count. `BS-05`, `BS-06`, `BS-08` and `BS-15` read only manif
 and fixtures. The three failing cases assert the count before their plants, so that
 run did not reach the plants on the new draws. A package that adds records should
 set these counts with its records in the tree, on the same commit.
+
+### Host-matrix cost and coverage (#235)
+
+The successful Intel macOS job 125390659100 of run 41478333299 at
+`afe1a002` ran from 2026-11-02 16:09:07 to 18:33:00 UTC (144 minutes).
+Its 468 conformance tests took 7,470.84 seconds. The last three cases were
+SP-02 (about 42 minutes), TC-03 (about 21 minutes) and TC-05 (about 18
+minutes), inferred from their 60-second notices and completion timestamps.
+
+SP-02 now runs its complete scaling grid, mixed-shape searches and seeded
+stress families only on the normative Linux x86-64 host. Every host retains
+the committed-corpus certificate bounds, negative limits and fixed let-chain
+and wide-match vectors. TC-03 keeps its committed fixture and generated
+module assertions on every host; its seeded argument/fuel sweep, with the
+same seed, fuel schedule and greater-than-10,000-run assertion, runs on the
+normative host. Each non-normative case reports the split. TC-03 and TC-05 render and parse their two shared fixture modules once,
+then check declaration membership through a set, retaining every assertion.
+
+The full normative coverage is unchanged. No cache, cross-run evidence,
+additional macOS shard, or acceptance recipe is introduced. The post-change
+Intel runtime must be measured from the PR's full gate before #235 is
+considered closed; no speedup is inferred from this host or from a timeout.
+
+Focused local validation on Linux x86-64: `validate-model` (468 IDs and 86
+codes), `validate-spec-links`, the five BDD meta-gate tests, formatting, and
+workspace/all-target/all-feature Clippy with warnings denied pass. The
+isolated `conformance_tc_05` reached its Lean-host check after all template
+and declaration-membership assertions in 4.53 seconds, then failed because
+this environment installs Lean under `ELAN_HOME` while the conformance
+helper requires `$HOME/.elan`. That is a blocked Lean-backed test, not a
+pass or an Intel timing measurement. The full normative cases and actual
+non-normative host paths remain for CI; neither helper nor home was changed.
+
+## The canonical LaTeX of a tooling module is language-1.2 source (`BS-20`, #270)
+
+`bootstrap/src/ToolingAst.lex.tex` holds the closed schema of the tooling module
+as data, and `bootstrap/src/ToolingLatex.lex.tex` the production root
+`renderToolingLatex` (68 definitions, generated from the oracle's rules and not
+written by hand), held to `backend::tooling::latex_text`, the text
+`render_latex` emits (the function was split so that the case and the backend
+share one text). The case is `conformance_bs_20`
+(`crates/conformance/src/cases/bootstrap/tooling_latex.rs`); its first commit
+was the failing test (R3), `no bootstrap case is wired for BS-20`.
+
+What ran, on the normative host (Ubuntu under WSL, Rust 1.97.1, Lean 4.32.1):
+
+| Step | Observed |
+| --- | --- |
+| the two modules check and are kernel-verified | `lexlean check` (12 modules) and `lexlean verify` (4 modules) passed |
+| the root is eligible for `rust-std` with `allocation`, `overflow`, `recursion` | passed |
+| the oracle's text is the committed LaTeX of the three tooling modules | passed |
+| the 264 vectors (3 committed modules, 85 targeted, 88 refused by the oracle) | the rustc leg agrees on all 264, and so does the evaluator |
+| 180 evaluator mutant runs (seed `0x0B55_0020`) | agree |
+| 600 rustc mutant runs (seed `0x0B55_0021`) | agree |
+| the 17 planted defects | each detected, at the vector given below |
+| the committed package is the exported one | passed; `check-production-export --write` regenerated all 14 packages in about 45 minutes, and the root's stack row is 3,342,336 bytes (debug) |
+
+The case takes about 78 minutes in all on this host (the legs 58 minutes, the
+plants and the export comparison the rest).
+
+The planted defects and the first vector (by position) that detects each:
+
+| Plant | Vector |
+| --- | --- |
+| a backslash is escaped as a bare command | 36 |
+| a brace is not escaped | 0 |
+| a tilde loses its empty group | 45 |
+| a caret loses its empty group | 48 |
+| an ampersand is not escaped | 51 |
+| the hexadecimal of a non-ASCII scalar is in lower case | 0 |
+| the hexadecimal of a scalar has three digits at least | 0 |
+| a character is quoted as a bare quote | 96 |
+| an application of a registered call is not explicit | 135 |
+| an implicit binder is bracketed as an explicit one | 0 |
+| an instance binder is bracketed as an explicit one | 0 |
+| a named type argument has no space before its value | 0 |
+| the body of a function is indented by one space | 0 |
+| a function line keeps the newlines of its body | 0 |
+| a public function is not marked public | 0 |
+| the visibility line swaps public and private | 0 |
+| a trimmed line loses one byte of its trailing white space | 153 |
+
+Three plants escaped the first full run and were fixed in the corpus, not in the
+module. A tilde, a caret and an ampersand reached no vector because no token
+carried them (tokens with `~`, `a^b`, `&` were added). A plant that removed the
+newline after a function body is an equivalent mutant (the oracle's `trim_end`
+removes it either way) and was replaced by one that keeps the newlines of a
+function line. The trim plant needed a line that ends in white space of two or
+three bytes; a name cannot (the checker requires a Lean identifier), so the
+vectors end a command in a token such as `x` followed by U+00A0, U+2003, U+0085 or
+U+3000, which the invocation of the command then ends with. The explicit
+application needed a signature that applies a constant to arguments; the vectors
+wrap a constant of a signature in an application of itself, and the checker
+accepts 20 of the modules that result.
+
+*The compiler's rejection found while writing the module.* The first full
+verification of the project failed certificate A (`LLV7013`,
+`__rel_81`, `application type mismatch`) on a recursive definition whose
+top-level `match` has an arm with binders it does not use and a body that is a
+bare parameter (`| TyConst d0 d1 => out`). The same shape with a constant body
+(`false`, `0`) is accepted, and `explicitApp` and `sigLength` rely on it. The
+module avoids the shape (`putNamed` recurses on the list of names and takes the
+type chain apart in `consSplit`); the rejection is not minimised and not filed.
+
+*What remains of #270.* The Lean backend and the verification driver are
+separate rows. The tooling module reaches this root as already-decoded data; a
+decoder from the JSON of a tooling module to `ToolingAst` that does not use
+serde is not written (the case builds its inputs with `serde_json` in the test
+only). The reserved-token list is an argument of the root; whether it should be
+an inline table is the maintainer's call.
+
+## A byte payload consumes the bootstrap harness's literal budget (#364)
+
+The Windows host job of run 41543498033, on merge `9cbc4cd4e`, passed
+`BS-20` but failed `BS-15` while rustc compiled the test binary
+`run_boot_render_package_std_0`: `memory allocation of 4294967296 bytes
+failed`, with the backtrace in MIR drop-scope sorting. The generated library
+had compiled. `rust_build::cargo_in` already sets `RUST_MIN_STACK` to 64 MiB.
+
+The harness partition counted semantic value nodes: a `Bytes` payload cost
+one node, whereas its Rust literal has one array element per octet. The
+partition now counts that literal work recursively, retaining every input and
+expected outcome in order. Semantic node counts, used by the performance
+measurements, are unchanged. One input beyond the budget stays whole.
+
+`byte_payloads_bound_chunks_without_changing_the_corpus` checks eight nested
+16 KiB payloads partition into groups of three, three and two under the
+60,000-element budget, with the complete ordered corpus preserved; it also
+checks empty input and a single oversized input. Restoring semantic-node
+weighting makes its partition assertion fail. This is a harness correction,
+not a change to the generated packages or a resolution of #164's consumer
+compiler-nesting question. A Windows rerun is required to establish whether
+this bounded partition removes the observed compiler failure.

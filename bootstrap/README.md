@@ -24,3 +24,6 @@ and the refusal it returns, and `Buffer` and `Numeral` from the standard library
 white space the oracle's `char::is_whitespace` has, and the standard library's `Buffer` and `Text`.
 
 `src/SurfaceDoc.lex.tex` imports only the standard library's `Buffer` and `Text`.
+
+`src/SurfaceGeneric.lex.tex` imports `SurfaceLex` and `SurfaceDoc`, and the standard library's
+`Json`, `Numeral`, `Order`, and `Text`: its values are the standard library's `Json`.

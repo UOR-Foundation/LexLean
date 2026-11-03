@@ -25,6 +25,9 @@
     "bootstrap-surface-doc": [
       "BS-23"
     ],
+    "bootstrap-surface-generic": [
+      "BS-24"
+    ],
     "bootstrap-check": [
       "BS-04"
     ],
@@ -42,6 +45,9 @@
     ],
     "bootstrap-terms": [
       "BS-10"
+    ],
+    "bootstrap-tooling-latex": [
+      "BS-20"
     ],
     "bootstrap-validate": [
       "BS-05"

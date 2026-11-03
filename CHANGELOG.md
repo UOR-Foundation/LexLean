@@ -17,6 +17,42 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Canonical JSON reading in the standard library, the fourth member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-12`). The module
+  `LexLeanStd.JsonRead` holds the production roots `readJson` and
+  `readJsonFile` for `rust-std`, which read the canonical JSON of §21.7 back
+  into the `Json` value of `LexLeanStd.Json` and refuse any text the writer
+  would not write: whitespace, `null`, a number past `i64` or not in its
+  shortest form, keys out of order or repeated, an escape the writer does not
+  emit, and a byte after the value. They are held to `Json::parse` with the
+  text required to be what `to_canonical_string` writes of it. `stdlib/lexlean.toml`
+  gains the entrypoint, so the locks of `stdlib` and its consumers move. The
+  register is 472 IDs.
+- Maps and sets in the standard library, the fifth member the self-hosted
+  compiler needs, #276 (SPEC.md §17.22, `SL-14`). The module `LexLeanStd.Map`
+  holds ten production roots for `rust-std` over strictly ascending lists of
+  `Bytes` keys: `mapFromEntries`, `mapInsert`, `mapGet`, `mapRemove`, and
+  `mapExtend` for a map of `Bytes` values, and `setContains`, `setRemove`,
+  `setUnion`, `setIntersection`, and `setDifference` for a set, held to
+  `BTreeMap` and `BTreeSet`, whose `String` keys the front end's tables and name
+  sets use. `stdlib/lexlean.toml` gains the entrypoint, so the locks of `stdlib`
+  and its consumers move. The register is 471 IDs.
+- Canonical JSON writing in the standard library, the third member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-11`). The module
+  `LexLeanStd.Json` holds the recursive value of §21.7 and the production
+  roots `writeJson`, `writeJsonFile`, and `escapeString` for `rust-std`, held
+  to `canonical_json::Json::to_canonical_string` and `to_file_bytes`: keys in
+  UTF-8 byte order with the last of a repeated key kept, shortest integers,
+  the required escapes, no whitespace. `stdlib/lexlean.toml` gains the
+  entrypoint, so the locks of `stdlib` and its consumers move. The register is
+  470 IDs.
+- The Intel macOS host-gate cost correction for #235 keeps SP-02's complete
+  certificate scaling families and TC-03's seeded argument/fuel sweep on the
+  normative Linux host, with fixed certificate vectors and committed fixture
+  assertions on every supported host. TC-03 and TC-05 render and parse their
+  shared fixture modules once for declaration membership checks. No
+  acceptance recipe, normative assertion, or kernel replay is removed.
+
 - The #34 closure pass (documentation and evidence; no register row, language
   datum, schema, or compiler source moves). Sixteen examples carry a `README.md`
   that names the register rows whose gates run on them, what
@@ -106,6 +142,20 @@ negative-fixture bullet of #34 is not met for them. The language-model rows are
 `LM-01` to `LM-09` and `LM-13`. Nothing below claims more than the certificates
 of this tree show.
 
+- The LaTeX backend of the tooling modules is language-1.2 source (SPEC.md
+  §17.23, §17.20; `BS-20`, #270). `renderToolingLatex` of `ToolingLatex`, over
+  the closed schema of the tooling module as data (`ToolingAst`, each recursive
+  list a chain of its own `Nil` and `Cons`), the typings the checker infers and
+  the reserved tokens of the toolchain as arguments, writes line by line through
+  the standard library's `Buffer` with an explicit capacity, and is held to
+  `backend::tooling::latex_text` to the byte on the three committed tooling
+  modules, on modules made from them to stress the escaper, the quoting of a
+  name and a character, and the trimming of a line, and on seeded mutants,
+  with seventeen planted defects. `render_latex` now takes its text from
+  `latex_text`, so the oracle the case holds the module to is the text the
+  backend emits. The checker, the decoder of the module, the source map, the
+  Lean backend, and the verification driver stay in the host. The register is
+  469 IDs.
 - The release workflow's evidence is the gate run of the tagged commit (SPEC.md
   §9.4, §30.3; `RP-18`). `release.yml` no longer runs `just vv` on one runner:
   rehearsals 3 and 4 showed the `bdd` recipe alone takes over four hours there
@@ -610,6 +660,12 @@ of this tree show.
   diagnostic code, no change to the language-1.2 identity). `renderDoc` of
   `SurfaceDoc` returns what `surface::doc::render` returns for a document at a
   width; it admits no `recursion`. The register is 471 IDs.
+- The generic notation as language-1.2 source, fourth slice of the front end
+  (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
+  the language-1.2 identity). `parseGeneric` and `printGeneric` of
+  `SurfaceGeneric` return what `surface::generic::parse` and `print` return, over
+  the standard library's `Json`; the reader admits no `recursion` and the printer
+  admits it. The register is 476 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
