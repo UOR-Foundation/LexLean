@@ -108,6 +108,12 @@ nested byte-data declarations are not restricted by interactive defaults.
 Project child timeout/output limits and full kernel/axiom verification remain
 mandatory. These are generated backend settings, not caller-provided options.
 
+## Use generated Lean from Lake
+
+For Lean tests and tactics over generated language-1.2 modules, see
+[Use generated Lean from Lake](docs/LEAN-CONSUMER.md), including how to obtain
+and match the `LexLeanRuntime` sources.
+
 ## Source packages
 
 A language-1.2 project imports the modules of another project of its workspace without copying them: `[[source_package]]` in `lexlean.toml` names a member directory listed by `lexlean-workspace.toml`, `lexlean.lock` pins the package by the digest of its manifest and source files, every command recomputes the pin, imports are closed to the project's own modules and the declared packages, and `verify` replays the package's modules under its module prefix with the package as their origin (SPEC.md §10.5, `PK-01`..`PK-05`; the workspace the cases use is [tests/packages/workspace](tests/packages/workspace/)).
