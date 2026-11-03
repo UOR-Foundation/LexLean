@@ -442,8 +442,9 @@ impl SemanticSnapshot {
     #[must_use]
     pub fn to_json(&self) -> Json {
         let value = serde_json::to_value(self).expect("snapshot DTO serializes");
-        let bytes = serde_json::to_vec(&value).expect("snapshot JSON serializes");
-        Json::parse(&bytes).expect("snapshot DTO uses the canonical JSON domain")
+        // The DTO already has unique object keys. Re-parsing its serialization
+        // imposes the raw JSON reader's nesting limit on accepted linked IR.
+        Json::from_serde(&value).expect("snapshot DTO uses the canonical JSON domain")
     }
 
     /// Canonical JSON file bytes, including LexLean's single final LF.
@@ -592,5 +593,64 @@ impl SnapshotAxiomPolicy {
     #[must_use]
     pub fn axioms(&self) -> &[String] {
         &self.axioms
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn nested_snapshot(depth: usize) -> SemanticSnapshot {
+        let mut linked_ir = serde_json::json!("leaf");
+        for _ in 0..depth {
+            linked_ir = serde_json::Value::Array(vec![linked_ir]);
+        }
+        let digest = Sha256Digest::of(b"snapshot fixture");
+        SemanticSnapshot {
+            spec: "lexlean/semantic-snapshot/2".into(),
+            source_id: digest,
+            semantic_id: digest,
+            compiler_semantics_id: digest,
+            language: "1.2".into(),
+            modules: vec![SnapshotModule {
+                name: "Main".into(),
+                lean_module: "Main".into(),
+                origin: None,
+                imports: vec![],
+                glossary: vec![],
+                visible_packages: vec![],
+                source: SnapshotSource {
+                    path: "src/Main.lex.tex".into(),
+                    sha256: digest,
+                },
+                declarations: vec![],
+                core: None,
+                semantic: None,
+                linked_ir,
+            }],
+            lexicon_closure: serde_json::json!({}),
+        }
+    }
+
+    #[test]
+    fn canonical_snapshot_preserves_deep_linked_values() {
+        let snapshot = nested_snapshot(160);
+        let bytes = snapshot.canonical_bytes();
+        let mut reader = serde_json::Deserializer::from_slice(&bytes);
+        reader.disable_recursion_limit();
+        let restored = SemanticSnapshot::deserialize(&mut reader).expect("deep snapshot JSON");
+        reader.end().expect("complete snapshot");
+        assert_eq!(restored, snapshot);
+        assert_eq!(restored.canonical_bytes(), bytes);
+        assert_eq!(snapshot.snapshot_id(), Sha256Digest::of(&bytes));
+    }
+
+    #[test]
+    fn canonical_snapshot_preserves_existing_bytes() {
+        let snapshot = nested_snapshot(4);
+        let prior = Json::parse(&serde_json::to_vec(&snapshot).expect("snapshot JSON"))
+            .expect("canonical domain")
+            .to_file_bytes();
+        assert_eq!(snapshot.canonical_bytes(), prior);
     }
 }
