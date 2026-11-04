@@ -13318,3 +13318,52 @@ accepted landing. #390 and #292 remain open until complete combined CI and
 final review, then must be explicitly closed as superseded before the carrier
 merges, avoiding misleading automatic ancestry dispositions. #275, #278 and
 other broader parent issues remain open. No #391 implementation is included.
+
+## Combined carrier follow-up: observed BS06 census and AU04 formatting
+
+Final-head CI for `3fe13b50` failed BS06 in run 41889333456, job
+126784187495. The unchanged typed factory and 6,000-value-node filter measured
+`(583, 2145, 400, 394, 2989)`, against expected
+`(582, 2145, 400, 394, 2989)`. Preceding assertions established 284 manifests,
+122 fixtures, 201 programs, 260 crates and 284 packages; 687 `printCrate`
+vectors included 520 committed distinct crates and 65 capacity refusals, while
+2,145 `printExpr` vectors included 1,532 hand-built vectors and no refusals.
+
+Independent acceptance-contract review (`8e766098`) concluded that the case's
+own observed census supports changing only the expected evaluator-crate count
+582 to 583 and its strict source mirrors. The factory, ordering, deduplication,
+6,000-node membership predicate, seeds, refusals, differentials and 13 plants
+remain unchanged. This requires one more current vector in the evaluator leg;
+it does not reduce coverage. The exact individual member and historical
+crossing cause were not identified and are not claimed. The failed case had
+not reached its later evaluator/differential/plant legs, so no BS06 pass follows
+from this calibration. The earlier unexecuted observer proposal and its review
+history remain preserved; no observer build or run was required or performed.
+
+Separately, the actual official frozen formatter produced the two AU04 fixture
+source corrections: canonical declaration field order in `binder-arm`, and
+canonical match layout in `recursive-argument`. Independent output review
+`f7a61783` found the exact two-source patch `8f6beb` suitable for adoption.
+Only those official emitted source bytes are adopted; no copied lock, helper,
+expected output, policy, semantic effect or capability is added.
+
+This source repair preserves the full published verification record, including
+the earlier 71-line combined-wave append and all CI failures. CONFORMANCE
+remains owned by the one official model writer after source adoption; no
+hand-edited projection or new runtime acceptance is claimed here. One
+complete final changed-head hosted gate, including full BS06 and every other
+required case, reproducibility and honesty remains required before merge.
+No extra local heavy case, identity/pin rebuild, product regeneration or
+publication is authorized by this source preparation.
+
+The admitted minimal follow-up phase completed on 2026-11-04 at 19:45:40 UTC.
+It adopted the seven reviewed source files, preserving the published combined
+verification appendix. The official model writer changed only CONFORMANCE's
+BS06 evaluator census from 582 to 583 (0.682 seconds); validate-model
+(42.877 seconds), validate-spec-links (1.436 seconds) and format checking
+(3.347 seconds) passed with no additional writes. ERRORS, 905 embedded inputs,
+both frozen executables, the probe, source index and HEAD remained exact.
+Independent actual review `67b0a369` cleared the eight-path source/projection
+delta. Result `6f2c0f5a` and final inventory `b10f93e0` retain exact outcomes.
+These are source/model checks, not BS06 or AU04 conformance-case passes; the
+complete changed-head hosted gate and all later obligations remain required.

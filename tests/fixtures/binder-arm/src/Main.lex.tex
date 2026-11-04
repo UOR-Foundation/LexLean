@@ -55,8 +55,8 @@ definition{
   parameters: [items : Expr],
   result: Expr,
   body: (bumpedTail (itemHead (itemTail items))),
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]},
-  executable: true
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
 \end{semanticmodule}
 \end{lexlean}

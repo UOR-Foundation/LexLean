@@ -64,9 +64,7 @@ definition{
   name: countOf,
   parameters: [start : Nat, types : (List Nat)],
   result: Nat,
-  body: (match types
-    | List.nil => start
-    | List.cons head tail => (countOf (start + 1) tail)),
+  body: (match types | List.nil => start | List.cons head tail => (countOf (start + 1) tail)),
   executable: true,
   recursive_argument: types
 }
@@ -77,9 +75,7 @@ definition{
   result: Nat,
   body: (match count
     | Nat.zero => 0
-    | Nat.succ less => (match names
-      | List.nil => 0
-      | List.cons name rest => (modelOf rest less))),
+    | Nat.succ less => (match names | List.nil => 0 | List.cons name rest => (modelOf rest less))),
   recursive_argument: count
 }
 
