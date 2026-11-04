@@ -12647,3 +12647,98 @@ No product pin, generated expectation or all-language identity wave changed.
 These results discharge the focused certificate assertions only; real final
 guard/shard-join and width invariance, gateway/Atlas measurements,
 coordinated regeneration and the full gate remain required.
+
+
+## VR-28 real join and width assertion follow-up (source only)
+
+Unexecuted source atop `ec6ba36fe` extends the existing VR-21 width-1/width-3
+results and VR-23 whole/shard/join results with typed complete-part replay
+binding and kernel-scope assertions. It adds no positive verification run.
+VR-23 copies its actual successful shard outputs for replay main/server/private
+substitutions, missing bindings and failed replay;
+original outputs and existing controls remain intact. Optional companion
+presence is read from the actual record, never assumed. A deliberately inserted
+companion is a substitution, not an observation about the original artifact.
+Failed imported replay is expected at existing record assembly (LLV7003);
+record-only tuple substitutions target
+the final binding guard. Every failed part must leave no published files.
+
+No formatting, compilation, test, writer or identity update was run for this
+follow-up. The completed real SP-05, diagnostic units and earlier focused
+checks remain historical evidence for their exact source. This follow-up
+requires independent source review and later explicitly admitted validation;
+Atlas/gateway measurements, coordinated identities/artifacts and the full gate
+remain owed. Existing checker prefix rechecks are unchanged; no globally
+exactly-once kernel claim is made.
+
+The unexecuted follow-up was narrowed from six new negative joins to five
+before validation: the newly proposed staged-companion mutation was removed
+because an earlier Lean refusal would not establish extra final-guard evidence.
+Existing actual-byte/path plants and the real positive whole/join staged
+binding checks remain; no pre-existing acceptance assertion was removed.
+The original six-plant patch and its review are preserved externally.
+
+## VR-28 real join and width follow-up: observed functional results
+
+On 2026-11-04, the reviewed five-plant follow-up above was formatted and
+validated on the existing `ec6ba36fe` source preparation. The first build
+attempt is retained in `/workspace/work/vr28-next-acceptance-validation/`:
+its initial harness build succeeded, but its actual root probe found a stale
+linked `repo-model` root. The admitted targeted official model clean ran;
+the repair build then failed linking both the conformance test and Cargo's
+automatically selected `bootstrap_perf` binary, with linker bus errors.
+Free disk space was low, but the cause of those bus errors was not proved.
+No fixture lock or test execution was reached by that attempt.
+
+Root separately retired two completely clean completed integration checkouts
+through official Git worktree removal, retaining their commits, named refs,
+restoration commands and evidence; this changed capacity, not build profiles,
+source or cached proof policy. The receipt is retained in
+`/workspace/work/completed-checkout-retirement-20261104/receipt.json`.
+The admitted continuation reused the already formatted source without a
+second formatting pass. Its Cargo-selected harness and actual linked model,
+support and bootstrap-fixture roots matched this worktree; all 905 selected
+embedded input paths and bytes and the errors table matched. The final test
+executable was atomically transferred from its selected target path into the
+phase's fresh frozen path, preserving its device, inode, byte count and hash,
+and recording the original target's absence. The frozen CLI was reused;
+no CLI or xtask executable was rebuilt for the continuation.
+
+One exact harness group ran `conformance_vr_21` and `conformance_vr_23`
+serially: 2 passed, 0 failed, 468 filtered out, in 279.03 seconds. VR-21
+retained its real peano-arithmetic width-1/width-3 comparisons, scheduling and
+failure controls, and production width-1/width-2 comparisons. VR-23 retained
+the real whole/shard/join byte-tree and attestation equality and its original
+negative controls. Five additional negative joins used separate copies of
+those actual successful shard outputs: same-name main, server and private
+replay-tuple substitutions and a missing binding reached the final binding
+guard and refused with LLI9001; a failed imported replay was refused earlier
+at record assembly with LLV7003. Every failed part checked no publication.
+Optional companion presence came from actual records; deliberately inserted
+companions were plants, not claims about the original files. No extra
+positive verification was added by this follow-up.
+
+Exactly two original example locks, peano-arithmetic and production, were
+saved, temporarily refreshed by the frozen official CLI, and restored byte
+for byte. Only newly created owned helper directories, absent from the
+preinventory and containing exactly one empty regular advisory guard, were
+archived outside the fixtures. Frozen hashes and selected linked roots were
+checked before and after the group; all 905 input bytes and both restored
+locks were independently rehashed at the terminal boundary. After the group
+passed, focused conformance-target Clippy with warnings denied, workspace
+format checking and whitespace checking all passed. No completed SP-05,
+diagnostic unit or kernel-false case was repeated. The tested Rust source
+remained unchanged after formatting; this later entry records those results.
+
+Evidence is retained in
+`/workspace/work/vr28-next-acceptance-continuation/`, including the original
+results (SHA-256 `4d552fbd80c863f02568ca1d2a23c3158c3d4dab2ea7029c4f9e2c1c92f6588b`),
+selected Cargo events, root/embedded provenance, frozen transfer receipt,
+case logs, original locks and helper archives. This establishes provisional
+functional results on this source preparation with prior product pins,
+not final identity acceptance. Gateway and Atlas measurements, actual Atlas
+publication-binding/invariance evidence, coordinated all-language identities
+and generated artifacts, and the complete changed-head gate remain required.
+The pinned checker's prefix rechecks remain; no globally exactly-once kernel
+claim is made. No product writer, pin change, full gate, commit or push ran
+as part of this focused continuation or this evidence append.

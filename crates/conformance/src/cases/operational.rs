@@ -74,6 +74,62 @@ fn assert_trees_equal(
     }
 }
 
+/// Inspect existing successful outputs; do not run another verification.
+fn assert_project_replay_bindings(
+    files: &std::collections::BTreeMap<String, Vec<u8>>,
+    expected: &BTreeSet<String>,
+) {
+    use lexlean::artifact::canonical_json::Json;
+    use lexlean::verify::child::ChildRecord;
+
+    let Json::Obj(attestation) =
+        Json::parse(&files["attestation.json"]).expect("the published attestation parses")
+    else {
+        panic!("the attestation is an object");
+    };
+    let Json::Arr(processes) = &attestation["processes"] else {
+        panic!("the attestation contains the complete process list");
+    };
+    let records: Vec<ChildRecord> = processes
+        .iter()
+        .map(|json| ChildRecord::from_json(json).expect("a child record decodes"))
+        .collect();
+    let mut compiled = BTreeSet::new();
+    let mut unflagged = 0;
+    for record in &records {
+        let skipped = record
+            .argv
+            .iter()
+            .any(|arg| arg == "debug.skipKernelTC=true" || arg == "-Ddebug.skipKernelTC=true");
+        let eligible = record.tool == "lean"
+            && record
+                .module
+                .as_ref()
+                .is_some_and(|name| expected.contains(name));
+        assert_eq!(skipped, eligible, "unexpected kernel scope: {record:?}");
+        if !eligible {
+            unflagged += usize::from(record.tool == "lean");
+            continue;
+        }
+        let name = record.module.as_ref().expect("a project module");
+        assert!(compiled.insert(name.clone()), "duplicate compile of {name}");
+        assert_eq!(record.exit_code, 0);
+        let produced = record.olean.as_ref().expect("complete compile binding");
+        let replays: Vec<_> = records
+            .iter()
+            .filter(|replay| replay.tool == "leanchecker" && replay.module.as_ref() == Some(name))
+            .collect();
+        assert_eq!(replays.len(), 1, "one replay record for {name}");
+        assert_eq!(replays[0].exit_code, 0);
+        assert_eq!(replays[0].olean.as_ref(), Some(produced));
+    }
+    assert_eq!(
+        &compiled, expected,
+        "every generated project module is bound"
+    );
+    assert!(unflagged > 0, "in-process support checks remain exercised");
+}
+
 /// VR-20: the width is an operational profile.
 fn width_is_operational() {
     assert_eq!(DEFAULT_WIDTH, 1, "the conservative profile is the default");
@@ -365,6 +421,15 @@ fn width_invariance() {
     )
     .expect("width 1");
     let one = tree(&at_one.root);
+    let expected: BTreeSet<String> = crate::shards::import_graph(
+        support::repo_root()
+            .join("examples/peano-arithmetic")
+            .as_std_path(),
+    )
+    .expect("the committed project module graph")
+    .into_keys()
+    .collect();
+    assert_project_replay_bindings(&one, &expected);
     let attestation = |files: &std::collections::BTreeMap<String, Vec<u8>>| -> serde_json::Value {
         serde_json::from_slice(&files["attestation.json"]).expect("attestation parses")
     };
@@ -406,6 +471,7 @@ fn width_invariance() {
         .expect("width 3");
         assert_eq!(verified.attestation_id, at_one.attestation_id);
         let three = tree(&verified.root);
+        assert_project_replay_bindings(&three, &expected);
         assert_trees_equal(&one, &three, "peano-arithmetic at widths 1 and 3");
         let a3 = attestation(&three);
         assert_eq!(
@@ -780,6 +846,8 @@ fn parts_equal_the_whole() {
             .as_std_path(),
     )
     .expect("the import graph reads from the committed build");
+    let expected = graph.keys().cloned().collect();
+    assert_project_replay_bindings(&tree(&whole.root), &expected);
     let mut placed: std::collections::BTreeSet<String> = std::collections::BTreeSet::new();
     let mut remaining: Vec<String> = graph.keys().cloned().collect();
     let mut frontiers: Vec<Vec<String>> = Vec::new();
@@ -820,6 +888,13 @@ fn parts_equal_the_whole() {
                 part,
             )
         });
+        if outcome.is_err() {
+            let published = project.root.join(".lexlean/verified");
+            assert!(
+                !published.exists() || support::file_set(&published).is_empty(),
+                "a refused part publishes nothing"
+            );
+        }
         copies.borrow_mut().push(project);
         outcome
     };
@@ -864,6 +939,89 @@ fn parts_equal_the_whole() {
         "the join and the whole verification have one attestation identity"
     );
     assert_trees_equal(&tree(&joined.root), &tree(&whole.root), "whole and joined");
+    assert_project_replay_bindings(&tree(&joined.root), &expected);
+
+    // Plant only copies of the actual successful shard outputs. Originals
+    // remain available to the pre-existing negative controls below.
+    let replayed = &first[0];
+    let replay_relative = format!("process/leanchecker/{replayed}.json");
+    let original_replay = std::fs::read(dir("b").join(&replay_relative)).expect("replay bytes");
+    let replay_record = lexlean::verify::child::ChildRecord::from_json(
+        &lexlean::artifact::canonical_json::Json::parse(&original_replay)
+            .expect("actual replay JSON"),
+    )
+    .expect("actual typed replay record");
+    let original_parts = replay_record.olean.as_ref().expect("actual bound parts");
+    for plant in [
+        "main",
+        "server",
+        "private",
+        "missing-binding",
+        "failed-replay",
+    ] {
+        let changed_a = dir(&format!("plant-{plant}-a"));
+        let changed_b = dir(&format!("plant-{plant}-b"));
+        for (source, destination) in [(dir("a"), &changed_a), (dir("b"), &changed_b)] {
+            for (name, bytes) in tree(&source) {
+                let path = destination.join(name);
+                std::fs::create_dir_all(path.parent().expect("parent")).expect("mkdir");
+                std::fs::write(path, bytes).expect("copy actual shard bytes");
+            }
+        }
+        let mut record = replay_record.clone();
+        match plant {
+            "main" | "server" | "private" => {
+                let digest = lexlean::artifact::content_id::Sha256Digest::of(plant.as_bytes());
+                let parts = record.olean.as_mut().expect("actual bound parts");
+                // Inserting a previously absent companion is an intentional
+                // substitution, not a claim that the original had that part.
+                match plant {
+                    "main" => {
+                        assert_ne!(original_parts.main, digest);
+                        parts.main = digest;
+                    }
+                    "server" => {
+                        assert_ne!(original_parts.server, Some(digest));
+                        parts.server = Some(digest);
+                    }
+                    "private" => {
+                        assert_ne!(original_parts.private, Some(digest));
+                        if parts.server.is_none() {
+                            parts.server = Some(digest);
+                        }
+                        parts.private = Some(digest);
+                    }
+                    _ => unreachable!(),
+                }
+            }
+            "missing-binding" => record.olean = None,
+            "failed-replay" => record.exit_code = 1,
+            _ => unreachable!(),
+        }
+        std::fs::write(
+            changed_b.join(&replay_relative),
+            record.to_json().to_file_bytes(),
+        )
+        .expect("write planted replay");
+        let error = run_part(VerifyPart::Join {
+            plan: plan(&rest, &rest),
+            parts: vec![changed_a, changed_b],
+        })
+        .map(|_| ())
+        .expect_err("a substituted actual shard output refuses publication");
+        let text = error.to_string();
+        if plant == "failed-replay" {
+            // Existing assembly judges failed imported replay before the guard.
+            support::expect_code(&error, "LLV7003");
+            assert!(text.contains(replayed), "{text}");
+        } else {
+            support::expect_code(&error, "LLI9001");
+            assert!(
+                text.contains("kernel replay binding") && text.contains(replayed),
+                "{text}"
+            );
+        }
+    }
 
     // A shard whose plan elaborates a module before its imports does not
     // converge, and names the import.
