@@ -10735,12 +10735,13 @@ examples were rewritten identically; `uor-atlas` was not run locally) and `cargo
 by the first count assertion each row fails on the count it replaces: `BS-05` and `BS-06` 284 committed manifests,
 122 fixtures, 201 distinct programs and 260 distinct crates (and 284 packages for `BS-06`); `BS-07` 335 vectors;
 `BS-08` 394 crates. `BS-09`, `BS-10` and `BS-11` pass on that tree with the counts they had (the seeded mutants
-of `BS-11` are unchanged by the regenerated records). Derived from the manifest count and not run locally:
-`BS-15` 303 manifests, 284 accepted and 284 seeded mutants of the render. Not measured locally, and so the
-values of the merged tree before this change remain until the continuous integration names them: the later
-assertions of `BS-05`, `BS-06`, `BS-07` and `BS-08` (vectors, refused, runs under the evaluator and
-the printed counts of `SPEC.md` §17.23 that follow from them), and the counts of `BS-12`, `BS-13`, `BS-14`, `BS-15`
-beyond the three above, `BS-16` and `BS-20`.
+of `BS-11` are unchanged by the regenerated records). Derived from the manifest count and not run locally: `BS-15` 303 manifests, 284 accepted and 284 seeded
+mutants of the render; the continuous integration at `7b854b6dc` passed `BS-07`, `BS-08`, `BS-10`, `BS-11`, `BS-12`,
+`BS-15`, `BS-16` and `BS-20` with these counts, and named the four that moved further: `BS-05` 496 runs of
+`validateCrate` (211 refused) and 361 of `correspondCrate`; `BS-06` 687 vectors of `printCrate` (65 refused,
+520 committed distinct); `BS-13` 104 vectors; `BS-14` 339 vectors. Those are the first count assertion of each
+row that failed; the counts the rows assert after them (the evaluator's runs and the printed counts that follow from them)
+are the ones the next run of the continuous integration reads.
 
 Each of twenty-one plants is made on a copy of `bootstrap/src/RustPackage.lex.tex`
 on every run and is caught by the oracle; the run is the index among the runs
