@@ -18702,3 +18702,42 @@ The whole-phase lock was released. The prior 18-proof failure and minimal
 policy witness remain separate historical records. Native implementation,
 shared parsing preservation, complete positive/negative evidence and the
 coordinated identity/artifact wave and final gate remain outstanding.
+
+### SM-39 native formatting isolation: reviewed source implementation only
+
+The complete authored source unit changes four files (35 insertions,
+24 deletions): Portable, Fixed, RustLemmas, and the production certificate-A
+source constructor. Portable.formatDecimal accepts ToString and invokes its
+formatter directly. All nine Fixed format theorem operands and nine
+RustLemmas format application operands supply the corresponding native
+ToString instance. The certificate constructor supplies that same instance
+for FormatDecimal; ParseDecimal retains its original Decimal evidence.
+
+Shared Decimal class/instance nodes and parse operands are retained, including
+the nodes shared by formatting and parsing before this change. Static local
+graph comparisons preserve the complete Decimal/parseDecimal closures in
+Portable and all nine Fixed parsing theorem type/value closures. Broader
+RustLemmas proofs share the whole primitive evaluator, so their formatting
+subclosures change intentionally; the separate parse evidence and declaration
+metadata/policies do not. All exact policies and the certificate runtime-axiom
+table remain unchanged. The 169 older-language partition files are byte-exact.
+No generated Lean, policy weakening, new law/model interface or backend
+language feature was introduced.
+
+Independent review covered this four-part dependency unit and its actual
+node bindings. Validation here is source-only: static graph/diff checks and
+standalone Rust formatting, with no compilation or positive SM-39 execution
+on the changed runtime. The earlier named LLV7005 remains the pre-fix R3
+witness; it does not establish a post-fix pass. All 27 policy observations,
+151 native boundary/parse observations, eligible fixed-width A/B/E checks,
+false-output controls and Int policy refusal still require execution on the
+final admitted implementation and products.
+
+These embedded native inputs require the coordinated v0.5 identity and
+official product refresh. Pins, generated artifacts, locks and runtime
+identities have deliberately not been updated by this source commit. The
+source delivery uses [skip ci] because this intermediate tree knowingly lacks
+that coordinated regeneration; it is draft preparation, never merge-ready.
+The final changed head still requires complete acceptance and full CI before
+readiness/merge. #434 and parent #381 remain open until their proper scope is
+accepted. No baseline rerun or writer was used to manufacture positive evidence.

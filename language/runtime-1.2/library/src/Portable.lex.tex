@@ -3614,11 +3614,13 @@ definition LexLeanRuntime.utf8Encode : @4781 := @4784 {
 @3597 := fun {α : @0} =>
   fun [inst._@.LexLeanRuntime.Portable.#1212145906._hygCtx._hyg.#3 : @3585] =>
   fun (left : @2) => fun (right : @3) => @3203 @12 @3 @2 @1
+@3599 := ToString.{0} @1
 @3600 := {α : @0} ->
-  [inst._@.LexLeanRuntime.Portable.#1293722453._hygCtx._hyg.#3 : @271] -> (value : @2) -> @261
+  [inst._@.LexLeanRuntime.Portable.#1293722453._hygCtx._hyg.#3 : @3599] -> (value : @2) -> @261
+@3606 := ToString.toString.{0}
 @3607 := fun {α : @0} =>
-  fun [inst._@.LexLeanRuntime.Portable.#1293722453._hygCtx._hyg.#3 : @271] =>
-  fun (value : @2) => LexLeanRuntime.Decimal.format @3 @2 @1
+  fun [inst._@.LexLeanRuntime.Portable.#1293722453._hygCtx._hyg.#3 : @3599] =>
+  fun (value : @2) => @3606 @3 @2 @1
 @3612 := {α : @0} ->
   {β : @0} ->
   [inst._@.LexLeanRuntime.Portable.#3407831578._hygCtx._hyg.#4 : @1253] ->
