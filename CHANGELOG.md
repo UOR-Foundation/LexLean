@@ -17,6 +17,15 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Structural recursion over the recursive family of a nested inductive type,
+  #278 (SPEC.md §17.12, `DF-19`). A mutual definition group may decrease on any
+  member of the family the pinned Lean takes as the motives of the type's
+  recursor (the type, then each `List`, `Option`, `Result`, or product that
+  holds it, in the order of discovery), so a function over a type with a
+  constructor that holds `List (String * Json)` recurses through the list and
+  through the pair. One checker change; no file of the compiler-semantics
+  digest moves, so no identity moves. The register is 470 IDs.
+
 - The Intel macOS host-gate cost correction for #235 keeps SP-02's complete
   certificate scaling families and TC-03's seeded argument/fuel sweep on the
   normative Linux host, with fixed certificate vectors and committed fixture

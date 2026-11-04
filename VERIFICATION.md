@@ -794,6 +794,69 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 238 filtered out
 Removed: the test was restored; `conformance_df_16` passes and the
 `recursion-wrong-argument` negative fixture fails with `LLT4001`.
 
+### a mutual group over the family of a nested inductive can fail (DF-19)
+
+A mutual definition group may decrease on any member of the recursive family
+of a nested inductive (`DF-19`, §17.12, #278): `Json` with `array (List Json)`
+and `object (List (String * Json))` has the four members `Json`, `List Json`,
+`List (String * Json)`, and `String * Json`, and `tests/nested-family` holds
+two groups of four members over it, `size` and `leaves`. The family is one
+computation (`family_members`) shared by the group's family test and by the
+rule that a pattern binder is smaller exactly when its type is a member; the
+unit tests `the_family_is_discovered_in_the_order_of_the_pinned_recursors_motives`
+and `a_member_found_inside_a_product_joins_the_family` pin the order against
+the motives `#check @A.rec` reports under Lean 4.32.1 for a type with seven.
+
+Command and host: `cargo test -p repo-conformance --test conformance --
+conformance_df_19 conformance_df_13 conformance_df_14 conformance_df_16
+conformance_df_17` and `cargo test -p lexlean --lib family_` on the 2-core
+Linux x86-64 machine the series is prepared on, Lean 4.32.1, rustc stable
+1.97.0. `conformance_df_19` verifies `tests/nested-family` under the pinned
+Lean (two theorems evaluate both groups on a value nesting all four members),
+and refuses four plants with `LLT4001`: a call on a `Json` built from the
+pair's string, a call on the matched list itself, a list of pairs whose first
+component is `Nat`, and a pair whose first component is `Nat`.
+
+Planted: a pattern binder whose type is a product never smaller
+(`in_family(field, family) && !matches!(field, SemanticType::Product { .. })`),
+so `sizeEntry` could not call `size` on the pair's `Json`. Command:
+`cargo test -p repo-conformance --test conformance -- conformance_df_19`.
+
+```text
+check succeeds: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLT4001"), message: "phase link: recursive call `sizeEntry` is not on a structurally smaller value", ...
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 444 filtered out
+```
+
+Planted: the arm of `family_constructor_fields` that gives a product its two
+fields removed. Command: `cargo test -p lexlean --lib family_`. Expected: a
+family whose fourth member is found only inside a product loses it.
+
+```text
+test ir::semantic::family_order_tests::a_member_found_inside_a_product_joins_the_family ... FAILED
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 209 filtered out
+```
+
+Removed: both plants were restored; the cases pass. Before the change the
+same project is refused at its first group: `mutual group `Size` members
+decrease on different recursive families` (the old `family_of` saw a list of
+pairs as a list of one element type).
+
+A group used at one of its own types has the family of its own arguments
+only (maintainer review of this change): `Rose Item | node : Item -> List
+(Rose Item)` at `Rose (Rose Nat)` has the two members `Rose (Rose Nat)` and
+`List (Rose (Rose Nat))`, as `Rose.rec` has two motives at any
+instantiation. `mentions_family_group` takes the type arguments of the
+family and counts a named type of the group only at those arguments. The unit
+test `a_group_instantiated_at_its_own_type_has_two_motives` pins it.
+
+Planted: `mentions_family_group` ignored the arguments again (the comparison
+`observed.as_slice() == arguments` replaced by `true`). Command:
+`cargo test -p lexlean --lib family_`.
+
+```text
+test ir::semantic::family_order_tests::a_group_instantiated_at_its_own_type_has_two_motives ... FAILED
+```
+
 ### recursion call graph check can fail
 
 Planted: `check_group_call_graph` returned `Ok(())` at once, so a mutual
@@ -12787,3 +12850,95 @@ from this source-only draft.
 Final source preparation initially stopped when `validate-model` rejected 37 rest-field patterns in the explicit 38-variant production delegation arm (the fieldless `Unit` is unchanged). A reviewed pattern-only correction names every actual ignored field, preserving variant order and the delegation expression; no audit rule or behavior was changed. This correction is outside renderer and embedded identity inputs; no writer or PX-07 rerun was performed.
 
 The README register sentence now states “All 470 registered conformance IDs have their named tests”, satisfying RP-11’s existing exact-count wording without claiming all tests or the full gate pass. Exact `conformance_rp_11` passed once using the immutable correctly rooted Host harness (SHA-256 `16af772ac485b63d692f325e15a50063d4af9102f501737c90db8245d975cc96`); this is a documentation-contract check, not final compiler-identity or full-gate acceptance.
+
+## DF-19 preparation against the current release line (#284)
+
+Local integration `7bf1ce27b0561482ee9e6ca4d3e8745ae2dc42f7` combines the
+accepted argument-aware DF-19 head `9d0896b18` with release `0a01df682` and
+the reviewed maintenance integration `215a9d591`. Source conflicts were
+absent; the register and its count sites are 470. The official model writer
+produced no document delta. Formatting, model audits (470 IDs, 86 codes),
+specification links, all five BDD meta-tests, and all three family-order unit
+tests pass on this integration.
+
+The exact-tree CLI was copied before any writer ran; its SHA-256 is
+`88b47a00bde41bd291af5e23781e82bc460fc721057dbbd20f41dfb42cb094d5`.
+Its official `lock` command changes only `tests/nested-family/lexlean.lock`'s
+compiler-semantics pin from the historical `30c5829b` identity to the current
+release identity `aac30cb0`. No embedded identity input or renderer source
+changes, and no global identity or oracle regeneration was performed.
+
+That frozen CLI's direct `check`, `build`, and `verify` commands on
+`tests/nested-family` pass with pinned Lean 4.32.1 from the configured
+`ELAN_HOME`. Verification accepts one module and publishes attestation
+`ac3f24866cca9e7477eeccc610f6b7c8637d383e1104c38d2b7e43e906a2743b`.
+This is direct CLI evidence for the committed fixture, including its sample
+size and leaf-count theorems. The Lean-backed DF-19 conformance harness and
+its four refusal plants were not rerun in this phase: its host helper expects
+`HOME/.elan`, absent on this environment. Neither home nor the helper was
+changed. No full acceptance gate or inventory run is claimed here.
+
+### DF-19's complete Lean-backed case after toolchain registration
+
+After the existing pinned toolchain was registered through official elan in
+this user's standard elan home, the previously unrun exact
+`cargo test --offline --locked -p repo-conformance --test conformance
+conformance_df_19 -- --exact --nocapture` passes on prepared integration
+`4eb5d9b296a1612273cfa341ecc4ac194f886a42`: one passed, zero failed or
+ignored, in 3.56 seconds (compilation 57.55 seconds).
+
+This Linux x86-64 run enters the unchanged `lean_backed` helper's real-Lean
+branch: the standard-home Lean, Lake and leanchecker paths resolve to the
+existing pinned installation under `/workspace/.setup/elan`. The case verifies
+the committed nested-family fixture, checks its rendered mutual structural
+recursion, and executes all four existing `LLT4001` refusal plants and their
+no-backend-output assertions. No helper, gate, home value or source assertion
+was changed. This completes that focused case; no full acceptance run is
+claimed by this record.
+
+### README coverage correction found by final-head CI
+
+Run `41753808309` at `9f3ca0006fce13c2a61285fe3cc9e4088b797bce`
+found that README's whole-family `DF-01`..`DF-18` range omitted registered
+`DF-19`. Windows job `126326526519` and ARM Linux job `126326526543`
+each passed 469 conformance cases and failed only `RP-11`; the rest partition,
+job `126326527233`, passed 283 and failed only `RP-11`.
+
+The README range now ends at `DF-19`, retaining the whole-family coverage
+check. This correction changes no implementation, model, schema or identity
+input. No local validation of this correction is claimed here; targeted
+`RP-11` validation and complete changed-head CI remain required.
+
+### BS-15 generated workspace disk exhaustion in final-head CI
+
+Run `41761755141` at `177c499a1bd45c60e2712a5f375b9b4633e1387d`
+passed `conformance_rp_11` in rest job `126352276554` and ARM Linux job
+`126352276081`; their conformance totals were 284 and 470 passed, respectively,
+with no failures. Bootstrap-package job `126352276702` instead failed
+`conformance_bs_15` after 5481.51 seconds while Cargo built its generated
+workspace. Writing the dependency information for harness
+`run_boot_render_package_std_494` failed with `No space left on device
+(os error 28)`; another concurrent harness link reported a bus error. The
+last disk sample showed 1.6 GiB available. Before the build failure, the
+evaluator agreed on 2,484 manifests and 241 renders and reported the existing
+plants detected. The failed case is not acceptance evidence.
+
+The differential workspace is independent of the repository workspace and
+did not inherit its `[profile.dev]` setting. Its generated manifest now sets
+`debug = "line-tables-only"`, exactly as the repository does, so every harness
+retains file and line information without full variable debug information.
+This changes no corpus, harness chunking, assertions, optimization setting,
+overflow behavior, Rust stack setting or stack-bound observation. Cargo still
+builds every generated workspace member and every outcome remains compared.
+
+This is a source-only resource correction. Its disk savings have not been
+measured, and no local build or runtime validation of the correction is
+claimed. Exact BS-15 validation and complete changed-head CI remain required.
+
+
+### Host integration with accepted DF-19 release (source preparation)
+
+The prospective integration retains Host `88b078cc` and actual release `1a690b51` (accepted #284), including DF-19 and the byte-identical #436 generated-workspace profile. The combined register is 471; source, scenario, named-test and documentation count mirrors are reconciled without changing predicates. The old Host CI run remains historical evidence for its exact old-base tree; a complete changed-head gate is still required. The DF-19 fixture lock is demonstrably stale at the Host compiler semantics and awaits an explicitly reviewed single-fixture official relock. No new identity wave, product regeneration or runtime validation is claimed by this source preparation. #390 remains an open draft outside Host ancestry.
+
+
+The DF-19 lock prerequisite was discharged by one official frozen Host CLI invocation (SHA-256 `9f3a752ba37f0d514a61a7634be3193fddf7b26958f8c895ec175b767627dc07`), `lexlean --project <isolated-six-file-fixture>/lexlean.toml lock`, exit 0. The emitted lock differs from the accepted release lock only in compiler semantics `aac30cb0` to `1b848115`; all five other fixture files and project/workspace/package digests remain unchanged. Initial output review stopped on a newly created zero-byte `.lexlean/.lock` advisory guard; root admitted its exact owned LOCAL-ONLY disposition, and it was archived outside the candidate. The original stop and producer evidence remain retained. No helper entered the candidate, no official relock was repeated, and no manual identity edit was substituted for the emitted bytes. This establishes the lock producer boundary only: no DF-19 acceptance test used the older binary, no other writer or product regeneration ran, and complete changed-head CI remains required.
