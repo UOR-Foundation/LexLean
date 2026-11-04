@@ -67,5 +67,12 @@ definition{
   body: (record Rows::IdRow {id := "PD-08", level := "build", suite := "production", statement := "Every root that a conformance harness runs on a corpus and that admits `recursion` has a measured stack bound in `tests/stack-bounds.json`, whose rows are exactly the recursive packages of the committed `bootstrap` and `stdlib` exports, and the stack of the harness thread (`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the largest recorded bound times the stated headroom of 4, so that a harness stack below that bound is refused and a harness binary run on a quarter of its bound aborts instead of finishing; the bounds are measurements of the cases' own inputs on one host, evidence and not a guarantee for another host or input.", sections := "§17.13, §17.23"}),
   executable: true
 }
+definition{
+  name: pd10,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "PD-10", level := "build", suite := "production", statement := "The registry holds the effects `files` and `process` and one row per constructor of `LexLeanStd.Host::Request` naming the effect it realizes, so a production root whose closure builds a request admits that request's effect, and a root that does not, or that is declared for a target without allocation, fails with `LLT4005`.", sections := "§17.13"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

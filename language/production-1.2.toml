@@ -29,12 +29,79 @@ id = "allocation"
 statement = "The realization allocates heap storage; allocation failure stops it with an explicit failure."
 
 [[effect]]
+id = "files"
+statement = "The realization reads and changes the host's file system through the requests of `LexLeanStd.Host` that name this effect. It is a kind of authority, not a confinement: no path is out of its reach."
+
+[[effect]]
 id = "overflow"
 statement = "A natural-number or mathematical-integer value outside the target width stops the realization with an explicit overflow failure; it is never wrapped or truncated."
 
 [[effect]]
+id = "process"
+statement = "The realization starts, waits for, and stops child processes through the requests of `LexLeanStd.Host` that name this effect. A child has the authority of the process that started it, whatever else the root admits."
+
+[[effect]]
 id = "recursion"
 statement = "The realization recurses to a depth bounded only by its input; exhausting the stack aborts the process, and the realization states no failure for it."
+
+# One row per constructor of `LexLeanStd.Host::Request`: the effect a closure
+# that builds the request realizes. `exit` names none, since every root's
+# realization ends.
+
+[[request]]
+id = "canonical"
+effect = "files"
+
+[[request]]
+id = "createDir"
+effect = "files"
+
+[[request]]
+id = "exit"
+
+[[request]]
+id = "list"
+effect = "files"
+
+[[request]]
+id = "lock"
+effect = "files"
+
+[[request]]
+id = "read"
+effect = "files"
+
+[[request]]
+id = "removeFile"
+effect = "files"
+
+[[request]]
+id = "removeTree"
+effect = "files"
+
+[[request]]
+id = "rename"
+effect = "files"
+
+[[request]]
+id = "spawn"
+effect = "process"
+
+[[request]]
+id = "stat"
+effect = "files"
+
+[[request]]
+id = "stop"
+effect = "process"
+
+[[request]]
+id = "wait"
+effect = "process"
+
+[[request]]
+id = "write"
+effect = "files"
 
 [[construct]]
 key = "type.type"

@@ -16,12 +16,18 @@ use super::rt::{
 
 /// The types a crate may name without declaring them, with their arity and
 /// whether a value of the type allocates.
-const TYPES: [(&str, usize, bool); 5] = [
+const TYPES: [(&str, usize, bool); 11] = [
     ("Result", 2, false),
     ("Option", 1, false),
     ("AtomicU64", 0, false),
     ("Rc", 1, true),
     ("Vec", 1, true),
+    ("File", 0, false),
+    ("Metadata", 0, false),
+    ("Command", 0, false),
+    ("Child", 0, false),
+    ("Instant", 0, false),
+    ("Error", 0, false),
 ];
 
 /// `String` is a type of the table that allocates and takes no argument.
@@ -35,7 +41,7 @@ const INTEGERS: [&str; 10] = [
 
 /// The functions a crate may call by path without declaring them, with their
 /// arity and whether the call allocates.
-const CALLS: [(&str, &str, usize, bool); 12] = [
+const CALLS: [(&str, &str, usize, bool); 37] = [
     ("AtomicU64", "new", 1, false),
     ("Rc", "new", 1, true),
     ("Rc", "from", 1, true),
@@ -48,6 +54,31 @@ const CALLS: [(&str, &str, usize, bool); 12] = [
     ("str", "from_utf8", 1, false),
     ("usize", "from", 1, false),
     ("usize", "try_from", 1, false),
+    ("mem", "take", 1, false),
+    ("fs", "read", 1, false),
+    ("fs", "write", 2, false),
+    ("fs", "read_dir", 1, false),
+    ("fs", "symlink_metadata", 1, false),
+    ("fs", "create_dir_all", 1, false),
+    ("fs", "remove_file", 1, false),
+    ("fs", "remove_dir_all", 1, false),
+    ("fs", "rename", 2, false),
+    ("fs", "canonicalize", 1, false),
+    ("File", "create", 1, false),
+    ("env", "args_os", 0, false),
+    ("env", "current_dir", 0, false),
+    ("env", "current_exe", 0, false),
+    ("env", "vars_os", 0, false),
+    ("io", "stdout", 0, false),
+    ("io", "stderr", 0, false),
+    ("process", "exit", 1, false),
+    ("Command", "new", 1, false),
+    ("Command", "spawn", 1, false),
+    ("Stdio", "null", 0, false),
+    ("Instant", "now", 0, false),
+    ("Duration", "from_millis", 1, false),
+    ("thread", "sleep", 1, false),
+    ("Builder", "new", 0, false),
 ];
 
 /// The constructors a crate may call without declaring them.
@@ -55,7 +86,7 @@ const WRAPPERS: [(&str, usize); 3] = [("Some", 1), ("Ok", 1), ("Err", 1)];
 
 /// The methods a crate may call on a value without declaring them, with the
 /// number of arguments after the receiver and whether the call allocates.
-const METHODS: [(&str, usize, bool); 27] = [
+const METHODS: [(&str, usize, bool); 66] = [
     ("fetch_add", 2, false),
     ("load", 1, false),
     ("cmp", 1, false),
@@ -83,6 +114,45 @@ const METHODS: [(&str, usize, bool); 27] = [
     ("split", 1, false),
     ("collect", 0, true),
     ("is_ascii_digit", 0, false),
+    ("kind", 0, false),
+    ("file_name", 0, false),
+    ("into_encoded_bytes", 0, false),
+    ("into_os_string", 0, false),
+    ("is_symlink", 0, false),
+    ("is_file", 0, false),
+    ("is_dir", 0, false),
+    ("sort", 0, true),
+    ("contains", 1, false),
+    ("skip", 1, false),
+    ("elapsed", 0, false),
+    ("as_millis", 0, false),
+    ("saturating_add", 1, false),
+    ("try_wait", 0, false),
+    ("kill", 0, false),
+    ("wait", 0, false),
+    ("id", 0, false),
+    ("code", 0, false),
+    ("arg", 1, false),
+    ("current_dir", 1, false),
+    ("env_clear", 0, false),
+    ("env", 2, false),
+    ("stdin", 1, false),
+    ("stdout", 1, false),
+    ("stderr", 1, false),
+    ("status", 0, false),
+    ("process_group", 1, false),
+    ("stack_size", 1, false),
+    ("spawn", 1, false),
+    ("join", 0, false),
+    ("write_all", 1, false),
+    ("flush", 0, false),
+    ("is_terminal", 0, false),
+    ("lock", 0, false),
+    ("dev", 0, false),
+    ("ino", 0, false),
+    ("text", 0, false),
+    ("octets", 0, false),
+    ("uncons", 0, false),
 ];
 
 /// The methods that take type arguments: `recv.parse::<T>()`.
@@ -144,6 +214,47 @@ pub fn allocating() -> Vec<String> {
     out
 }
 
+/// The names of the closed table that reach the host, with the effect each
+/// realizes (`files` or `process`), by the name a path starts at, a type is
+/// written as, or a `use` ends in. A crate names one only if its root admits
+/// the effect: the hidden effect the validator refuses, as `hidden-allocation`
+/// is refused in a `rust-core` crate. `env`, `io`, and `process` are not
+/// here: the arguments, the environment, and the standard streams are
+/// inputs and the exit of a root, which need no effect (§17.13).
+const HOST: [(&str, &str); 10] = [
+    ("fs", "files"),
+    ("Metadata", "files"),
+    ("MetadataExt", "files"),
+    ("Command", "process"),
+    ("CommandExt", "process"),
+    ("Stdio", "process"),
+    ("Child", "process"),
+    ("Instant", "process"),
+    ("Duration", "process"),
+    ("thread", "process"),
+];
+
+/// The names a package exports that a command's driver imports from the
+/// package's own crate, with the number of type arguments each takes. Any
+/// other name of that crate is a program type, written without arguments.
+const PACKAGE: [(&str, usize); 5] = [
+    ("Bytes", 0),
+    ("Str", 0),
+    ("List", 1),
+    ("R", 1),
+    ("Overflow", 0),
+];
+
+/// What a crate is validated against besides its profile: the root names a
+/// `use` may start at beyond the profile's (the package's own crate, or the
+/// stand-in `host` a shipped driver module writes), and the effects its root
+/// admits.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Host<'a> {
+    pub roots: &'a [&'a str],
+    pub effects: &'a [&'a str],
+}
+
 /// The traits an item may derive, the closed table of derives: the printer
 /// writes each as it is, so a derive outside the table is refused rather than
 /// printed.
@@ -184,6 +295,9 @@ struct Scope<'a> {
     /// The associated functions of the declared types: `(type, name)` to the
     /// number of arguments, for an impl function with no receiver.
     associated: BTreeMap<(&'a str, &'a str), usize>,
+    /// The names imported from a package root, with their type arguments.
+    package: BTreeMap<&'a str, usize>,
+    effects: &'a [&'a str],
 }
 
 fn rule<T>(rule: &str, what: impl std::fmt::Display) -> Result<T, String> {
@@ -322,8 +436,42 @@ fn unscoped(what: &str, ty: &Type) -> Result<(), String> {
 /// generic parameter in a type of an expression, or a name that allocates in
 /// the core profile.
 pub fn validate(krate: &Crate) -> Result<(), String> {
+    validate_in(krate, Host::default())
+}
+
+/// [`validate`] a crate that may import from the package roots `host` names and
+/// whose root admits the effects `host` names: the `hidden-effect` rule refuses
+/// a name of the host table whose effect is not among them.
+///
+/// # Errors
+///
+/// As [`validate`], and a name that realizes an effect the root does not
+/// admit, or a `cfg` item outside the closed set.
+pub fn validate_in(krate: &Crate, host: Host<'_>) -> Result<(), String> {
+    attributes(&krate.items)?;
+    let flat = flatten(&krate.items)?;
+    if flat.iter().all(|(condition, _)| condition.is_none()) {
+        return validate_items(
+            krate.profile,
+            &flat.iter().map(|(_, item)| *item).collect::<Vec<_>>(),
+            host,
+        );
+    }
+    for platform in ["unix", "not_unix"] {
+        let items = flat
+            .iter()
+            .filter_map(|(condition, item)| {
+                (condition.is_none() || *condition == Some(platform)).then_some(*item)
+            })
+            .collect::<Vec<_>>();
+        validate_items(krate.profile, &items, host)?;
+    }
+    Ok(())
+}
+
+fn validate_items(profile: Profile, items: &[&Item], host: Host<'_>) -> Result<(), String> {
     let mut scope = Scope {
-        profile: krate.profile,
+        profile,
         traits: BTreeMap::new(),
         structs: BTreeMap::new(),
         enums: BTreeMap::new(),
@@ -333,18 +481,42 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
         methods: BTreeMap::new(),
         imported: Vec::new(),
         associated: BTreeMap::new(),
+        package: BTreeMap::new(),
+        effects: host.effects,
     };
-    attributes(&krate.items)?;
-    let mut declared = Vec::<&str>::new();
-    for item in &krate.items {
+    let mut names = Vec::new();
+    for item in items {
+        let declared = &mut names;
         match item {
-            Item::InnerAttr(..) | Item::Defined(_) => {}
-            Item::Mod(name, _) => once(&mut declared, "a module name", name)?,
+            Item::InnerAttr(..) | Item::Defined(_) | Item::Cfg(..) => {}
+            Item::Mod(name, _) => once(declared, "a module name", name)?,
             Item::Use(path, alias) => {
                 let Some(root) = path.first() else {
                     return rule("use-path", "empty");
                 };
-                if !roots(krate.profile).contains(&root.as_str()) {
+                if host.roots.contains(&root.as_str()) {
+                    let [_, name] = path.as_slice() else {
+                        return rule(
+                            "use-path",
+                            format!(
+                                "`use {}` from a package root names one item",
+                                path.join("::")
+                            ),
+                        );
+                    };
+                    scope.admit(name)?;
+                    ident("a `use` name", name)?;
+                    let shown = alias.as_ref().unwrap_or(name);
+                    ident("a `use` alias", shown)?;
+                    let arguments = PACKAGE
+                        .iter()
+                        .find(|(known, _)| known == name)
+                        .map_or(0, |(_, count)| *count);
+                    scope.package.insert(shown, arguments);
+                    scope.imported.push(shown.clone());
+                    continue;
+                }
+                if !roots(profile).contains(&root.as_str()) {
                     return rule(
                         "profile-root",
                         format!(
@@ -357,23 +529,26 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 if let Some(alias) = alias {
                     ident("a `use` alias", alias)?;
                 }
+                if let Some(last) = path.last() {
+                    scope.admit(last)?;
+                }
                 let last = alias.as_ref().or_else(|| path.last());
                 scope.imported.extend(last.cloned());
             }
             Item::UnitStruct(name, derived) => {
-                once(&mut declared, "a unit struct name", name)?;
+                once(declared, "a unit struct name", name)?;
                 derives("a unit struct", derived)?;
                 scope.structs.insert(name, (Vec::new(), 0));
             }
             Item::TupleStruct(name, generics, derived, types) => {
-                once(&mut declared, "a tuple struct name", name)?;
+                once(declared, "a tuple struct name", name)?;
                 idents("a tuple struct generic", generics)?;
                 derives("a tuple struct", derived)?;
                 let fields = (0..types.len()).map(|at| at.to_string()).collect();
                 scope.structs.insert(name, (fields, generics.len()));
             }
             Item::RecordStruct(name, generics, derived, fields, types) => {
-                once(&mut declared, "a record struct name", name)?;
+                once(declared, "a record struct name", name)?;
                 idents("a record struct generic", generics)?;
                 derives("a record struct", derived)?;
                 idents("a record field name", fields)?;
@@ -390,7 +565,7 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 scope.structs.insert(name, (fields.clone(), generics.len()));
             }
             Item::Enum(name, generics, derived, variants) => {
-                once(&mut declared, "an enum name", name)?;
+                once(declared, "an enum name", name)?;
                 idents("an enum generic", generics)?;
                 derives("an enum", derived)?;
                 let mut seen = Vec::new();
@@ -408,16 +583,16 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 scope.enums.insert(name, (variants, generics.len()));
             }
             Item::Alias(name, parameters, _) => {
-                once(&mut declared, "an alias name", name)?;
+                once(declared, "an alias name", name)?;
                 idents("an alias parameter", parameters)?;
                 scope.aliases.insert(name, parameters.len());
             }
             Item::Static(name, _, _) => {
-                once(&mut declared, "a static name", name)?;
+                once(declared, "a static name", name)?;
                 scope.statics.push(name);
             }
             Item::Trait(name, sigs) => {
-                once(&mut declared, "a trait name", name)?;
+                once(declared, "a trait name", name)?;
                 scope.traits.insert(name, sigs);
                 for sig in sigs {
                     scope
@@ -428,7 +603,7 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
                 }
             }
             Item::Fn(function) => {
-                once(&mut declared, "a function name", &function.sig.name)?;
+                once(declared, "a function name", &function.sig.name)?;
                 scope
                     .functions
                     .insert(&function.sig.name, function.sig.params.len());
@@ -454,9 +629,9 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
             }
         }
     }
-    for item in &krate.items {
+    for item in items {
         match item {
-            Item::Use(..) | Item::UnitStruct(..) | Item::InnerAttr(..) => {}
+            Item::Use(..) | Item::UnitStruct(..) | Item::InnerAttr(..) | Item::Cfg(..) => {}
             Item::Defined(path) => defined_path(path)?,
             Item::Mod(name, members) => {
                 for member in members {
@@ -527,6 +702,67 @@ pub fn validate(krate: &Crate) -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+/// The items of a crate with each `cfg` item opened, beside the condition it
+/// carries. The closed set is a `use` or a function under `unix` or
+/// `not_unix`, and a function under one condition has a twin of the same
+/// name and arity under the other, so that every host has the function.
+fn flatten(items: &[Item]) -> Result<Vec<(Option<&str>, &Item)>, String> {
+    let mut flat = Vec::new();
+    let mut twins = BTreeMap::<&str, Vec<(&str, usize)>>::new();
+    for item in items {
+        let Item::Cfg(condition, inner) = item else {
+            flat.push((None, item));
+            continue;
+        };
+        if !matches!(condition.as_str(), "unix" | "not_unix") {
+            return rule(
+                "cfg-condition",
+                format!("`{condition}` is neither `unix` nor `not_unix`"),
+            );
+        }
+        match inner.as_ref() {
+            Item::Use(..) => {}
+            Item::Fn(function) => twins
+                .entry(&function.sig.name)
+                .or_default()
+                .push((condition.as_str(), function.sig.params.len())),
+            _ => {
+                return rule(
+                    "cfg-item",
+                    "a `cfg` item that is neither a `use` nor a function",
+                )
+            }
+        }
+        flat.push((Some(condition.as_str()), inner.as_ref()));
+    }
+    let mut seen = Vec::new();
+    for (condition, item) in &flat {
+        if condition.is_none() {
+            continue;
+        }
+        let Item::Fn(function) = item else {
+            continue;
+        };
+        let name = function.sig.name.as_str();
+        let Some(held) = twins.get(name) else {
+            continue;
+        };
+        if seen.contains(&name) {
+            continue;
+        }
+        seen.push(name);
+        let one = |condition: &str| held.iter().filter(|(c, _)| *c == condition).count() == 1;
+        let arity = |condition: &str| held.iter().find(|(c, _)| *c == condition).map(|(_, n)| *n);
+        if !(one("unix") && one("not_unix") && arity("unix") == arity("not_unix")) {
+            return rule(
+                "cfg-pair",
+                format!("`{name}` is not stated once under `unix` and once under `not_unix` with one arity"),
+            );
+        }
+    }
+    Ok(flat)
 }
 
 /// The inner attributes of a crate: the closed set (`no_std` with no
@@ -727,11 +963,14 @@ impl<'a> Scope<'a> {
                 self.ty(b, params, has_self)
             }
             Type::Named(name, arguments) => {
+                self.admit(name)?;
                 let expected = if let Some((_, generics)) = self.structs.get(name.as_str()) {
                     *generics
                 } else if let Some((_, generics)) = self.enums.get(name.as_str()) {
                     *generics
                 } else if let Some(count) = self.aliases.get(name.as_str()) {
+                    *count
+                } else if let Some(count) = self.package.get(name.as_str()) {
                     *count
                 } else if let Some((_, count, allocates)) =
                     TYPES.iter().find(|(known, ..)| known == name)
@@ -1030,9 +1269,31 @@ impl<'a> Scope<'a> {
         }
     }
 
+    /// `name` is not a name of the host table whose effect the root lacks.
+    fn admit(&self, name: &str) -> Result<(), String> {
+        // Child output redirection is part of Request.spawn. Its File
+        // handles are also used by the files requests; either capability
+        // admits that shared host type, while fs operations require files.
+        if name == "File" && !self.effects.contains(&"files") && !self.effects.contains(&"process")
+        {
+            return rule(
+                "hidden-effect",
+                "`File` realizes `files` or `process`, which the root does not admit",
+            );
+        }
+        match HOST.iter().find(|(known, _)| *known == name) {
+            Some((_, effect)) if !self.effects.contains(effect) => rule(
+                "hidden-effect",
+                format!("`{name}` realizes `{effect}`, which the root does not admit"),
+            ),
+            _ => Ok(()),
+        }
+    }
+
     fn path(&self, path: &[String]) -> Result<(), String> {
         segments("a path segment", path)?;
         let head = path.first().map(String::as_str).unwrap_or_default();
+        self.admit(head)?;
         if let Some((variants, _)) = self.enums.get(head) {
             return match path.get(1) {
                 Some(variant) if variants.iter().any(|held| held.name() == variant) => Ok(()),
@@ -1043,6 +1304,7 @@ impl<'a> Scope<'a> {
             };
         }
         if self.imported.iter().any(|name| name == head)
+            || self.functions.contains_key(head)
             || self.structs.contains_key(head)
             || self.statics.contains(&head)
             || INTEGERS.contains(&head)
@@ -1152,11 +1414,19 @@ impl<'a> Scope<'a> {
             }
             Expr::Path(path) => self.path(path),
             Expr::Call(path, arguments) => {
+                if let Some(head) = path.first() {
+                    self.admit(head)?;
+                }
                 let expected = match path.as_slice() {
                     [name] => self
                         .functions
                         .get(name.as_str())
                         .copied()
+                        .or_else(|| {
+                            self.package
+                                .contains_key(name.as_str())
+                                .then_some(arguments.len())
+                        })
                         .or_else(|| {
                             WRAPPERS
                                 .iter()
@@ -1182,11 +1452,17 @@ impl<'a> Scope<'a> {
                             }
                             Some(*count)
                         } else {
-                            self.variant_arity(owner, name).or_else(|| {
-                                self.associated
-                                    .get(&(owner.as_str(), name.as_str()))
-                                    .copied()
-                            })
+                            self.variant_arity(owner, name)
+                                .or_else(|| {
+                                    self.associated
+                                        .get(&(owner.as_str(), name.as_str()))
+                                        .copied()
+                                })
+                                .or_else(|| {
+                                    self.package
+                                        .contains_key(owner.as_str())
+                                        .then_some(arguments.len())
+                                })
                         }
                     }
                     _ => None,

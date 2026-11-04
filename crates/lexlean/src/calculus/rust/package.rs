@@ -94,6 +94,12 @@ pub struct Manifest {
     /// ascending) and that `rust-core` states no `allocation`; it does not
     /// derive the list.
     pub effects: Vec<String>,
+    /// The export that is a command, when the package is one: its signature is
+    /// the step of a command root (`host::recognize`), and the package carries
+    /// a `src/main.rs` that drives it. Only a `rust-std` package has one, and
+    /// the effects it states are what the driver is given.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entry: Option<String>,
 }
 
 /// A rendered package: its files by path.
@@ -630,6 +636,14 @@ pub fn lower(manifest: &Manifest) -> Result<(ast::Crate, Program, Profile), Stri
         return fail("hidden allocation: a rust-core package states the effect `allocation`");
     }
     let program = manifest.program.canonical()?;
+    if let Some(entry) = &manifest.entry {
+        if profile != Profile::Std {
+            return fail(format!(
+                "hidden allocation: the entry `{entry}` is a command, whose requests hold text and bytes, and a rust-core package has no allocation"
+            ));
+        }
+        super::host::recognize(&program, &manifest.exports, entry)?;
+    }
     let mut lowering = Lowering::new(&program, profile).map_err(|reason| {
         if reason.contains("requires heap allocation") {
             format!("hidden allocation: {reason}")
@@ -669,7 +683,17 @@ pub fn package(manifest: &Manifest) -> Result<Package, String> {
         Profile::Core => runtime::core()?.to_owned(),
         Profile::Std => format!("{}{}", runtime::core()?, runtime::std()?),
     };
-    let provenance = serde_json::json!({
+    let mut files = BTreeMap::new();
+    let mut hashes = serde_json::Map::new();
+    hashes.insert("Cargo.toml".to_owned(), sha256(&cargo).into());
+    hashes.insert(library_path.to_owned(), sha256(&library).into());
+    if let Some(entry) = &manifest.entry {
+        let command = super::host::recognize(&program, &manifest.exports, entry)?;
+        let main = super::host::main_rs(&command, &manifest.name, &manifest.effects)?.into_bytes();
+        hashes.insert("src/main.rs".to_owned(), sha256(&main).into());
+        files.insert("src/main.rs".to_owned(), main);
+    }
+    let mut provenance = serde_json::json!({
         "spec": PROVENANCE_SPEC,
         "name": manifest.name,
         "version": manifest.version,
@@ -683,16 +707,15 @@ pub fn package(manifest: &Manifest) -> Result<Package, String> {
             "name": export.name,
             "function": export.function,
         })).collect::<Vec<_>>(),
-        "files": {
-            "Cargo.toml": sha256(&cargo),
-            (library_path): sha256(&library),
-        },
+        "files": hashes,
     });
+    if let (Some(entry), Some(object)) = (&manifest.entry, provenance.as_object_mut()) {
+        object.insert("entry".to_owned(), entry.clone().into());
+    }
     let provenance =
         crate::artifact::canonical_json::Json::parse(provenance.to_string().as_bytes())
             .map_err(|error| format!("provenance is not canonical JSON: {error}"))?
             .to_file_bytes();
-    let mut files = BTreeMap::new();
     files.insert("Cargo.toml".to_owned(), cargo);
     files.insert(library_path.to_owned(), library);
     files.insert("provenance.json".to_owned(), provenance);

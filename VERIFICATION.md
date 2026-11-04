@@ -18571,3 +18571,37 @@ head's CI. It is not a complete `just vv` run or changed-head CI result. The
 final committed head still requires its full acceptance gate before merge;
 #409 remains open until that accepted change lands. This evidence makes no
 closure claim for #382, #271, #376 or #301.
+
+### Native command execution can fail
+
+The v0.5 port of the command driver from PR #419 first failed before export:
+its interdependent fragments were validated separately, private free functions
+were rejected, its fixture appended strings with the bytes/list primitive,
+and its session was a pair where the command signature requires an owned
+program type. Composed validation and a session record address these failures.
+Process output redirection admits the shared `File` type through `process`;
+ordinary `fs` operations still require `files`. Conditional declarations are
+checked in separate platform scopes, including collisions with unconditional
+names. The LexLean validator carries the same package roots and effect context.
+
+`conformance_pd_10` and `conformance_rb_24` passed together in 236.91 seconds.
+The latter exports the fixture through the production consumer, builds and
+runs the resulting binary, and detects the four original driver defects. It
+also waits for a child to acknowledge ownership of an OS file lock, destroys
+the owning session, and requires the lock to be available immediately. A plant
+that drops the child handle without terminating the child compiles but fails
+that probe. This covers ordinary session destruction, not an externally
+forced termination of the driver.
+
+During the validator port, all 747 compiled vectors and the 741 vectors within
+the evaluator's 4,000-node bound agreed with the Rust oracle, and each of the
+eight existing defects was detected. Certification then refused a 7,875,696-byte
+certificate part under the bootstrap project's 6 MiB file limit. The project
+now states a 10 MiB limit; the size check remains active.
+
+The expanded `validateRuntime` preservation certificate also exceeded the
+bootstrap project's 300,000 ms Lean-child limit. The project now bounds each
+child at 600,000 ms. A subsequent attempt was killed under the development
+workspace's 16 GiB memory limit while another artifact build was running; that
+run is not acceptance evidence. Large preservation checks run without a
+competing artifact build.
