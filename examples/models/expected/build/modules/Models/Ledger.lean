@@ -139,7 +139,7 @@ public theorem CapContract.postcondition_sound : LexLeanModels.Sound4 ((Models.L
 @[expose] public def clampRef (s : Nat) (x : Nat) : (Prod (Nat) (Nat)) := (let total : Nat := (s + x); ((LexLeanRuntime.subtract (total) ((LexLeanRuntime.subtract (total) (100) : Nat)) : Nat), (LexLeanRuntime.subtract (total) ((LexLeanRuntime.subtract (total) (100) : Nat)) : Nat)))
 
 public theorem clamp_initial : Capped (Clamp.initial) := by
-  decide
+  decide +kernel
 
 public theorem clamp_preserves (s : Nat) (x : Nat) : (Capped (s) -> Capped ((Clamp (s) (x)).1)) := by
   intros
@@ -258,9 +258,9 @@ public theorem same_nat_sound (expected : Nat) (observed : Nat) : ((sameNat (exp
   all_goals omega
 
 public theorem guess_agreement : (((LexLeanRuntime.length (guessSamples) : Nat) = 5) /\ ((LexLeanCollections.listFold ((fun (count : Nat) («example» : (Prod (Nat) (Nat))) => (if sameNat (Guess ((«example»).1)) ((«example»).2) then (count + 1) else count))) (0) (guessSamples) : Nat) = 4)) := by
-  decide
+  decide +kernel
 
-public theorem GuessSample.guess_agreement : LexLeanModels.Agreement ((Models.Ledger.Guess)) ((Models.Ledger.sameNat)) (Models.Ledger.guessSamples) (5) (4) := by decide
+public theorem GuessSample.guess_agreement : LexLeanModels.Agreement ((Models.Ledger.Guess)) ((Models.Ledger.sameNat)) (Models.Ledger.guessSamples) (5) (4) := by decide +kernel
 
 @[expose] public def GuessModel (__input : Nat) : Nat := Models.Ledger.Guess (__input)
 

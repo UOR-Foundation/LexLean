@@ -18419,3 +18419,155 @@ oracle's composed label is the SHA-256 of the canonical form the package
 writes, which the first run of the case established; the package computes the
 smallest of the 24 quarter orders of E7 as the quarters sorted, and the corpus
 holds every order to the oracle's enumeration of them.
+
+### Host interface consumer can fail
+
+`conformance_sl_12` first failed with `LLR3005`: `Consumer` imported `Host`,
+which was not a project module. After adding `stdlib/src/Host.lex.tex`, the
+consumer initially constructed fourteen requests and fourteen events and
+matches both types exhaustively. The same test changes the spawn environment
+from `List (String * String)` to `String` and requires checking to fail. The
+unmodified consumer and the planted refusal passed in 1.79 seconds. This
+establishes the typed interface only; it is no evidence of host execution,
+effect enforcement, or driver preservation.
+
+The v0.5 interface was then aligned byte-for-byte with `Host.lex.tex` from
+PR #389 at `afe1a002f218f0eba9ee3f309793d135c45e5e7d`, replacing the older
+consumer mirror. The independent consumer now constructs all fourteen
+requests, eight events, five records and both kind enums. It checks the
+fallible startup paths, optional file identity, child launch record, timed
+multi-child wait and byte exit output. The same environment-field mutation
+is rejected; `conformance_sl_12` passed in 3.99 seconds. This forward-port
+does not include #389's effect-eligibility implementation.
+
+### bounded byte slice normalization can fail
+
+The `conformance_sm_19` consumer slices bytes `[85, 2047)` from a 2048-byte
+input and verifies the exact result, an empty slice at the end, and refused
+slices beyond the end. Before the change to the language-1.2 core source,
+its five-second child budget refused the generated `LexLeanExample.Main`:
+
+```text
+LLS8002: child_timeout_ms exceeded by `lean` in phase LexLeanExample.Main: configured 5000, observed 5000 ms
+```
+
+The bounded slice now takes and drops the underlying byte list and rebuilds
+the byte array, with the same bounds check. This avoids reducing the array
+copy loop in the kernel. The core notation was edited and canonically
+renumbered with `lexlean fmt`; no handwritten Lean runtime was introduced.
+The same named case passes with real elaboration, kernel replay and its
+empty axiom policy. Its changed expected byte is refused with `LLV7002`.
+
+The new `SM-19` join regression first failed with `LLV7002` on every empty,
+singleton, Unicode and nested join: Lean's `String.intercalate` body is opaque
+outside its defining module. The language-1.2 LexLean runtime now expresses
+that operation as a list case and left fold over `String.append`, retaining
+its exact `[propext]` computational policy. The complete named case passed
+in 109.16 seconds with elaboration and kernel replay; removing an expected
+separator is rejected with `LLV7002`.
+
+The closed-decision and large-slice regressions use the fixture's normal
+verification timeout. Their former five-second override also timed out while
+compiling the unchanged Portable prerequisite on CI (5004 ms), before the
+operation under test. These cases establish correctness and mutation
+rejection, not a five-second performance guarantee.
+
+
+### PR #396 exact-head fixture and README evidence
+
+CI run `41702745654` on `84e38cb0230a1e0f52302f0d144ce10f2d5279c5`
+failed `conformance_ex_07` in production job `126151210575` on six
+`tests/negative/*/expected/command.json` files. The observed and committed
+JSON differ only in generated identities:
+
+| Fixture | Diagnostic | Committed identity or fragment | Observed identity or fragment |
+| --- | --- | --- | --- |
+| certificate-b-rejected | LLV7015 | fd7200c5e1004a64d9376653bca13538 | 4d1ff72de03b61f9cc75487781341a7c |
+| certificate-e-rejected | LLV7016 | fd7200c5e1004a64d9376653bca13538 | 4d1ff72de03b61f9cc75487781341a7c |
+| certificate-rejected | LLV7013 | fd7200c5e1004a64d9376653bca13538 | 4d1ff72de03b61f9cc75487781341a7c |
+| certificate-heartbeat-rejected | LLV7013 | 033f7c29c9ed4ff40703871375c8b84d | 2cfa96011d16069dc2d3bf86b08fe27a |
+| certificate-resource-exhausted | LLS8002 | 033f7c29c9ed4ff40703871375c8b84d | 2cfa96011d16069dc2d3bf86b08fe27a |
+| production-expectation-stale | LLC0204 | e8d05dd0be3a390ea5b6f8d3a5f92091bada1aeb6b66f9c07a4e0401fcbbbdab | dbb63e64005053e3d5be5f785f7317960e518ae3dce457390b51c004825f942a |
+
+Parsing the twelve log JSON objects and normalizing those identities makes
+each expected/observed pair equal, including diagnostic text, exit codes,
+artifacts and all other fields. ARM Linux, Windows and Apple ARM jobs each
+report only the last mismatch under their platform-independent assertions.
+These observations identify stale expectations; they do not record a writer
+run or a passing fixture gate. The official fixture writer remains required.
+No expected output was edited in this source-only follow-up for #396/#409.
+
+`just fixtures-write` invokes `cargo xtask check-fixtures --write`. This is
+the smallest supported writer invocation: `check_fixtures` discovers every
+`case.toml` under `tests/fixtures` and `tests/negative`, with no per-fixture
+selector, and calls `repo_conformance::fixtures::write` for each. The writer
+executes the CLI entry point and checks each case's prescribed exit before
+writing observed expected files. Use the pinned toolchain and an executable
+built from the admitted compiler inputs. Its repository root comes from
+`repo_model::repo_root` at compile time; copying a frozen executable to a new
+checkout does not retarget it by changing the working directory. The owning
+writer phase must record that source/root correspondence, executable hashes,
+fixture input preservation, actual writer result and reviewed output delta.
+Coordinate that phase after the active Host writer releases its shared lock.
+No Cargo command, build, writer or acceptance run was performed for this
+source-only correction.
+
+The same run's rest job `126151210865` fails `conformance_rp_11` because
+README's `SL-01` through `SL-08` range stops before the register's last
+`SL-12` row. RP-11 requires ranges to cover the whole registered prefix and
+also enforces registered references, unique claims and complete coverage.
+README now enumerates exactly `SL-01` through `SL-08` and `SL-12`; this line
+has no `SL-09`, `SL-10` or `SL-11` rows. The gate and capability description
+are unchanged. This textual correction has not been run through RP-11 or
+the full acceptance gate.
+
+### PR #396 official fixture completion and focused validation
+
+On 2026-11-04, the official all-fixture writer ran once on the reviewed
+`61b776861c9d51be6776b184ace9ae42c12fee09` source (parent
+`84e38cb0230a1e0f52302f0d144ce10f2d5279c5`): frozen `xtask
+check-fixtures --write` completed all 313 fixtures in 1033.60 seconds with
+exit 0. The before/after ledger preserves all 2,400 fixture input entries,
+every case invocation and operational environment, and all diagnostic-code
+arrays and exit codes. Exactly twelve expected files changed: `command.json`
+and `diagnostics.json` in each of the six fixtures listed above. Only the
+observed certificate/source identities changed; artifact and hash expectations
+and every other tracked byte were preserved during this writer phase.
+
+Both `xtask` and `lexlean` were built from the admitted source and frozen
+before execution. Cargo-selected dependency root probes reported this exact
+checkout for the model, conformance support and production-export fixture
+roots. All 905 selected embedded compiler inputs equalled the admitted source
+bytes; no cache cleanup or provenance repair was needed. Frozen executable
+SHA-256 values were:
+
+- xtask: `2d97376ba8451ac3903fa5727c3a6a63811038ec9a90cf431432f0204e11a76c`
+- lexlean: `5076c71ebf88b4e40829915fafb51ca18d7f46d6242e1834a96ab878fb79152c`
+
+The first orchestration record ended with a comparison failure after the
+successful writer, before model, formatting or RP-11 execution. Its strict
+comparison recognized the heartbeat certificate's module identity but omitted
+the same identity in two typed
+`$STAGING/preserve-src/LexLeanPreserve/C<identity>/R0.lean` diagnostic paths.
+Independent review confirmed exactly one module-token and two typed-path
+substitutions in each heartbeat output, with every other byte unchanged.
+The original writer log, original expected files, before/after ledgers and
+failed orchestration record were retained. Expected outputs were never edited
+by hand, and the writer was not repeated.
+
+A separate validation-only continuation admitted those exact typed-path
+substitutions, preserving the comparison's byte equality everywhere else.
+It rechecked all twelve outputs and all 2,400 fixture inputs, then passed
+frozen `xtask validate-model` (483 IDs, 86 codes, documents current and audits
+clean), `cargo fmt --all -- --check`, and `git diff --check`. Its newly built
+conformance harness had the same correct file-reading roots and 905 matching
+embedded inputs. Listing the exact `conformance_rp_11` filter established one
+selected test; the test ran once and passed in 0.04 seconds, with 482 filtered
+out. No unsupported `--fail-fast` flag was supplied. The separate continuation
+record ended successfully; it does not erase the earlier orchestration failure.
+
+This completes the narrow fixture/README corrections identified by the old
+head's CI. It is not a complete `just vv` run or changed-head CI result. The
+final committed head still requires its full acceptance gate before merge;
+#409 remains open until that accepted change lands. This evidence makes no
+closure claim for #382, #271, #376 or #301.

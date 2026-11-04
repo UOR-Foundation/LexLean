@@ -76,57 +76,57 @@ public structure Cost where
 @[expose] public def allBounded (domain : List (Nat)) : Bool := (if bounded (Op.avx2Maddubs) (domain) then (if bounded (Op.avx2Madd) (domain) then (if bounded (Op.avx2Adds) (domain) then (if bounded (Op.neonMull) (domain) then (if bounded (Op.neonPaddl) (domain) then (if bounded (Op.neonQadd) (domain) then (if bounded (Op.wasmExtmul) (domain) then (if bounded (Op.wasmDot) (domain) then bounded (Op.wasmAddSat) (domain) else false) else false) else false) else false) else false) else false) else false) else false)
 
 public theorem maddubs_saturates_high : (avx2MaddubsEpi16 (((255 : Int) :: ((255 : Int) :: ([] : List (Int))))) (((127 : Int) :: ((127 : Int) :: ([] : List (Int))))) = ((32767 : Int) :: ([] : List (Int)))) := by
-  decide
+  decide +kernel
 
 public theorem maddubs_saturates_low : (avx2MaddubsEpi16 (((255 : Int) :: ((255 : Int) :: ([] : List (Int))))) (((LexLeanRuntime.negate ((128 : Int)) : Int) :: ((LexLeanRuntime.negate ((128 : Int)) : Int) :: ([] : List (Int))))) = ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int)))) := by
-  decide
+  decide +kernel
 
 public theorem maddubs_exact : (avx2MaddubsEpi16 (((3 : Int) :: ((4 : Int) :: ([] : List (Int))))) (((5 : Int) :: ((LexLeanRuntime.negate ((6 : Int)) : Int) :: ([] : List (Int))))) = ((LexLeanRuntime.negate ((9 : Int)) : Int) :: ([] : List (Int)))) := by
-  decide
+  decide +kernel
 
 public theorem madd_wraps : (avx2MaddEpi16 (((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) (((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) = ((LexLeanRuntime.negate ((2147483648 : Int)) : Int) :: ([] : List (Int)))) := by
-  decide
+  decide +kernel
 
 public theorem madd_exact : (avx2MaddEpi16 (((1 : Int) :: ((2 : Int) :: ((3 : Int) :: ((4 : Int) :: ([] : List (Int))))))) (((5 : Int) :: ((6 : Int) :: ((7 : Int) :: ((8 : Int) :: ([] : List (Int))))))) = ((17 : Int) :: ((53 : Int) :: ([] : List (Int))))) := by
-  decide
+  decide +kernel
 
 public theorem adds_saturates : (avx2AddsEpi16 (((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) (((1 : Int) :: ((LexLeanRuntime.negate ((1 : Int)) : Int) :: ([] : List (Int))))) = ((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) := by
-  decide
+  decide +kernel
 
 public theorem mull_widens : (neonMullS8 (((LexLeanRuntime.negate ((128 : Int)) : Int) :: ((127 : Int) :: ([] : List (Int))))) (((LexLeanRuntime.negate ((128 : Int)) : Int) :: ((127 : Int) :: ([] : List (Int))))) = ((16384 : Int) :: ((16129 : Int) :: ([] : List (Int))))) := by
-  decide
+  decide +kernel
 
 public theorem mull_takes_eight : (neonMullS8 (((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ([] : List (Int))))))))))) (((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ([] : List (Int))))))))))) = ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ([] : List (Int))))))))))) := by
-  decide
+  decide +kernel
 
 public theorem paddl_widens : (neonPaddlqS16 (((32767 : Int) :: ((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))))) = ((65534 : Int) :: ((LexLeanRuntime.negate ((65536 : Int)) : Int) :: ([] : List (Int))))) := by
-  decide
+  decide +kernel
 
 public theorem qadd_saturates : (neonQaddqS16 (((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) (((1 : Int) :: ((LexLeanRuntime.negate ((1 : Int)) : Int) :: ([] : List (Int))))) = ((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) := by
-  decide
+  decide +kernel
 
 public theorem extmul_takes_low_eight : (wasmExtmulLowI8x16 (((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ((3 : Int) :: ([] : List (Int))))))))))))))))))) (((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ((5 : Int) :: ([] : List (Int))))))))))))))))))) = ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ((15 : Int) :: ([] : List (Int))))))))))) := by
-  decide
+  decide +kernel
 
 public theorem dot_wraps : (wasmDotI16x8 (((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) (((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) = ((LexLeanRuntime.negate ((2147483648 : Int)) : Int) :: ([] : List (Int)))) := by
-  decide
+  decide +kernel
 
 public theorem add_sat_saturates : (wasmAddSatI16x8 (((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) (((1 : Int) :: ((LexLeanRuntime.negate ((1 : Int)) : Int) :: ([] : List (Int))))) = ((32767 : Int) :: ((LexLeanRuntime.negate ((32768 : Int)) : Int) :: ([] : List (Int))))) := by
-  decide
+  decide +kernel
 
 public theorem price_reads_whole_instructions : ((price (Op.avx2Maddubs) (33)).ops = 2) := by
-  decide
+  decide +kernel
 
 public theorem price_bytes : ((price (Op.avx2Maddubs) (33)).bytes = 128) := by
-  decide
+  decide +kernel
 
 public theorem price_empty : ((price (Op.neonQadd) (0)).bytes = 0) := by
-  decide
+  decide +kernel
 
 public theorem worst_case_is_largest : ((worstCase (Op.avx2Maddubs) ((0 :: (31 :: (1024 :: (33 :: ([] : List (Nat)))))))).bytes = 2048) := by
-  decide
+  decide +kernel
 
 public theorem worst_case_bounded_by_operations : (allBounded ((0 :: (1 :: (7 :: (8 :: (9 :: (31 :: (32 :: (33 :: (1024 :: ([] : List (Nat)))))))))))) = true) := by
-  decide
+  decide +kernel
 
 end LexLeanStd.Target

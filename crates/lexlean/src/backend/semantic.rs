@@ -792,14 +792,14 @@ impl Render<'_> {
                             .collect::<Vec<_>>()
                             .join(" && ")
                     ),
-                    Some("by decide"),
+                    Some("by decide +kernel"),
                 )
             }
             CheckStatement::Lines { artifact } => {
                 let value = identifier(artifact);
                 (
                     format!("LexLeanModels.linesMatch {value} {value}.bytes = true"),
-                    Some("by decide"),
+                    Some("by decide +kernel"),
                 )
             }
             CheckStatement::Bytes { artifact } => {
@@ -809,7 +809,7 @@ impl Render<'_> {
         };
         let proof = match (&check.proof, proof) {
             (_, Some(proof)) => proof.to_owned(),
-            (CheckProof::Decide, None) => "by decide".to_owned(),
+            (CheckProof::Decide, None) => "by decide +kernel".to_owned(),
             (
                 CheckProof::Theorem {
                     theorem,
@@ -1231,7 +1231,10 @@ impl Render<'_> {
         let pad = "  ".repeat(indent);
         match proof {
             SemanticProof::Reflexivity => format!("{pad}rfl\n"),
-            SemanticProof::Decide => format!("{pad}decide\n"),
+            // The kernel evaluator shares reductions of nested data. The
+            // metaprogram evaluator can exhaust memory on ordinary closed
+            // parser traces; both still produce kernel-checked proof terms.
+            SemanticProof::Decide => format!("{pad}decide +kernel\n"),
             SemanticProof::LinearArithmetic { definitions } => {
                 let unfolded = definitions
                     .iter()

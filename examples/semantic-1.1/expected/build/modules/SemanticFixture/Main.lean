@@ -59,7 +59,7 @@ public theorem list_refl (values : List (Nat)) : (values = values) := by
     rfl
 
 public theorem boolean_bridge : ((Nat.beq (0) (0)) = true) := by
-  decide
+  decide +kernel
 
 public theorem empty_consecutive : (allConsecutive (0) (([] : List (Nat))) = true) := by
   simp only [allConsecutive]

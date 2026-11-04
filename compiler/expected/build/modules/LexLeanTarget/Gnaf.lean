@@ -266,25 +266,25 @@ public inductive Answer where
 @[expose] public def wellFormed (grammar : Grammar) (selector : Selector) : Bool := (let count : Nat := (LexLeanRuntime.length ((grammar).plans) : Nat); (match selector with | Selector.fixed plan => (Nat.blt (plan) (count)) | Selector.dispatch threshold small large => (natIn (threshold) ((grammar).thresholds) && ((Nat.blt (small) (count)) && (Nat.blt (large) (count))))))
 
 public theorem orAssociative : (forall (a : Bool), (forall (b : Bool), (forall (c : Bool), (((a || b) || c) = (a || (b || c)))))) := by
-  decide
+  decide +kernel
 
 public theorem orFalse : (forall (a : Bool), ((a || false) = a)) := by
-  decide
+  decide +kernel
 
 public theorem falseOr : (forall (a : Bool), ((false || a) = a)) := by
-  decide
+  decide +kernel
 
 public theorem andFalse : (forall (a : Bool), ((a && false) = false)) := by
-  decide
+  decide +kernel
 
 public theorem falseAnd : (forall (a : Bool), ((false && a) = false)) := by
-  decide
+  decide +kernel
 
 public theorem andOverOr : (forall (a : Bool), (forall (b : Bool), (forall (c : Bool), (((a && b) || (a && c)) = (a && (b || c)))))) := by
-  decide
+  decide +kernel
 
 public theorem orUnderAnd : (forall (a : Bool), (forall (b : Bool), (forall (c : Bool), (((a && c) || (b && c)) = ((a || b) && c))))) := by
-  decide
+  decide +kernel
 
 public theorem bltNext (left : Nat) (right : Nat) : ((Nat.blt ((left + 1)) ((right + 1))) = (Nat.blt (left) (right))) := by
   rfl

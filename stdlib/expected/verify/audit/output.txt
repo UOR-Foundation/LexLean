@@ -281,6 +281,15 @@
 'LexLeanStd.Buffer.writeEach' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Buffer.writeNumbers' does not depend on any axioms
 'LexLeanStd.Buffer.zeroStep' does not depend on any axioms
+'LexLeanStd.Host.Child' does not depend on any axioms
+'LexLeanStd.Host.Entry' does not depend on any axioms
+'LexLeanStd.Host.EntryKind' does not depend on any axioms
+'LexLeanStd.Host.Event' does not depend on any axioms
+'LexLeanStd.Host.Failure' does not depend on any axioms
+'LexLeanStd.Host.FailureKind' does not depend on any axioms
+'LexLeanStd.Host.Request' does not depend on any axioms
+'LexLeanStd.Host.Start' does not depend on any axioms
+'LexLeanStd.Host.Waited' does not depend on any axioms
 'LexLeanStd.Sha256.Digest' does not depend on any axioms
 'LexLeanStd.Sha256.Schedule' does not depend on any axioms
 'LexLeanStd.Sha256.Working' does not depend on any axioms

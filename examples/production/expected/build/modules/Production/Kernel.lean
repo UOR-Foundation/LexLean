@@ -36,6 +36,6 @@ decreasing_by all_goals first | (have __evidence := countdown_decreases (number)
 @[expose, reducible] public def positive (value : Nat) : Prop := (0 < value)
 
 public theorem area_square : (area (Shape.rectangle (3) (3)) = 9) := by
-  decide
+  decide +kernel
 
 end Production.Kernel

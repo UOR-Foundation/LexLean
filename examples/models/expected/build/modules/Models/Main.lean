@@ -25,15 +25,15 @@ namespace Models.Main
 @[expose] public def step (window : Models.Session.Window) (cost : Nat) : Except ((Prod Bool Bool)) ((Prod (Models.Session.Window) (Nat))) := (let __checked1_state : Models.Session.Window := window; (let __checked1_input : Nat := cost; (if Models.Session.boundedCheck (__checked1_state) then (if Models.Session.affordableCheck (__checked1_state) (__checked1_input) then (let __checked1_step : (Prod (Models.Session.Window) (Nat)) := Models.Session.SessionModel (__checked1_state) (__checked1_input); Except.ok (__checked1_step)) else Except.error (((false, false) : Prod Bool Bool))) else Except.error (((false, true) : Prod Bool Bool)))))
 
 public theorem classify_eight : (classify (Models.Glyphs.Glyph.g8) = 8) := by
-  decide
+  decide +kernel
 
 @[expose] public def admission (outcome : Except ((Prod Bool Bool)) (Except ((Prod Bool Bool)) (List (Nat)))) : Nat := (match outcome with | Except.error _ => 0 | Except.ok scanned => (match scanned with | Except.error _ => 1 | Except.ok _ => 2))
 
 public theorem admit_rejects_costly : (admission (admitCosts ((3 :: (40 :: ([] : List (Nat)))))) = 1) := by
-  decide
+  decide +kernel
 
 public theorem admit_accepts_cheap : (admission (admitCosts ((3 :: (16 :: (9 :: ([] : List (Nat))))))) = 2) := by
-  decide
+  decide +kernel
 
 @[expose] public def ledgerPost (s : Nat) (x : Nat) : Except ((Prod Bool Bool)) ((Prod (Nat) (Nat))) := (let __checked1_state : Nat := s; (let __checked1_input : Nat := x; (if Models.Ledger.cappedCheck (__checked1_state) then (if Models.Ledger.smallCheck (__checked1_state) (__checked1_input) then (let __checked1_step : (Prod (Nat) (Nat)) := Models.Ledger.SpillModel (__checked1_state) (__checked1_input); (if Models.Ledger.cappedCheck ((__checked1_step).1) then Except.ok (__checked1_step) else Except.error (((true, true) : Prod Bool Bool)))) else Except.error (((false, false) : Prod Bool Bool))) else Except.error (((false, true) : Prod Bool Bool)))))
 
@@ -80,118 +80,118 @@ public theorem admit_accepts_cheap : (admission (admitCosts ((3 :: (16 :: (9 :: 
 @[expose] public def streamCode (outcome : Except ((Prod Bool Bool)) (Except ((Prod Bool Bool)) (List (Nat)))) : Nat := (match outcome with | Except.error violation => Models.Ledger.violationCode (violation) | Except.ok inner => (match inner with | Except.error violation => (10 + Models.Ledger.violationCode (violation)) | Except.ok values => (100 + (LexLeanRuntime.length (values) : Nat))))
 
 public theorem ledger_accepts : (stepCode (ledgerPost (5) (3)) = 108) := by
-  decide
+  decide +kernel
 
 public theorem ledger_refuses_input : (stepCode (ledgerPost (200) (1)) = 2) := by
-  decide
+  decide +kernel
 
 public theorem ledger_refuses_precondition : (stepCode (ledgerPost (5) (20)) = 1) := by
-  decide
+  decide +kernel
 
 public theorem ledger_refuses_output : (stepCode (ledgerPost (95) (9)) = 4) := by
-  decide
+  decide +kernel
 
 public theorem ledger_full_accepts : (stepCode (ledgerFull (5) (3)) = 108) := by
-  decide
+  decide +kernel
 
 public theorem ledger_full_refuses_output : (stepCode (ledgerFull (95) (9)) = 4) := by
-  decide
+  decide +kernel
 
 public theorem guess_accepts : (valueCode (guessChecked (5)) = 104) := by
-  decide
+  decide +kernel
 
 public theorem guess_refuses_precondition : (valueCode (guessChecked (20)) = 1) := by
-  decide
+  decide +kernel
 
 public theorem overshoot_refuses_postcondition : (valueCode (overshootChecked (3)) = 3) := by
-  decide
+  decide +kernel
 
 public theorem flow_accepts : (flowCode (flowStep (5) (3)) = 9107) := by
-  decide
+  decide +kernel
 
 public theorem flow_refuses_junction : (flowCode (flowStep (5) (30)) = 6001) := by
-  decide
+  decide +kernel
 
 public theorem flow_refuses_input : (flowCode (flowStep (200) (1)) = 2) := by
-  decide
+  decide +kernel
 
 public theorem twice_accepts : (twiceCode (guessTwice (4)) = 133) := by
-  decide
+  decide +kernel
 
 public theorem twice_refuses : (twiceCode (guessTwice (40)) = 1) := by
-  decide
+  decide +kernel
 
 public theorem overshoot_pair_refuses_postcondition : (twiceCode (guessOvershoot (4)) = 13) := by
-  decide
+  decide +kernel
 
 public theorem twin_accepts : (quadCode (twinStep ((5, 7)) (3)) = 8010008007) := by
-  decide
+  decide +kernel
 
 public theorem twin_refuses_precondition : (quadCode (twinStep ((5, 7)) (30)) = 1) := by
-  decide
+  decide +kernel
 
 public theorem twin_refuses_input : (quadCode (twinStep ((200, 7)) (3)) = 2) := by
-  decide
+  decide +kernel
 
 public theorem pair_clamp_accepts : (quadCode (pairClamp ((5, 90)) ((3, 20))) = 8100008100) := by
-  decide
+  decide +kernel
 
 public theorem pair_clamp_refuses_input : (quadCode (pairClamp ((5, 200)) ((1, 1))) = 2) := by
-  decide
+  decide +kernel
 
 public theorem branch_takes_then : (branchCode (branchStep ((5, 7)) (3)) = 8007008) := by
-  decide
+  decide +kernel
 
 public theorem branch_takes_else : (branchCode (branchStep ((5, 7)) (8)) = 5015007) := by
-  decide
+  decide +kernel
 
 public theorem branch_refuses_precondition : (branchCode (branchStep ((5, 7)) (20)) = 1) := by
-  decide
+  decide +kernel
 
 public theorem chain_accepts : (chainCode (chainStep ((5, 7)) (3)) = 8010107) := by
-  decide
+  decide +kernel
 
 public theorem chain_refuses_stage_output : (chainCode (chainStep ((95, 7)) (9)) = 95007004) := by
-  decide
+  decide +kernel
 
 public theorem chain_refuses_precondition : (chainCode (chainStep ((5, 7)) (30)) = 1) := by
-  decide
+  decide +kernel
 
 public theorem raw_chain_accepts : (chainCode (rawChainStep ((4, 20)) (3)) = 7024104) := by
-  decide
+  decide +kernel
 
 public theorem raw_chain_refuses_input : (chainCode (rawChainStep ((4, 150)) (3)) = 4150002) := by
-  decide
+  decide +kernel
 
 public theorem raw_chain_refuses_precondition : (chainCode (rawChainStep ((12, 20)) (3)) = 12020001) := by
-  decide
+  decide +kernel
 
 public theorem drain_chain_accepts : (chainCode (drainChainStep ((0, 20)) (3)) = 3020100) := by
-  decide
+  decide +kernel
 
 public theorem drain_chain_refuses_postcondition : (chainCode (drainChainStep ((4, 20)) (3)) = 4020003) := by
-  decide
+  decide +kernel
 
 public theorem stream_accepts : (streamCode (spillStream ((10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: ([] : List (Nat)))))))))))))) = 110) := by
-  decide
+  decide +kernel
 
 public theorem stream_refuses_output : (streamCode (spillStream ((10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: (10 :: ([] : List (Nat))))))))))))))) = 14) := by
-  decide
+  decide +kernel
 
 @[expose] public def deriveScaleMultiplier (inputScaleBits : Int) (weightScaleBits : Int) (outputScaleBits : Int) : Option (Int) := Models.Recognizer.scaleRatioRound32 (inputScaleBits) (weightScaleBits) (outputScaleBits)
 
 @[expose] public def deriveChannelMultipliers (inputScaleBits : Int) (weightScaleBits : List (Int)) (outputScaleBits : Int) : Option (List (Int)) := Models.Recognizer.scaleMultipliersRound32 (inputScaleBits) (weightScaleBits) (outputScaleBits)
 
 public theorem corpus_scale_ratio_rounds_up : (deriveScaleMultiplier ((998277249 : Int)) ((1000693826 : Int)) ((1017370378 : Int)) = Option.some ((4250229 : Int))) := by
-  decide
+  decide +kernel
 
 public theorem corpus_scale_ratio_rounds_down : (deriveScaleMultiplier ((1023410176 : Int)) ((1017370378 : Int)) ((1039516303 : Int)) = Option.some ((22369621 : Int))) := by
-  decide
+  decide +kernel
 
 public theorem corpus_scale_ratio_tie_even : ((deriveScaleMultiplier ((1065353217 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582914 : Int))) /\ (deriveScaleMultiplier ((1065353219 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582916 : Int)))) := by
-  decide
+  decide +kernel
 
 public theorem corpus_scale_multipliers : (deriveChannelMultipliers ((998277249 : Int)) (((1000593162 : Int) :: ((1000693826 : Int) :: ([] : List (Int))))) ((1017370378 : Int)) = Option.some (((4210752 : Int) :: ((4250229 : Int) :: ([] : List (Int)))))) := by
-  decide
+  decide +kernel
 
 end Models.Main
