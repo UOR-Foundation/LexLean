@@ -12742,3 +12742,100 @@ and generated artifacts, and the complete changed-head gate remain required.
 The pinned checker's prefix rechecks remain; no globally exactly-once kernel
 claim is made. No product writer, pin change, full gate, commit or push ran
 as part of this focused continuation or this evidence append.
+
+## VR-28 controlled public gateway pair: measured evidence
+
+On 2026-11-04, one new controlled pair completed on the source preparation
+`104f755ae9b525df0765af08a13c68bfa715b577`, compared with unchanged pre-skip
+`ed1deb0cbe26aa2330a464224fb01e7df2739920`. The public corpus was
+`UOR-Foundation/lexlean-mcp` at
+`991ab332608727306977c9850da6be182ab80071`, with MCP at
+`c53816e24e16051b60fb6557b5d8ac456330c569` and PrismPM at
+`706fb746100c1d220841d93820a035d07beb5323`. Its complete materialized input
+manifest contains 323 files (SHA-256
+`4b0632d0c3d209e335387e74b52ab6d3cc0c2d30b0a8c809a4053160d110a60f`).
+Both fresh copies retained all 11 configured entrypoints and their 58-module
+closure. The four production roots were
+`LexLeanMcpGateway.DraftAdmission.admitRun`,
+`LexLeanMcpGateway.DraftAdmission.admitDraftRun`,
+`LexLeanMcpGateway.Gateway.gatewayRun` and `LexLeanMcpGateway.Nfc.nfcRun`.
+No `--all` expansion, narrowed selection or root substitution was used.
+This public corpus is not asserted to be the author's historical WSL checkout.
+
+The independently frozen baseline CLI had SHA-256
+`3f72ffca8949262d50a1466660daa768d5d756017b6d0ecbead0cc66c8dcacdb`;
+the candidate CLI had SHA-256
+`be50848d74ef98b4888bea67e29779076ca5d28426e69085dd54123ab4daa374`.
+Each ran the supported `lexlean --project <fresh-copy>/gateway/lexlean.toml
+lock` once, then `lexlean --project <fresh-copy>/gateway/lexlean.toml verify`
+once. Both locks completed before either verification. There was no extra
+standalone check, build, warmup or repeated verification. Baseline ran first,
+candidate second, on the same host and pinned Lean 4.32.1, at width 1 without
+hints or a memory-budget override. Each used fresh project, build, verification
+and telemetry directories; no proof or verification artifact crossed runs.
+Global OS and toolchain caches were left unchanged within the pair, so the
+sequential order and cache effects remain limitations.
+
+| Observed seconds | Pre-skip ed1 | Candidate 104 |
+| --- | ---: | ---: |
+| Complete CLI verification wall | 1,863.117 | 1,243.365 |
+| Available waited-child CPU, user plus system | 2,176.786 | 1,475.059 |
+| Certificate generation stage | 153.742 | 153.209 |
+| Project elaboration stage | 237.961 | 154.454 |
+| Project replay stage | 146.720 | 146.105 |
+| Extraction stage | 41.317 | 40.303 |
+| Certificate stage | 1,258.461 | 724.466 |
+
+The wall observations use an outer monotonic clock. CPU is the available OS
+waited-child accounting, not an assertion about total machine CPU. Raw I/O
+operation, page-fault and context-switch counters and existing stage/process
+RSS, swap and wall telemetry are retained. The table selects component stages; outer CLI wall time also includes work
+outside the internal verifier interval.
+The pair observed 619.752 seconds (33.264%) lower wall time for the candidate.
+This measures the net implementation including required binding, final guard,
+rehash and retention costs; it is not flag-only attribution, a general or
+statistical performance estimate, or reproduction of the original WSL timing.
+
+Both complete verifications succeeded. Independent inspection found equal
+official locks, source/semantic/build IDs, all 2,732 declaration policy and
+observation rows, toolchain/workspace records, preservation records and selected
+roots. Attestation identities differ, as expected for different executable and
+process records; raw absolute-path artifact equality was not assumed. Each run
+retained 230 process records and 233 genuine process telemetry events, with
+successful begin/end and publication traces. These are observed counts, not
+new fixed-count acceptance predicates.
+
+The candidate's 70 flagged compiles are exactly the 58 project modules plus
+12 A/B/E modules. Each binds to a unique successful same-module replay with
+its complete captured artifact parts. Project bindings have main, server and
+private digests; the certificate bindings have main and genuinely absent
+companions. Absence was not replaced with an empty-file digest. Runtime,
+support, probe, extraction and audit compiles remain unflagged. All 323 original
+inputs, both copied source sets and both independent frozen CLIs were preserved;
+only each scratch copy's supported official lock was refreshed. Newly owned
+empty advisory guards were archived outside the project copies.
+
+Original failed-build and empty-index attempts and their receipts remain
+unchanged. The baseline build's selected cache aliases were subsequently
+retired separately by an admitted official package-only Cargo clean; that
+later capacity receipt is distinct from the immutable build/freeze snapshot.
+Neither frozen binary changed. No cleanup, profile change or retry occurred
+during the measured pair; the lowest coarse observed free space was 106 MiB.
+
+Terminal result `/workspace/work/vr28-public-controlled-pair/results.json`
+has SHA-256
+`e5591ab5646ff2f2367df6c2c7f85784b2e6bc2c13401601d4d4ff1d061b1b42`;
+independent actual review
+`/workspace/work/vr28-stage3-independent-review/actual-review.json` has SHA-256
+`5a074c61c36e6cfeb9f4a3796245bd385f4537238c565e34af175b33a6147eab`.
+Successful artifacts, raw telemetry and resource counters are retained beside
+the terminal result. The reviewed public statement is
+[#391 comment 6632959624](https://github.com/UOR-Foundation/LexLean/issues/391#issuecomment-6632959624).
+
+These are provisional preparation identities and measured gateway evidence,
+not final acceptance. Actual Atlas publication binding/invariance and
+measurements, coordinated all-language identities and artifacts, and the
+complete final-head gate remain open. Existing checker prefix rechecks remain;
+no globally exactly-once claim is made. Recording this evidence changed no implementation, pin or product and
+repeated no conformance case. No test, build, product writer or CI run was
+performed for this evidence append. This work is not included in the separate #393/#390 wave.
