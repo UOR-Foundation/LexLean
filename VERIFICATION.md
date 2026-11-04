@@ -12775,3 +12775,29 @@ The README range now ends at `DF-19`, retaining the whole-family coverage
 check. This correction changes no implementation, model, schema or identity
 input. No local validation of this correction is claimed here; targeted
 `RP-11` validation and complete changed-head CI remain required.
+
+### BS-15 generated workspace disk exhaustion in final-head CI
+
+Run `41761755141` at `177c499a1bd45c60e2712a5f375b9b4633e1387d`
+passed `conformance_rp_11` in rest job `126352276554` and ARM Linux job
+`126352276081`; their conformance totals were 284 and 470 passed, respectively,
+with no failures. Bootstrap-package job `126352276702` instead failed
+`conformance_bs_15` after 5481.51 seconds while Cargo built its generated
+workspace. Writing the dependency information for harness
+`run_boot_render_package_std_494` failed with `No space left on device
+(os error 28)`; another concurrent harness link reported a bus error. The
+last disk sample showed 1.6 GiB available. Before the build failure, the
+evaluator agreed on 2,484 manifests and 241 renders and reported the existing
+plants detected. The failed case is not acceptance evidence.
+
+The differential workspace is independent of the repository workspace and
+did not inherit its `[profile.dev]` setting. Its generated manifest now sets
+`debug = "line-tables-only"`, exactly as the repository does, so every harness
+retains file and line information without full variable debug information.
+This changes no corpus, harness chunking, assertions, optimization setting,
+overflow behavior, Rust stack setting or stack-bound observation. Cargo still
+builds every generated workspace member and every outcome remains compared.
+
+This is a source-only resource correction. Its disk savings have not been
+measured, and no local build or runtime validation of the correction is
+claimed. Exact BS-15 validation and complete changed-head CI remain required.

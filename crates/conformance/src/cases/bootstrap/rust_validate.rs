@@ -2689,7 +2689,7 @@ pub(super) fn rustc_differential(
     std::fs::write(
         dir.path().join("Cargo.toml"),
         format!(
-            "[workspace]\nresolver = \"2\"\nmembers = [{}]\n",
+            "[workspace]\nresolver = \"2\"\nmembers = [{}]\n\n[profile.dev]\ndebug = \"line-tables-only\"\n",
             members.join(", ")
         ),
     )
