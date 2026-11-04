@@ -6,9 +6,10 @@
 # checkout", and a restored target directory is not one. CI runs its twelve
 # recipes as the legs of `.github/vv-rows.json` at once, each its own clean
 # checkout: `examples`, which here verifies every example but UOR Atlas, and
-# `rest`, the other eleven in the order of `vv`, with the `bdd` rows below.
+# `honesty`, format/model/spec-links and the BDD meta target first, then
+# `rest`, the remaining recipes in order, with the `bdd` rows below.
 # Together they run every recipe of `vv` exactly once, so the gate is the same
-# and the wall time is the longest leg rather than the sum.
+# and its wall time includes honesty followed by the downstream critical path.
 #
 # `bdd`, the conformance suite, was most of the `rest` leg's time, and it runs
 # as the parts of `.github/bdd-parts.json` (§9.4): each `bdd-<part>` row runs
@@ -34,8 +35,8 @@
 # from broken code.
 #
 # Which runs are the gate (§9.4): the `plan` job decides from the event alone.
-# A pull request that is a draft runs the `rest` leg and nothing else, because
-# a head pushed again before it is final should cost one job and not the whole
+# A pull request that is a draft runs honesty then the `rest` leg, because
+# a head pushed again before it is final should cost two jobs and not the whole
 # gate; it is a development signal and the pull request is not mergeable on it.
 # So does a ready pull request whose base is neither `main` nor `release/*`: a
 # stacked pull request cannot land on a line, and the pull request that carries
@@ -109,6 +110,8 @@ jobs:
     outputs:
       full: ${{ steps.plan.outputs.full }}
       rows: ${{ steps.plan.outputs.rows }}
+      honesty: ${{ steps.plan.outputs.honesty }}
+      fanout: ${{ steps.plan.outputs.fanout }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -124,17 +127,55 @@ jobs:
           REPO: ${{ github.repository }}
         run: .github/ci-plan.sh
 
+  # The existing model/spec-link recipes and complete BDD meta target own
+  # this row. Claim drift fails before expensive proof and supported-host jobs.
+  honesty:
+    name: ${{ matrix.part }}
+    needs: [plan]
+    if: ${{ needs.plan.outputs.honesty != '[]' }}
+    strategy:
+      matrix:
+        include: ${{ fromJSON(needs.plan.outputs.honesty) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LEXLEAN_BDD_PART: ${{ matrix.bdd_part }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - uses: taiki-e/install-action@b6b84cf49ebfe0176417bdce007c624f0db37f20 # v2.86.2
+        with:
+          tool: just
+      - name: Run the honesty part of the acceptance gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-evidence
+          just --timestamp --timestamp-format '%s%.3f' ${{ matrix.recipes }} 2>&1 | tee ci-evidence/vv.txt
+          printf '[%s] %s\n' "$(date +%s.%3N)" 'vv part: every recipe passed' >> ci-evidence/vv.txt
+      - name: Summarize the run's timing and memory
+        if: ${{ !cancelled() }}
+        run: cargo xtask ci-summary --evidence ci-evidence
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: acceptance-gate-evidence-${{ matrix.part }}
+          path: ci-evidence
+          if-no-files-found: error
+          retention-days: 14
+
   vv:
     name: just vv (${{ matrix.part }})
-    needs: [plan]
-    if: ${{ needs.plan.outputs.rows != '[]' }}
+    needs: [plan, honesty]
+    if: ${{ needs.plan.outputs.fanout != '[]' }}
     # A failing leg does not cancel the others: each leg's evidence is complete.
     # The legs are the rows of `.github/vv-rows.json`, or only its `rest` row
     # while the pull request is a draft.
     strategy:
       fail-fast: false
       matrix:
-        include: ${{ fromJSON(needs.plan.outputs.rows) }}
+        include: ${{ fromJSON(needs.plan.outputs.fanout) }}
     runs-on: ubuntu-24.04
     # Complete proof coverage is intentionally the long pole. GitHub-hosted
     # jobs permit six hours; a shorter local-style timeout would turn complete
@@ -257,7 +298,7 @@ jobs:
   atlas-prefix:
     name: atlas (prefix)
     if: ${{ needs.plan.outputs.full == 'true' }}
-    needs: [plan]
+    needs: [plan, honesty]
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -806,7 +847,7 @@ jobs:
   # own `xtask` and `repo-conformance`, which no host in this job runs.
   host-matrix:
     name: build and non-Lean tests (${{ matrix.target }})
-    needs: [plan]
+    needs: [plan, honesty]
     if: ${{ needs.plan.outputs.full == 'true' }}
     strategy:
       fail-fast: false
