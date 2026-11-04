@@ -1,0 +1,72 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{FailureKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{notFound}: \texttt{()}.\par
+\noindent Constructor \texttt{alreadyExists}: \texttt{()}.\par
+\noindent Constructor \texttt{denied}: \texttt{()}.\par
+\noindent Constructor \texttt{other}: \texttt{()}.\par
+\subsection*{\texttt{Failure}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{kind}: \texttt{FailureKind}.\par
+\noindent Field \texttt{message}: \texttt{ByteArray}.\par
+\subsection*{\texttt{EntryKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{file}: \texttt{()}.\par
+\noindent Constructor \texttt{directory}: \texttt{()}.\par
+\noindent Constructor \texttt{symlink}: \texttt{()}.\par
+\noindent Constructor \texttt{other}: \texttt{()}.\par
+\subsection*{\texttt{Entry}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{kind}: \texttt{EntryKind}.\par
+\noindent Field \texttt{size}: \texttt{Nat}.\par
+\noindent Field \texttt{identity}: \texttt{Option ((Prod (Nat) (Nat)))}.\par
+\subsection*{\texttt{Child}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{program}: \texttt{String}.\par
+\noindent Field \texttt{arguments}: \texttt{List (String)}.\par
+\noindent Field \texttt{directory}: \texttt{String}.\par
+\noindent Field \texttt{environment}: \texttt{List ((Prod (String) (String)))}.\par
+\noindent Field \texttt{output}: \texttt{String}.\par
+\noindent Field \texttt{errors}: \texttt{String}.\par
+\subsection*{\texttt{Waited}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{finished}: \texttt{List ((Prod (Nat) (Option (Int32))))}.\par
+\noindent Field \texttt{clock}: \texttt{Nat}.\par
+\subsection*{\texttt{Start}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{arguments}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{directory}: \texttt{Except (Failure) (ByteArray)}.\par
+\noindent Field \texttt{executable}: \texttt{Except (Failure) (ByteArray)}.\par
+\noindent Field \texttt{environment}: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Field \texttt{terminal}: \texttt{Bool}.\par
+\subsection*{\texttt{Request}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{read}: \texttt{(String)}.\par
+\noindent Constructor \texttt{write}: \texttt{(String, ByteArray)}.\par
+\noindent Constructor \texttt{list}: \texttt{(String)}.\par
+\noindent Constructor \texttt{stat}: \texttt{(String)}.\par
+\noindent Constructor \texttt{createDir}: \texttt{(String)}.\par
+\noindent Constructor \texttt{removeFile}: \texttt{(String)}.\par
+\noindent Constructor \texttt{removeTree}: \texttt{(String)}.\par
+\noindent Constructor \texttt{rename}: \texttt{(String, String)}.\par
+\noindent Constructor \texttt{canonical}: \texttt{(String)}.\par
+\noindent Constructor \texttt{lock}: \texttt{(String)}.\par
+\noindent Constructor \texttt{spawn}: \texttt{(Child)}.\par
+\noindent Constructor \texttt{wait}: \texttt{(List (Nat), Nat)}.\par
+\noindent Constructor \texttt{stop}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{exit}: \texttt{(UInt8, ByteArray, ByteArray)}.\par
+\subsection*{\texttt{Event}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{start}: \texttt{(Start)}.\par
+\noindent Constructor \texttt{read}: \texttt{(Except (Failure) (ByteArray))}.\par
+\noindent Constructor \texttt{finished}: \texttt{(Except (Failure) (Unit))}.\par
+\noindent Constructor \texttt{listed}: \texttt{(Except (Failure) (List (ByteArray)))}.\par
+\noindent Constructor \texttt{stat}: \texttt{(Except (Failure) (Entry))}.\par
+\noindent Constructor \texttt{canonical}: \texttt{(Except (Failure) (ByteArray))}.\par
+\noindent Constructor \texttt{spawned}: \texttt{(Except (Failure) ((Prod (Nat) (Nat))))}.\par
+\noindent Constructor \texttt{waited}: \texttt{(Except (Failure) (Waited))}.\par
+\end{document}

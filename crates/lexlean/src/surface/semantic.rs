@@ -574,6 +574,9 @@ mod types {
 
     /// Read a type.
     pub(super) fn read(reader: &mut Reader<'_>, depth: usize) -> Result<Json, SurfaceError> {
+        if depth > super::MAX_DEPTH {
+            return Err(reader.error("nested more deeply than the notation reads"));
+        }
         let offset = reader.offset();
         match reader.peek() {
             Some(Token::Word(word)) => {
@@ -1150,6 +1153,9 @@ mod terms {
 
     /// Read a term.
     pub(super) fn read(reader: &mut Reader<'_>, depth: usize) -> Result<Json, SurfaceError> {
+        if depth > super::MAX_DEPTH {
+            return Err(reader.error("nested more deeply than the notation reads"));
+        }
         let offset = reader.offset();
         match reader.peek() {
             Some(Token::Str(text)) => {
@@ -1853,6 +1859,34 @@ mod tests {
         assert_eq!(&back, value, "{text}");
         assert_eq!(print_at(&back, position), text, "the notation is canonical");
         text
+    }
+
+    #[test]
+    fn readable_nesting_has_an_explicit_bound() {
+        std::thread::Builder::new()
+            .stack_size(crate::READER_STACK)
+            .spawn(|| {
+                for (position, prefix, leaf, bound) in [
+                    (Position::Term, "(not ", "true", 255),
+                    (Position::Term, "(cons 1 ", "(nil Nat)", 254),
+                    (Position::Type, "(List ", "Nat", 255),
+                ] {
+                    let at_bound = format!("{}{}{}", prefix.repeat(bound), leaf, ")".repeat(bound));
+                    assert!(parse_at(&at_bound, position).is_ok());
+                    let beyond = format!(
+                        "{}{}{}",
+                        prefix.repeat(bound + 1),
+                        leaf,
+                        ")".repeat(bound + 1)
+                    );
+                    let error = parse_at(&beyond, position).expect_err("nesting must be bounded");
+                    assert_eq!(error.message, "nested more deeply than the notation reads");
+                    assert!(error.offset > 0 && error.offset < beyond.len());
+                }
+            })
+            .expect("reader thread")
+            .join()
+            .expect("reader must not panic");
     }
 
     /// The readable forms print as the SPEC says they do, and parse back.

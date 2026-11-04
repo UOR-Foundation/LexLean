@@ -17,6 +17,45 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Induction over a nested inductive type, #278 (SPEC.md §16.9, §17.10, §17.12,
+  `SM-37`). A new proof step, `nested_induction`, proves a statement about a
+  value of a nested inductive type (a type with a constructor that holds
+  itself under `List`, `Option`, `Result`, or a product) by the type's own
+  recursor: one branch for each constructor of the recursive family, in the
+  recursor's order, each binding its fields and one hypothesis for every field
+  that is a member of the family. The compiler checks the branch set, the
+  binder counts and the members before any backend and lowers the step to
+  `induction x using T.rec (motive_n := ...)` with positional `next` goals.
+  `induction` keeps refusing such a type, and its message now names
+  `nested_induction`. Moves the compiler-semantics identity: `semantic_ir` 15
+  to 16 and `proof_lowering` 3 to 4 in `language/semantics-1.2.toml`, and both
+  schemas gain the step; the locks, records, goldens, fixtures and packages the
+  digest binds are regenerated at landing. The register is 475 IDs.
+- Structural recursion over the recursive family of a nested inductive type,
+  #278 (SPEC.md §17.12, `DF-19`). A mutual definition group may decrease on any
+  member of the family the pinned Lean takes as the motives of the type's
+  recursor (the type, then each `List`, `Option`, `Result`, or product that
+  holds it, in the order of discovery), so a function over a type with a
+  constructor that holds `List (String * Json)` recurses through the list and
+  through the pair. One checker change; no file of the compiler-semantics
+  digest moves, so no identity moves. The register is 470 IDs.
+
+- The Intel macOS host-gate cost correction for #235 keeps SP-02's complete
+  certificate scaling families and TC-03's seeded argument/fuel sweep on the
+  normative Linux host, with fixed certificate vectors and committed fixture
+  assertions on every supported host. TC-03 and TC-05 render and parse their
+  shared fixture modules once for declaration membership checks. No
+  acceptance recipe, normative assertion, or kernel replay is removed.
+
+
+- `PD-10`, the first slice of the effects boundary (#271). The standard library
+  gains `LexLeanStd.Host`, the types a command root is written against, and the
+  production registry of language 1.2 gains the effects `files` and `process`
+  and one `[[request]]` row per constructor of `Request`. A root whose closure
+  builds a request must admit that request's effect, or it fails with `LLT4005`.
+  Nothing performs a request yet. The language-1.2 compiler-semantics ID moves;
+  1.0 and 1.1 do not.
+
 - `SP-33`, certificate B of a match arm that returns a boxed field (#310). `fold`
   of the Rust lowering and `returnedLet` of `RustBodies` fold a returned clone,
   which is the arm the library's `mCons` states (`LLV7015`). `lower.rs` is a file
@@ -117,6 +156,20 @@ negative-fixture bullet of #34 is not met for them. The language-model rows are
 `LM-01` to `LM-09` and `LM-13`. Nothing below claims more than the certificates
 of this tree show.
 
+- The LaTeX backend of the tooling modules is language-1.2 source (SPEC.md
+  §17.23, §17.20; `BS-20`, #270). `renderToolingLatex` of `ToolingLatex`, over
+  the closed schema of the tooling module as data (`ToolingAst`, each recursive
+  list a chain of its own `Nil` and `Cons`), the typings the checker infers and
+  the reserved tokens of the toolchain as arguments, writes line by line through
+  the standard library's `Buffer` with an explicit capacity, and is held to
+  `backend::tooling::latex_text` to the byte on the three committed tooling
+  modules, on modules made from them to stress the escaper, the quoting of a
+  name and a character, and the trimming of a line, and on seeded mutants,
+  with seventeen planted defects. `render_latex` now takes its text from
+  `latex_text`, so the oracle the case holds the module to is the text the
+  backend emits. The checker, the decoder of the module, the source map, the
+  Lean backend, and the verification driver stay in the host. The register is
+  469 IDs.
 - The release workflow's evidence is the gate run of the tagged commit (SPEC.md
   §9.4, §30.3; `RP-18`). `release.yml` no longer runs `just vv` on one runner:
   rehearsals 3 and 4 showed the `bdd` recipe alone takes over four hours there
@@ -602,6 +655,26 @@ of this tree show.
   inputs of the escaper and the scaffold, and 277 seeded mutants; twenty-one
   planted defects are each detected. No file of the renderer changes. The
   register is 467 IDs.
+Historical original #390 record (`ffb352ac`, before the final Host identity):
+the evidence and regeneration described in the following entry belong to that
+source. The current explicit redelivery is source-only; model projections,
+bootstrap products, combined counts and final acceptance remain pending.
+
+- The validation of a GNAF request as language-1.2 source, first part of the GNAF
+  requests and certification (SPEC.md §17.23, §17.15, §17.18, `BS-16`, #275; no new
+  diagnostic code, no change to the language-1.2 identity). `validateRequest` of
+  `GnafValidate` makes the checks `gnaf::validate` runs on a request, in the oracle's
+  order and with the same twenty-one refusals, and writes the refusal through the
+  standard library's `Buffer`; it is a production root for `rust-std`. It is held to
+  the oracle to the byte on 3,862 requests (60 committed, 802 hand-built, 3,000
+  seeded mutants; 3,522 refused), under the calculus evaluator and under the rendered
+  package compiled by the pinned rustc; twelve planted defects are each detected.
+  `bootstrap/lexlean.lock` and the production export are regenerated with the new
+  package, so the counts `BS-05`, `BS-06`, `BS-07`, `BS-08`, `BS-13`, `BS-14`, and
+  `BS-15` assert move by one manifest. What remains of #275: the answer, the
+  universe, and the certification (`BS-17` to `BS-19`), the premise facts after the
+  evaluator, `calculus::interp`, `realization`, and `Program::id`. The register is
+  470 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

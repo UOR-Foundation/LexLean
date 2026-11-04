@@ -2057,8 +2057,7 @@ pub fn f23(v0: Adt2) -> Adt2 {
             Adt2::C12
         }
         Adt2::C11(r109, _) => {
-            let v34 = (*r109).clone();
-            f28(v34)
+            (*r109).clone()
         }
         Adt2::C12 => {
             Adt2::C12
@@ -2174,8 +2173,7 @@ pub fn f25(v0: Adt2) -> Adt2 {
             Adt2::C12
         }
         Adt2::C11(_, r114) => {
-            let v35 = (*r114).clone();
-            f28(v35)
+            (*r114).clone()
         }
         Adt2::C12 => {
             Adt2::C12
@@ -2311,10 +2309,6 @@ pub fn f27(v0: Adt0) -> Option<Adt0> {
             Some(v12)
         }
     }
-}
-
-pub fn f28(v0: Adt2) -> Adt2 {
-    v0
 }
 
 pub fn run(p0: Adt0, p1: List<bool>, p2: Adt2) -> R<Adt2> {

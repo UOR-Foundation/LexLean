@@ -45,7 +45,7 @@ Feature: production-export
     And binding evidence is recorded with the verdict the host checker recomputes
 
   @PX-07 @build
-  Scenario: verify_artifact accepts an untouched bundle with status bindings-verified and names the four stages it does not re-run, and rejects with LLV7102 a bundle in which one byte of a package, crate, program, certificate, attestation, compiler input, or preservation record, one binding or certification field of the result with its identity recomputed, or one added or removed file differs, and with LLS8001 a bundle holding a symlink.
+  Scenario: verify_artifact accepts an untouched bundle, including an exported list of 65 elements whose program nests beyond 128 JSON levels, with status bindings-verified and names the four stages it does not re-run, and rejects with LLV7102 a bundle in which one byte of a package, crate, program, certificate, attestation, compiler input, or preservation record, one binding or certification field of the result with its identity recomputed, or one added or removed file differs, and with LLS8001 a bundle holding a symlink.
     Given a published production bundle
     When the bundle is replayed untouched and then with each single tamper
     Then the untouched bundle replays with status bindings-verified and the stages it does not re-run
