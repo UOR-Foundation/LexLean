@@ -17,20 +17,20 @@ namespace Models.Policy
 public theorem actionable_check_sound (level : Models.Triage.Level) : ((actionableCheck (level) = true) -> Actionable (level)) := by
   cases level with
   | routine =>
-    decide
+    decide +kernel
   | urgent =>
-    decide
+    decide +kernel
   | emergency =>
-    decide
+    decide +kernel
 
 public theorem actionable_check_complete (level : Models.Triage.Level) : (Actionable (level) -> (actionableCheck (level) = true)) := by
   cases level with
   | routine =>
-    decide
+    decide +kernel
   | urgent =>
-    decide
+    decide +kernel
   | emergency =>
-    decide
+    decide +kernel
 
 @[expose, reducible] public def Escalates (_level : Models.Triage.Level) (action : Nat) : Prop := (1 <= action)
 
@@ -43,14 +43,14 @@ public theorem PolicyContract.precondition_complete : LexLeanModels.Complete1 ((
 public theorem policy_escalates (level : Models.Triage.Level) : (Actionable (level) -> Escalates (level) (PolicyRules (level))) := by
   cases level with
   | routine =>
-    decide
+    decide +kernel
   | urgent =>
-    decide
+    decide +kernel
   | emergency =>
-    decide
+    decide +kernel
 
 public theorem emergency_dispatches : (PolicyRules.selected (Models.Triage.Level.emergency) = 0) := by
-  decide
+  decide +kernel
 
 public theorem PolicyEvidence.policy_escalates : LexLeanModels.Satisfies ((Models.Policy.Actionable)) ((Models.Policy.Escalates)) ((Models.Policy.PolicyRules)) := Models.Policy.policy_escalates
 

@@ -98,6 +98,6 @@ public theorem map_split (m : List (Prod (Nat) (Nat))) : (entryTotal (m) = (keyT
   all_goals omega
 
 public theorem doubled_total_closed : (doubledTotal ((1 :: (2 :: (3 :: ([] : List (Nat)))))) = 12) := by
-  decide
+  decide +kernel
 
 end FoldLaws.Folds

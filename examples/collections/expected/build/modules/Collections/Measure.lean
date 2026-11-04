@@ -12,6 +12,6 @@ namespace Collections.Measure
 @[expose] public def distinctNames : Nat := (LexLeanCollections.mapSize (Collections.Tables.buildTable (("a" :: ("b" :: ("a" :: ([] : List (String))))))) : Nat)
 
 public theorem distinct_names : (distinctNames = 2) := by
-  decide
+  decide +kernel
 
 end Collections.Measure

@@ -1,0 +1,310 @@
+\begin{lexlean}{Consumer}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Host}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: makeFailure,
+  parameters: [kind : Host::FailureKind, message : Bytes],
+  result: Host::Failure,
+  body: (record Host::Failure {kind := kind, message := message})
+}
+
+definition{
+  name: makeEntry,
+  parameters: [kind : Host::EntryKind, size : Nat, identity : (Option (Nat * Nat))],
+  result: Host::Entry,
+  body: (record Host::Entry {kind := kind, size := size, identity := identity})
+}
+
+definition{
+  name: makeChild,
+  parameters: [program : String, arguments : (List String), directory : String, environment : (List (String * String)), output : String, errors : String],
+  result: Host::Child,
+  body: (record Host::Child {program := program, arguments := arguments, directory := directory, environment := environment, output := output, errors := errors})
+}
+
+definition{
+  name: makeWaited,
+  parameters: [finished : (List (Nat * (Option Int32))), clock : Nat],
+  result: Host::Waited,
+  body: (record Host::Waited {finished := finished, clock := clock})
+}
+
+definition{
+  name: makeStart,
+  parameters: [arguments : (List Bytes), directory : (Result Bytes Host::Failure), executable : (Result Bytes Host::Failure), environment : (List (Bytes * Bytes)), terminal : Bool],
+  result: Host::Start,
+  body: (record Host::Start {arguments := arguments, directory := directory, executable := executable, environment := environment, terminal := terminal})
+}
+
+definition{
+  name: requestRead,
+  parameters: [x0 : String],
+  result: Host::Request,
+  body: (ctor Host::Request.read x0)
+}
+
+definition{
+  name: requestWrite,
+  parameters: [x0 : String, x1 : Bytes],
+  result: Host::Request,
+  body: (ctor Host::Request.write x0 x1)
+}
+
+definition{
+  name: requestList,
+  parameters: [x0 : String],
+  result: Host::Request,
+  body: (ctor Host::Request.list x0)
+}
+
+definition{
+  name: requestStat,
+  parameters: [x0 : String],
+  result: Host::Request,
+  body: (ctor Host::Request.stat x0)
+}
+
+definition{
+  name: requestCreateDir,
+  parameters: [x0 : String],
+  result: Host::Request,
+  body: (ctor Host::Request.createDir x0)
+}
+
+definition{
+  name: requestRemoveFile,
+  parameters: [x0 : String],
+  result: Host::Request,
+  body: (ctor Host::Request.removeFile x0)
+}
+
+definition{
+  name: requestRemoveTree,
+  parameters: [x0 : String],
+  result: Host::Request,
+  body: (ctor Host::Request.removeTree x0)
+}
+
+definition{
+  name: requestRename,
+  parameters: [x0 : String, x1 : String],
+  result: Host::Request,
+  body: (ctor Host::Request.rename x0 x1)
+}
+
+definition{
+  name: requestCanonical,
+  parameters: [x0 : String],
+  result: Host::Request,
+  body: (ctor Host::Request.canonical x0)
+}
+
+definition{
+  name: requestLock,
+  parameters: [x0 : String],
+  result: Host::Request,
+  body: (ctor Host::Request.lock x0)
+}
+
+definition{
+  name: requestSpawn,
+  parameters: [x0 : Host::Child],
+  result: Host::Request,
+  body: (ctor Host::Request.spawn x0)
+}
+
+definition{
+  name: requestWait,
+  parameters: [x0 : (List Nat), x1 : Nat],
+  result: Host::Request,
+  body: (ctor Host::Request.wait x0 x1)
+}
+
+definition{
+  name: requestStop,
+  parameters: [x0 : Nat],
+  result: Host::Request,
+  body: (ctor Host::Request.stop x0)
+}
+
+definition{
+  name: requestExit,
+  parameters: [x0 : UInt8, x1 : Bytes, x2 : Bytes],
+  result: Host::Request,
+  body: (ctor Host::Request.exit x0 x1 x2)
+}
+
+definition{
+  name: requestTag,
+  parameters: [value : Host::Request],
+  result: Nat,
+  body: (match value
+    | Host::Request.read x0 => 0
+    | Host::Request.write x0 x1 => 1
+    | Host::Request.list x0 => 2
+    | Host::Request.stat x0 => 3
+    | Host::Request.createDir x0 => 4
+    | Host::Request.removeFile x0 => 5
+    | Host::Request.removeTree x0 => 6
+    | Host::Request.rename x0 x1 => 7
+    | Host::Request.canonical x0 => 8
+    | Host::Request.lock x0 => 9
+    | Host::Request.spawn x0 => 10
+    | Host::Request.wait x0 x1 => 11
+    | Host::Request.stop x0 => 12
+    | Host::Request.exit x0 x1 x2 => 13)
+}
+
+definition{
+  name: eventStart,
+  parameters: [x0 : Host::Start],
+  result: Host::Event,
+  body: (ctor Host::Event.start x0)
+}
+
+definition{
+  name: eventRead,
+  parameters: [x0 : (Result Bytes Host::Failure)],
+  result: Host::Event,
+  body: (ctor Host::Event.read x0)
+}
+
+definition{
+  name: eventFinished,
+  parameters: [x0 : (Result Unit Host::Failure)],
+  result: Host::Event,
+  body: (ctor Host::Event.finished x0)
+}
+
+definition{
+  name: eventListed,
+  parameters: [x0 : (Result (List Bytes) Host::Failure)],
+  result: Host::Event,
+  body: (ctor Host::Event.listed x0)
+}
+
+definition{
+  name: eventStat,
+  parameters: [x0 : (Result Host::Entry Host::Failure)],
+  result: Host::Event,
+  body: (ctor Host::Event.stat x0)
+}
+
+definition{
+  name: eventCanonical,
+  parameters: [x0 : (Result Bytes Host::Failure)],
+  result: Host::Event,
+  body: (ctor Host::Event.canonical x0)
+}
+
+definition{
+  name: eventSpawned,
+  parameters: [x0 : (Result (Nat * Nat) Host::Failure)],
+  result: Host::Event,
+  body: (ctor Host::Event.spawned x0)
+}
+
+definition{
+  name: eventWaited,
+  parameters: [x0 : (Result Host::Waited Host::Failure)],
+  result: Host::Event,
+  body: (ctor Host::Event.waited x0)
+}
+
+definition{
+  name: eventTag,
+  parameters: [value : Host::Event],
+  result: Nat,
+  body: (match value
+    | Host::Event.start x0 => 0
+    | Host::Event.read x0 => 1
+    | Host::Event.finished x0 => 2
+    | Host::Event.listed x0 => 3
+    | Host::Event.stat x0 => 4
+    | Host::Event.canonical x0 => 5
+    | Host::Event.spawned x0 => 6
+    | Host::Event.waited x0 => 7)
+}
+
+definition{
+  name: failurekindNotFound,
+  parameters: [],
+  result: Host::FailureKind,
+  body: (ctor Host::FailureKind.notFound)
+}
+
+definition{
+  name: failurekindAlreadyExists,
+  parameters: [],
+  result: Host::FailureKind,
+  body: (ctor Host::FailureKind.alreadyExists)
+}
+
+definition{
+  name: failurekindDenied,
+  parameters: [],
+  result: Host::FailureKind,
+  body: (ctor Host::FailureKind.denied)
+}
+
+definition{
+  name: failurekindOther,
+  parameters: [],
+  result: Host::FailureKind,
+  body: (ctor Host::FailureKind.other)
+}
+
+definition{
+  name: failurekindTag,
+  parameters: [value : Host::FailureKind],
+  result: Nat,
+  body: (match value
+    | Host::FailureKind.notFound => 0
+    | Host::FailureKind.alreadyExists => 1
+    | Host::FailureKind.denied => 2
+    | Host::FailureKind.other => 3)
+}
+
+definition{
+  name: entrykindFile,
+  parameters: [],
+  result: Host::EntryKind,
+  body: (ctor Host::EntryKind.file)
+}
+
+definition{
+  name: entrykindDirectory,
+  parameters: [],
+  result: Host::EntryKind,
+  body: (ctor Host::EntryKind.directory)
+}
+
+definition{
+  name: entrykindSymlink,
+  parameters: [],
+  result: Host::EntryKind,
+  body: (ctor Host::EntryKind.symlink)
+}
+
+definition{
+  name: entrykindOther,
+  parameters: [],
+  result: Host::EntryKind,
+  body: (ctor Host::EntryKind.other)
+}
+
+definition{
+  name: entrykindTag,
+  parameters: [value : Host::EntryKind],
+  result: Nat,
+  body: (match value
+    | Host::EntryKind.file => 0
+    | Host::EntryKind.directory => 1
+    | Host::EntryKind.symlink => 2
+    | Host::EntryKind.other => 3)
+}
+
+\end{semanticmodule}
+\end{lexlean}

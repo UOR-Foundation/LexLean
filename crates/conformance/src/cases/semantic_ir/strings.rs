@@ -4,6 +4,7 @@ use crate::support::{self, P};
 use serde_json::json;
 
 pub(super) fn verify() {
+    verify_join();
     let project = P::example();
     project.edit("lexlean.toml", "language = \"1.0\"", "language = \"1.1\"");
     let controls = (0..=159)
@@ -77,5 +78,32 @@ pub(super) fn verify() {
             String::from_utf8(output.stdout).expect("UTF-8 output"),
             "true\n".repeat(values.len())
         );
+    }
+}
+
+fn verify_join() {
+    let project = P::example();
+    project.edit("lexlean.toml", "language = \"1.0\"", "language = \"1.2\"");
+    let source = r#"\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+theorem{name: empty, parameters: [], statement: ((prim join (nil String) "/" : String) = ""), proof: reflexivity{}, axioms: [propext]}
+theorem{name: singleton, parameters: [], statement: ((prim join (cons "⊕" (nil String)) "/" : String) = "⊕"), proof: reflexivity{}, axioms: [propext]}
+theorem{name: unicode, parameters: [], statement: ((prim join (cons "a" (cons "" (cons "⊕😀" (cons "b" (nil String))))) "/" : String) = "a//⊕😀/b"), proof: reflexivity{}, axioms: [propext]}
+theorem{name: nested, parameters: [], statement: ((prim join (cons "/root" (cons (prim join (cons "/" (cons "digest" (cons "/attestation.json" (nil String)))) "" : String) (nil String))) "" : String) = "/root/digest/attestation.json"), proof: reflexivity{}, axioms: [propext]}
+\end{semanticmodule}
+\end{lexlean}
+"#;
+    project.write("src/Main.lex.tex", source);
+    project.relock();
+    if support::verify_ok_backed("SM-19", &project).is_some() {
+        let altered = source.replace("= \"a//⊕😀/b\"", "= \"a/⊕😀/b\"");
+        assert_ne!(
+            altered, source,
+            "the expected separator is actually removed"
+        );
+        project.write("src/Main.lex.tex", &altered);
+        project.verify_fails_with("LLV7002");
     }
 }

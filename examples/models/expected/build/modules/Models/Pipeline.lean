@@ -25,21 +25,21 @@ public theorem PipelineContract.precondition_sound : LexLeanModels.Sound1 ((Mode
 public theorem triage_actionable (presentation : Models.Triage.Presentation) : (Models.Triage.Symptomatic (presentation) -> Models.Policy.Actionable (Models.Triage.TriageModel (presentation))) := by
   cases presentation with
   | p0 =>
-    decide
+    decide +kernel
   | p1 =>
-    decide
+    decide +kernel
   | p2 =>
-    decide
+    decide +kernel
   | p3 =>
-    decide
+    decide +kernel
   | p4 =>
-    decide
+    decide +kernel
   | p5 =>
-    decide
+    decide +kernel
   | p6 =>
-    decide
+    decide +kernel
   | p7 =>
-    decide
+    decide +kernel
 
 @[expose] public def TriagePipeline (presentation : Models.Triage.Presentation) : Nat := (let __stage1 : Models.Triage.Level := Models.Triage.TriageModel (presentation); (let __stage2 : Nat := Models.Policy.PolicyModel (__stage1); __stage2))
 
@@ -54,21 +54,21 @@ public theorem pipeline_entry (presentation : Models.Triage.Presentation) : (Mod
 public theorem pipeline_responds (presentation : Models.Triage.Presentation) : (Models.Triage.Symptomatic (presentation) -> Responds (presentation) (TriagePipeline (presentation))) := by
   cases presentation with
   | p0 =>
-    decide
+    decide +kernel
   | p1 =>
-    decide
+    decide +kernel
   | p2 =>
-    decide
+    decide +kernel
   | p3 =>
-    decide
+    decide +kernel
   | p4 =>
-    decide
+    decide +kernel
   | p5 =>
-    decide
+    decide +kernel
   | p6 =>
-    decide
+    decide +kernel
   | p7 =>
-    decide
+    decide +kernel
 
 public theorem PipelineEvidence.pipeline_responds : LexLeanModels.Satisfies ((Models.Triage.Symptomatic)) ((Models.Pipeline.Responds)) ((Models.Pipeline.TriagePipeline)) := Models.Pipeline.pipeline_responds
 
@@ -84,21 +84,21 @@ public theorem PipelineEvidence.pipeline_responds : LexLeanModels.Satisfies ((Mo
 public theorem checked_answers (presentation : Models.Triage.Presentation) : (Models.Triage.Symptomatic (presentation) -> Answered (presentation) (CheckedPipeline (presentation))) := by
   cases presentation with
   | p0 =>
-    decide
+    decide +kernel
   | p1 =>
-    decide
+    decide +kernel
   | p2 =>
-    decide
+    decide +kernel
   | p3 =>
-    decide
+    decide +kernel
   | p4 =>
-    decide
+    decide +kernel
   | p5 =>
-    decide
+    decide +kernel
   | p6 =>
-    decide
+    decide +kernel
   | p7 =>
-    decide
+    decide +kernel
 
 public theorem CheckedEvidence.checked_answers : LexLeanModels.Satisfies ((Models.Triage.Symptomatic)) ((Models.Pipeline.Answered)) ((Models.Pipeline.CheckedPipeline)) := Models.Pipeline.checked_answers
 
@@ -112,25 +112,25 @@ public theorem CheckedEvidence.checked_answers : LexLeanModels.Satisfies ((Model
 public theorem segments_lit (glyph : Models.Glyphs.Glyph) : Lit (glyph) (SegmentCounter (glyph)) := by
   cases glyph with
   | g0 =>
-    decide
+    decide +kernel
   | g1 =>
-    decide
+    decide +kernel
   | g2 =>
-    decide
+    decide +kernel
   | g3 =>
-    decide
+    decide +kernel
   | g4 =>
-    decide
+    decide +kernel
   | g5 =>
-    decide
+    decide +kernel
   | g6 =>
-    decide
+    decide +kernel
   | g7 =>
-    decide
+    decide +kernel
   | g8 =>
-    decide
+    decide +kernel
   | g9 =>
-    decide
+    decide +kernel
 
 public theorem SegmentEvidence.segments_lit : LexLeanModels.SatisfiesTotal ((Models.Pipeline.Lit)) ((Models.Pipeline.SegmentCounter)) := Models.Pipeline.segments_lit
 
@@ -144,25 +144,25 @@ public theorem SegmentEvidence.segments_lit : LexLeanModels.SatisfiesTotal ((Mod
 public theorem report_correct (glyph : Models.Glyphs.Glyph) : Reported (glyph) (GlyphReport (glyph)) := by
   cases glyph with
   | g0 =>
-    decide
+    decide +kernel
   | g1 =>
-    decide
+    decide +kernel
   | g2 =>
-    decide
+    decide +kernel
   | g3 =>
-    decide
+    decide +kernel
   | g4 =>
-    decide
+    decide +kernel
   | g5 =>
-    decide
+    decide +kernel
   | g6 =>
-    decide
+    decide +kernel
   | g7 =>
-    decide
+    decide +kernel
   | g8 =>
-    decide
+    decide +kernel
   | g9 =>
-    decide
+    decide +kernel
 
 public theorem ReportEvidence.report_correct : LexLeanModels.SatisfiesTotal ((Models.Pipeline.Reported)) ((Models.Pipeline.GlyphReport)) := Models.Pipeline.report_correct
 
@@ -192,25 +192,25 @@ public theorem PairEvidence.pair_correct : LexLeanModels.SatisfiesTotal ((Models
 public theorem route_bounded (glyph : Models.Glyphs.Glyph) : Bounded9 (glyph) (GlyphRoute (glyph)) := by
   cases glyph with
   | g0 =>
-    decide
+    decide +kernel
   | g1 =>
-    decide
+    decide +kernel
   | g2 =>
-    decide
+    decide +kernel
   | g3 =>
-    decide
+    decide +kernel
   | g4 =>
-    decide
+    decide +kernel
   | g5 =>
-    decide
+    decide +kernel
   | g6 =>
-    decide
+    decide +kernel
   | g7 =>
-    decide
+    decide +kernel
   | g8 =>
-    decide
+    decide +kernel
   | g9 =>
-    decide
+    decide +kernel
 
 public theorem RouteEvidence.route_bounded : LexLeanModels.SatisfiesTotal ((Models.Pipeline.Bounded9)) ((Models.Pipeline.GlyphRoute)) := Models.Pipeline.route_bounded
 

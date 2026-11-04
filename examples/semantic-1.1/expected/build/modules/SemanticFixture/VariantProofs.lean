@@ -35,9 +35,9 @@ public theorem pair_sound_complete (pair : ReflectionPair) : ((validatePair (pai
 public theorem conjunction_refl : ((0 = 0) <-> (0 = 0)) := by
   constructor
   ·
-    decide
+    decide +kernel
   ·
-    decide
+    decide +kernel
 
 public theorem congruence_refl (value : Nat) : ((value + 0) = (value + 0)) := by
   congr 1

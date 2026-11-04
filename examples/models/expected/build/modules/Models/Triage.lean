@@ -41,31 +41,31 @@ public inductive Level where
 public theorem symptomatic_check_sound (presentation : Presentation) : ((symptomaticCheck (presentation) = true) -> Symptomatic (presentation)) := by
   cases presentation with
   | p0 =>
-    decide
+    decide +kernel
   | p1 =>
-    decide
+    decide +kernel
   | p2 =>
-    decide
+    decide +kernel
   | p3 =>
-    decide
+    decide +kernel
   | p4 =>
-    decide
+    decide +kernel
   | p5 =>
-    decide
+    decide +kernel
   | p6 =>
-    decide
+    decide +kernel
   | p7 =>
-    decide
+    decide +kernel
 
 @[expose, reducible] public def Safe (presentation : Presentation) (level : Level) : Prop := ((isBreathless (presentation) = true) -> (isEmergency (level) = true))
 
 @[expose] public def triageWeights.bytes : ByteArray := (let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 254)), (_root_.UInt8.ofNat (nat_lit 255)), (_root_.UInt8.ofNat (nat_lit 254)), (_root_.UInt8.ofNat (nat_lit 255)), (_root_.UInt8.ofNat (nat_lit 252)), (_root_.UInt8.ofNat (nat_lit 255)), (_root_.UInt8.ofNat (nat_lit 2)), __byte0, (_root_.UInt8.ofNat (nat_lit 2)), __byte0, __byte0, __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 1)), __byte0, (_root_.UInt8.ofNat (nat_lit 5)), __byte0])
 @[expose] public def triageWeights : List (List (Int)) := (((-2 : Int) :: ((-2 : Int) :: ((-4 : Int) :: ([] : List (Int))))) :: (((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ([] : List (Int))))) :: (((0 : Int) :: ((1 : Int) :: ((5 : Int) :: ([] : List (Int))))) :: ([] : List (List (Int))))))
-public theorem triageWeights.decoded : (LexLeanModels.tensorMatches 2 true triageWeights.flatten triageWeights.bytes && (triageWeights.length == 3) && (triageWeights.map List.length == List.replicate 3 3)) = true := by decide
+public theorem triageWeights.decoded : (LexLeanModels.tensorMatches 2 true triageWeights.flatten triageWeights.bytes && (triageWeights.length == 3) && (triageWeights.map List.length == List.replicate 3 3)) = true := by decide +kernel
 
 @[expose] public def triageBias.bytes : ByteArray := _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 1)), (_root_.UInt8.ofNat (nat_lit 0)), (_root_.UInt8.ofNat (nat_lit 0)), (_root_.UInt8.ofNat (nat_lit 0)), (_root_.UInt8.ofNat (nat_lit 255)), (_root_.UInt8.ofNat (nat_lit 255))]
 @[expose] public def triageBias : List (Int) := ((1 : Int) :: ((0 : Int) :: ((-1 : Int) :: ([] : List (Int)))))
-public theorem triageBias.decoded : (LexLeanModels.tensorMatches 2 true triageBias triageBias.bytes && (triageBias.length == 3)) = true := by decide
+public theorem triageBias.decoded : (LexLeanModels.tensorMatches 2 true triageBias triageBias.bytes && (triageBias.length == 3)) = true := by decide +kernel
 
 public theorem TriageContract.precondition_sound : LexLeanModels.Sound1 ((Models.Triage.symptomaticCheck)) ((Models.Triage.Symptomatic)) := Models.Triage.symptomatic_check_sound
 
@@ -95,21 +95,21 @@ public theorem triage_width (presentation : Presentation) : ((LexLeanRuntime.len
 public theorem triage_safe (presentation : Presentation) : (Symptomatic (presentation) -> Safe (presentation) (TriageScore (presentation))) := by
   cases presentation with
   | p0 =>
-    decide
+    decide +kernel
   | p1 =>
-    decide
+    decide +kernel
   | p2 =>
-    decide
+    decide +kernel
   | p3 =>
-    decide
+    decide +kernel
   | p4 =>
-    decide
+    decide +kernel
   | p5 =>
-    decide
+    decide +kernel
   | p6 =>
-    decide
+    decide +kernel
   | p7 =>
-    decide
+    decide +kernel
 
 public theorem TriageEvidence.triage_safe : LexLeanModels.Satisfies ((Models.Triage.Symptomatic)) ((Models.Triage.Safe)) ((Models.Triage.TriageScore)) := Models.Triage.triage_safe
 

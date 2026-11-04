@@ -22,25 +22,25 @@ namespace LexLeanStdModels.Scores
 @[expose] public def decideOr (threshold : Int) (scores : List (Int)) : Option (Nat) := (if (Nat.blt ((LexLeanRuntime.length (scores) : Nat)) (2)) then Option.none else (if (LexLeanCollections.lessThan (margin (scores)) (threshold) : Bool) then Option.none else Option.some (best (scores))))
 
 public theorem best_first_maximal : (best (((3 : Int) :: ((9 : Int) :: ((9 : Int) :: ((4 : Int) :: ([] : List (Int))))))) = 1) := by
-  decide
+  decide +kernel
 
 public theorem margin_example : (margin (((3 : Int) :: ((9 : Int) :: ((4 : Int) :: ([] : List (Int)))))) = (5 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem margin_tie : (margin (((5 : Int) :: ((5 : Int) :: ([] : List (Int))))) = (0 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem decide_or_commits : (decideOr ((2 : Int)) (((3 : Int) :: ((9 : Int) :: ((4 : Int) :: ([] : List (Int)))))) = Option.some (1)) := by
-  decide
+  decide +kernel
 
 public theorem decide_or_tie_abstains : (decideOr ((1 : Int)) (((5 : Int) :: ((5 : Int) :: ([] : List (Int))))) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem decide_or_single_abstains : (decideOr ((0 : Int)) (((7 : Int) :: ([] : List (Int)))) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem decide_or_empty_abstains : (decideOr ((0 : Int)) (([] : List (Int))) = Option.none) := by
-  decide
+  decide +kernel
 
 public inductive Candidate (T : Type) where
   | confident (_ : T)

@@ -4864,7 +4864,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The first module, `Text`, is bytes and text over `Bytes`. A `String` has no" (cons "scalar iteration in language 1.2, so text is handled as its UTF-8 bytes, a" (cons "character class is a comparison of `UInt8` by `equal`, and a member that is" (cons "defined on text is defined on the bytes of valid UTF-8. Its members and their" (cons "oracles:" (nil String))))))
+      (cons "Host is a types-only module of the standard library. It declares FailureKind, Failure, EntryKind, Entry, Child, Waited, Start, Event and Request. Event.start carries a Start record with arguments excluding the executable name, fallible working-directory and executable-path results, environment name/value pairs and the stderr-terminal flag. Entry records carry an optional file identity. Request.wait carries child identifiers and a wait budget; Event.waited carries finished statuses and a clock value. Request paths and arguments are String; incoming host text and file contents are Bytes. The typed consumer constructs every request and event, and a changed spawn environment type is rejected (SL-12). These declarations are ordinary data: constructing a Request performs no effect and grants no authority to execute it." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -4878,6 +4878,20 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
+      (cons "The first module, `Text`, is bytes and text over `Bytes`. A `String` has no" (cons "scalar iteration in language 1.2, so text is handled as its UTF-8 bytes, a" (cons "character class is a comparison of `UInt8` by `equal`, and a member that is" (cons "defined on text is defined on the bytes of valid UTF-8. Its members and their" (cons "oracles:" (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0356,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
       (cons "| Member | Oracle |" (cons "| --- | --- |" (cons "| `startsWith (subject prefix : Bytes) : Bool` | `<[u8]>::starts_with` |" (cons "| `endsWith (subject suffix : Bytes) : Bool` | `<[u8]>::ends_with` |" (cons "| `trim (subject : Bytes) : Bytes` | `<[u8]>::trim_ascii` |" (cons "| `lines (subject : Bytes) : List Bytes` | `str::lines` on UTF-8 input: a line ends at `\\n` or `\\r\\n`, and the last line needs no ending |" (cons "| `splitOn (subject : Bytes) (delimiter : UInt8) : List Bytes` | `<[u8]>::split` |" (cons "| `joinWith (pieces : List Bytes) (separator : Bytes) : Bytes` | `<[Vec<u8>]>::join` |" (cons "| `find (subject needle : Bytes) : Option Nat` | `str::find` on UTF-8 input, as a byte offset |" (nil String))))))))))
     ],
     constructor: DocRows::Item.table,
@@ -4887,7 +4901,7 @@ definition{
 }
 
 definition{
-  name: i0356,
+  name: i0357,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4901,7 +4915,7 @@ definition{
 }
 
 definition{
-  name: i0357,
+  name: i0358,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4915,7 +4929,7 @@ definition{
 }
 
 definition{
-  name: i0358,
+  name: i0359,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4929,7 +4943,7 @@ definition{
 }
 
 definition{
-  name: i0359,
+  name: i0360,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4943,7 +4957,7 @@ definition{
 }
 
 definition{
-  name: i0360,
+  name: i0361,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4955,7 +4969,7 @@ definition{
 }
 
 definition{
-  name: i0361,
+  name: i0362,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4969,7 +4983,7 @@ definition{
 }
 
 definition{
-  name: i0362,
+  name: i0363,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4983,7 +4997,7 @@ definition{
 }
 
 definition{
-  name: i0363,
+  name: i0364,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -4997,7 +5011,7 @@ definition{
 }
 
 definition{
-  name: i0364,
+  name: i0365,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5011,7 +5025,7 @@ definition{
 }
 
 definition{
-  name: i0365,
+  name: i0366,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5025,7 +5039,7 @@ definition{
 }
 
 definition{
-  name: i0366,
+  name: i0367,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5039,7 +5053,7 @@ definition{
 }
 
 definition{
-  name: i0367,
+  name: i0368,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5053,7 +5067,7 @@ definition{
 }
 
 definition{
-  name: i0368,
+  name: i0369,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5067,7 +5081,7 @@ definition{
 }
 
 definition{
-  name: i0369,
+  name: i0370,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5081,7 +5095,7 @@ definition{
 }
 
 definition{
-  name: i0370,
+  name: i0371,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5095,7 +5109,7 @@ definition{
 }
 
 definition{
-  name: i0371,
+  name: i0372,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5109,7 +5123,7 @@ definition{
 }
 
 definition{
-  name: i0372,
+  name: i0373,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5123,7 +5137,7 @@ definition{
 }
 
 definition{
-  name: i0373,
+  name: i0374,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5135,7 +5149,7 @@ definition{
 }
 
 definition{
-  name: i0374,
+  name: i0375,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5149,7 +5163,7 @@ definition{
 }
 
 definition{
-  name: i0375,
+  name: i0376,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5163,7 +5177,7 @@ definition{
 }
 
 definition{
-  name: i0376,
+  name: i0377,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5177,7 +5191,7 @@ definition{
 }
 
 definition{
-  name: i0377,
+  name: i0378,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5191,7 +5205,7 @@ definition{
 }
 
 definition{
-  name: i0378,
+  name: i0379,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5205,7 +5219,7 @@ definition{
 }
 
 definition{
-  name: i0379,
+  name: i0380,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5219,7 +5233,7 @@ definition{
 }
 
 definition{
-  name: i0380,
+  name: i0381,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5233,7 +5247,7 @@ definition{
 }
 
 definition{
-  name: i0381,
+  name: i0382,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5247,7 +5261,7 @@ definition{
 }
 
 definition{
-  name: i0382,
+  name: i0383,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5261,7 +5275,7 @@ definition{
 }
 
 definition{
-  name: i0383,
+  name: i0384,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5275,7 +5289,7 @@ definition{
 }
 
 definition{
-  name: i0384,
+  name: i0385,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5289,7 +5303,7 @@ definition{
 }
 
 definition{
-  name: i0385,
+  name: i0386,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5303,7 +5317,7 @@ definition{
 }
 
 definition{
-  name: i0386,
+  name: i0387,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5317,7 +5331,7 @@ definition{
 }
 
 definition{
-  name: i0387,
+  name: i0388,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5331,7 +5345,7 @@ definition{
 }
 
 definition{
-  name: i0388,
+  name: i0389,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5345,7 +5359,7 @@ definition{
 }
 
 definition{
-  name: i0389,
+  name: i0390,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5359,7 +5373,7 @@ definition{
 }
 
 definition{
-  name: i0390,
+  name: i0391,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5373,7 +5387,7 @@ definition{
 }
 
 definition{
-  name: i0391,
+  name: i0392,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5387,7 +5401,7 @@ definition{
 }
 
 definition{
-  name: i0392,
+  name: i0393,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5401,7 +5415,7 @@ definition{
 }
 
 definition{
-  name: i0393,
+  name: i0394,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5415,7 +5429,7 @@ definition{
 }
 
 definition{
-  name: i0394,
+  name: i0395,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5429,7 +5443,7 @@ definition{
 }
 
 definition{
-  name: i0395,
+  name: i0396,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5443,7 +5457,7 @@ definition{
 }
 
 definition{
-  name: i0396,
+  name: i0397,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5457,7 +5471,7 @@ definition{
 }
 
 definition{
-  name: i0397,
+  name: i0398,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5471,7 +5485,7 @@ definition{
 }
 
 definition{
-  name: i0398,
+  name: i0399,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5485,7 +5499,7 @@ definition{
 }
 
 definition{
-  name: i0399,
+  name: i0400,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5499,7 +5513,7 @@ definition{
 }
 
 definition{
-  name: i0400,
+  name: i0401,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5513,7 +5527,7 @@ definition{
 }
 
 definition{
-  name: i0401,
+  name: i0402,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5527,7 +5541,7 @@ definition{
 }
 
 definition{
-  name: i0402,
+  name: i0403,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -5541,7 +5555,7 @@ definition{
 }
 
 definition{
-  name: i0403,
+  name: i0404,
   parameters: [],
   result: DocRows::Item,
   body: constructor{

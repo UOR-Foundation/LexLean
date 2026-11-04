@@ -34,9 +34,9 @@ termination_by (LexLeanRuntime.subtract (high) (low) : Nat)
 decreasing_by all_goals first | (have __evidence := bisect_decreases (target) (low) (high) (__decrease0) (__decrease1); subst_vars; exact __evidence)
 
 public theorem tree_stats_example : (treeStats (Tree.node (Tree.node (Tree.leaf) (1) (Tree.leaf)) (2) (Tree.leaf)) = (3, 2)) := by
-  decide
+  decide +kernel
 
 public theorem bisect_first : (bisect (7) (0) (10) = 4) := by
-  decide
+  decide +kernel
 
 end Corpus.Recursion

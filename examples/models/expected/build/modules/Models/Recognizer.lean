@@ -13,23 +13,23 @@ namespace Models.Recognizer
 
 @[expose] public def hiddenWeights.bytes : ByteArray := (let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); let __byte1 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 1); let __byte2 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 2); let __byte4 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 4); _root_.ByteArray.mk #[__byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte4, (_root_.UInt8.ofNat (nat_lit 3)), (_root_.UInt8.ofNat (nat_lit 254)), __byte0, __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 255)), __byte0, __byte0, __byte2, (_root_.UInt8.ofNat (nat_lit 253)), __byte1, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 255)), __byte0, __byte0, __byte0, __byte2, __byte2, (_root_.UInt8.ofNat (nat_lit 254)), __byte1, __byte1, __byte1, __byte1, __byte1, __byte1, __byte1, __byte0, (_root_.UInt8.ofNat (nat_lit 252)), __byte0, __byte2, __byte0, (_root_.UInt8.ofNat (nat_lit 3)), __byte0])
 @[expose] public def hiddenWeights : List (List (Int)) := (((4 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((4 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((4 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((4 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((4 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((4 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((4 : Int) :: ([] : List (Int))))))))) :: (((3 : Int) :: ((-2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((-1 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((0 : Int) :: ((2 : Int) :: ((-3 : Int) :: ((1 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: (((-1 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((-2 : Int) :: ([] : List (Int))))))))) :: (((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ((1 : Int) :: ([] : List (Int))))))))) :: (((0 : Int) :: ((-4 : Int) :: ((0 : Int) :: ((2 : Int) :: ((0 : Int) :: ((3 : Int) :: ((0 : Int) :: ([] : List (Int))))))))) :: ([] : List (List (Int)))))))))))))))
-public theorem hiddenWeights.decoded : (LexLeanModels.tensorMatches 1 true hiddenWeights.flatten hiddenWeights.bytes && (hiddenWeights.length == 12) && (hiddenWeights.map List.length == List.replicate 12 7)) = true := by decide
+public theorem hiddenWeights.decoded : (LexLeanModels.tensorMatches 1 true hiddenWeights.flatten hiddenWeights.bytes && (hiddenWeights.length == 12) && (hiddenWeights.map List.length == List.replicate 12 7)) = true := by decide +kernel
 
 @[expose] public def hiddenBias.bytes : ByteArray := (let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); let __byte255 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 255); _root_.ByteArray.mk #[__byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 1)), __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 254)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 3)), __byte0, __byte0, __byte0, (_root_.UInt8.ofNat (nat_lit 251)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 2)), __byte0, __byte0, __byte0])
 @[expose] public def hiddenBias : List (Int) := ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((1 : Int) :: ((-2 : Int) :: ((3 : Int) :: ((-5 : Int) :: ((2 : Int) :: ([] : List (Int))))))))))))))
-public theorem hiddenBias.decoded : (LexLeanModels.tensorMatches 4 true hiddenBias hiddenBias.bytes && (hiddenBias.length == 12)) = true := by decide
+public theorem hiddenBias.decoded : (LexLeanModels.tensorMatches 4 true hiddenBias hiddenBias.bytes && (hiddenBias.length == 12)) = true := by decide +kernel
 
 @[expose] public def outputWeights.bytes : ByteArray := (let __byte0 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 0); let __byte2 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 2); _root_.ByteArray.mk #[__byte2, __byte2, __byte2, __byte2, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte0, __byte2, __byte2, __byte0, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte2, __byte2, __byte0, __byte0, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte0, __byte0, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte0, __byte2, __byte2, __byte0, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte0, __byte2, __byte2, __byte2, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte2, __byte2, __byte2, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0, __byte2, __byte2, __byte2, __byte2, __byte0, __byte2, __byte2, __byte0, __byte0, __byte0, __byte0, __byte0])
 @[expose] public def outputWeights : List (List (Int)) := (((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: (((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((2 : Int) :: ((2 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ((0 : Int) :: ([] : List (Int)))))))))))))) :: ([] : List (List (Int)))))))))))))
-public theorem outputWeights.decoded : (LexLeanModels.tensorMatches 1 true outputWeights.flatten outputWeights.bytes && (outputWeights.length == 10) && (outputWeights.map List.length == List.replicate 10 12)) = true := by decide
+public theorem outputWeights.decoded : (LexLeanModels.tensorMatches 1 true outputWeights.flatten outputWeights.bytes && (outputWeights.length == 10) && (outputWeights.map List.length == List.replicate 10 12)) = true := by decide +kernel
 
 @[expose] public def outputBias.bytes : ByteArray := (let __byte255 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 255); _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 250)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 254)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 251)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 251)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 252)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 251)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 250)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 253)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 249)), __byte255, __byte255, __byte255, (_root_.UInt8.ofNat (nat_lit 250)), __byte255, __byte255, __byte255])
 @[expose] public def outputBias : List (Int) := ((-6 : Int) :: ((-2 : Int) :: ((-5 : Int) :: ((-5 : Int) :: ((-4 : Int) :: ((-5 : Int) :: ((-6 : Int) :: ((-3 : Int) :: ((-7 : Int) :: ((-6 : Int) :: ([] : List (Int))))))))))))
-public theorem outputBias.decoded : (LexLeanModels.tensorMatches 4 true outputBias outputBias.bytes && (outputBias.length == 10)) = true := by decide
+public theorem outputBias.decoded : (LexLeanModels.tensorMatches 4 true outputBias outputBias.bytes && (outputBias.length == 10)) = true := by decide +kernel
 
 @[expose] public def digitNames.bytes : ByteArray := (let __byte10 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 10); let __byte101 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 101); let __byte105 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 105); let __byte110 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 110); let __byte111 : _root_.UInt8 := _root_.UInt8.ofNat (nat_lit 111); _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 122)), __byte101, (_root_.UInt8.ofNat (nat_lit 114)), __byte111, __byte10, __byte111, __byte110, __byte101, __byte10, (_root_.UInt8.ofNat (nat_lit 116)), (_root_.UInt8.ofNat (nat_lit 119)), __byte111, __byte10, (_root_.UInt8.ofNat (nat_lit 116)), (_root_.UInt8.ofNat (nat_lit 104)), (_root_.UInt8.ofNat (nat_lit 114)), __byte101, __byte101, __byte10, (_root_.UInt8.ofNat (nat_lit 102)), __byte111, (_root_.UInt8.ofNat (nat_lit 117)), (_root_.UInt8.ofNat (nat_lit 114)), __byte10, (_root_.UInt8.ofNat (nat_lit 102)), __byte105, (_root_.UInt8.ofNat (nat_lit 118)), __byte101, __byte10, (_root_.UInt8.ofNat (nat_lit 115)), __byte105, (_root_.UInt8.ofNat (nat_lit 120)), __byte10, (_root_.UInt8.ofNat (nat_lit 115)), __byte101, (_root_.UInt8.ofNat (nat_lit 118)), __byte101, __byte110, __byte10, __byte101, __byte105, (_root_.UInt8.ofNat (nat_lit 103)), (_root_.UInt8.ofNat (nat_lit 104)), (_root_.UInt8.ofNat (nat_lit 116)), __byte10, __byte110, __byte105, __byte110, __byte101, __byte10])
 @[expose] public def digitNames : List (String) := ("zero" :: ("one" :: ("two" :: ("three" :: ("four" :: ("five" :: ("six" :: ("seven" :: ("eight" :: ("nine" :: ([] : List (String))))))))))))
-public theorem digitNames.decoded : LexLeanModels.linesMatch digitNames digitNames.bytes = true := by decide
+public theorem digitNames.decoded : LexLeanModels.linesMatch digitNames digitNames.bytes = true := by decide +kernel
 
 @[expose] public def banner.bytes : ByteArray := _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 76)), (_root_.UInt8.ofNat (nat_lit 76)), (_root_.UInt8.ofNat (nat_lit 77)), (_root_.UInt8.ofNat (nat_lit 0)), (_root_.UInt8.ofNat (nat_lit 1))]
 @[expose] public def banner : ByteArray := _root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 76)), (_root_.UInt8.ofNat (nat_lit 76)), (_root_.UInt8.ofNat (nat_lit 77)), (_root_.UInt8.ofNat (nat_lit 0)), (_root_.UInt8.ofNat (nat_lit 1))]
@@ -72,48 +72,48 @@ public theorem digit_net_width (glyph : Models.Glyphs.Glyph) : ((LexLeanRuntime.
 public theorem digit_net_exact (glyph : Models.Glyphs.Glyph) : (DigitNet (glyph) = Models.Glyphs.digitOf (glyph)) := by
   cases glyph with
   | g0 =>
-    decide
+    decide +kernel
   | g1 =>
-    decide
+    decide +kernel
   | g2 =>
-    decide
+    decide +kernel
   | g3 =>
-    decide
+    decide +kernel
   | g4 =>
-    decide
+    decide +kernel
   | g5 =>
-    decide
+    decide +kernel
   | g6 =>
-    decide
+    decide +kernel
   | g7 =>
-    decide
+    decide +kernel
   | g8 =>
-    decide
+    decide +kernel
   | g9 =>
-    decide
+    decide +kernel
 
 public theorem digit_net_correct (glyph : Models.Glyphs.Glyph) : Recognizes (glyph) (DigitNet (glyph)) := by
   cases glyph with
   | g0 =>
-    decide
+    decide +kernel
   | g1 =>
-    decide
+    decide +kernel
   | g2 =>
-    decide
+    decide +kernel
   | g3 =>
-    decide
+    decide +kernel
   | g4 =>
-    decide
+    decide +kernel
   | g5 =>
-    decide
+    decide +kernel
   | g6 =>
-    decide
+    decide +kernel
   | g7 =>
-    decide
+    decide +kernel
   | g8 =>
-    decide
+    decide +kernel
   | g9 =>
-    decide
+    decide +kernel
 
 @[expose] public def labeledGlyphs : List ((Prod (Models.Glyphs.Glyph) (Nat))) := ((Models.Glyphs.Glyph.g3, 3) :: ((Models.Glyphs.Glyph.g0, 0) :: ((Models.Glyphs.Glyph.g7, 7) :: ((Models.Glyphs.Glyph.g4, 4) :: ((Models.Glyphs.Glyph.g1, 1) :: ((Models.Glyphs.Glyph.g8, 8) :: ((Models.Glyphs.Glyph.g5, 5) :: ((Models.Glyphs.Glyph.g2, 1) :: ((Models.Glyphs.Glyph.g9, 9) :: ((Models.Glyphs.Glyph.g6, 6) :: ((Models.Glyphs.Glyph.g3, 3) :: ((Models.Glyphs.Glyph.g0, 0) :: ((Models.Glyphs.Glyph.g7, 7) :: ((Models.Glyphs.Glyph.g4, 4) :: ((Models.Glyphs.Glyph.g1, 1) :: ((Models.Glyphs.Glyph.g8, 8) :: ((Models.Glyphs.Glyph.g5, 5) :: ((Models.Glyphs.Glyph.g2, 2) :: ((Models.Glyphs.Glyph.g9, 9) :: ((Models.Glyphs.Glyph.g6, 7) :: ((Models.Glyphs.Glyph.g3, 3) :: ((Models.Glyphs.Glyph.g0, 0) :: ((Models.Glyphs.Glyph.g7, 7) :: ((Models.Glyphs.Glyph.g4, 4) :: ((Models.Glyphs.Glyph.g1, 1) :: ((Models.Glyphs.Glyph.g8, 8) :: ((Models.Glyphs.Glyph.g5, 5) :: ((Models.Glyphs.Glyph.g2, 2) :: ((Models.Glyphs.Glyph.g9, 9) :: ((Models.Glyphs.Glyph.g6, 6) :: ((Models.Glyphs.Glyph.g3, 3) :: ((Models.Glyphs.Glyph.g0, 0) :: ((Models.Glyphs.Glyph.g7, 7) :: ((Models.Glyphs.Glyph.g4, 8) :: ((Models.Glyphs.Glyph.g1, 1) :: ((Models.Glyphs.Glyph.g8, 8) :: ((Models.Glyphs.Glyph.g5, 5) :: ((Models.Glyphs.Glyph.g2, 2) :: ((Models.Glyphs.Glyph.g9, 9) :: ((Models.Glyphs.Glyph.g6, 6) :: ([] : List ((Prod (Models.Glyphs.Glyph) (Nat))))))))))))))))))))))))))))))))))))))))))))
 
@@ -128,9 +128,9 @@ public theorem same_digit_sound (expected : Nat) (observed : Nat) : ((sameDigit 
   all_goals omega
 
 public theorem labeled_agreement : (((LexLeanRuntime.length (labeledGlyphs) : Nat) = 40) /\ ((LexLeanCollections.listFold ((fun (count : Nat) («example» : (Prod (Models.Glyphs.Glyph) (Nat))) => (if sameDigit (DigitNet ((«example»).1)) ((«example»).2) then (count + 1) else count))) (0) (labeledGlyphs) : Nat) = 37)) := by
-  decide
+  decide +kernel
 
-public theorem DigitEvidence.labeled_agreement : LexLeanModels.Agreement ((Models.Recognizer.DigitNet)) ((Models.Recognizer.sameDigit)) (Models.Recognizer.labeledGlyphs) (40) (37) := by decide
+public theorem DigitEvidence.labeled_agreement : LexLeanModels.Agreement ((Models.Recognizer.DigitNet)) ((Models.Recognizer.sameDigit)) (Models.Recognizer.labeledGlyphs) (40) (37) := by decide +kernel
 public theorem DigitEvidence.digit_net_exact : LexLeanModels.EquivalentTotal ((Models.Recognizer.DigitNet)) ((Models.Glyphs.digitOf)) := Models.Recognizer.digit_net_exact
 public theorem DigitEvidence.digit_net_correct : LexLeanModels.SatisfiesTotal ((Models.Recognizer.Recognizes)) ((Models.Recognizer.DigitNet)) := Models.Recognizer.digit_net_correct
 
@@ -170,132 +170,132 @@ public structure Dyadic where
 @[expose] public def scaleMultipliersRound32 (inputScaleBits : Int) (weightScaleBits : List (Int)) (outputScaleBits : Int) : Option (List (Int)) := (let rev : Option (List (Int)) := (LexLeanCollections.listFold ((fun (acc : Option (List (Int))) (wBits : Int) => (match acc with | Option.none => Option.none | Option.some xs => (match scaleRatioRound32 (inputScaleBits) (wBits) (outputScaleBits) with | Option.none => Option.none | Option.some m => Option.some ((m :: xs)))))) (Option.some (([] : List (Int)))) (weightScaleBits) : Option (List (Int))); (match rev with | Option.none => Option.none | Option.some xs => Option.some ((LexLeanCollections.listFold ((fun (out : List (Int)) (x : Int) => (x :: out))) (([] : List (Int))) (xs) : List (Int)))))
 
 public theorem binary32_pos_zero : DyadicMatches (decodeBinary32 ((0 : Int))) (0) ((0 : Int)) ((-149 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary32_neg_zero : DyadicMatches (decodeBinary32 ((2147483648 : Int))) (1) ((0 : Int)) ((-149 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary32_min_subnormal : DyadicMatches (decodeBinary32 ((1 : Int))) (0) ((1 : Int)) ((-149 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary32_max_subnormal : DyadicMatches (decodeBinary32 ((8388607 : Int))) (0) ((8388607 : Int)) ((-149 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary32_min_normal : DyadicMatches (decodeBinary32 ((8388608 : Int))) (0) ((8388608 : Int)) ((-149 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary32_one : DyadicMatches (decodeBinary32 ((1065353216 : Int))) (0) ((8388608 : Int)) ((-23 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary32_neg_one_half : DyadicMatches (decodeBinary32 ((3217031168 : Int))) (1) ((12582912 : Int)) ((-23 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary32_unit_scale : DyadicMatches (decodeBinary32 ((998277249 : Int))) (0) ((8421505 : Int)) ((-31 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary32_max_normal : DyadicMatches (decodeBinary32 ((2139095039 : Int))) (0) ((16777215 : Int)) ((104 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary32_rejects_pos_inf : (dyadicTriple (decodeBinary32 ((2139095040 : Int))) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem binary32_rejects_neg_inf : (dyadicTriple (decodeBinary32 ((4286578688 : Int))) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem binary32_rejects_nan : (dyadicTriple (decodeBinary32 ((2143289344 : Int))) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem binary32_rejects_negative_input : (dyadicTriple (decodeBinary32 ((-1 : Int))) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem binary32_rejects_overflow_input : (dyadicTriple (decodeBinary32 ((4294967296 : Int))) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem binary32_banner_subnormal : DyadicMatches (decodeBinary32Bytes (banner) (0)) (0) ((5065804 : Int)) ((-149 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary32_banner_normal : DyadicMatches (decodeBinary32Bytes (banner) (1)) (0) ((8408396 : Int)) ((-148 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary64_pos_zero : DyadicMatches (decodeBinary64 ((0 : Int))) (0) ((0 : Int)) ((-1074 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary64_neg_zero : DyadicMatches (decodeBinary64 ((-9223372036854775808 : Int))) (1) ((0 : Int)) ((-1074 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary64_max_subnormal : DyadicMatches (decodeBinary64 ((4503599627370495 : Int))) (0) ((4503599627370495 : Int)) ((-1074 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary64_min_normal : DyadicMatches (decodeBinary64 ((4503599627370496 : Int))) (0) ((4503599627370496 : Int)) ((-1074 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary64_min_subnormal : DyadicMatches (decodeBinary64 ((1 : Int))) (0) ((1 : Int)) ((-1074 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary64_one : DyadicMatches (decodeBinary64 ((4607182418800017408 : Int))) (0) ((4503599627370496 : Int)) ((-52 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary64_neg_one_half : DyadicMatches (decodeBinary64 ((-4613937818241073152 : Int))) (1) ((6755399441055744 : Int)) ((-52 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary64_max_normal : DyadicMatches (decodeBinary64 ((9218868437227405311 : Int))) (0) ((9007199254740991 : Int)) ((971 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary64_rejects_pos_inf : (dyadicTriple (decodeBinary64 ((9218868437227405312 : Int))) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem binary64_rejects_neg_inf : (dyadicTriple (decodeBinary64 ((-4503599627370496 : Int))) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem binary64_rejects_nan : (dyadicTriple (decodeBinary64 ((9221120237041090560 : Int))) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem binary64_banner_first : DyadicMatches (decodeBinary64Bytes ((LexLeanRuntime.append (banner) (banner) : ByteArray)) (0)) (0) ((7964866531642444 : Int)) ((161 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem binary64_banner_last : DyadicMatches (decodeBinary64Bytes ((LexLeanRuntime.append (banner) (banner) : ByteArray)) (2)) (0) ((4588589715357773 : Int)) ((-1059 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem dyadic_round_shift_exact : (dyadicRoundShift (({ sign := 0, mantissa := (8388608 : Int), exponent := (-150 : Int) } : Dyadic)) ((150 : Int)) = (8388608 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem dyadic_round_shift_tie_even_down : (dyadicRoundShift (({ sign := 0, mantissa := (5 : Int), exponent := (-1 : Int) } : Dyadic)) ((0 : Int)) = (2 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem dyadic_round_shift_tie_even_up : (dyadicRoundShift (({ sign := 0, mantissa := (7 : Int), exponent := (-1 : Int) } : Dyadic)) ((0 : Int)) = (4 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem dyadic_round_shift_negative_tie_even : (dyadicRoundShift (({ sign := 1, mantissa := (7 : Int), exponent := (-1 : Int) } : Dyadic)) ((0 : Int)) = (-4 : Int)) := by
-  decide
+  decide +kernel
 
 public theorem scale_ratio_exact_cancel : (scaleRatioRound32 ((998277249 : Int)) ((1000593162 : Int)) ((1008981770 : Int)) = Option.some ((8421505 : Int))) := by
-  decide
+  decide +kernel
 
 public theorem scale_ratio_rounds_up : (scaleRatioRound32 ((998277249 : Int)) ((1000693826 : Int)) ((1017370378 : Int)) = Option.some ((4250229 : Int))) := by
-  decide
+  decide +kernel
 
 public theorem scale_ratio_rounds_down : (scaleRatioRound32 ((1023410176 : Int)) ((1017370378 : Int)) ((1039516303 : Int)) = Option.some ((22369621 : Int))) := by
-  decide
+  decide +kernel
 
 public theorem scale_ratio_tie_odd_to_even : (scaleRatioRound32 ((1065353217 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582914 : Int))) := by
-  decide
+  decide +kernel
 
 public theorem scale_ratio_tie_even_stays_even : (scaleRatioRound32 ((1065353219 : Int)) ((1069547520 : Int)) ((1140850688 : Int)) = Option.some ((12582916 : Int))) := by
-  decide
+  decide +kernel
 
 public theorem scale_ratio_negative_scale : (scaleRatioRound32 ((3145760897 : Int)) ((1000693826 : Int)) ((1017370378 : Int)) = Option.some ((-4250229 : Int))) := by
-  decide
+  decide +kernel
 
 public theorem scale_ratio_subnormal_scales : (scaleRatioRound32 ((3 : Int)) ((1084227584 : Int)) ((2 : Int)) = Option.some ((32212254720 : Int))) := by
-  decide
+  decide +kernel
 
 public theorem scale_ratio_rejects_zero_divisor : (scaleRatioRound32 ((1065353216 : Int)) ((1065353216 : Int)) ((0 : Int)) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem scale_ratio_rejects_nonfinite : (scaleRatioRound32 ((1065353216 : Int)) ((2139095040 : Int)) ((1065353216 : Int)) = Option.none) := by
-  decide
+  decide +kernel
 
 public theorem scale_multipliers_channel_batch : (scaleMultipliersRound32 ((998277249 : Int)) (((1000593162 : Int) :: ((1000693826 : Int) :: ([] : List (Int))))) ((1017370378 : Int)) = Option.some (((4210752 : Int) :: ((4250229 : Int) :: ([] : List (Int)))))) := by
-  decide
+  decide +kernel
 
 end Models.Recognizer

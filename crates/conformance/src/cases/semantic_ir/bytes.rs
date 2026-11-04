@@ -186,8 +186,43 @@ fn vectors() -> Vec<Vec<u8>> {
 }
 
 pub(super) fn verify() {
+    verify_large_slice();
     for language in ["1.1", "1.2"] {
         verify_language(language);
+    }
+}
+
+fn verify_large_slice() {
+    let project = P::example();
+    project.edit("lexlean.toml", "language = \"1.0\"", "language = \"1.2\"");
+    let input: Vec<u8> = (0..251).cycle().take(2048).collect();
+    let expected = &input[85..2047];
+    let source = format!(
+        "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\n\
+         definition{{name: input, parameters: [], result: Bytes, body: 0x{}}}\n\
+         theorem{{name: sliced, parameters: [], statement: ((prim slice (input) 85 1962 : (Option Bytes)) = (ctor Option.some [Bytes] 0x{})), proof: reflexivity{{}}, axioms: []}}\n\
+         theorem{{name: emptyEnd, parameters: [], statement: ((prim slice (input) 2048 0 : (Option Bytes)) = (ctor Option.some [Bytes] 0x)), proof: reflexivity{{}}, axioms: []}}\n\
+         theorem{{name: beyondEnd, parameters: [], statement: ((prim slice (input) 2048 1 : (Option Bytes)) = (ctor Option.none [Bytes])), proof: reflexivity{{}}, axioms: []}}\n\
+         theorem{{name: pastEndEmpty, parameters: [], statement: ((prim slice (input) 2049 0 : (Option Bytes)) = (ctor Option.none [Bytes])), proof: reflexivity{{}}, axioms: []}}\n\
+         \\end{{semanticmodule}}\n\\end{{lexlean}}\n",
+        hex(&input),
+        hex(expected),
+    );
+    project.write("src/Main.lex.tex", &source);
+    project.relock();
+    if support::verify_ok_backed("SM-19", &project).is_some() {
+        let mut altered = expected.to_vec();
+        altered[1000] ^= 1;
+        let mutated = source.replace(
+            &format!("0x{})), proof", hex(expected)),
+            &format!("0x{})), proof", hex(&altered)),
+        );
+        assert_ne!(
+            mutated, source,
+            "the expected slice byte is actually changed"
+        );
+        project.write("src/Main.lex.tex", &mutated);
+        project.verify_fails_with("LLV7002");
     }
 }
 

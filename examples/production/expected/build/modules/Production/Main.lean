@@ -21,9 +21,9 @@ namespace Production.Main
 @[expose] public def headOr (values : List (Nat)) : Nat := Production.Kernel.firstOr (Nat) (values) (0)
 
 public theorem quadruple_three : (quadruple (3) = 12) := by
-  decide
+  decide +kernel
 
 public theorem sum_three : (sumAll ((1 :: (2 :: (3 :: ([] : List (Nat)))))) = 6) := by
-  decide
+  decide +kernel
 
 end Production.Main
