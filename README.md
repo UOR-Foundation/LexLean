@@ -153,7 +153,7 @@ just vv        # the complete normative acceptance gate (SPEC.md §9.2)
 just release   # vv, then the §30 release criterion; refused until 1.0.0
 ```
 
-All 470 registered conformance IDs are implemented and pass; `just vv` runs clean from a checkout with the pinned toolchain installed.
+All 472 registered conformance IDs have their named tests; `just vv` checks them with the pinned toolchain installed.
 
 The differential against the independent generator `lean4-prod` (SPEC.md §17.19, `OR-01`..`OR-08`) acquires it at its pinned commit: from the checkout `LEXLEAN_ORACLE_DIR` names, or by fetching the commit with `git` into the Cargo target directory (`LEXLEAN_ORACLE_CACHE` overrides), and builds it with the pinned Lean and Rust toolchains. It is validation evidence only and no input to any identity. An oracle that cannot be acquired, is not the pinned files, or fails is unavailable: that fails the gate on Linux x86-64 and is printed as `NOT VALIDATED` elsewhere, and is never reported as agreement.
 
@@ -173,7 +173,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | Versioned lexicon packages with closed schemas, denotations, and renderer tokens | `GL-01`..`GL-18` | `build` |
 | Fixed structural, mathematical, and proposition grammar with closed ambiguity handling | `GR-01`..`GR-16` | `build` |
 | Typed closed IR with canonical serialization, native core modules (and the second schema of them that lossless migration of the proof library needs), portable language-1.1 application data and operations, versioned language-1.2 semantic modules, products, first-class functions, and widening conversions, ordered collections and graphs, semantic snapshots, alpha identities, recursion evidence, a split on a document term or a Boolean in a proof, and content identities | `SM-01`..`SM-36` | `build` |
-| Document and generic semantic declarations with exact self-application, type checking, structural recursion, recursive and mutual language-1.2 data, generic and executable higher-order definitions, mutual and well-founded recursion with semantic evidence, explicit state threading, and acyclicity rules | `DF-01`..`DF-18` | `build` |
+| Document and generic semantic declarations with exact self-application, type checking, structural recursion, recursive and mutual language-1.2 data, generic and executable higher-order definitions, mutual and well-founded recursion with semantic evidence, explicit state threading, and acyclicity rules | `DF-01`..`DF-19` | `build` |
 | The structured proof language with pinned Lean lowerings, including closed linear arithmetic, integer order, and the fold laws | `PF-01`..`PF-23` | `build` |
 | Prose-free deterministic generated Lean with complete token traceability | `LN-01`..`LN-12` | `build` |
 | Canonical LaTeX regeneration and the optional hash-checked PDF provider | `TX-01`..`TX-12` | `build` |
@@ -181,7 +181,7 @@ Every row is validated by `just vv`; the IDs link the claim to its register row,
 | Sixteen-stage verification with leanchecker replay and exact axiom audit | `VR-01`..`VR-23` | `build` |
 | The exact CLI contract, the stable seven-method Rust `Engine` API, the host-driven end of the children the library started, the `production` subcommands, and the `migrate` command | `CL-01`..`CL-24` | `build` |
 | Filesystem confinement, no shell, no hidden network, closed failure model | `SE-01`..`SE-12` | `build` |
-| Language-1.2 production eligibility: closed targets, effects, and construct dispositions; runtime closures; target-dependent, fail-closed root analysis; deterministic eligibility reports; an exhaustiveness audit; measured stack bounds for every recursive root a harness runs | `PD-01`..`PD-08` | `build` |
+| Language-1.2 production eligibility: closed targets, effects, and construct dispositions; runtime closures; target-dependent, fail-closed root analysis; deterministic eligibility reports; an exhaustiveness audit; measured stack bounds for every recursive root a harness runs; the effect each host request realizes | `PD-01`..`PD-10` | `build` |
 | Named-root extraction through Lean's compiler front end: an adapter that is a closed tooling module over a registry derived from the pinned Lean and probed on every extraction, checked against a handwritten oracle; a closed, canonical, root-independent compiler input; fail-closed rejection; and an exact closure cross-check against production eligibility | `NE-01`..`NE-06` | `build` |
 | The production realization calculus: a closed target syntax with canonical identity, a kernel-checked denotation, a realization library agreeing with LexLean's own collection primitives, complete realization coverage of the production registry, and a differentially tested Rust profile | `TC-01`..`TC-07` | `build` |
 | The canonical Rust backend: a closed, checked Rust AST whose every construct corresponds to the calculus; hygienic identifiers, single ownership with last-use and component moves, exact failure typing, and no hidden allocation; contiguous lists with constant-work cells; a closed runtime library boundary of stated machine primitives; deterministic packages with checked exports, a lint gate and crate attributes read from one embedded language module, and provenance that states the realization's effects | `RB-01`..`RB-21` | `build` |

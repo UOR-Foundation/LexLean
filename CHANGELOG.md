@@ -25,7 +25,16 @@ workspace carried at those versions without a tag.
   UTF-8 byte order with the last of a repeated key kept, shortest integers,
   the required escapes, no whitespace. `stdlib/lexlean.toml` gains the
   entrypoint, so the locks of `stdlib` and its consumers move. The register is
-  470 IDs.
+  472 IDs.
+- Structural recursion over the recursive family of a nested inductive type,
+  #278 (SPEC.md §17.12, `DF-19`). A mutual definition group may decrease on any
+  member of the family the pinned Lean takes as the motives of the type's
+  recursor (the type, then each `List`, `Option`, `Result`, or product that
+  holds it, in the order of discovery), so a function over a type with a
+  constructor that holds `List (String * Json)` recurses through the list and
+  through the pair. One checker change; no file of the compiler-semantics
+  digest moves, so no identity moves. The register is 470 IDs.
+
 - The Intel macOS host-gate cost correction for #235 keeps SP-02's complete
   certificate scaling families and TC-03's seeded argument/fuel sweep on the
   normative Linux host, with fixed certificate vectors and committed fixture
@@ -33,6 +42,14 @@ workspace carried at those versions without a tag.
   shared fixture modules once for declaration membership checks. No
   acceptance recipe, normative assertion, or kernel replay is removed.
 
+
+- `PD-10`, the first slice of the effects boundary (#271). The standard library
+  gains `LexLeanStd.Host`, the types a command root is written against, and the
+  production registry of language 1.2 gains the effects `files` and `process`
+  and one `[[request]]` row per constructor of `Request`. A root whose closure
+  builds a request must admit that request's effect, or it fails with `LLT4005`.
+  Nothing performs a request yet. The language-1.2 compiler-semantics ID moves;
+  1.0 and 1.1 do not.
 - The #34 closure pass (documentation and evidence; no register row, language
   datum, schema, or compiler source moves). Sixteen examples carry a `README.md`
   that names the register rows whose gates run on them, what

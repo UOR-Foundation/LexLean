@@ -1801,8 +1801,24 @@ impl<'a> Lowering<'a> {
         }
     }
 
-    #[allow(clippy::too_many_lines)]
     fn expr(&mut self, expr: &Term, scope: &mut Vec<(u64, Ty)>) -> Result<Expr, String> {
+        // Constructor operands can nest deeply. Keep their recursion outside
+        // the frame that holds the other expression variants' lowering state.
+        if let Term::Build {
+            shape,
+            ty,
+            operands,
+        } = expr
+        {
+            self.inhabited(ty)?;
+            self.build(shape, ty, operands, scope)
+        } else {
+            self.expr_inner(expr, scope)
+        }
+    }
+
+    #[allow(clippy::too_many_lines)]
+    fn expr_inner(&mut self, expr: &Term, scope: &mut Vec<(u64, Ty)>) -> Result<Expr, String> {
         let at = term_at(expr);
         Ok(match expr {
             Term::Value { ty, value } => self.value(value, ty)?,
