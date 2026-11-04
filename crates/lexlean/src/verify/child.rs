@@ -612,6 +612,12 @@ mod timeout_tests {
     #[cfg(unix)]
     use camino::Utf8Path;
 
+    /// What runs a case's script. A script written by a test and executed
+    /// directly fails with `ETXTBSY` while a process another test is starting
+    /// still holds the write descriptor it inherited, so the shell reads it.
+    #[cfg(unix)]
+    const SHELL: &str = "/bin/sh";
+
     #[cfg(unix)]
     fn limits(timeout_ms: u64) -> crate::config::Limits {
         crate::config::Limits {
@@ -699,7 +705,6 @@ mod timeout_tests {
 
     #[cfg(unix)]
     fn timeout_scenario() {
-        use std::os::unix::fs::PermissionsExt;
         let marker = format!("lexlean-grandchild-{}", std::process::id());
         let directory = tempfile::tempdir().expect("tempdir");
         let script = directory.path().join("lake");
@@ -708,15 +713,14 @@ mod timeout_tests {
             format!("#!/bin/sh\nsleep 1000.{} &\nwait\n", std::process::id()),
         )
         .expect("write");
-        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).expect("mode");
-        let program = Utf8Path::from_path(&script).expect("utf-8");
+        let script = Utf8Path::from_path(&script).expect("utf-8");
         let cwd = Utf8Path::from_path(directory.path()).expect("utf-8");
         let spec = ChildSpec {
             tool: "lake",
             module: Some(marker.clone()),
-            program,
+            program: Utf8Path::new(SHELL),
             executable_sha256: Sha256Digest::of(b"script"),
-            argv: Vec::new(),
+            argv: vec![script.to_string()],
             cwd,
             extra_env: Vec::new(),
             home: ChildHome::Isolated { home: cwd },
@@ -762,7 +766,6 @@ mod timeout_tests {
 
     #[cfg(unix)]
     fn inherited_pipe_timeout(stream: &str, redirect: &str) {
-        use std::os::unix::fs::PermissionsExt;
         use std::time::{Duration, Instant};
 
         let directory = tempfile::tempdir().expect("tempdir");
@@ -776,15 +779,14 @@ mod timeout_tests {
             ),
         )
         .expect("write");
-        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).expect("mode");
-        let program = Utf8Path::from_path(&script).expect("utf-8");
+        let script = Utf8Path::from_path(&script).expect("utf-8");
         let cwd = Utf8Path::from_path(directory.path()).expect("utf-8");
         let spec = ChildSpec {
             tool: "pipe-holder",
             module: Some(stream.to_owned()),
-            program,
+            program: Utf8Path::new(SHELL),
             executable_sha256: Sha256Digest::of(b"script"),
-            argv: Vec::new(),
+            argv: vec![script.to_string()],
             cwd,
             extra_env: Vec::new(),
             home: ChildHome::Isolated { home: cwd },
@@ -793,7 +795,9 @@ mod timeout_tests {
         let result = run(&spec, &limits(200), &Normalizer::default());
         let elapsed = started.elapsed();
         let group = std::fs::read_to_string(directory.path().join("leader.pid"))
-            .expect("the leader recorded its group")
+            .unwrap_or_else(|io_error| {
+                panic!("the leader recorded its group: {io_error}; the run gave {result:?}")
+            })
             .trim()
             .parse()
             .expect("a group number");
@@ -823,8 +827,6 @@ mod timeout_tests {
 
     #[cfg(unix)]
     fn completed_descendant() {
-        use std::os::unix::fs::PermissionsExt;
-
         let directory = tempfile::tempdir().expect("tempdir");
         let script = directory.path().join("leader");
         std::fs::write(
@@ -832,15 +834,14 @@ mod timeout_tests {
             "#!/bin/sh\nprintf 'before\\n'\n(sleep 0.05; printf 'after\\n'; printf 'error\\n' >&2) &\nexit 0\n",
         )
         .expect("write");
-        std::fs::set_permissions(&script, std::fs::Permissions::from_mode(0o755)).expect("mode");
-        let program = Utf8Path::from_path(&script).expect("utf-8");
+        let script = Utf8Path::from_path(&script).expect("utf-8");
         let cwd = Utf8Path::from_path(directory.path()).expect("utf-8");
         let spec = ChildSpec {
             tool: "pipe-holder",
             module: None,
-            program,
+            program: Utf8Path::new(SHELL),
             executable_sha256: Sha256Digest::of(b"script"),
-            argv: Vec::new(),
+            argv: vec![script.to_string()],
             cwd,
             extra_env: Vec::new(),
             home: ChildHome::Isolated { home: cwd },

@@ -33,6 +33,7 @@ mod rust_succeed;
 mod rust_terms;
 mod rust_validate;
 mod scan;
+mod tooling_latex;
 
 /// The module the first component lives in.
 const MODULE: &str = "LexLeanBoot.AxiomOutput";
@@ -2452,6 +2453,8 @@ fn case(id: &str) {
         "BS-13" => rust_loops::case(),
         "BS-14" => rust_assemble::case(),
         "BS-15" => rust_package::case(),
+        // §17.23, §17.20: the canonical LaTeX of a tooling module.
+        "BS-20" => tooling_latex::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

@@ -26,7 +26,7 @@ use std::collections::{BTreeMap, BTreeSet, VecDeque};
 
 use super::{
     registry, BoundaryRow, CallPath, ClosureMember, Disposition, EffectRow, ModuleReport,
-    ReasoningRow, Registry, RootReport, TargetRow,
+    ReasoningRow, Registry, RootReport, TargetRow, HOST_REQUEST_PREFIX,
 };
 use crate::config::Limits;
 use crate::ir::semantic::{
@@ -975,6 +975,28 @@ impl<'a> Walk<'a> {
                 .entry("overflow".to_owned())
                 .or_default()
                 .insert((key.to_owned(), site.instance.to_owned()));
+        }
+    }
+
+    /// Record the effect of one request a closure builds, from its registry
+    /// row. A request is not a construct kind of the IR, so it is reported only
+    /// as the source of its effect.
+    fn request(&mut self, site: &Site<'_>, request: &str) {
+        match self.registry.requests.get(request) {
+            None => {
+                self.violation(
+                    site,
+                    "term.constructor",
+                    format!("request `{request}` has no row in the production registry"),
+                );
+            }
+            Some(None) => {}
+            Some(Some(effect)) => {
+                self.effects
+                    .entry(effect.clone())
+                    .or_default()
+                    .insert((format!("request.{request}"), site.instance.to_owned()));
+            }
         }
     }
 
@@ -2093,6 +2115,13 @@ impl<'a> Walk<'a> {
                 .find(|(name, _)| *name == owner)
                 .map(|(_, builtin)| *builtin),
         };
+        // No event carries a request and nothing else makes one, so a closure
+        // can return only the requests it builds here.
+        let qualified = self.owner(site.module).lean_name(constructor);
+        match qualified.strip_prefix(HOST_REQUEST_PREFIX) {
+            Some(request) => self.request(site, request),
+            None => {}
+        }
         let ty = match builtin {
             None => SemanticType::Named {
                 member: MemberRef {

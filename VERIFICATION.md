@@ -21,6 +21,8 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `repro` | `cargo xtask check-reproducibility` | AR-13, §28.4: two clean `build`s in distinct absolute directories publish byte-identical trees with no absolute path inside |
 | `deny` | `cargo deny --all-features check` | advisories, bans, licenses, sources |
 
+In CI, the initial `honesty` row owns `fmt-check model spec-links` and the complete `bdd` meta-gate target. The remaining rows, supported hosts and Atlas prefix require its success. The BDD remainder owns the library, doctests and unassigned integration targets; Cargo metadata discovers target names and the inventory lists the same target selectors and filters as execution. The separate honesty workflow is subsumed by this same-run job; local `just vv` retains its complete suite.
+
 Outside `vv`:
 
 - `just fixtures` (`cargo xtask check-fixtures`) runs every §28.2 fixture under `tests/fixtures/` and `tests/negative/` through the CLI entry point and compares exit code, canonical command result, diagnostics, artifact list, and platform-independent hashes with `expected/`. `just fixtures-write` is the only rewrite path.
@@ -791,6 +793,69 @@ test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 238 filtered out
 
 Removed: the test was restored; `conformance_df_16` passes and the
 `recursion-wrong-argument` negative fixture fails with `LLT4001`.
+
+### a mutual group over the family of a nested inductive can fail (DF-19)
+
+A mutual definition group may decrease on any member of the recursive family
+of a nested inductive (`DF-19`, §17.12, #278): `Json` with `array (List Json)`
+and `object (List (String * Json))` has the four members `Json`, `List Json`,
+`List (String * Json)`, and `String * Json`, and `tests/nested-family` holds
+two groups of four members over it, `size` and `leaves`. The family is one
+computation (`family_members`) shared by the group's family test and by the
+rule that a pattern binder is smaller exactly when its type is a member; the
+unit tests `the_family_is_discovered_in_the_order_of_the_pinned_recursors_motives`
+and `a_member_found_inside_a_product_joins_the_family` pin the order against
+the motives `#check @A.rec` reports under Lean 4.32.1 for a type with seven.
+
+Command and host: `cargo test -p repo-conformance --test conformance --
+conformance_df_19 conformance_df_13 conformance_df_14 conformance_df_16
+conformance_df_17` and `cargo test -p lexlean --lib family_` on the 2-core
+Linux x86-64 machine the series is prepared on, Lean 4.32.1, rustc stable
+1.97.0. `conformance_df_19` verifies `tests/nested-family` under the pinned
+Lean (two theorems evaluate both groups on a value nesting all four members),
+and refuses four plants with `LLT4001`: a call on a `Json` built from the
+pair's string, a call on the matched list itself, a list of pairs whose first
+component is `Nat`, and a pair whose first component is `Nat`.
+
+Planted: a pattern binder whose type is a product never smaller
+(`in_family(field, family) && !matches!(field, SemanticType::Product { .. })`),
+so `sizeEntry` could not call `size` on the pair's `Json`. Command:
+`cargo test -p repo-conformance --test conformance -- conformance_df_19`.
+
+```text
+check succeeds: LexLeanError { class: Language, diagnostics: [Diagnostic { code: DiagnosticCode("LLT4001"), message: "phase link: recursive call `sizeEntry` is not on a structurally smaller value", ...
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 444 filtered out
+```
+
+Planted: the arm of `family_constructor_fields` that gives a product its two
+fields removed. Command: `cargo test -p lexlean --lib family_`. Expected: a
+family whose fourth member is found only inside a product loses it.
+
+```text
+test ir::semantic::family_order_tests::a_member_found_inside_a_product_joins_the_family ... FAILED
+test result: FAILED. 2 passed; 1 failed; 0 ignored; 0 measured; 209 filtered out
+```
+
+Removed: both plants were restored; the cases pass. Before the change the
+same project is refused at its first group: `mutual group `Size` members
+decrease on different recursive families` (the old `family_of` saw a list of
+pairs as a list of one element type).
+
+A group used at one of its own types has the family of its own arguments
+only (maintainer review of this change): `Rose Item | node : Item -> List
+(Rose Item)` at `Rose (Rose Nat)` has the two members `Rose (Rose Nat)` and
+`List (Rose (Rose Nat))`, as `Rose.rec` has two motives at any
+instantiation. `mentions_family_group` takes the type arguments of the
+family and counts a named type of the group only at those arguments. The unit
+test `a_group_instantiated_at_its_own_type_has_two_motives` pins it.
+
+Planted: `mentions_family_group` ignored the arguments again (the comparison
+`observed.as_slice() == arguments` replaced by `true`). Command:
+`cargo test -p lexlean --lib family_`.
+
+```text
+test ir::semantic::family_order_tests::a_group_instantiated_at_its_own_type_has_two_motives ... FAILED
+```
 
 ### recursion call graph check can fail
 
@@ -11506,6 +11571,9 @@ the first panic message, trimmed.
 | `PD-02` | `production/eligibility.rs`: `analyse_module` no longer returns `Ok(None)` for a module without roots | `a module with formal content and no root is never analysed` |
 | `PD-03` | `production/eligibility.rs`: termination evidence is no longer inserted into `erased` | `termination evidence is erased, never realized` (`left: []`, `right: ["Production.Kernel.countdown_decreases"]`) |
 | `PD-06` | `production/eligibility.rs`: every `EffectRow` is built with no sources | `array shorter than minItems 1` at `/roots/1/targets/0/effects/0/sources` of `production-eligibility.schema.json` |
+| `PD-10` | `language/production-1.2.toml`: the row of `spawn` names `files` where it named `process` | `the effect of each request` (`left` holds `("spawn", Some("files"))`, `right` holds `("spawn", Some("process"))`) |
+| `PD-10` | `production/eligibility.rs`: a constructor of `Request` is not recorded as a request | `a closure realizes `files` through a call in another module` (`left: ["allocation"]`, `right: ["allocation", "files"]`) |
+| `PD-10` | `language/production-1.2.toml`: the row of `stop` is removed | `the effect of each request` (`left` has no `stop`) |
 | `TC-01` | `calculus/mod.rs`: `canonical` binds parameters but keeps their spelling | `assertion left == right failed: adt-evaluation` (alpha variant bytes differ) |
 | `TC-02` | `calculus/check.rs`: the match exhaustiveness test made `false &&` | `an invalid program loads: expected `the match is not exhaustive: Adt { constructor: 2 } is not covered`` |
 | `MD-01` | `ir/semantic.rs`: the language-1.1 gate `first_language_1_2_construct` made `&& false` | `tests/negative/model-under-1.1: expected "`contract declaration` is a language-1.2 construct"` |
@@ -12179,3 +12247,698 @@ On the merged member, regenerated, on one WSL host with 4 build jobs:
 
 The figures of the `BS-06` record above are that record's own run and stay as
 measured.
+
+## The five `Order` packages move the counts of `BS-05` to `BS-08` and `BS-11` to `BS-15` (`SL-10`, #276)
+
+The five roots of `LexLeanStd.Order` (`SL-10`) add five committed packages, and
+these cases assert their corpus, so they failed on the counts when the member was
+merged with #371 at `32d317126` and `ef961c75a`. `BS-05` and `BS-06` were measured
+as for `Numeral` above: a throwaway edit, reverted, ran `BS-06`'s corpus code over
+the member's tree and over `32d317126`, hashing each crate. The other rows are the
+numbers their own count asserts reported in CI run 41420697512 on `88270df7e`, whose
+tree differs from this one by these counts and the verification records.
+
+| Count | `32d317126` | member |
+| --- | --- | --- |
+| committed manifests and packages | 277 | 282 |
+| distinct programs | 194 | 199 |
+| distinct lowered crates | 253 | 258 |
+| crates of at most 400 expressions | 205 | 208 |
+| `printCrate` vectors | 672 | 682 |
+| committed distinct crates | 506 | 516 |
+| committed distinct crates in the evaluator's limit | 416 | 422 |
+| runs with a tight capacity | 37 | 37 |
+| runs with a tight capacity in the evaluator's limit | 30 | 32 |
+| `printCrate` vectors in the evaluator's limit | 575 | 583 |
+| `printExpr` vectors | 2,110 | 2,145 |
+
+| Row | `ef961c75a` | member |
+| --- | --- | --- |
+| `BS-05` runs of `validateCrate`, `correspondCrate` | 491, 354 | 494, 359 |
+| `BS-05` runs under the evaluator | 443, 306 | 444, 309 |
+| `BS-05` refusals among the runs of `validateCrate`, rule runs of it | 213, 132 | 211, 129 |
+| `BS-05` refused among the seeded mutants | 271, 244 | 291, 252 |
+| `BS-06` seeded `printExpr` mutants, seeded rustc runs | 399, 2,984 | 394, 2,989 |
+| `BS-07` vectors, within the bound | 328, 278 | 333, 281 |
+| `BS-08` crates, within the bound | 387, 339 | 392, 342 |
+| `BS-11` vectors, within the bound, mutants | 157, 156, 296 | 157, 156, 281 |
+| `BS-12` vectors, within the bound, mutants | 76, 75, 184 | 76, 75, 149 |
+| `BS-13` vectors, within the bound, mutants | 97, 49, 125 | 102, 52, 108 |
+| `BS-14` vectors, within the bound, mutants | 332, 282, 547 | 337, 285, 580 |
+| `BS-15` manifests, accepted, render mutants, runs under rustc | 296, 277, 277, 3,169 | 301, 282, 282, 3,184 |
+
+The crates that differ are the five new ones, of 65, 129, 367, 451 and 477
+expressions, so three fall under the cap of 400: that is `BS-05`'s +3 and, on both
+profiles, the +6 of the committed crates in `BS-06`'s limit. `BS-06`'s other +2 come
+from the tight runs, which sample every seventh crate: the new crates move the
+sample, which loses crates of 549 and 1,343 expressions and gains ones of 178 and 499.
+The number of tight runs stays 37, and two more of them are in the limit. The
+mutants of `BS-11` to `BS-14` are drawn from the committed programs, so the new
+programs change the draws, and some of the kept counts fall; which mutants changed
+was not traced. Why the vectors of `BS-11` and `BS-12` do not move was not traced
+either.
+
+The first run on those counts, CI run 41434996123 on `4c546a065`, stopped `BS-05` in
+its own corpus: `the rule corpus gave up before it reached 3 runs of:
+["heap-list-match"]`. That refusal was reached only by draws. A throwaway edit,
+reverted, drew 400,000 mutants from each of three seeds over the 153 crates of at most
+80 expressions, without stopping at the target:
+
+| Seed | list match, hits | slowest other refusal, third hit at draw |
+| --- | --- | --- |
+| `0x05A1_1CE0_BE55_0005` (the corpus's) | 0 | 36,530 (`heap-empty-list`) |
+| `0x1111_2222_3333_0005` | 0 | 17,148 (`heap-list-cell`) |
+| `0x7777_8888_9999_0005` | 1 | 26,541 (`negated-zero`) |
+
+So three hits within the limit of 400,000 was luck on the earlier pools, and Order's
+crate of 65 expressions, the one new base, moved the draws. A higher limit would leave
+it to fail on a later package, so `list_match_crates` holds it by hand whatever the
+draws: `Uncons` of a parameter of type `Nat` under `rust-core`, which the probe shows
+the oracle refuses with this refusal. The corpus now draws for the other 47 refusals,
+so the rule runs fall by 3 and the hand-built crates rise by 1, which is the -2 on
+`validateCrate`'s runs and refusals. None of the other 47 is at this risk: on all three
+seeds each has its third hit within 36,530 of the 400,000 draws. This measures `BS-05`'s
+refusals only.
+
+The numbers of `BS-05` are that probe's, which stops before the first leg; `BS-06`'s
+are its assert's in that CI run. CI run 41443972605 on `e0fa5c6e2` then passed both
+cases on them, and every other job but `examples`, which wanted the verify records.
+
+Those records moved three counts again, though they touch nothing but
+`stdlib/expected/verify`. `calculus_check::committed` reads every
+`/preserve/program/R*.json`, and `mutants` picks its bases from those programs, so a
+records commit that adds, removes or changes one moves the draws of the rows on that
+corpus. This one added `R17` to `R21` and changed `R8` to `R16`. CI run 41470121986 on
+`42263665e` gave:
+
+| Count | Before the records | With them |
+| --- | --- | --- |
+| `BS-11` mutants | 286 | 281 |
+| `BS-12` mutants | 151 | 149 |
+| `BS-14` mutants | 593 | 580 |
+
+`BS-13` draws from the same corpus and passed with its count unmoved; `BS-07` tops its
+draws up to a fixed count. `BS-05`, `BS-06`, `BS-08` and `BS-15` read only manifests
+and fixtures. The three failing cases assert the count before their plants, so that
+run did not reach the plants on the new draws. A package that adds records should
+set these counts with its records in the tree, on the same commit.
+
+## Policy failures are collected before publication (`VR-11`, #377)
+
+A language-1.2 module with two `join` definitions missing `propext` and a
+`utf8_decode` definition understating its exact policy previously reported
+only the first `LLV7005`, at `lexlean.toml:1:1`. Stage 11 now collects the
+six policy-check sites and returns the existing canonically sorted failure
+before extraction or publication. Missing audit records and process/internal
+failures remain immediate. Semantic declaration anchors reuse the renderer's
+notation/data source-range readers while the normalized sources are present.
+
+`VR-11` reuses its existing register row and adds this three-declaration
+fixture, checking the actual JSON command, source slices and absence
+of verified output. The regression deliberately performs one verification;
+the generic diagnostic formatter and limiter are unchanged.
+
+On Linux x86-64 with Lean 4.32.1 from the configured `ELAN_HOME`, direct CLI
+runs reported all three diagnostics at `src/Main.lex.tex` lines 5, 13 and 21,
+in both output formats (human run: 6.85 s). A one-off configuration with
+`max_diagnostics = 1` retained the first violation and reported `LLS8002`,
+configured 1, observed 3 (7.48 s); keeping only the third declaration gave
+one `LLV7005` at its source declaration (7.17 s). None published an
+attestation. The pre-fix CLI output contained only the first diagnostic.
+
+The focused renderer/runtime compiler-semantics fingerprint tests pass (two
+tests), and `conformance_rp_10` passes its embedded/disk identity and lock
+checks (6.33 s). All-target/all-feature checks and Clippy with warnings denied
+pass for `lexlean` and `repo-conformance`. This changes no embedded normative
+file or fingerprinted renderer
+source, so no compiler-semantics pin or artifact regeneration is needed.
+The full Lean-backed `VR-11` case was not run here: its host helper requires
+the toolchain under `HOME/.elan`, whereas this environment installs it under
+`/workspace/.setup/elan`; the direct CLI evidence above uses that installation
+without changing the host helper or home directory.
+
+The first PR #403 honesty run (41605700268, job 125814846351) caught
+an eight-step `VR-11` scenario; the Gherkin subset permits at most six.
+The same failure reproduced locally. Consolidating the related subset-policy
+outcomes and the multi-diagnostic outcome into six steps retains every stated
+expectation and leaves the gate unchanged. All five tests of
+`cargo test --locked -p repo-conformance --test bdd` then pass, including
+its planted-defect falsifiability test. CI run 41605700263 also passed the
+complete `bdd-verification` leg on the original implementation, including
+`VR-11`. That run's separate `bdd-compiler` leg failed with a stack overflow
+in `conformance_tc_03`; this scenario correction does not establish a full
+gate pass.
+
+### Host-matrix cost and coverage (#235)
+
+The successful Intel macOS job 125390659100 of run 41478333299 at
+`afe1a002` ran from 2026-11-02 16:09:07 to 18:33:00 UTC (144 minutes).
+Its 468 conformance tests took 7,470.84 seconds. The last three cases were
+SP-02 (about 42 minutes), TC-03 (about 21 minutes) and TC-05 (about 18
+minutes), inferred from their 60-second notices and completion timestamps.
+
+SP-02 now runs its complete scaling grid, mixed-shape searches and seeded
+stress families only on the normative Linux x86-64 host. Every host retains
+the committed-corpus certificate bounds, negative limits and fixed let-chain
+and wide-match vectors. TC-03 keeps its committed fixture and generated
+module assertions on every host; its seeded argument/fuel sweep, with the
+same seed, fuel schedule and greater-than-10,000-run assertion, runs on the
+normative host. Each non-normative case reports the split. TC-03 and TC-05 render and parse their two shared fixture modules once,
+then check declaration membership through a set, retaining every assertion.
+
+The full normative coverage is unchanged. No cache, cross-run evidence,
+additional macOS shard, or acceptance recipe is introduced. The post-change
+Intel runtime must be measured from the PR's full gate before #235 is
+considered closed; no speedup is inferred from this host or from a timeout.
+
+Focused local validation on Linux x86-64: `validate-model` (468 IDs and 86
+codes), `validate-spec-links`, the five BDD meta-gate tests, formatting, and
+workspace/all-target/all-feature Clippy with warnings denied pass. The
+isolated `conformance_tc_05` reached its Lean-host check after all template
+and declaration-membership assertions in 4.53 seconds, then failed because
+this environment installs Lean under `ELAN_HOME` while the conformance
+helper requires `$HOME/.elan`. That is a blocked Lean-backed test, not a
+pass or an Intel timing measurement. The full normative cases and actual
+non-normative host paths remain for CI; neither helper nor home was changed.
+
+
+## Readable semantic notation obeys its nesting bound (AU-03, #374)
+
+The recursive readable term and type readers enforce the same depth-256 bound
+as the generic notation reader. `conformance_au_03` constructs 50,000-level
+`cons` terms and `List` types, both with and without their closing parentheses.
+The public check API and the CLI in human and JSON modes must refuse each with
+`LLP2001` at a position in `src/Main.lex.tex`, before decoding semantic JSON.
+These are temporary negative projects inside the existing AU-03 case.
+
+`cargo test -p lexlean --lib readable_nesting_has_an_explicit_bound` also checks
+the exact readable boundary: 255 unary terms or `List` types, and 254 `cons`
+terms ending in `(nil Nat)`, read successfully; one more nesting is refused.
+The leaf type of `nil` consumes the additional level.
+
+The test failed on the old reader because an over-bound term was accepted.
+Removing only the readable term guard then failed on the 256-level unary term;
+removing only the type guard failed on the over-bound `cons` term's leaf type.
+Both plants returned a failing test (exit 101), without a stack abort, and were
+restored. The fixed boundary test and `conformance_au_03` passed on Linux with
+Rust 1.97.1. No Lean process is involved in these checks.
+
+The fix changes no embedded normative identity input: `build.rs` embeds
+`language/`, `schemas/`, and the axiom-parser and canonical-JSON goldens, none
+of which changes here. No language identity or verification oracle is rewritten.
+
+## Semantic JSON nesting diagnostic names the list workaround (`SM-12`, #375)
+
+The 128-level semantic JSON reader limit is unchanged. Before the diagnostic
+change, `cargo test --offline --locked -p repo-conformance --test conformance
+conformance_sm_12 -- --exact --nocapture` failed on the new assertion with:
+
+```text
+phase link: invalid semantic-module JSON: recursion limit exceeded at line 1 column 6925
+```
+
+The committed fixtures under `tests/semantic-json-depth/` exercise a 122-cell
+list that checks, a 123-cell list that fails, the same failure in a subsequent
+declaration, and a 200-cell list split into two definitions joined by
+`prim append` that checks. The failure is checked through the project API,
+human and JSON CLI output, and the semantic JSON reader directly. Malformed,
+noncanonical, duplicate-member and out-of-schema data (including an extra
+member on a tagged unit variant) remain refused without list-depth advice.
+The source span still covers the module body; generated JSON coordinates are
+not presented as a nested term's source position.
+
+After the change, the same command passes (1.83 s on this host). Removing
+the append recommendation from the diagnostic, leaving the bound and
+smaller-definitions advice intact, makes that command
+fail on its `prim append` assertion (1.32 s). The planted edit was restored.
+The diagnostic change does not run Lean or establish a new verification claim;
+#375 already records verification of two 100-cell lists joined by append.
+
+The nesting diagnostic retains the existing `recursion limit exceeded` category,
+which the `SP-02` 130-level let-chain refusal also asserts. Only its generated
+JSON coordinates are replaced by the bound and workaround advice.
+
+## Release evidence consumes the whole jobs listing (RP-18, #408)
+
+The release gate piped the jobs listing into quiet `grep` with `pipefail`
+set. A match can close the pipe before `printf` finishes, so a complete
+passing listing can be refused because its producer receives SIGPIPE.
+The Atlas-join and required-leg checks now consume all input and discard
+matching output. Their patterns, the all-success check, host count, tree
+comparison, and required-leg set are unchanged.
+
+`release_gate_decisions` now appends 1,500 successful jobs to the complete
+fixture and requires acceptance, then appends a failed job after every
+required row and requires refusal with no evidence file. Before the script
+fix, the new large-list assertion failed with `left: 1`, `right: 0` and
+`release-gate: no run of ci.yml was the whole gate and passed every job`.
+With the fix, that assertion and every existing decision pass. These
+red/green checks ran the unchanged function extracted into a standalone
+Rust executable linked to the workspace's existing dependency artifacts;
+no Cargo rebuild or full acceptance run is claimed by this record.
+Shell syntax, Rust formatting, and diff whitespace checks pass.
+
+This independently reproduced listing-size defect is not established as
+the cause of PR #403's CI RP-18 failure on its ordinary fixture. That
+ordinary case also passed locally before this correction.
+
+The first full PR gate (run 41621446939, job 125870930417) exposed that the
+two deliberately refused 123-cell sources were outside the corpus's `negative/`
+classification. A focused local `conformance_au_08` reproduced the refusal at
+`authoring.rs:1276` in 138.28 s. Those two unchanged sources now live in
+`tests/semantic-json-depth/negative/`, and `SM-12` reads their new paths. The
+122-cell and split-list sources retain their positive placement. `AU-08`'s
+reader, corpus walk, round trips and anti-vacuity assertions are unchanged;
+its existing negative classification still attempts to read every source and
+applies every round-trip assertion whenever reading succeeds. `SM-12` retains
+every project, API, CLI and direct-reader refusal assertion.
+
+After the placement correction, the same focused `conformance_au_08` command
+passes in 723.03 s and `conformance_sm_12` passes in 1.91 s. Formatting and
+`git diff --check` pass. No identity input or generated record changed.
+
+## Policy source anchors reuse the rendered declaration mappings (#377)
+
+Stage 11 now takes language-1.2 semantic declaration ranges from the existing
+Lean artifact mappings whose node kind is `semantic-declaration`. The renderer
+emits one such piece per source declaration in declaration order, including
+its separating newline; source-map folding orders the pieces by artifact and
+generated byte range. Filtering to Lean avoids the corresponding LaTeX rows.
+The legacy `semantic-module/1` renderer has only a whole-module node, so its
+existing source lookup remains intact. No source-map or backend bytes change.
+
+The direct three-policy CLI fixture was verified once with pinned Lean
+4.32.1 after this refactor. It returned three `LLV7005` diagnostics and no
+artifacts. Its entire diagnostics array equals the earlier direct CLI result:
+`first` maps to source bytes 113..251 (line 5), `second` to 253..392 (line 13),
+and `third` to 394..564 (line 21), all at column 1. Each slice contains its own
+named declaration. The CLI build and lexlean all-target/all-feature Clippy
+with warnings denied pass, as do formatting and diff whitespace checks.
+
+This removes a redundant parse; it does not establish or resolve the cause of
+PR #403's earlier TC-03 CI stack overflow. No full acceptance run is claimed
+by this local check.
+
+
+## Existing honesty checks precede expensive CI fan-out (#411)
+
+The original #403 honesty run 41605700268, job 125814846351, started on
+2026-11-03 at 08:46:05 UTC and failed at 08:48:58 with `VR-11: 8 steps`.
+Its five BDD meta tests took 1.09 seconds; `model spec-links` had passed.
+In CI run 41605700263, `rest` repeated the failure at 09:01:20. The Intel
+host job 125815138918 started at 10:05:57, repeated it at 10:19:42, and
+continued under `--no-fail-fast` until cancellation at 10:26:14. Atlas prefix
+125815138772 independently ran 08:46:37–09:11:17 successfully. These are
+observed job-log timestamps, not a sum of runner savings. The later run
+41619096018 is separate evidence and does not establish this failure.
+
+The initial row now runs the existing format, model and specification-link
+recipes and the existing complete BDD meta target, with the check name
+`honesty`. Those recipes move out of `rest`; the meta target moves out of
+the BDD remainder. All remaining matrix rows, the supported hosts and Atlas
+prefix depend on this job, and the standalone honesty workflow is subsumed.
+The five meta tests and their assertions are unchanged. In particular, the
+six-step assertion remains in the existing BDD target: running model checks
+alone would have missed the observed eight-step defect.
+
+The parts plan owns complete integration-test targets rather than a copy of
+their test names. The remainder discovers unassigned targets through Cargo
+metadata, retains library and binary tests, and invokes doctests separately
+because Cargo forbids combining `--doc` with other target selectors. Both
+commands run even if one fails; any failure fails the part. A newly added
+test follows its target, and an unassigned target follows the remainder.
+Local `just vv` still runs the complete suite. Supported-host workspace
+coverage is unchanged, including the meta tests on each host.
+
+Focused local evidence on Linux x86-64 with the pinned Rust toolchain:
+
+| Check or plant | Observed |
+| --- | --- |
+| Actual harness inventory, `cargo xtask check-test-inventory` | 810 workspace tests = 296 ordinary + 514 BDD, disjoint with none lost; 23 parts partition all 514 BDD tests, honesty owns 5 and rest 324 |
+| Existing BDD target through `LEXLEAN_BDD_PART=honesty cargo xtask bdd` | 5 passed |
+| Restored complete initial row, `LEXLEAN_BDD_PART=honesty just fmt-check model spec-links bdd` | Passed: formatting, model audits (468 IDs / 86 codes), specification links (468 rows), and all 5 meta tests |
+| VR-11's sixth step split into three, making eight steps; the initial `fmt-check model spec-links bdd` row | Refused by the unchanged `the_suites_are_inside_the_gherkin_subset`: `VR-11: 8 steps; a scenario states one behavior`; 4 passed, 1 failed; plant restored |
+| RP-13 complete-target ownership plants | A repeated target test and meta tests silently reassigned to rest are each refused |
+| RP-14 and RP-18 required-row plants | Missing, failed and skipped honesty each refuse whole-gate evidence in parent reuse and release validation |
+| RP-14 long parent listing, 2,500 extra successful jobs | Before correcting the quiet join match, failed: plan returned `full=true` instead of reusing the passed parent; after consuming the complete listing, passed; a late failed job still refuses reuse |
+| RP-18 large listing | Existing large-success acceptance and late-failure refusal retained and passed |
+
+The 41 conformance library tests, exact RP-13/RP-14/RP-18 cases, and
+workspace/all-target/all-feature Clippy with warnings denied also passed.
+
+The parent-reuse correction is separate from #408's release-gate correction:
+its join match also stopped reading before the producer finished under
+`pipefail`. No production failure is attributed to that path. Both scripts
+still require the Atlas join, every supported host, every required row and
+every successful conclusion, and preserve same-tree matching.
+
+No compiler identity input changed: the embedded digest reads `language/`,
+`schemas/`, and the axiom-parser and canonical-JSON goldens. RP-10 recomputed
+that digest successfully; no language identity or verification oracle was
+regenerated. This is focused evidence, not the complete final-head CI gate;
+that gate remains required after the dependency lands. No post-change CI
+runtime or aggregate savings is claimed.
+
+
+### Hosted honesty matrix naming correction (#411)
+
+Draft run 41639924023 at head `1a5f87ac9` passed its initial checks, but
+GitHub named job 125930780532
+`honesty (honesty, fmt-check model spec-links bdd, honesty)`. A static job
+name inside the matrix acquired GitHub's matrix suffix. The source check
+had accepted `name: honesty`; that check did not establish the hosted
+context name. Both evidence consumers correctly refused the suffixed name
+because they require exactly `honesty`.
+
+The job now uses `name: ${{ matrix.part }}`, the same matrix-based naming
+mechanism as the existing fan-out rows, with the initial row's part equal to
+`honesty`. RP-14 requires that expression and rejects the previous static
+name. With the strengthened assertion and the old declaration, exact RP-14
+failed (exit 101); with the expression it passes. RP-14 and RP-18 additionally
+plant the observed suffixed name and refuse it in parent-reuse and release
+evidence. Neither evidence predicate was broadened. The corrected hosted
+name must still be checked after publication; local source and mocked-job
+checks alone do not establish GitHub's emitted context.
+
+## The canonical LaTeX of a tooling module is language-1.2 source (`BS-20`, #270)
+
+`bootstrap/src/ToolingAst.lex.tex` holds the closed schema of the tooling module
+as data, and `bootstrap/src/ToolingLatex.lex.tex` the production root
+`renderToolingLatex` (68 definitions, generated from the oracle's rules and not
+written by hand), held to `backend::tooling::latex_text`, the text
+`render_latex` emits (the function was split so that the case and the backend
+share one text). The case is `conformance_bs_20`
+(`crates/conformance/src/cases/bootstrap/tooling_latex.rs`); its first commit
+was the failing test (R3), `no bootstrap case is wired for BS-20`.
+
+What ran, on the normative host (Ubuntu under WSL, Rust 1.97.1, Lean 4.32.1):
+
+| Step | Observed |
+| --- | --- |
+| the two modules check and are kernel-verified | `lexlean check` (12 modules) and `lexlean verify` (4 modules) passed |
+| the root is eligible for `rust-std` with `allocation`, `overflow`, `recursion` | passed |
+| the oracle's text is the committed LaTeX of the three tooling modules | passed |
+| the 264 vectors (3 committed modules, 85 targeted, 88 refused by the oracle) | the rustc leg agrees on all 264, and so does the evaluator |
+| 180 evaluator mutant runs (seed `0x0B55_0020`) | agree |
+| 600 rustc mutant runs (seed `0x0B55_0021`) | agree |
+| the 17 planted defects | each detected, at the vector given below |
+| the committed package is the exported one | passed; `check-production-export --write` regenerated all 14 packages in about 45 minutes, and the root's stack row is 3,342,336 bytes (debug) |
+
+The case takes about 78 minutes in all on this host (the legs 58 minutes, the
+plants and the export comparison the rest).
+
+The planted defects and the first vector (by position) that detects each:
+
+| Plant | Vector |
+| --- | --- |
+| a backslash is escaped as a bare command | 36 |
+| a brace is not escaped | 0 |
+| a tilde loses its empty group | 45 |
+| a caret loses its empty group | 48 |
+| an ampersand is not escaped | 51 |
+| the hexadecimal of a non-ASCII scalar is in lower case | 0 |
+| the hexadecimal of a scalar has three digits at least | 0 |
+| a character is quoted as a bare quote | 96 |
+| an application of a registered call is not explicit | 135 |
+| an implicit binder is bracketed as an explicit one | 0 |
+| an instance binder is bracketed as an explicit one | 0 |
+| a named type argument has no space before its value | 0 |
+| the body of a function is indented by one space | 0 |
+| a function line keeps the newlines of its body | 0 |
+| a public function is not marked public | 0 |
+| the visibility line swaps public and private | 0 |
+| a trimmed line loses one byte of its trailing white space | 153 |
+
+Three plants escaped the first full run and were fixed in the corpus, not in the
+module. A tilde, a caret and an ampersand reached no vector because no token
+carried them (tokens with `~`, `a^b`, `&` were added). A plant that removed the
+newline after a function body is an equivalent mutant (the oracle's `trim_end`
+removes it either way) and was replaced by one that keeps the newlines of a
+function line. The trim plant needed a line that ends in white space of two or
+three bytes; a name cannot (the checker requires a Lean identifier), so the
+vectors end a command in a token such as `x` followed by U+00A0, U+2003, U+0085 or
+U+3000, which the invocation of the command then ends with. The explicit
+application needed a signature that applies a constant to arguments; the vectors
+wrap a constant of a signature in an application of itself, and the checker
+accepts 20 of the modules that result.
+
+*The compiler's rejection found while writing the module.* The first full
+verification of the project failed certificate A (`LLV7013`,
+`__rel_81`, `application type mismatch`) on a recursive definition whose
+top-level `match` has an arm with binders it does not use and a body that is a
+bare parameter (`| TyConst d0 d1 => out`). The same shape with a constant body
+(`false`, `0`) is accepted, and `explicitApp` and `sigLength` rely on it. The
+module avoids the shape (`putNamed` recurses on the list of names and takes the
+type chain apart in `consSplit`); the rejection is not minimised and not filed.
+
+*What remains of #270.* The Lean backend and the verification driver are
+separate rows. The tooling module reaches this root as already-decoded data; a
+decoder from the JSON of a tooling module to `ToolingAst` that does not use
+serde is not written (the case builds its inputs with `serde_json` in the test
+only). The reserved-token list is an argument of the root; whether it should be
+an inline table is the maintainer's call.
+
+## A byte payload consumes the bootstrap harness's literal budget (#364)
+
+The Windows host job of run 41543498033, on merge `9cbc4cd4e`, passed
+`BS-20` but failed `BS-15` while rustc compiled the test binary
+`run_boot_render_package_std_0`: `memory allocation of 4294967296 bytes
+failed`, with the backtrace in MIR drop-scope sorting. The generated library
+had compiled. `rust_build::cargo_in` already sets `RUST_MIN_STACK` to 64 MiB.
+
+The harness partition counted semantic value nodes: a `Bytes` payload cost
+one node, whereas its Rust literal has one array element per octet. The
+partition now counts that literal work recursively, retaining every input and
+expected outcome in order. Semantic node counts, used by the performance
+measurements, are unchanged. One input beyond the budget stays whole.
+
+`byte_payloads_bound_chunks_without_changing_the_corpus` checks eight nested
+16 KiB payloads partition into groups of three, three and two under the
+60,000-element budget, with the complete ordered corpus preserved; it also
+checks empty input and a single oversized input. Restoring semantic-node
+weighting makes its partition assertion fail. This is a harness correction,
+not a change to the generated packages or a resolution of #164's consumer
+compiler-nesting question. A Windows rerun is required to establish whether
+this bounded partition removes the observed compiler failure.
+
+## Generated manifests and replay share the lowered-program depth (PX-07, #378)
+
+`generated_deep_program_and_manifest_read_back` constructs statically valid
+65- and 100-element list programs and requires both the program and its package
+manifest to serialize and read back equal. Before the fix it failed on the
+65-element program with `target program is malformed: recursion limit exceeded`.
+Restoring only the manifest writer's bounded `Json::parse` fails the same test
+with `package manifest is not canonical JSON: recursion limit exceeded at line
+1 column 10808`; that plant was restored.
+
+`deep_program_reader_boundaries_and_malformed_input` accepts a program at exactly
+512 JSON object/array levels and its manifest at 513 (the manifest adds one
+object), on the ordinary test thread for writing and on the existing module
+reader stack for reading. One more level is refused before recursive decoding.
+Malformed and trailing input, duplicate `spec` fields both literally and with an
+equivalent escaped spelling, and 50,000 unclosed arrays are refused. Both tests
+passed on Linux with Rust 1.97.1. The separate
+`deep_list_regression_project_checks_and_lowers` test also checks and lowers the
+actual 65-element LexLean source used by PX-07, confirms its lowered JSON nests
+past 128 levels, and reads it back equal; it passed without Lean.
+
+PX-07 additionally exports that temporary project and replays its bundle through
+`verify_artifact`. That Lean-backed half has not been run locally: the repository
+helper looks for Lean under `$HOME/.elan`, while this environment's pinned
+installation is under `ELAN_HOME`. Its final integration gate remains required.
+
+Final integration acceptance is pending. `package.rs` is one of the nine files framed
+by `calculus::rust::renderer_digest`, so its reader/writer changes and regressions
+require updating `rust_renderer` in `language/semantics-1.2.toml` and the normal
+identity-dependent regeneration. The existing
+`the_compiler_semantics_records_the_renderer` test correctly fails on this tree:
+the committed pin is `9c432ba86622c477155e1515a95fa962caebc4c5a3d4ed68a4e4b9a4a08c0aa3`,
+and the changed renderer digest is
+`743b9697131fb39817aeee95871e9ed485b48f4dbd6947ee4cf0c67a48885786`.
+The draft must be integrated with the scheduled release/v0.4 identity wave,
+regenerated, and pass the complete final gate before landing; this record does
+not claim that wave or the full gate has passed.
+
+## Host/Order and deep-package integration: source and regeneration evidence (2026-11-04)
+
+This record supersedes the earlier PX-07 integration status without erasing its
+failed attempts. Reviewed thin dispatchers preserve the original Rust constructor
+and production Cons/Record/Constructor/Pair lowering operations and order. The
+unchanged PX-07 passed (1 passed, 469 filtered, 386.63 s), including the 65-element
+production export/replay and tamper checks, on the prior equivalent functional
+source. This is provisional functional evidence, not execution on the final
+identity. That phase subsequently failed Clippy's closed-enum wildcard check;
+the explicit remaining-38-variants correction passed a separate formatting and
+Clippy continuation (2.65 s / 25.96 s). The seven earlier focused passes remain
+historical evidence. No stack, input limit, helper or assertion was relaxed.
+
+The renderer gate refused the old pin and passed the settled renderer pin
+`fa09fcc9bc9f32a91ba0dfca6fbdc3864f10dde9bd9688fc7f385b026d53eec5`.
+Compiler semantics 1.2 is
+`1b848115459ee6b099a8c55acc163f944de0812316e800b09870f5aefac05070`;
+1.0/1.1 are unchanged. Correctly rooted frozen executables and the 905 embedded
+inputs remained bound to the admitted source at writer boundaries. Official
+calculus write/comparison covered 977 files; 22 valid relocks reached a fixed
+point, 239 negative locks changed only compiler identity and 59 stayed exact.
+Three separately reviewed descriptor pin updates retained their planted defects
+and LLB6007/6006/6005 refusals. Helper locks and diagnostic instrumentation are
+excluded from the candidate.
+
+The final-source all-five export writer completed all 117 packages in 3002.16 s;
+owner and independent reviews found only admitted identity/provenance changes,
+with generated code/configuration and package file sets unchanged. The remaining
+official sequence terminated successfully at 05:06:11 UTC: golden (58.30 s),
+post-golden calculus write/comparison (20.95 / 10.42 s), fixtures (1063.80 s), and
+selected non-Atlas verification (3849.25 s). The calculus refresh follows the
+actual new compiler golden manifest because its semantic ID is a runtime input
+outside the embedded set. Stage inventories changed 111 / 351 / 0 / 12 / 2914
+paths respectively. Negative code arrays/outcomes and all 778 Atlas paths retain
+the reviewed boundaries; Atlas was not rerun locally.
+
+Owner and independent artifact reviews initially stopped on one nonidentity
+observation: bootstrap preservation R25's `__fits_80._unsafe_rec` reports
+`[propext]` instead of no axioms, duplicated in audit text and captured process
+stdout. That stop remains part of the evidence. Prerequisite review admitted
+this delta under SPEC §17.17's existing mutual-partial group-union contract,
+which `preserve::check_mutual_group` already enforces. The three actual partials
+80/115/156 each have exact pins `[propext]`; their printed observations changed
+from `[]` / `[propext]` / `[propext]` to `[propext]` for all three. The union is
+unchanged, and normalized proof bytes and root policies are unchanged. No policy
+code, oracle relaxation or validation retry was needed. Final artifact admission
+therefore retains the actual observation rather than rewriting it to the earlier
+printout. The 21 selected projects completed in 3849.247 s. The historical
+wrong-root harness and failed diagnostics remain non-acceptance evidence.
+
+Immutable records: `host-px07-combined-functional/results.json`
+SHA-256 `a21d2012ff7cec1cb1abe02aedb670836c9cfb5fe64d7012fb522cb2030b6f59`;
+`host-px07-format-clippy-continuation/results.json`
+`29318e9ac442faacead5ad178def8ee851856cae75b1db48cc80255984037509`;
+`host-px07-identity-phase-ac/results.json`
+`5f63c077ef61b33c6959c60cd65abe2eb7dd28ef46a1859e549947a428a9df33`;
+`host-px07-identity-phase-df/results.json`
+`f1ccdb1893b6eaafbc484cbba81b4002183e94b9252741f4c599c4c3bea6ef5d`;
+`host-px07-identity-phase-g/results.json`
+`413ff2a8b100f01c5602984d20c70e9991d3f2193ceb7ab3ec8bc4c236d566c2`;
+`host-px07-identity-remaining-writers/results.json`
+`6e4fd333036a26949dd478f86c73e1ed6d92551fcacb479d339fe2a067b67e3d`.
+These directories are retained under the maintenance workspace's `work/`.
+
+Contributor head `27e4525c` incorporates #390's BS-16 history. This integration
+intentionally retains that ancestry while leaving BS-16 source, registrations,
+expanded corpus and generated products to existing #390, preserving the reviewed
+Host/#402/release scope. Before this PR can merge, #390 must publish an
+independently reviewed explicit BS-16 reapplication atop the frozen Host candidate,
+including the reviewed `30171790` fixes. Its new head must be a normal descendant
+of its live branch, outside Host ancestry, with a nonempty diff; #390 remains
+draft and #432 open. The old #390 head alone would become reachable through
+`27e4525c` and would not preserve pending delivery.
+
+The exact reviewed #436 correction from `708f86dea` is retained in the final
+source: the generated differential workspace uses
+`[profile.dev] debug = "line-tables-only"`. It addresses demonstrated BS-15
+ENOSPC without changing corpus/assertions or identity inputs. Its resource effect
+has not been measured here; final hosted conformance must include it. No new
+identity wave is required by this test-helper correction.
+
+Actual reviewed integration tree/history and complete
+final-head hosted CI remain pending. Acceptance requires same-run honesty,
+actual test inventory, all supported hosts, Atlas shards/join and reproducibility;
+writer exits and prior release runs do not replace that gate. Prospective issue
+scope is #382/#378 only; #271 remains open. No #436 acceptance/closure follows
+from this source-only draft.
+
+Final source preparation initially stopped when `validate-model` rejected 37 rest-field patterns in the explicit 38-variant production delegation arm (the fieldless `Unit` is unchanged). A reviewed pattern-only correction names every actual ignored field, preserving variant order and the delegation expression; no audit rule or behavior was changed. This correction is outside renderer and embedded identity inputs; no writer or PX-07 rerun was performed.
+
+The README register sentence now states “All 470 registered conformance IDs have their named tests”, satisfying RP-11’s existing exact-count wording without claiming all tests or the full gate pass. Exact `conformance_rp_11` passed once using the immutable correctly rooted Host harness (SHA-256 `16af772ac485b63d692f325e15a50063d4af9102f501737c90db8245d975cc96`); this is a documentation-contract check, not final compiler-identity or full-gate acceptance.
+
+## DF-19 preparation against the current release line (#284)
+
+Local integration `7bf1ce27b0561482ee9e6ca4d3e8745ae2dc42f7` combines the
+accepted argument-aware DF-19 head `9d0896b18` with release `0a01df682` and
+the reviewed maintenance integration `215a9d591`. Source conflicts were
+absent; the register and its count sites are 470. The official model writer
+produced no document delta. Formatting, model audits (470 IDs, 86 codes),
+specification links, all five BDD meta-tests, and all three family-order unit
+tests pass on this integration.
+
+The exact-tree CLI was copied before any writer ran; its SHA-256 is
+`88b47a00bde41bd291af5e23781e82bc460fc721057dbbd20f41dfb42cb094d5`.
+Its official `lock` command changes only `tests/nested-family/lexlean.lock`'s
+compiler-semantics pin from the historical `30c5829b` identity to the current
+release identity `aac30cb0`. No embedded identity input or renderer source
+changes, and no global identity or oracle regeneration was performed.
+
+That frozen CLI's direct `check`, `build`, and `verify` commands on
+`tests/nested-family` pass with pinned Lean 4.32.1 from the configured
+`ELAN_HOME`. Verification accepts one module and publishes attestation
+`ac3f24866cca9e7477eeccc610f6b7c8637d383e1104c38d2b7e43e906a2743b`.
+This is direct CLI evidence for the committed fixture, including its sample
+size and leaf-count theorems. The Lean-backed DF-19 conformance harness and
+its four refusal plants were not rerun in this phase: its host helper expects
+`HOME/.elan`, absent on this environment. Neither home nor the helper was
+changed. No full acceptance gate or inventory run is claimed here.
+
+### DF-19's complete Lean-backed case after toolchain registration
+
+After the existing pinned toolchain was registered through official elan in
+this user's standard elan home, the previously unrun exact
+`cargo test --offline --locked -p repo-conformance --test conformance
+conformance_df_19 -- --exact --nocapture` passes on prepared integration
+`4eb5d9b296a1612273cfa341ecc4ac194f886a42`: one passed, zero failed or
+ignored, in 3.56 seconds (compilation 57.55 seconds).
+
+This Linux x86-64 run enters the unchanged `lean_backed` helper's real-Lean
+branch: the standard-home Lean, Lake and leanchecker paths resolve to the
+existing pinned installation under `/workspace/.setup/elan`. The case verifies
+the committed nested-family fixture, checks its rendered mutual structural
+recursion, and executes all four existing `LLT4001` refusal plants and their
+no-backend-output assertions. No helper, gate, home value or source assertion
+was changed. This completes that focused case; no full acceptance run is
+claimed by this record.
+
+### README coverage correction found by final-head CI
+
+Run `41753808309` at `9f3ca0006fce13c2a61285fe3cc9e4088b797bce`
+found that README's whole-family `DF-01`..`DF-18` range omitted registered
+`DF-19`. Windows job `126326526519` and ARM Linux job `126326526543`
+each passed 469 conformance cases and failed only `RP-11`; the rest partition,
+job `126326527233`, passed 283 and failed only `RP-11`.
+
+The README range now ends at `DF-19`, retaining the whole-family coverage
+check. This correction changes no implementation, model, schema or identity
+input. No local validation of this correction is claimed here; targeted
+`RP-11` validation and complete changed-head CI remain required.
+
+### BS-15 generated workspace disk exhaustion in final-head CI
+
+Run `41761755141` at `177c499a1bd45c60e2712a5f375b9b4633e1387d`
+passed `conformance_rp_11` in rest job `126352276554` and ARM Linux job
+`126352276081`; their conformance totals were 284 and 470 passed, respectively,
+with no failures. Bootstrap-package job `126352276702` instead failed
+`conformance_bs_15` after 5481.51 seconds while Cargo built its generated
+workspace. Writing the dependency information for harness
+`run_boot_render_package_std_494` failed with `No space left on device
+(os error 28)`; another concurrent harness link reported a bus error. The
+last disk sample showed 1.6 GiB available. Before the build failure, the
+evaluator agreed on 2,484 manifests and 241 renders and reported the existing
+plants detected. The failed case is not acceptance evidence.
+
+The differential workspace is independent of the repository workspace and
+did not inherit its `[profile.dev]` setting. Its generated manifest now sets
+`debug = "line-tables-only"`, exactly as the repository does, so every harness
+retains file and line information without full variable debug information.
+This changes no corpus, harness chunking, assertions, optimization setting,
+overflow behavior, Rust stack setting or stack-bound observation. Cargo still
+builds every generated workspace member and every outcome remains compared.
+
+This is a source-only resource correction. Its disk savings have not been
+measured, and no local build or runtime validation of the correction is
+claimed. Exact BS-15 validation and complete changed-head CI remain required.
+
+
+### Host integration with accepted DF-19 release (source preparation)
+
+The prospective integration retains Host `88b078cc` and actual release `1a690b51` (accepted #284), including DF-19 and the byte-identical #436 generated-workspace profile. The combined register is 471; source, scenario, named-test and documentation count mirrors are reconciled without changing predicates. The old Host CI run remains historical evidence for its exact old-base tree; a complete changed-head gate is still required. The DF-19 fixture lock is demonstrably stale at the Host compiler semantics and awaits an explicitly reviewed single-fixture official relock. No new identity wave, product regeneration or runtime validation is claimed by this source preparation. #390 remains an open draft outside Host ancestry.
+
+
+The DF-19 lock prerequisite was discharged by one official frozen Host CLI invocation (SHA-256 `9f3a752ba37f0d514a61a7634be3193fddf7b26958f8c895ec175b767627dc07`), `lexlean --project <isolated-six-file-fixture>/lexlean.toml lock`, exit 0. The emitted lock differs from the accepted release lock only in compiler semantics `aac30cb0` to `1b848115`; all five other fixture files and project/workspace/package digests remain unchanged. Initial output review stopped on a newly created zero-byte `.lexlean/.lock` advisory guard; root admitted its exact owned LOCAL-ONLY disposition, and it was archived outside the candidate. The original stop and producer evidence remain retained. No helper entered the candidate, no official relock was repeated, and no manual identity edit was substituted for the emitted bytes. This establishes the lock producer boundary only: no DF-19 acceptance test used the older binary, no other writer or product regeneration ran, and complete changed-head CI remains required.
