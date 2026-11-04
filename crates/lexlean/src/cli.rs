@@ -22,7 +22,7 @@ use crate::error::LexLeanError;
 pub enum DiagnosticFormat {
     /// Deterministic text to stderr.
     Human,
-    /// One canonical JSON command-result object to stdout.
+    /// Canonical JSON; snapshots and target descriptors retain their schema.
     Json,
 }
 
@@ -90,6 +90,14 @@ enum CommandKind {
     },
     /// Check a selection through linked IR.
     Check {
+        /// Every module beneath every source root.
+        #[arg(long)]
+        all: bool,
+        /// Explicit input modules.
+        inputs: Vec<Utf8PathBuf>,
+    },
+    /// Print the canonical owned semantic snapshot without running a backend.
+    Snapshot {
         /// Every module beneath every source root.
         #[arg(long)]
         all: bool,
@@ -165,10 +173,11 @@ enum ProductionAction {
 }
 
 /// The command names, in the order of §23.4.
-const COMMAND_NAMES: [&str; 10] = [
+const COMMAND_NAMES: [&str; 11] = [
     "init",
     "lock",
     "check",
+    "snapshot",
     "build",
     "verify",
     "fmt",
@@ -409,6 +418,7 @@ struct Outcome {
     ids: CommandIds,
     summary: String,
     explanation: Option<String>,
+    document: Option<Vec<u8>>,
 }
 
 /// Emit a finished command's result in the selected mode and return the
@@ -426,6 +436,14 @@ fn emit(
         Ok(()) => (0, None),
         Err(error) => (error.class.exit_code(), Some(error)),
     };
+    // A snapshot is the public DTO, so neither diagnostic mode wraps or
+    // substitutes another representation for the identity inputs (CL-25).
+    if exit_code == 0 {
+        if let Some(document) = &outcome.document {
+            let _ = stdout.write_all(document);
+            return 0;
+        }
+    }
     if json_mode {
         let empty = Vec::new();
         let diagnostics = error.as_ref().map_or(&empty, |e| &e.diagnostics);
@@ -549,6 +567,7 @@ pub fn run(
         CommandKind::Init { .. } => "init",
         CommandKind::Lock { .. } => "lock",
         CommandKind::Check { .. } => "check",
+        CommandKind::Snapshot { .. } => "snapshot",
         CommandKind::Build { .. } => "build",
         CommandKind::Verify { .. } => "verify",
         CommandKind::Fmt { .. } => "fmt",
@@ -639,6 +658,13 @@ pub fn run(
                         result.source_id.to_hex(),
                         result.semantic_id.to_hex()
                     );
+                    Ok(())
+                }
+                CommandKind::Snapshot { all, inputs } => {
+                    let snapshot = engine.snapshot(CheckRequest {
+                        selection: selection_from(all, inputs)?,
+                    })?;
+                    outcome.document = Some(snapshot.canonical_bytes());
                     Ok(())
                 }
                 CommandKind::Build { all, inputs } => {

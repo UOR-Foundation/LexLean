@@ -9547,7 +9547,7 @@ The modes are mutually exclusive:
 
 Inputs are project-relative or absolute paths that resolve beneath a configured source root. Duplicate logical modules, case-fold collisions, and two paths declaring the same module are errors.
 
-Selections canonicalize to a sorted set. APIs and CLI results are always project result sets, even for one module.
+Selections canonicalize to a sorted set. Check, build and verify results are project result sets, even for one module; snapshot returns the owned semantic envelope (§24.1).
 
 ### 23.4 Commands
 
@@ -9574,6 +9574,14 @@ lexlean check [--all | INPUT...]
 ```
 
 Runs through linked IR and emits no build artifacts.
+
+#### `snapshot`
+
+```text
+lexlean snapshot [--all | INPUT...]
+```
+
+Runs the public `Engine::snapshot` entry point (§24.1) and prints its canonical snapshot document to stdout in either diagnostic mode (`CL-25`). It follows the normal project discovery and selection rules, writes no artifacts, invokes no backend, and makes no verification claim. Each module's `linked_ir` value and the envelope's `lexicon_closure` are the exact inputs of §21.4: collect the linked module values, in their snapshot order, under {"spec":"lexlean/linked-ir/1","modules":[...]} and canonicalize that object and the lexicon closure. The snapshot envelope itself is not the linked IR. A failure emits the registered diagnostics in the selected mode, including a command-result object in JSON mode, and emits no partial snapshot.
 
 #### `build`
 
@@ -9690,7 +9698,7 @@ Human mode:
 
 JSON mode:
 
-- exactly one canonical JSON command-result object to stdout;
+- exactly one canonical JSON command-result object to stdout, except successful snapshot (§23.4) and production targets (§24.7), which emit their canonical document;
 - stderr empty unless the process cannot construct JSON because of an internal failure;
 - no color or progress text.
 
@@ -11166,6 +11174,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `CL-22` | `cli-api` | A host that embeds the library ends every child process group the library started and has not seen exit through the public function `lexlean::verify::end_live_children`, which installs no signal handler, alters no signal disposition, never signals the host's own process or group, reports each group as ended, already gone, or failing with the OS error, and refuses a later child start with LLV7018 until the host re-enables it, and the `lexlean` executable ends its interrupted children through the same function. | §17.17, §24.6 |
 | `CL-23` | `cli-api` | lexlean production targets prints the canonical target-descriptor document in either output mode, production build --request publishes the bundle its request names and reports the bundle and the project's source, semantic, build, and attestation IDs in its command result, production verify-artifact replays a bundle with no project, and each maps a malformed request, a refused request, and a rejected replay to the exact exit code of its registered class. | §24.7 |
 | `CL-24` | `cli-api` | lexlean migrate --to 1.2 migrates a language-1.1 data-form project to language 1.2 in one command: it rewrites every module to the authoring notation through lexlean::sdk::to_notation with the same declarations, names, statements, and axiom policies, moves the builtin glossary references of every source and the imports of every path lexicon package to 1.2.0, rewrites the language row, and regenerates the lock as lexlean/lock/2, so the result checks, has a current lock, and is canonical; --check proves the migration and writes nothing; and a project that is not language 1.1 is refused with LLC0103 and a module that is not a language-1.1 data-form semantic module, a data form that is not canonical JSON included, with LLP2003, each leaving every file of the project unchanged. | §17.12, §23.4 |
+| `CL-25` | `cli-api` | lexlean snapshot emits the public Engine snapshot as one canonical JSON document in either diagnostic mode, with the normal project discovery and selection rules, without writing artifacts or invoking a backend; its linked module values and lexicon closure reconstruct the exact semantic identity inputs, and failures use the registered command-result diagnostics without emitting a partial snapshot. | §21.4, §23.4, §24.1 |
 | `SE-01` | `security` | Source, package, workspace, resource, and output paths are confined and symlinks are rejected. | §25.1 |
 | `SE-02` | `security` | Special files, duplicate filesystem identities, and case-fold collisions are rejected before processing. | §25.1 |
 | `SE-03` | `security` | All child processes use direct executable and argv invocation with no shell. | §25.2 |
@@ -11404,7 +11413,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-06` | `normative-source` | The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1. | §27.2, §27.5, §27.10 |
 | `NS-07` | `normative-source` | `cargo xtask spec` changes the chapter modules of the specification project by item: it replaces a block, inserts one after a block, and ports the hunks of a merged SPEC.md that lie outside derived regions, each through the authoring SDK, and it writes nothing unless the regenerated SPEC.md equals the intended text outside derived regions, refusing a first line that matches no block or two and a hunk that spans two blocks. | §24.8, §27.5 |
 
-**Total required capability IDs:** 485.
+**Total required capability IDs:** 486.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

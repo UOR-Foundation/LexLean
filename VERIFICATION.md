@@ -18625,3 +18625,19 @@ The native command contribution ports RB-24 from humuhumu33's PR #419 through
 PR #396. PR #439 carries the v0.5 integration and its corrections; it does not
 close #419, #426 or the broader #271. Delivery still requires the final
 regeneration and complete acceptance gate on this branch.
+
+### Native consumer snapshot access (CL-25)
+
+Rule30's native verifier needs the exact linked IR and lexicon closure to bind
+an audited candidate type to the verified semantic identity. The public
+snapshot already carries both; the CLI now exposes that existing read-only
+API. The snapshot envelope is not substituted for linked IR.
+
+R3 sequence: registered CL-25, projected the model, added its scenario and named
+conformance case, and ran it before implementation. The test failed with
+LLC0001, unrecognized subcommand `snapshot`. After implementation the same case
+passed in 7.51 seconds for language 1.0, 1.1 and 1.2, both diagnostic modes,
+default/all/explicit selection, external project selection, unchanged file
+sets, exact reconstructed identity inputs, and refused selections and sources.
+The source case is also part of the complete normative gate; this targeted
+result does not establish the remaining driver/bootstrap/product acceptance.
