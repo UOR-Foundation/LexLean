@@ -1,4 +1,4 @@
-//! `BS-15`: the package renderer of SPEC.md Â§17.16 as language-1.2 source
+//! `BS-15`: the package renderer of SPEC.md §17.16 as language-1.2 source
 //! (`LexLeanBoot.RustPackage`), held to `calculus::rust::package`.
 //!
 //! `package::lower` checks a manifest's own fields before it reads the
@@ -369,7 +369,7 @@ const NAMES: &[&str] = &[
     "a_b",
     "a-b",
     "a.b",
-    "Ã©",
+    "é",
     "a\u{e9}",
     "a b",
     "sum_to_std",

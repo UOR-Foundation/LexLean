@@ -12451,3 +12451,52 @@ weighting makes its partition assertion fail. This is a harness correction,
 not a change to the generated packages or a resolution of #164's consumer
 compiler-nesting question. A Windows rerun is required to establish whether
 this bounded partition removes the observed compiler failure.
+
+## BS-16 corpus counter repair prepared from current-head failures (#432)
+
+This source correction is pinned to PR #390 head
+`7b854b6dc6dcbb4c0d95367b5ec56a44625e2cb3`. Run 41667292905
+reported BS-05 `(496,211,361,100)`, BS-06
+`(687,520,65,2145,1532,0)`, BS-13 `(104,52,108)`, and BS-14
+`(339,285,580)` before those cases' later assertions could execute.
+These are observed corpus counters, not passing differential, mutation,
+evaluator, certificate, or final export results.
+
+The new `validate_request/package.json` adds one distinct program and one
+lowerable `rust-std` crate. The BS-05 totals are 260 committed crates plus
+129 rule runs, 17 branch crates, 34 loop crates, 55 machine crates and one
+list-match crate: 496 validation runs; correspondence has 260 + 12 + 34 + 55
+= 361. The committed crate contributes no refusal. BS-06 adds that crate and
+its exported-name package crate (520 committed runs); stepping through 260
+lowered crates by seven also adds index 259, whose capacity is one byte
+short, making 687 crate runs and 65 refusals. Expression counts do not move.
+The regenerated preserved program and the package program deduplicate in
+the BS-13/14 source corpus. That program has 1,021 expression nodes and
+self-tail calls, adding one looping and one whole-program vector while
+remaining above the 300-node evaluator bound. Thus the within-bound and
+seeded counters in the observed tuples do not move.
+
+The original Unicode comments and the `"é"` name fixture are restored from
+the predecessor of commit `305635aaa`; assertions and differential/mutation
+checks remain strict. Preparation used source/JSON inspection and
+`git diff --check` only. No Rust build, test, writer, identity update, or
+complete gate was run for this repair. Generated conformance documentation
+still requires the official model writer. Later assertions remain
+unexecuted for this correction. Integration with the active Host wave will
+require its own combined-corpus measurements and final acceptance evidence;
+these counters apply only to this PR head's corpus. #275 remains open.
+
+BS-15's existing PR CI job 126026329845 of run 41667292905 checked
+out synthetic merge `fc16794` of `7b854b6dc` into `0a01df682` and
+completed successfully (`conformance_bs_15 ... ok` at 18:44:51 UTC). Its
+asserted manifest/render counts are 303/284, with 182 header rules, 137
+render rules, 2,000 header mutants and 284 render mutants. The two rustc
+differential inputs therefore have 303 + 182 + 2,000 = 2,485 header runs
+and 284 + 137 + 284 = 705 render runs, totaling 3,190. The statement's
+302 manifests and 3,184 total were stale: 3,184 was the 301-manifest,
+282-accepted corpus recorded for Order; BS-20 and GnafValidate each add
+one manifest, one accepted render and one render mutant, three runs each.
+The manifest statement had already incorporated BS-20's increment to 302
+but omitted GnafValidate's increment. These prose mirrors now match the
+source and existing CI; this does not establish acceptance after restoring
+the Unicode fixture or after any further integration.

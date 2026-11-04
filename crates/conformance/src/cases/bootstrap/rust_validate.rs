@@ -1,4 +1,4 @@
-//! `BS-05` (SPEC.md Ã‚Â§17.23, Ã‚Â§17.16): the Rust crate validator as language-1.2
+//! `BS-05` (SPEC.md §17.23, §17.16): the Rust crate validator as language-1.2
 //! source, held to `lexlean::calculus::rust::validate::{validate, correspond}`.
 //!
 //! The roots take the crate as module data, the constructors of the module's
@@ -3003,7 +3003,7 @@ const RUSTC_MUTANTS: usize = 2_000;
 const RULES_EACH: usize = 3;
 
 // The counts the specification states, over the committed tree: SPEC.md
-// Ã‚Â§17.23, the register statement of BS-05, its scenario, and VERIFICATION.md
+// §17.23, the register statement of BS-05, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
 const COMMITTED_MANIFESTS: usize = 284;
 const COMMITTED_FIXTURES: usize = 122;
@@ -3015,9 +3015,9 @@ const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
 const LIST_MATCH_CRATES: usize = 1;
 const MACHINE_CRATES: usize = 44 + 3 + 1 + 2 + 2 + 3;
-const VECTORS_VALIDATE: usize = 495;
+const VECTORS_VALIDATE: usize = 496;
 const REFUSED_VALIDATE: usize = 211;
-const VECTORS_CORRESPOND: usize = 360;
+const VECTORS_CORRESPOND: usize = 361;
 const REFUSED_CORRESPOND: usize = 100;
 const EVALUATOR_CRATES: usize = 208;
 const EVALUATOR_VALIDATE: usize = 444;
@@ -3038,7 +3038,7 @@ pub(super) fn case() {
 
     let (sources, manifests, fixtures, distinct) = committed();
     let all = rendered(&sources);
-    // The counts SPEC.md Ã‚Â§17.23, the register statement, and the scenario
+    // The counts SPEC.md §17.23, the register statement, and the scenario
     // state are asserted here, so a repository that grows fails the case
     // instead of leaving a stale statement behind.
     assert_eq!(
