@@ -2469,6 +2469,53 @@ pub fn run(id: &str) {
                     ),
                     "the attestation binds preservation.json"
                 );
+                // Reuse this real export's already-executed certificate
+                // processes: no additional verify or checker is introduced.
+                let processes = attestation["processes"].as_array().expect("processes");
+                let mut certificate_modules = BTreeSet::new();
+                for row in rows {
+                    certificate_modules.insert(row["module"].as_str().expect("A module"));
+                    for rendering in row["renderings"].as_array().expect("renderings") {
+                        certificate_modules.insert(rendering["module"].as_str().expect("B module"));
+                        certificate_modules
+                            .insert(rendering["composed"]["module"].as_str().expect("E module"));
+                    }
+                }
+                for module in certificate_modules {
+                    let stage = |tool| {
+                        let matching: Vec<_> = processes
+                            .iter()
+                            .filter(|process| {
+                                process["tool"] == tool && process["module"] == module
+                            })
+                            .collect();
+                        assert_eq!(matching.len(), 1, "{module}: one {tool} record");
+                        assert_eq!(matching[0]["exit_code"], 0, "{module}: successful {tool}");
+                        matching[0]
+                    };
+                    let compiled = stage("lean");
+                    let replayed = stage("leanchecker");
+                    assert!(
+                        compiled["argv"]
+                            .as_array()
+                            .expect("argv")
+                            .iter()
+                            .any(|arg| arg == "-Ddebug.skipKernelTC=true"),
+                        "{module}: eligible certificate is flagged"
+                    );
+                    assert!(
+                        compiled["olean"]["main"].is_string(),
+                        "{module}: compile parts captured"
+                    );
+                    assert_eq!(
+                        compiled["olean"], replayed["olean"],
+                        "{module}: complete compile/replay tuple equality"
+                    );
+                    assert_eq!(
+                        replayed["argv"][2], module,
+                        "{module}: requested replay module"
+                    );
+                }
             };
             let rejected = [
                 ("certificate-rejected", "LLV7013"),
@@ -2487,6 +2534,39 @@ pub fn run(id: &str) {
                 )
                 .expect("the fixture runs");
                 assert_eq!(observed.codes, [code], "{fixture}");
+                if matches!(
+                    fixture,
+                    "certificate-rejected" | "certificate-b-rejected" | "certificate-e-rejected"
+                ) {
+                    let diagnostics: serde_json::Value =
+                        serde_json::from_str(&observed.expected.diagnostics_json)
+                            .expect("diagnostics");
+                    let message = diagnostics[0]["message"].as_str().expect("message");
+                    assert!(
+                        message.contains("while replaying declaration '"),
+                        "{fixture}: real replay refusal retained: {message}"
+                    );
+                    assert!(
+                        message.contains("(kernel)"),
+                        "{fixture}: kernel failure retained: {message}"
+                    );
+                    let (declaration, root) = match fixture {
+                        "certificate-rejected" => ("__rel_2", "Production.Main.quadruple"),
+                        "certificate-b-rejected" => ("fun2", "Production.Main.quadruple"),
+                        "certificate-e-rejected" => ("root", "Production.Main.checkedSum"),
+                        _ => unreachable!(),
+                    };
+                    assert!(
+                        message
+                            .contains(&format!("was rejected in `{declaration}` of root `{root}`")),
+                        "{fixture}: certificate declaration and root retained: {message}"
+                    );
+                    assert!(
+                        !message.contains("no error was reported"),
+                        "{fixture}: actual failure is reported"
+                    );
+                }
+
                 assert!(
                     !observed.project.root.join(".lexlean/verified").exists()
                         || std::fs::read_dir(

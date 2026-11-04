@@ -3211,11 +3211,22 @@ fn lean_error(output: &str) -> String {
     const LINES: usize = 12;
     const BYTES: usize = 1500;
     let lines: Vec<&str> = output.lines().collect();
-    let Some(start) = lines.iter().position(|line| line.contains("error")) else {
+    let replay = |line: &str| {
+        line.starts_with("uncaught exception: while replaying declaration '") && line.contains("':")
+    };
+    let Some(start) = lines
+        .iter()
+        .position(|line| replay(line) || line.contains("error"))
+    else {
         return "no error was reported".to_owned();
     };
     let first = lines[start];
-    let mut out = first[first.find("error").unwrap_or(0)..].trim().to_owned();
+    let offset = if replay(first) {
+        0
+    } else {
+        first.find("error").unwrap_or(0)
+    };
+    let mut out = first[offset..].trim().to_owned();
     for line in lines[start + 1..].iter().take(LINES - 1) {
         out.push('\n');
         out.push_str(line.trim_end());
@@ -3366,5 +3377,36 @@ mod resource_tests {
         assert!(text.contains("has type"));
         assert!(text.len() <= 1600);
         assert_eq!(lean_error("fine"), "no error was reported");
+    }
+}
+
+#[cfg(test)]
+mod replay_error_tests {
+    #[test]
+    fn replay_exception_keeps_its_declaration_and_bounded_kernel_detail() {
+        // Pinned Lean/Replay.lean:136, with the executable's exception prefix.
+        let first =
+            "uncaught exception: while replaying declaration 'LexLeanPreserve.Cexample.R0.root':";
+        let output = format!(
+            "{first}\n(kernel) application type mismatch\n{}",
+            "  é continuation\n".repeat(500)
+        );
+        let summary = super::lean_error(&output);
+        assert!(summary.starts_with(first), "{summary}");
+        assert!(summary.contains("(kernel) application type mismatch"));
+        assert!(summary.lines().count() <= 12);
+        assert!(summary.len() <= 1504);
+        let wide = format!("{first}\n(kernel) {}\n", "é".repeat(1800));
+        let bounded = super::lean_error(&wide);
+        assert!(bounded.ends_with(" ..."));
+        assert!(bounded.len() <= 1504);
+        assert_eq!(
+            super::lean_error("x.lean:2:3: error: compile refusal\n  detail\n"),
+            "error: compile refusal\n  detail"
+        );
+        assert_eq!(
+            super::lean_error("uncaught exception: unrelated failure"),
+            "no error was reported"
+        );
     }
 }

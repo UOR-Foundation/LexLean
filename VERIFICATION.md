@@ -12585,3 +12585,65 @@ product identity, or generated artifact changed. Positive production
 certificate acceptance and diagnostic fixtures, shard/join width invariance,
 controlled measurements, coordinated identities/artifacts, and the full gate
 remain required; these focused results are not complete VR-28 acceptance.
+
+A further source-only certificate audit refreshed issue #391 and the remote
+feature head at `f655d0b158`; no competing source owner was recorded. Existing
+SP-05 already shares a real production export and the real A/B/E mutation
+fixtures, so no duplicate certificate verify is added. The audit found a
+concrete diagnostic gap: `failing_declaration` recognized the core decoder's
+compile refusal but not Lean replay's declaration envelope, and `lean_error`
+required the word `error`, discarding replay's kernel type-mismatch detail.
+Pinned `Lean/Replay.lean:136` throws `while replaying declaration '<name>':`
+with the kernel exception; the executable supplies `uncaught exception:`.
+
+The narrow unexecuted fix recognizes that envelope, preserves the existing
+compile formatting and summary bounds, and recovers the refused certificate
+declaration. New pure units cover replay detail/declaration/bounds and retain
+unrelated-output refusal; the existing compile-summary regression remains.
+SP-05's existing positive export gains A/B/E flagged-compile and successful
+same-module complete-tuple replay assertions. Its existing three rejection
+executions gain real replay/kernel-message and exact fixture declaration/root
+assertions, in addition to unchanged LLV7013/7015/7016 and no-publication
+checks. This source has not been formatted, compiled or executed while Host
+owns the shared lock. No pins, fixture expectations, writers, measurements or
+full-gate acceptance change; real final-guard/shard-width and regeneration
+obligations remain pending.
+
+The admitted certificate follow-up completed on 2026-11-04 at 01:41:17 UTC.
+The three exact diagnostic units passed together (3 passed, 223 filtered
+out), including the existing compile-summary control. Exact SP-05 then
+passed once in 990.888 seconds (1 passed, 469 filtered out). Its shared real
+production export established that each A/B/E certificate compile carries
+`-Ddebug.skipKernelTC=true`, succeeds, and has one successful same-module
+replay with an equal complete main/server/private artifact-parts tuple.
+The three real A/B/E rejection fixtures retained LLV7013/LLV7015/LLV7016,
+respectively, and now assert the replay envelope, kernel detail and exact
+certificate declaration/root. The heartbeat, resource and drift controls
+also retained LLV7013, LLS8002 and LLV7014. All six retain their existing
+no-verified-publication assertions; no checker, source-audit, fixture or
+publication guard was weakened and no extra positive export was added.
+
+The first queued attempt used a wrong module filter; a continuation then
+stopped before tests because stable libtest rejected `--fail-fast`. The
+corrected stable run passed the three units before ENOSPC stopped lock
+backup, leaving SP-05 unrun. A subsequent SP-05 group failed because the
+official temporary lock commands created ignored `.lexlean/.lock` helper
+directories that the strict fixture loader correctly refused; that failed
+group is not positive acceptance evidence. The retry archived those proven
+owned empty helpers, recorded all seven helpers absent before its commands,
+and archived each newly created helper immediately after its lock command,
+before fixture loading. The fixture loader and expectations were unchanged.
+
+The passing run used frozen binaries and checked the actual linked model,
+support and bootstrap-fixture roots against this worktree before and after;
+all frozen hashes and the reviewed four-file source diff stayed unchanged.
+Seven official temporary lock refreshes supplied the changed source identity
+for this focused run; all seven original lock byte hashes were restored.
+Focused lexlean/repo-conformance Clippy with all targets/features and warnings
+denied, workspace formatting, and diff checks passed. Evidence is retained
+in `/workspace/work/vr28-cert-stable/diagnostic-units.log` and
+`/workspace/work/vr28-cert-sp05-retry/` (results, provenance and SP-05 log).
+No product pin, generated expectation or all-language identity wave changed.
+These results discharge the focused certificate assertions only; real final
+guard/shard-join and width invariance, gateway/Atlas measurements,
+coordinated regeneration and the full gate remain required.
