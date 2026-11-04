@@ -18571,3 +18571,173 @@ head's CI. It is not a complete `just vv` run or changed-head CI result. The
 final committed head still requires its full acceptance gate before merge;
 #409 remains open until that accepted change lands. This evidence makes no
 closure claim for #382, #271, #376 or #301.
+
+## SM-39 R3 source preparation (#434, formatting slice of #381)
+
+This is source preparation, not an observed failing test or an implemented
+runtime change. Scoped issue #434 reserves SM-39 for language-1.2 decimal
+formatting isolation; #381 remains open for its other design requests. The
+source row in `spec/src/IdsSM.lex.tex`, normative Chapter17 paragraph, exact
+scenario, named `conformance_sm_39` case, and native notation fixture precede
+implementation. The fixture declares all eight fixed-width formatters and
+transitive callers with no axioms member, Int formatting with exact `propext`,
+and parsers with their existing exact three-axiom policy. Authored closed
+proofs state numeric boundary strings and canonicality/range parsing controls.
+
+Source review corrected three defects in the preparation: observations now
+come from the actual verification attestation's per-declaration records rather
+than parsing an aggregated runtime audit against a partial list; output checks
+are authored proofs in the same verified project rather than a second copied
+Lean module whose imports would be unresolved; and a mutated authored boundary
+proposition must be rejected with `LLV7002`, rather than merely printing a false
+Boolean. An Int empty-policy mutation must be refused with `LLV7005`.
+
+Execution depends on the coordinated integration of #396's closed-decision
+`decide +kernel` source (reviewed head
+`84e38cb0230a1e0f52302f0d144ce10f2d5279c5`). The base renders ordinary `decide`,
+whose string-primitive unfolding limitation is recorded in §17.17. Once that
+source base and the Host validation lock are available, the R3 witness must
+be an actual fixed-width `LLV7005` on the unchanged Decimal-coupled runtime.
+An unrelated generation failure or unsupported proof does not count. Only
+then may implementation change the native Portable, Fixed and RustLemmas
+graphs and production certificate constructor, preserving shared parsing
+instance nodes and frozen language-1.0/1.1 bytes.
+
+Measured here: the existing pinned Rust 1.97.1 `rustfmt` formatted and checked
+only the three authored Rust files, with module traversal disabled; static
+checks confirmed identical row/scenario statements, 27 fixture definitions,
+18 authored theorems, the unique boundary mutation marker, and whitespace.
+No Cargo command, compilation, conformance test, Lean verification, model or
+projection writer, runtime regeneration, identity update, full gate or CI ran.
+Generated model/SPEC projections deliberately remain untouched. The source
+requires the coordinated #396/#405/#433 integration and official writer/gate
+sequence; no additional identity wave or passing verification is claimed.
+
+## SM-39 policy witness and explicit test-method revision (2026-11-04)
+
+The original unchanged 27-definition/18-theorem fixture failed with 18
+LLV7002 diagnostics: decide +kernel could not reduce opaque formatting and
+parsing computations. That group is preserved at
+/workspace/work/sm39-396-baseline; it is not the policy witness or a passing
+SM-39 run. The original fixture/case remain in commit 2c49d3235 and external
+source evidence. No failed theorem is counted as a successful negative plant.
+
+A separate exact formatUInt8/callUInt8 definition-only diagnostic used the
+admitted frozen #396 CLI (SHA256 5076c71e), actual landed 2b039 inputs and
+pinned Lean 4.32.1. Official lock/check passed; one verify refused formatUInt8
+with LLV7005 in 7.052 seconds: expected empty policy, actual
+[Classical.choice, Quot.sound, propext]. Verification stopped there, so no
+caller-policy result is claimed. Issue #434 comment 6623893537 records this
+qualifying unchanged-runtime witness. No runtime implementation or identity
+writer ran for it.
+
+The revised named case is source-only and unexecuted. It preserves the exact
+27 definition bodies/policies and translates every original theorem conjunct
+into an independent literal table: 151 cases, 54 formatter/caller outputs and
+97 parse outcomes (136 fixed-width cases, 15 native unbounded-Int cases).
+Policies come from actual per-declaration attestation observations. Boundary
+observations use actual native functions in the existing staged preservation
+workspace, avoiding the earlier unresolved copied-module approach. Eligible
+fixed-width functions also receive real A/B/E certificate compile/replay and
+exact audit checks plus explicit interpreter/denotation boundary comparisons.
+Unbounded Int is evaluated natively and never narrowed to the i64 calculus.
+
+A changed independent expected UInt8 output must be detected. A separate
+well-typed false-output lowering returns "254" for the unchanged formatter's
+UInt8(255) input; its original source returns "255". The existing checked
+preservation path must refuse it. A phase-preservation constructor refusal is
+recorded as such, never presented as a kernel refusal or LLV7002. If a
+certificate is generated, only a targeted real relation refusal counts; a
+resource or unrelated failure does not. The Int negative changes only the
+formatter's propext policy, keeping the caller unchanged.
+
+This explicitly revises the unmerged scenario's proof method; its normative
+SM-39 claim, canonical outputs, exact policies, all boundary/parse cases and
+negative guarantees remain. No new proof/backend/law interface is introduced.
+Only source/static checks support this candidate; no Cargo, compilation,
+named test, native formatting implementation, model/projection writer, pin,
+artifact wave, commit, push or full gate ran. Independent source review is
+required before execution or the complete native implementation. Official
+projections remain pending; #434 and parent #381 remain open.
+
+Independent source review corrected the draft's production effect contract:
+all 24 fixed roots declare allocation, including parsers whose String input
+requires it. The Int policy negative now checks exactly the formatter's
+LLV7005 none-to-propext diagnostic, and a false-certificate fallback passes
+the real child exit/signal status to resource classification. README states
+the observed 484 named-test register truthfully; official projection is still
+required by AGENTS before the named R3 case. These are source corrections,
+not executed acceptance evidence.
+
+### Revised named SM-39 R3 phase: actual policy refusal
+
+On 2026-11-04 the reviewed revised source was validated once, before native
+implementation, on the actual landed #396 integration. Official
+`validate-model --write` projected the authored SM-39 register/chapter into
+SPEC.md, model/ids.toml and CONFORMANCE.md; all other tracked bytes and the
+embedded diagnostic registry were preserved. The actual register is 484 IDs
+and 86 diagnostic codes. Official model comparison and spec-links passed,
+as did workspace Rust formatting and focused conformance Clippy with warnings
+denied. This source projection did not move compiler/runtime identities or
+run calculus, fixture, export, golden or verification writers.
+
+Cargo-selected xtask and conformance executables were frozen. Actual linked
+model/support/fixture roots matched this checkout, and all 905 actual selected
+embedded inputs matched admitted source bytes in both selections. Exact
+listing selected only conformance_sm_39. That named case ran once and failed
+as intended: 0 passed, 1 failed, 483 filtered, 7.15 seconds (libtest exit 101).
+Its sole diagnostic was LLV7005: `LexLeanExample.Main.formatUInt8` violates
+its none axiom policy, observing [Classical.choice, Quot.sound, propext].
+This establishes the revised named policy regression, not passing SM-39
+acceptance. Caller and later policy/output/certificate assertions were not
+reached. No LLV7002 or resource failure is counted as the witness.
+
+Immutable receipt: /workspace/work/sm39-revised-named-baseline/results.json,
+SHA256 d8c6bb852d989423db67dc9a959f5cd855de8495b710065dcc7154bbb203a69f.
+Exact stdout/stderr/listing remain beside it. Frozen xtask SHA256 is
+4fba5e904059f08a6d41d85f96abc081329c972fc28f86496fc23ab00df64d34;
+conformance SHA256 is
+e93fc249646734aedc47bec36f1ce32a6f2308269530374780b4c651e0ded1f1.
+The whole-phase lock was released. The prior 18-proof failure and minimal
+policy witness remain separate historical records. Native implementation,
+shared parsing preservation, complete positive/negative evidence and the
+coordinated identity/artifact wave and final gate remain outstanding.
+
+### SM-39 native formatting isolation: reviewed source implementation only
+
+The complete authored source unit changes four files (35 insertions,
+24 deletions): Portable, Fixed, RustLemmas, and the production certificate-A
+source constructor. Portable.formatDecimal accepts ToString and invokes its
+formatter directly. All nine Fixed format theorem operands and nine
+RustLemmas format application operands supply the corresponding native
+ToString instance. The certificate constructor supplies that same instance
+for FormatDecimal; ParseDecimal retains its original Decimal evidence.
+
+Shared Decimal class/instance nodes and parse operands are retained, including
+the nodes shared by formatting and parsing before this change. Static local
+graph comparisons preserve the complete Decimal/parseDecimal closures in
+Portable and all nine Fixed parsing theorem type/value closures. Broader
+RustLemmas proofs share the whole primitive evaluator, so their formatting
+subclosures change intentionally; the separate parse evidence and declaration
+metadata/policies do not. All exact policies and the certificate runtime-axiom
+table remain unchanged. The 169 older-language partition files are byte-exact.
+No generated Lean, policy weakening, new law/model interface or backend
+language feature was introduced.
+
+Independent review covered this four-part dependency unit and its actual
+node bindings. Validation here is source-only: static graph/diff checks and
+standalone Rust formatting, with no compilation or positive SM-39 execution
+on the changed runtime. The earlier named LLV7005 remains the pre-fix R3
+witness; it does not establish a post-fix pass. All 27 policy observations,
+151 native boundary/parse observations, eligible fixed-width A/B/E checks,
+false-output controls and Int policy refusal still require execution on the
+final admitted implementation and products.
+
+These embedded native inputs require the coordinated v0.5 identity and
+official product refresh. Pins, generated artifacts, locks and runtime
+identities have deliberately not been updated by this source commit. The
+source delivery uses [skip ci] because this intermediate tree knowingly lacks
+that coordinated regeneration; it is draft preparation, never merge-ready.
+The final changed head still requires complete acceptance and full CI before
+readiness/merge. #434 and parent #381 remain open until their proper scope is
+accepted. No baseline rerun or writer was used to manufacture positive evidence.

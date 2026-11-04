@@ -299,5 +299,12 @@ definition{
   body: (record Rows::IdRow {id := "SM-38", level := "build", suite := "semantic-ir", statement := "A language-1.2 definition may apply bit_and, bit_or and bit_xor to two Nat operands and shift_left and shift_right to a Nat operand and a Nat amount, each with result Nat and no Option, and the backend lowers them to Nat.land, Nat.lor, Nat.xor, Nat.shiftLeft and Nat.shiftRight, so that reflexivity evaluates them inside a verified module; the registered laws nat_bit_and, nat_bit_or, nat_bit_xor, nat_bit_shift_left, nat_bit_shift_right, nat_or_xor_and, nat_witt_step and nat_bit_ext state the bit read of each under an exact axiom policy, and a theorem that applies one verifies while a false bit equation is rejected; a use in language 1.1, bit_not of a Nat, a Nat operand mixed with an integer of another type, and a production root over a Nat form are each refused.", sections := "§17.11, §17.12"}),
   executable: true
 }
+definition{
+  name: sm39,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "SM-39", level := "build", suite := "semantic-ir", statement := "Language-1.2 decimal formatting verifies with no axioms at fixed widths and exactly propext at Int, while decimal parsing preserves canonical spelling and range refusals.", sections := "§17.12"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

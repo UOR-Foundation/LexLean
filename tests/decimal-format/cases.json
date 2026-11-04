@@ -1,0 +1,1059 @@
+[
+  {
+    "id": "formatBoundsUInt8.0",
+    "kind": "format",
+    "ty": "UInt8",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsUInt8.1",
+    "kind": "call",
+    "ty": "UInt8",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsUInt8.2",
+    "kind": "format",
+    "ty": "UInt8",
+    "input": "255",
+    "expected": "255"
+  },
+  {
+    "id": "formatBoundsUInt8.3",
+    "kind": "call",
+    "ty": "UInt8",
+    "input": "255",
+    "expected": "255"
+  },
+  {
+    "id": "parseControlsUInt8.0",
+    "kind": "parse",
+    "ty": "UInt8",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "parseControlsUInt8.1",
+    "kind": "parse",
+    "ty": "UInt8",
+    "input": "255",
+    "expected": "255"
+  },
+  {
+    "id": "parseControlsUInt8.2",
+    "kind": "parse",
+    "ty": "UInt8",
+    "input": "256",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt8.3",
+    "kind": "parse",
+    "ty": "UInt8",
+    "input": "-1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt8.4",
+    "kind": "parse",
+    "ty": "UInt8",
+    "input": "01",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt8.5",
+    "kind": "parse",
+    "ty": "UInt8",
+    "input": "+1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt8.6",
+    "kind": "parse",
+    "ty": "UInt8",
+    "input": "-0",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt8.7",
+    "kind": "parse",
+    "ty": "UInt8",
+    "input": "",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt8.8",
+    "kind": "parse",
+    "ty": "UInt8",
+    "input": " 1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt8.9",
+    "kind": "parse",
+    "ty": "UInt8",
+    "input": "1 ",
+    "expected": null
+  },
+  {
+    "id": "formatBoundsUInt16.0",
+    "kind": "format",
+    "ty": "UInt16",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsUInt16.1",
+    "kind": "call",
+    "ty": "UInt16",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsUInt16.2",
+    "kind": "format",
+    "ty": "UInt16",
+    "input": "65535",
+    "expected": "65535"
+  },
+  {
+    "id": "formatBoundsUInt16.3",
+    "kind": "call",
+    "ty": "UInt16",
+    "input": "65535",
+    "expected": "65535"
+  },
+  {
+    "id": "parseControlsUInt16.0",
+    "kind": "parse",
+    "ty": "UInt16",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "parseControlsUInt16.1",
+    "kind": "parse",
+    "ty": "UInt16",
+    "input": "65535",
+    "expected": "65535"
+  },
+  {
+    "id": "parseControlsUInt16.2",
+    "kind": "parse",
+    "ty": "UInt16",
+    "input": "65536",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt16.3",
+    "kind": "parse",
+    "ty": "UInt16",
+    "input": "-1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt16.4",
+    "kind": "parse",
+    "ty": "UInt16",
+    "input": "01",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt16.5",
+    "kind": "parse",
+    "ty": "UInt16",
+    "input": "+1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt16.6",
+    "kind": "parse",
+    "ty": "UInt16",
+    "input": "-0",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt16.7",
+    "kind": "parse",
+    "ty": "UInt16",
+    "input": "",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt16.8",
+    "kind": "parse",
+    "ty": "UInt16",
+    "input": " 1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt16.9",
+    "kind": "parse",
+    "ty": "UInt16",
+    "input": "1 ",
+    "expected": null
+  },
+  {
+    "id": "formatBoundsUInt32.0",
+    "kind": "format",
+    "ty": "UInt32",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsUInt32.1",
+    "kind": "call",
+    "ty": "UInt32",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsUInt32.2",
+    "kind": "format",
+    "ty": "UInt32",
+    "input": "4294967295",
+    "expected": "4294967295"
+  },
+  {
+    "id": "formatBoundsUInt32.3",
+    "kind": "call",
+    "ty": "UInt32",
+    "input": "4294967295",
+    "expected": "4294967295"
+  },
+  {
+    "id": "parseControlsUInt32.0",
+    "kind": "parse",
+    "ty": "UInt32",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "parseControlsUInt32.1",
+    "kind": "parse",
+    "ty": "UInt32",
+    "input": "4294967295",
+    "expected": "4294967295"
+  },
+  {
+    "id": "parseControlsUInt32.2",
+    "kind": "parse",
+    "ty": "UInt32",
+    "input": "4294967296",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt32.3",
+    "kind": "parse",
+    "ty": "UInt32",
+    "input": "-1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt32.4",
+    "kind": "parse",
+    "ty": "UInt32",
+    "input": "01",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt32.5",
+    "kind": "parse",
+    "ty": "UInt32",
+    "input": "+1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt32.6",
+    "kind": "parse",
+    "ty": "UInt32",
+    "input": "-0",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt32.7",
+    "kind": "parse",
+    "ty": "UInt32",
+    "input": "",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt32.8",
+    "kind": "parse",
+    "ty": "UInt32",
+    "input": " 1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt32.9",
+    "kind": "parse",
+    "ty": "UInt32",
+    "input": "1 ",
+    "expected": null
+  },
+  {
+    "id": "formatBoundsUInt64.0",
+    "kind": "format",
+    "ty": "UInt64",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsUInt64.1",
+    "kind": "call",
+    "ty": "UInt64",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsUInt64.2",
+    "kind": "format",
+    "ty": "UInt64",
+    "input": "18446744073709551615",
+    "expected": "18446744073709551615"
+  },
+  {
+    "id": "formatBoundsUInt64.3",
+    "kind": "call",
+    "ty": "UInt64",
+    "input": "18446744073709551615",
+    "expected": "18446744073709551615"
+  },
+  {
+    "id": "parseControlsUInt64.0",
+    "kind": "parse",
+    "ty": "UInt64",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "parseControlsUInt64.1",
+    "kind": "parse",
+    "ty": "UInt64",
+    "input": "18446744073709551615",
+    "expected": "18446744073709551615"
+  },
+  {
+    "id": "parseControlsUInt64.2",
+    "kind": "parse",
+    "ty": "UInt64",
+    "input": "18446744073709551616",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt64.3",
+    "kind": "parse",
+    "ty": "UInt64",
+    "input": "-1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt64.4",
+    "kind": "parse",
+    "ty": "UInt64",
+    "input": "01",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt64.5",
+    "kind": "parse",
+    "ty": "UInt64",
+    "input": "+1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt64.6",
+    "kind": "parse",
+    "ty": "UInt64",
+    "input": "-0",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt64.7",
+    "kind": "parse",
+    "ty": "UInt64",
+    "input": "",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt64.8",
+    "kind": "parse",
+    "ty": "UInt64",
+    "input": " 1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsUInt64.9",
+    "kind": "parse",
+    "ty": "UInt64",
+    "input": "1 ",
+    "expected": null
+  },
+  {
+    "id": "formatBoundsInt8.0",
+    "kind": "format",
+    "ty": "Int8",
+    "input": "-128",
+    "expected": "-128"
+  },
+  {
+    "id": "formatBoundsInt8.1",
+    "kind": "call",
+    "ty": "Int8",
+    "input": "-128",
+    "expected": "-128"
+  },
+  {
+    "id": "formatBoundsInt8.2",
+    "kind": "format",
+    "ty": "Int8",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "formatBoundsInt8.3",
+    "kind": "call",
+    "ty": "Int8",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "formatBoundsInt8.4",
+    "kind": "format",
+    "ty": "Int8",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsInt8.5",
+    "kind": "call",
+    "ty": "Int8",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsInt8.6",
+    "kind": "format",
+    "ty": "Int8",
+    "input": "127",
+    "expected": "127"
+  },
+  {
+    "id": "formatBoundsInt8.7",
+    "kind": "call",
+    "ty": "Int8",
+    "input": "127",
+    "expected": "127"
+  },
+  {
+    "id": "parseControlsInt8.0",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": "-128",
+    "expected": "-128"
+  },
+  {
+    "id": "parseControlsInt8.1",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "parseControlsInt8.2",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "parseControlsInt8.3",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": "127",
+    "expected": "127"
+  },
+  {
+    "id": "parseControlsInt8.4",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": "128",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt8.5",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": "-129",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt8.6",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": "01",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt8.7",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": "+1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt8.8",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": "-0",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt8.9",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": "",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt8.10",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": " 1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt8.11",
+    "kind": "parse",
+    "ty": "Int8",
+    "input": "1 ",
+    "expected": null
+  },
+  {
+    "id": "formatBoundsInt16.0",
+    "kind": "format",
+    "ty": "Int16",
+    "input": "-32768",
+    "expected": "-32768"
+  },
+  {
+    "id": "formatBoundsInt16.1",
+    "kind": "call",
+    "ty": "Int16",
+    "input": "-32768",
+    "expected": "-32768"
+  },
+  {
+    "id": "formatBoundsInt16.2",
+    "kind": "format",
+    "ty": "Int16",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "formatBoundsInt16.3",
+    "kind": "call",
+    "ty": "Int16",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "formatBoundsInt16.4",
+    "kind": "format",
+    "ty": "Int16",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsInt16.5",
+    "kind": "call",
+    "ty": "Int16",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsInt16.6",
+    "kind": "format",
+    "ty": "Int16",
+    "input": "32767",
+    "expected": "32767"
+  },
+  {
+    "id": "formatBoundsInt16.7",
+    "kind": "call",
+    "ty": "Int16",
+    "input": "32767",
+    "expected": "32767"
+  },
+  {
+    "id": "parseControlsInt16.0",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": "-32768",
+    "expected": "-32768"
+  },
+  {
+    "id": "parseControlsInt16.1",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "parseControlsInt16.2",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "parseControlsInt16.3",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": "32767",
+    "expected": "32767"
+  },
+  {
+    "id": "parseControlsInt16.4",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": "32768",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt16.5",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": "-32769",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt16.6",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": "01",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt16.7",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": "+1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt16.8",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": "-0",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt16.9",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": "",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt16.10",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": " 1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt16.11",
+    "kind": "parse",
+    "ty": "Int16",
+    "input": "1 ",
+    "expected": null
+  },
+  {
+    "id": "formatBoundsInt32.0",
+    "kind": "format",
+    "ty": "Int32",
+    "input": "-2147483648",
+    "expected": "-2147483648"
+  },
+  {
+    "id": "formatBoundsInt32.1",
+    "kind": "call",
+    "ty": "Int32",
+    "input": "-2147483648",
+    "expected": "-2147483648"
+  },
+  {
+    "id": "formatBoundsInt32.2",
+    "kind": "format",
+    "ty": "Int32",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "formatBoundsInt32.3",
+    "kind": "call",
+    "ty": "Int32",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "formatBoundsInt32.4",
+    "kind": "format",
+    "ty": "Int32",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsInt32.5",
+    "kind": "call",
+    "ty": "Int32",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsInt32.6",
+    "kind": "format",
+    "ty": "Int32",
+    "input": "2147483647",
+    "expected": "2147483647"
+  },
+  {
+    "id": "formatBoundsInt32.7",
+    "kind": "call",
+    "ty": "Int32",
+    "input": "2147483647",
+    "expected": "2147483647"
+  },
+  {
+    "id": "parseControlsInt32.0",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": "-2147483648",
+    "expected": "-2147483648"
+  },
+  {
+    "id": "parseControlsInt32.1",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "parseControlsInt32.2",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "parseControlsInt32.3",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": "2147483647",
+    "expected": "2147483647"
+  },
+  {
+    "id": "parseControlsInt32.4",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": "2147483648",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt32.5",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": "-2147483649",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt32.6",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": "01",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt32.7",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": "+1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt32.8",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": "-0",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt32.9",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": "",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt32.10",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": " 1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt32.11",
+    "kind": "parse",
+    "ty": "Int32",
+    "input": "1 ",
+    "expected": null
+  },
+  {
+    "id": "formatBoundsInt64.0",
+    "kind": "format",
+    "ty": "Int64",
+    "input": "-9223372036854775808",
+    "expected": "-9223372036854775808"
+  },
+  {
+    "id": "formatBoundsInt64.1",
+    "kind": "call",
+    "ty": "Int64",
+    "input": "-9223372036854775808",
+    "expected": "-9223372036854775808"
+  },
+  {
+    "id": "formatBoundsInt64.2",
+    "kind": "format",
+    "ty": "Int64",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "formatBoundsInt64.3",
+    "kind": "call",
+    "ty": "Int64",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "formatBoundsInt64.4",
+    "kind": "format",
+    "ty": "Int64",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsInt64.5",
+    "kind": "call",
+    "ty": "Int64",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsInt64.6",
+    "kind": "format",
+    "ty": "Int64",
+    "input": "9223372036854775807",
+    "expected": "9223372036854775807"
+  },
+  {
+    "id": "formatBoundsInt64.7",
+    "kind": "call",
+    "ty": "Int64",
+    "input": "9223372036854775807",
+    "expected": "9223372036854775807"
+  },
+  {
+    "id": "parseControlsInt64.0",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": "-9223372036854775808",
+    "expected": "-9223372036854775808"
+  },
+  {
+    "id": "parseControlsInt64.1",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": "-1",
+    "expected": "-1"
+  },
+  {
+    "id": "parseControlsInt64.2",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "parseControlsInt64.3",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": "9223372036854775807",
+    "expected": "9223372036854775807"
+  },
+  {
+    "id": "parseControlsInt64.4",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": "9223372036854775808",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt64.5",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": "-9223372036854775809",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt64.6",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": "01",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt64.7",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": "+1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt64.8",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": "-0",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt64.9",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": "",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt64.10",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": " 1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt64.11",
+    "kind": "parse",
+    "ty": "Int64",
+    "input": "1 ",
+    "expected": null
+  },
+  {
+    "id": "formatBoundsInt.0",
+    "kind": "format",
+    "ty": "Int",
+    "input": "-18446744073709551616",
+    "expected": "-18446744073709551616"
+  },
+  {
+    "id": "formatBoundsInt.1",
+    "kind": "call",
+    "ty": "Int",
+    "input": "-18446744073709551616",
+    "expected": "-18446744073709551616"
+  },
+  {
+    "id": "formatBoundsInt.2",
+    "kind": "format",
+    "ty": "Int",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsInt.3",
+    "kind": "call",
+    "ty": "Int",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "formatBoundsInt.4",
+    "kind": "format",
+    "ty": "Int",
+    "input": "18446744073709551616",
+    "expected": "18446744073709551616"
+  },
+  {
+    "id": "formatBoundsInt.5",
+    "kind": "call",
+    "ty": "Int",
+    "input": "18446744073709551616",
+    "expected": "18446744073709551616"
+  },
+  {
+    "id": "parseControlsInt.0",
+    "kind": "parse",
+    "ty": "Int",
+    "input": "-18446744073709551616",
+    "expected": "-18446744073709551616"
+  },
+  {
+    "id": "parseControlsInt.1",
+    "kind": "parse",
+    "ty": "Int",
+    "input": "0",
+    "expected": "0"
+  },
+  {
+    "id": "parseControlsInt.2",
+    "kind": "parse",
+    "ty": "Int",
+    "input": "18446744073709551616",
+    "expected": "18446744073709551616"
+  },
+  {
+    "id": "parseControlsInt.3",
+    "kind": "parse",
+    "ty": "Int",
+    "input": "01",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt.4",
+    "kind": "parse",
+    "ty": "Int",
+    "input": "+1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt.5",
+    "kind": "parse",
+    "ty": "Int",
+    "input": "-0",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt.6",
+    "kind": "parse",
+    "ty": "Int",
+    "input": "",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt.7",
+    "kind": "parse",
+    "ty": "Int",
+    "input": " 1",
+    "expected": null
+  },
+  {
+    "id": "parseControlsInt.8",
+    "kind": "parse",
+    "ty": "Int",
+    "input": "1 ",
+    "expected": null
+  }
+]

@@ -1,0 +1,206 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: formatUInt8,
+  parameters: [value : UInt8],
+  result: String,
+  body: (prim format_decimal value : String),
+  executable: true
+}
+definition{
+  name: callUInt8,
+  parameters: [value : UInt8],
+  result: String,
+  body: (formatUInt8 value),
+  executable: true
+}
+definition{
+  name: parseUInt8,
+  parameters: [value : String],
+  result: (Option UInt8),
+  body: (prim parse_decimal value : (Option UInt8)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+definition{
+  name: formatUInt16,
+  parameters: [value : UInt16],
+  result: String,
+  body: (prim format_decimal value : String),
+  executable: true
+}
+definition{
+  name: callUInt16,
+  parameters: [value : UInt16],
+  result: String,
+  body: (formatUInt16 value),
+  executable: true
+}
+definition{
+  name: parseUInt16,
+  parameters: [value : String],
+  result: (Option UInt16),
+  body: (prim parse_decimal value : (Option UInt16)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+definition{
+  name: formatUInt32,
+  parameters: [value : UInt32],
+  result: String,
+  body: (prim format_decimal value : String),
+  executable: true
+}
+definition{
+  name: callUInt32,
+  parameters: [value : UInt32],
+  result: String,
+  body: (formatUInt32 value),
+  executable: true
+}
+definition{
+  name: parseUInt32,
+  parameters: [value : String],
+  result: (Option UInt32),
+  body: (prim parse_decimal value : (Option UInt32)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+definition{
+  name: formatUInt64,
+  parameters: [value : UInt64],
+  result: String,
+  body: (prim format_decimal value : String),
+  executable: true
+}
+definition{
+  name: callUInt64,
+  parameters: [value : UInt64],
+  result: String,
+  body: (formatUInt64 value),
+  executable: true
+}
+definition{
+  name: parseUInt64,
+  parameters: [value : String],
+  result: (Option UInt64),
+  body: (prim parse_decimal value : (Option UInt64)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+definition{
+  name: formatInt8,
+  parameters: [value : Int8],
+  result: String,
+  body: (prim format_decimal value : String),
+  executable: true
+}
+definition{
+  name: callInt8,
+  parameters: [value : Int8],
+  result: String,
+  body: (formatInt8 value),
+  executable: true
+}
+definition{
+  name: parseInt8,
+  parameters: [value : String],
+  result: (Option Int8),
+  body: (prim parse_decimal value : (Option Int8)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+definition{
+  name: formatInt16,
+  parameters: [value : Int16],
+  result: String,
+  body: (prim format_decimal value : String),
+  executable: true
+}
+definition{
+  name: callInt16,
+  parameters: [value : Int16],
+  result: String,
+  body: (formatInt16 value),
+  executable: true
+}
+definition{
+  name: parseInt16,
+  parameters: [value : String],
+  result: (Option Int16),
+  body: (prim parse_decimal value : (Option Int16)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+definition{
+  name: formatInt32,
+  parameters: [value : Int32],
+  result: String,
+  body: (prim format_decimal value : String),
+  executable: true
+}
+definition{
+  name: callInt32,
+  parameters: [value : Int32],
+  result: String,
+  body: (formatInt32 value),
+  executable: true
+}
+definition{
+  name: parseInt32,
+  parameters: [value : String],
+  result: (Option Int32),
+  body: (prim parse_decimal value : (Option Int32)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+definition{
+  name: formatInt64,
+  parameters: [value : Int64],
+  result: String,
+  body: (prim format_decimal value : String),
+  executable: true
+}
+definition{
+  name: callInt64,
+  parameters: [value : Int64],
+  result: String,
+  body: (formatInt64 value),
+  executable: true
+}
+definition{
+  name: parseInt64,
+  parameters: [value : String],
+  result: (Option Int64),
+  body: (prim parse_decimal value : (Option Int64)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+definition{
+  name: formatInt,
+  parameters: [value : Int],
+  result: String,
+  body: (prim format_decimal value : String),
+  axioms: [propext],
+  executable: true
+}
+definition{
+  name: callInt,
+  parameters: [value : Int],
+  result: String,
+  body: (formatInt value),
+  axioms: [propext],
+  executable: true
+}
+definition{
+  name: parseInt,
+  parameters: [value : String],
+  result: (Option Int),
+  body: (prim parse_decimal value : (Option Int)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
