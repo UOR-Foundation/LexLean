@@ -19,9 +19,6 @@
     "bootstrap-check": [
       "BS-04"
     ],
-    "bootstrap-gnaf": [
-      "BS-16"
-    ],
     "bootstrap-lower": [
       "BS-07"
     ],
@@ -249,5 +246,8 @@
     "preservation-std": [
       "SP-29"
     ]
+  },
+  "targets": {
+    "honesty": ["bdd"]
   }
 }

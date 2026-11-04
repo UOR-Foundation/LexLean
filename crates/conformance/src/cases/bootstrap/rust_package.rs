@@ -1,4 +1,4 @@
-//! `BS-15`: the package renderer of SPEC.md Â§17.16 as language-1.2 source
+//! `BS-15`: the package renderer of SPEC.md §17.16 as language-1.2 source
 //! (`LexLeanBoot.RustPackage`), held to `calculus::rust::package`.
 //!
 //! `package::lower` checks a manifest's own fields before it reads the
@@ -34,12 +34,12 @@ const CAPACITY: usize = 1 << 24;
 /// bytes. Under rustc every library is rendered.
 const EVALUATOR_LIBRARY: usize = 16_384;
 
-const MANIFESTS: usize = 303;
-const ACCEPTED: usize = 284;
+const MANIFESTS: usize = 302;
+const ACCEPTED: usize = 283;
 const HEADER_RULES: usize = 182;
 const RENDER_RULES: usize = 137;
 const HEADER_MUTANTS: usize = 2_000;
-const RENDER_MUTANTS: usize = 284;
+const RENDER_MUTANTS: usize = 283;
 const EVALUATOR_RENDERS: usize = 241;
 
 fn nat(value: usize) -> Value {
@@ -369,7 +369,7 @@ const NAMES: &[&str] = &[
     "a_b",
     "a-b",
     "a.b",
-    "Ã©",
+    "é",
     "a\u{e9}",
     "a b",
     "sum_to_std",

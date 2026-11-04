@@ -1,4 +1,4 @@
-//! `BS-06`: the Rust printer of SPEC.md Ã‚Â§17.16 as language-1.2 source
+//! `BS-06`: the Rust printer of SPEC.md §17.16 as language-1.2 source
 //! (`LexLeanBoot.RustPrint`), held to `calculus::rust::ast::{print,
 //! print_expr}` to the byte.
 //!
@@ -1186,17 +1186,17 @@ const ROOTS: [(&str, &[&str]); 2] = [
     ("printExpr", &["allocation", "overflow", "recursion"]),
 ];
 
-// The counts SPEC.md Ã‚Â§17.23, the register statement of BS-06, its scenario,
+// The counts SPEC.md §17.23, the register statement of BS-06, its scenario,
 // and VERIFICATION.md state, over the tree with the packages of the two roots
 // committed: the case fails when the tree no longer gives them.
-const COMMITTED_MANIFESTS: usize = 284;
+const COMMITTED_MANIFESTS: usize = 283;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 201;
-const COMMITTED_CRATES: usize = 260;
-const COMMITTED_PACKAGES: usize = 284;
-const VECTORS_CRATE: usize = 687;
-const COMMITTED_DISTINCT: usize = 520;
-const REFUSED_CRATE: usize = 65;
+const COMMITTED_PROGRAMS: usize = 200;
+const COMMITTED_CRATES: usize = 259;
+const COMMITTED_PACKAGES: usize = 283;
+const VECTORS_CRATE: usize = 684;
+const COMMITTED_DISTINCT: usize = 518;
+const REFUSED_CRATE: usize = 64;
 const VECTORS_EXPR: usize = 2_145;
 const HAND_EXPR: usize = 1_532;
 const EVALUATOR_CRATE: usize = 582;

@@ -441,6 +441,31 @@ pub struct Program {
     pub functions: Vec<Function>,
 }
 
+// A package adds one object around the same lowered program. Both replay
+// readers use lowering's bound before disabling serde's smaller default, so
+// malformed external evidence cannot turn a supported deep program into an
+// unbounded recursive read.
+pub(crate) fn read_program_json<T: Send>(
+    bytes: &[u8],
+    wrapper_depth: usize,
+    read: impl FnOnce() -> Result<T, String> + Send,
+) -> Result<T, String> {
+    let text = std::str::from_utf8(bytes).map_err(|error| error.to_string())?;
+    let depth = crate::production::lower::json_depth(text);
+    let limit = crate::production::lower::PROGRAM_JSON_DEPTH + wrapper_depth;
+    if depth > limit {
+        return Err(format!("program JSON depth {depth} exceeds {limit}"));
+    }
+    std::thread::scope(|scope| {
+        std::thread::Builder::new()
+            .stack_size(crate::READER_STACK)
+            .spawn_scoped(scope, read)
+            .map_err(|error| format!("program JSON reader could not start: {error}"))?
+            .join()
+            .map_err(|_| "program JSON reader failed".to_owned())?
+    })
+}
+
 impl Program {
     /// Read a program from JSON.
     ///
@@ -449,8 +474,14 @@ impl Program {
     /// Returns the reason the bytes are not a `lexlean/target-program/1`
     /// value.
     pub fn parse(bytes: &[u8]) -> Result<Self, String> {
-        let program: Self = serde_json::from_slice(bytes)
-            .map_err(|error| format!("target program is malformed: {error}"))?;
+        let program: Self = read_program_json(bytes, 0, || {
+            let mut reader = serde_json::Deserializer::from_slice(bytes);
+            reader.disable_recursion_limit();
+            let value = Self::deserialize(&mut reader).map_err(|error| error.to_string())?;
+            reader.end().map_err(|error| error.to_string())?;
+            Ok(value)
+        })
+        .map_err(|error| format!("target program is malformed: {error}"))?;
         if program.spec != PROGRAM_SPEC {
             return Err(format!(
                 "target program has spec `{}`, expected `{PROGRAM_SPEC}`",
