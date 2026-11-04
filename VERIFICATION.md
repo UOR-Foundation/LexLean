@@ -18420,6 +18420,158 @@ writes, which the first run of the case established; the package computes the
 smallest of the 24 quarter orders of E7 as the quarters sorted, and the corpus
 holds every order to the oracle's enumeration of them.
 
+### Host interface consumer can fail
+
+`conformance_sl_12` first failed with `LLR3005`: `Consumer` imported `Host`,
+which was not a project module. After adding `stdlib/src/Host.lex.tex`, the
+consumer initially constructed fourteen requests and fourteen events and
+matches both types exhaustively. The same test changes the spawn environment
+from `List (String * String)` to `String` and requires checking to fail. The
+unmodified consumer and the planted refusal passed in 1.79 seconds. This
+establishes the typed interface only; it is no evidence of host execution,
+effect enforcement, or driver preservation.
+
+The v0.5 interface was then aligned byte-for-byte with `Host.lex.tex` from
+PR #389 at `afe1a002f218f0eba9ee3f309793d135c45e5e7d`, replacing the older
+consumer mirror. The independent consumer now constructs all fourteen
+requests, eight events, five records and both kind enums. It checks the
+fallible startup paths, optional file identity, child launch record, timed
+multi-child wait and byte exit output. The same environment-field mutation
+is rejected; `conformance_sl_12` passed in 3.99 seconds. This forward-port
+does not include #389's effect-eligibility implementation.
+
+### bounded byte slice normalization can fail
+
+The `conformance_sm_19` consumer slices bytes `[85, 2047)` from a 2048-byte
+input and verifies the exact result, an empty slice at the end, and refused
+slices beyond the end. Before the change to the language-1.2 core source,
+its five-second child budget refused the generated `LexLeanExample.Main`:
+
+```text
+LLS8002: child_timeout_ms exceeded by `lean` in phase LexLeanExample.Main: configured 5000, observed 5000 ms
+```
+
+The bounded slice now takes and drops the underlying byte list and rebuilds
+the byte array, with the same bounds check. This avoids reducing the array
+copy loop in the kernel. The core notation was edited and canonically
+renumbered with `lexlean fmt`; no handwritten Lean runtime was introduced.
+The same named case passes with real elaboration, kernel replay and its
+empty axiom policy. Its changed expected byte is refused with `LLV7002`.
+
+The new `SM-19` join regression first failed with `LLV7002` on every empty,
+singleton, Unicode and nested join: Lean's `String.intercalate` body is opaque
+outside its defining module. The language-1.2 LexLean runtime now expresses
+that operation as a list case and left fold over `String.append`, retaining
+its exact `[propext]` computational policy. The complete named case passed
+in 109.16 seconds with elaboration and kernel replay; removing an expected
+separator is rejected with `LLV7002`.
+
+The closed-decision and large-slice regressions use the fixture's normal
+verification timeout. Their former five-second override also timed out while
+compiling the unchanged Portable prerequisite on CI (5004 ms), before the
+operation under test. These cases establish correctness and mutation
+rejection, not a five-second performance guarantee.
+
+
+### PR #396 exact-head fixture and README evidence
+
+CI run `41702745654` on `84e38cb0230a1e0f52302f0d144ce10f2d5279c5`
+failed `conformance_ex_07` in production job `126151210575` on six
+`tests/negative/*/expected/command.json` files. The observed and committed
+JSON differ only in generated identities:
+
+| Fixture | Diagnostic | Committed identity or fragment | Observed identity or fragment |
+| --- | --- | --- | --- |
+| certificate-b-rejected | LLV7015 | fd7200c5e1004a64d9376653bca13538 | 4d1ff72de03b61f9cc75487781341a7c |
+| certificate-e-rejected | LLV7016 | fd7200c5e1004a64d9376653bca13538 | 4d1ff72de03b61f9cc75487781341a7c |
+| certificate-rejected | LLV7013 | fd7200c5e1004a64d9376653bca13538 | 4d1ff72de03b61f9cc75487781341a7c |
+| certificate-heartbeat-rejected | LLV7013 | 033f7c29c9ed4ff40703871375c8b84d | 2cfa96011d16069dc2d3bf86b08fe27a |
+| certificate-resource-exhausted | LLS8002 | 033f7c29c9ed4ff40703871375c8b84d | 2cfa96011d16069dc2d3bf86b08fe27a |
+| production-expectation-stale | LLC0204 | e8d05dd0be3a390ea5b6f8d3a5f92091bada1aeb6b66f9c07a4e0401fcbbbdab | dbb63e64005053e3d5be5f785f7317960e518ae3dce457390b51c004825f942a |
+
+Parsing the twelve log JSON objects and normalizing those identities makes
+each expected/observed pair equal, including diagnostic text, exit codes,
+artifacts and all other fields. ARM Linux, Windows and Apple ARM jobs each
+report only the last mismatch under their platform-independent assertions.
+These observations identify stale expectations; they do not record a writer
+run or a passing fixture gate. The official fixture writer remains required.
+No expected output was edited in this source-only follow-up for #396/#409.
+
+`just fixtures-write` invokes `cargo xtask check-fixtures --write`. This is
+the smallest supported writer invocation: `check_fixtures` discovers every
+`case.toml` under `tests/fixtures` and `tests/negative`, with no per-fixture
+selector, and calls `repo_conformance::fixtures::write` for each. The writer
+executes the CLI entry point and checks each case's prescribed exit before
+writing observed expected files. Use the pinned toolchain and an executable
+built from the admitted compiler inputs. Its repository root comes from
+`repo_model::repo_root` at compile time; copying a frozen executable to a new
+checkout does not retarget it by changing the working directory. The owning
+writer phase must record that source/root correspondence, executable hashes,
+fixture input preservation, actual writer result and reviewed output delta.
+Coordinate that phase after the active Host writer releases its shared lock.
+No Cargo command, build, writer or acceptance run was performed for this
+source-only correction.
+
+The same run's rest job `126151210865` fails `conformance_rp_11` because
+README's `SL-01` through `SL-08` range stops before the register's last
+`SL-12` row. RP-11 requires ranges to cover the whole registered prefix and
+also enforces registered references, unique claims and complete coverage.
+README now enumerates exactly `SL-01` through `SL-08` and `SL-12`; this line
+has no `SL-09`, `SL-10` or `SL-11` rows. The gate and capability description
+are unchanged. This textual correction has not been run through RP-11 or
+the full acceptance gate.
+
+### PR #396 official fixture completion and focused validation
+
+On 2026-11-04, the official all-fixture writer ran once on the reviewed
+`61b776861c9d51be6776b184ace9ae42c12fee09` source (parent
+`84e38cb0230a1e0f52302f0d144ce10f2d5279c5`): frozen `xtask
+check-fixtures --write` completed all 313 fixtures in 1033.60 seconds with
+exit 0. The before/after ledger preserves all 2,400 fixture input entries,
+every case invocation and operational environment, and all diagnostic-code
+arrays and exit codes. Exactly twelve expected files changed: `command.json`
+and `diagnostics.json` in each of the six fixtures listed above. Only the
+observed certificate/source identities changed; artifact and hash expectations
+and every other tracked byte were preserved during this writer phase.
+
+Both `xtask` and `lexlean` were built from the admitted source and frozen
+before execution. Cargo-selected dependency root probes reported this exact
+checkout for the model, conformance support and production-export fixture
+roots. All 905 selected embedded compiler inputs equalled the admitted source
+bytes; no cache cleanup or provenance repair was needed. Frozen executable
+SHA-256 values were:
+
+- xtask: `2d97376ba8451ac3903fa5727c3a6a63811038ec9a90cf431432f0204e11a76c`
+- lexlean: `5076c71ebf88b4e40829915fafb51ca18d7f46d6242e1834a96ab878fb79152c`
+
+The first orchestration record ended with a comparison failure after the
+successful writer, before model, formatting or RP-11 execution. Its strict
+comparison recognized the heartbeat certificate's module identity but omitted
+the same identity in two typed
+`$STAGING/preserve-src/LexLeanPreserve/C<identity>/R0.lean` diagnostic paths.
+Independent review confirmed exactly one module-token and two typed-path
+substitutions in each heartbeat output, with every other byte unchanged.
+The original writer log, original expected files, before/after ledgers and
+failed orchestration record were retained. Expected outputs were never edited
+by hand, and the writer was not repeated.
+
+A separate validation-only continuation admitted those exact typed-path
+substitutions, preserving the comparison's byte equality everywhere else.
+It rechecked all twelve outputs and all 2,400 fixture inputs, then passed
+frozen `xtask validate-model` (483 IDs, 86 codes, documents current and audits
+clean), `cargo fmt --all -- --check`, and `git diff --check`. Its newly built
+conformance harness had the same correct file-reading roots and 905 matching
+embedded inputs. Listing the exact `conformance_rp_11` filter established one
+selected test; the test ran once and passed in 0.04 seconds, with 482 filtered
+out. No unsupported `--fail-fast` flag was supplied. The separate continuation
+record ended successfully; it does not erase the earlier orchestration failure.
+
+This completes the narrow fixture/README corrections identified by the old
+head's CI. It is not a complete `just vv` run or changed-head CI result. The
+final committed head still requires its full acceptance gate before merge;
+#409 remains open until that accepted change lands. This evidence makes no
+closure claim for #382, #271, #376 or #301.
+
 ## SM-39 R3 source preparation (#434, formatting slice of #381)
 
 This is source preparation, not an observed failing test or an implemented
@@ -18460,3 +18612,93 @@ projection writer, runtime regeneration, identity update, full gate or CI ran.
 Generated model/SPEC projections deliberately remain untouched. The source
 requires the coordinated #396/#405/#433 integration and official writer/gate
 sequence; no additional identity wave or passing verification is claimed.
+
+## SM-39 policy witness and explicit test-method revision (2026-11-04)
+
+The original unchanged 27-definition/18-theorem fixture failed with 18
+LLV7002 diagnostics: decide +kernel could not reduce opaque formatting and
+parsing computations. That group is preserved at
+/workspace/work/sm39-396-baseline; it is not the policy witness or a passing
+SM-39 run. The original fixture/case remain in commit 2c49d3235 and external
+source evidence. No failed theorem is counted as a successful negative plant.
+
+A separate exact formatUInt8/callUInt8 definition-only diagnostic used the
+admitted frozen #396 CLI (SHA256 5076c71e), actual landed 2b039 inputs and
+pinned Lean 4.32.1. Official lock/check passed; one verify refused formatUInt8
+with LLV7005 in 7.052 seconds: expected empty policy, actual
+[Classical.choice, Quot.sound, propext]. Verification stopped there, so no
+caller-policy result is claimed. Issue #434 comment 6623893537 records this
+qualifying unchanged-runtime witness. No runtime implementation or identity
+writer ran for it.
+
+The revised named case is source-only and unexecuted. It preserves the exact
+27 definition bodies/policies and translates every original theorem conjunct
+into an independent literal table: 151 cases, 54 formatter/caller outputs and
+97 parse outcomes (136 fixed-width cases, 15 native unbounded-Int cases).
+Policies come from actual per-declaration attestation observations. Boundary
+observations use actual native functions in the existing staged preservation
+workspace, avoiding the earlier unresolved copied-module approach. Eligible
+fixed-width functions also receive real A/B/E certificate compile/replay and
+exact audit checks plus explicit interpreter/denotation boundary comparisons.
+Unbounded Int is evaluated natively and never narrowed to the i64 calculus.
+
+A changed independent expected UInt8 output must be detected. A separate
+well-typed false-output lowering returns "254" for the unchanged formatter's
+UInt8(255) input; its original source returns "255". The existing checked
+preservation path must refuse it. A phase-preservation constructor refusal is
+recorded as such, never presented as a kernel refusal or LLV7002. If a
+certificate is generated, only a targeted real relation refusal counts; a
+resource or unrelated failure does not. The Int negative changes only the
+formatter's propext policy, keeping the caller unchanged.
+
+This explicitly revises the unmerged scenario's proof method; its normative
+SM-39 claim, canonical outputs, exact policies, all boundary/parse cases and
+negative guarantees remain. No new proof/backend/law interface is introduced.
+Only source/static checks support this candidate; no Cargo, compilation,
+named test, native formatting implementation, model/projection writer, pin,
+artifact wave, commit, push or full gate ran. Independent source review is
+required before execution or the complete native implementation. Official
+projections remain pending; #434 and parent #381 remain open.
+
+Independent source review corrected the draft's production effect contract:
+all 24 fixed roots declare allocation, including parsers whose String input
+requires it. The Int policy negative now checks exactly the formatter's
+LLV7005 none-to-propext diagnostic, and a false-certificate fallback passes
+the real child exit/signal status to resource classification. README states
+the observed 484 named-test register truthfully; official projection is still
+required by AGENTS before the named R3 case. These are source corrections,
+not executed acceptance evidence.
+
+### Revised named SM-39 R3 phase: actual policy refusal
+
+On 2026-11-04 the reviewed revised source was validated once, before native
+implementation, on the actual landed #396 integration. Official
+`validate-model --write` projected the authored SM-39 register/chapter into
+SPEC.md, model/ids.toml and CONFORMANCE.md; all other tracked bytes and the
+embedded diagnostic registry were preserved. The actual register is 484 IDs
+and 86 diagnostic codes. Official model comparison and spec-links passed,
+as did workspace Rust formatting and focused conformance Clippy with warnings
+denied. This source projection did not move compiler/runtime identities or
+run calculus, fixture, export, golden or verification writers.
+
+Cargo-selected xtask and conformance executables were frozen. Actual linked
+model/support/fixture roots matched this checkout, and all 905 actual selected
+embedded inputs matched admitted source bytes in both selections. Exact
+listing selected only conformance_sm_39. That named case ran once and failed
+as intended: 0 passed, 1 failed, 483 filtered, 7.15 seconds (libtest exit 101).
+Its sole diagnostic was LLV7005: `LexLeanExample.Main.formatUInt8` violates
+its none axiom policy, observing [Classical.choice, Quot.sound, propext].
+This establishes the revised named policy regression, not passing SM-39
+acceptance. Caller and later policy/output/certificate assertions were not
+reached. No LLV7002 or resource failure is counted as the witness.
+
+Immutable receipt: /workspace/work/sm39-revised-named-baseline/results.json,
+SHA256 d8c6bb852d989423db67dc9a959f5cd855de8495b710065dcc7154bbb203a69f.
+Exact stdout/stderr/listing remain beside it. Frozen xtask SHA256 is
+4fba5e904059f08a6d41d85f96abc081329c972fc28f86496fc23ab00df64d34;
+conformance SHA256 is
+e93fc249646734aedc47bec36f1ce32a6f2308269530374780b4c651e0ded1f1.
+The whole-phase lock was released. The prior 18-proof failure and minimal
+policy witness remain separate historical records. Native implementation,
+shared parsing preservation, complete positive/negative evidence and the
+coordinated identity/artifact wave and final gate remain outstanding.

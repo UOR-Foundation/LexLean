@@ -15,6 +15,46 @@ mod nat_bitwise;
 mod strings;
 mod widen;
 
+/// Closed recursive decisions must use Lean's sharing kernel evaluator.
+/// This checks the generated evaluator selection and verifies both a true
+/// recursive computation and its false mutation through the complete gate.
+fn shared_closed_decision() {
+    let project = P::example();
+    project.edit("lexlean.toml", "language = \"1.0\"", "language = \"1.2\"");
+    let source = r#"\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: shared,
+  parameters: [depth : Nat],
+  result: Nat,
+  body: (match depth | Nat.zero => 0 | Nat.succ previous => ((shared previous) + (shared previous))),
+  recursive_argument: depth,
+  executable: true
+}
+theorem{
+  name: computed,
+  parameters: [],
+  statement: ((shared 40) = 0),
+  proof: decide{},
+  axioms: []
+}
+\end{semanticmodule}
+\end{lexlean}
+"#;
+    project.write("src/Main.lex.tex", source);
+    project.relock();
+    assert!(support::lean_text(&support::rendered(&project), "Main").contains("decide +kernel"));
+    if support::verify_ok_backed("SM-04", &project).is_some() {
+        project.write(
+            "src/Main.lex.tex",
+            &source.replace("((shared 40) = 0)", "((shared 40) = 1)"),
+        );
+        project.verify_fails_with("LLV7002");
+    }
+}
+
 /// Every `"k"` and `"kind"` tag value in a canonical JSON document.
 fn collect_tags(value: &serde_json::Value, key: &str, out: &mut BTreeSet<String>) {
     match value {
@@ -244,6 +284,9 @@ pub(crate) fn run(id: &str) {
         }
         // §17.3: term IR is exactly the closed variant set.
         "SM-03" | "SM-04" => {
+            if id == "SM-04" {
+                shared_closed_decision();
+            }
             let mut tags = BTreeSet::new();
             for project in [P::example(), support::defs_project()] {
                 collect_tags(&linked_json(&project), "k", &mut tags);

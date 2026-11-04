@@ -59,3 +59,9 @@ Feature: stdlib
     When the files named by every provenance are digested by the oracle, `lib.rs` is searched for the recorded digests, the standard library is exported again, and each defect is planted
     Then every recorded digest is the oracle's, no recorded digest is in `lib.rs`, the exported packages are the committed ones, and the exported `lib.rs` of `sha256` is the linked file
     And every planted defect is detected
+
+  @SL-12 @build
+  Scenario: The standard library's Host module declares the command request and event types as language-1.2 data; a consumer constructs all fourteen requests and eight events, and changing the spawn environment from a list of name/value pairs to text makes that consumer fail type checking. This claim establishes the interface only, with no host execution or effect authority.
+    Given the standard library Host declarations and an exhaustive typed consumer
+    When every request and event is constructed and the spawn environment type is changed
+    Then the consumer checks before the mutation and fails after it

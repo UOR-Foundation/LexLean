@@ -132,7 +132,7 @@ Feature: semantic-ir
     When LexLean builds and verifies it on the pinned toolchain
     Then the generated runtime and module elaborate and replay
     And each computational definition reports exactly its source-declared axiom policy
-    And nested records retain every large arbitrary-byte literal during elaboration and replay
+    And nested byte records, bounded slices and empty, singleton, Unicode and nested joins reduce exactly, with altered expectations rejected
     And byte literals use closed explicit octets with deterministic literal-local sharing while canonical document numbers and every byte remain unchanged
 
   @SM-20 @build
@@ -271,8 +271,8 @@ Feature: semantic-ir
   @SM-39 @build
   Scenario: Language-1.2 decimal formatting verifies with no axioms at fixed widths and exactly propext at Int, while decimal parsing preserves canonical spelling and range refusals.
     Given a language-1.2 notation project with fixed-width formatters and callers with no axioms member, an Int formatter and caller with exactly propext, and decimal parsers with their existing exact policy
-    When the project is built and verified, its per-declaration observations are read, and authored closed decision proofs check numeric boundaries and parsing inputs
+    When the project is built and verified, its actual per-declaration policies are read, and native runtime observations and eligible certified realizations exercise every numeric boundary and parsing input
     Then every formatter and caller observes exactly its stated policy and every boundary formats to its canonical decimal string
     And canonical parses succeed while noncanonical spelling and out-of-range values are refused
     And an Int formatter with an empty policy is refused with LLV7005
-    And a mutated authored boundary proof is rejected with LLV7002
+    And a changed expected boundary output is detected and a valid false-output lowering is refused by the checked preservation path

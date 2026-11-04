@@ -7,6 +7,6 @@ set_option maxHeartbeats 1000000000
 namespace SemanticFixture.KernelReductionProofs
 
 public theorem importedAppendLengthIsFour : (SemanticFixture.KernelReductionDefinitions.importedLength = 4) := by
-  decide
+  decide +kernel
 
 end SemanticFixture.KernelReductionProofs

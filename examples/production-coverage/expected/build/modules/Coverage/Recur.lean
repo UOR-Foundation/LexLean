@@ -162,6 +162,6 @@ decreasing_by all_goals first | (have __evidence := pong_to_ping (number) (__dec
 end
 
 public theorem ping_seven : (ping (7) = 14) := by
-  decide
+  decide +kernel
 
 end Coverage.Recur

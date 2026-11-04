@@ -90,16 +90,16 @@ public theorem expression_size : (exprSize (Recursion.Syntax.Expr.block ((Recurs
   rfl
 
 public theorem ten_is_even : (isEven (10) = true) := by
-  decide
+  decide +kernel
 
 public theorem countdown_nine : (countdown (9) (0) = 4) := by
-  decide
+  decide +kernel
 
 public theorem reduce_twenty_three : (reduce (23) (5) = 3) := by
-  decide
+  decide +kernel
 
 public theorem search_first : (search (7) (0) (10) = 4) := by
-  decide
+  decide +kernel
 
 @[expose] public def weight : (term : Recursion.Syntax.Term) -> Nat
   | Recursion.Syntax.Term.literal _ => 1
@@ -126,7 +126,7 @@ termination_by weight (term)
 decreasing_by all_goals first | (have __evidence := reassociate_literal (term) _ _ _ (__decrease0) (__decrease1); subst_vars; exact __evidence) | (have __evidence := reassociate_plus (term) _ _ _ _ (__decrease0) (__decrease1); subst_vars; exact __evidence)
 
 public theorem reassociate_weight : (weight (reassociate (Recursion.Syntax.Term.plus (Recursion.Syntax.Term.plus (Recursion.Syntax.Term.literal (1)) (Recursion.Syntax.Term.literal (2))) (Recursion.Syntax.Term.literal (3)))) = 7) := by
-  decide
+  decide +kernel
 
 public theorem prune_plus (term : Recursion.Syntax.Term) (left : Recursion.Syntax.Term) (right : Recursion.Syntax.Term) (inner : Recursion.Syntax.Term) (rest : Recursion.Syntax.Term) : ((term = Recursion.Syntax.Term.plus (left) (right)) -> ((left = Recursion.Syntax.Term.plus (inner) (rest)) -> (weight (Recursion.Syntax.Term.plus (inner) (right)) < weight (term)))) := by
   intros
@@ -141,7 +141,7 @@ termination_by weight (term)
 decreasing_by all_goals first | (have __evidence := reassociate_literal (term) _ _ _ (__decrease0) (__decrease1); subst_vars; exact __evidence) | (have __evidence := prune_plus (term) _ _ _ _ (__decrease0) (__decrease1); subst_vars; exact __evidence)
 
 public theorem prune_result : (weight (prune (Recursion.Syntax.Term.plus (Recursion.Syntax.Term.plus (Recursion.Syntax.Term.literal (1)) (Recursion.Syntax.Term.literal (2))) (Recursion.Syntax.Term.literal (3)))) = 1) := by
-  decide
+  decide +kernel
 
 mutual
 @[expose] public def foldExpr : (expression : Recursion.Syntax.Expr) -> Recursion.Syntax.Expr
@@ -189,6 +189,6 @@ decreasing_by all_goals first | (have __evidence := pong_to_ping (number) (__dec
 end
 
 public theorem ping_seven : (ping (7) = 14) := by
-  decide
+  decide +kernel
 
 end Recursion.Main
