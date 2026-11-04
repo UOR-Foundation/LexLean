@@ -4,11 +4,11 @@ What each certified component costs against the Rust it replaces, and what that 
 
 ## Result
 
-The fixed point is practical on the measured components once one is fixed, and that fix is tested. The compiler's Rust is about 230 s of a full gate of about 36,800 s, so stage 1's cost is set by that 230 s times the certified ratio, and Lean and rustc do not change.
+The fixed point is practical on the measured components. The one that could break it, the lexer, is fixed (issue 373). The compiler's Rust is about 230 s of a full gate of about 36,800 s, so stage 1's cost is set by that 230 s times the certified ratio, and Lean and rustc do not change.
 
 - **Budget:** one more gate's worth of compiler time, 36,800 s, which allows the certified compiler to be about 158 times slower than the Rust overall. This number is a proposal for issue 273 to accept or change.
 - **Projection:** at the measured median ratio of 25, stage 1 adds about 1.6 hours to the gate's 10.2 hours of runner time.
-- **The one component that can break it:** the lexer, `lex`, is quadratic. It takes 680 s on a 343 KB file against 3.8 ms for Rust. A port of the generated-source audit with the same shape would cost 11 to 22 gates. Moving four strict scans behind their branches took a copy of it from 205 s to 42 ms on that file, with identical lexemes.
+- **The one component that could break it is linear now:** the lexer, `lex`, was quadratic, at 680 s on a 343 KB file against 3.8 ms for Rust, and a port of the generated-source audit with that shape would have cost 11 to 22 gates. Moving its four strict scans into the branches that read them (issue 373) took it to 29 ms on that file, with the same lexemes.
 
 ## Measurements
 
@@ -18,8 +18,8 @@ One call to each `rust-std` package against its stage-0 oracle on the same input
 | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | --- |
 | `BS-01` | `is_closed_lean_name` | `ir::core::is_closed_lean_name` | own Rust | 7 | 31,657 B | 0.045 | 0.075 | 0.6 | 1.02 / 0.98 | 0 / 0 | 1.29, 10 GiB |
 | `BS-01` | `parse_audit_output` | `verify::axiom::parse_audit_output` | own Rust | 7 | 368,000 B | 3,906 | 5.5 | 714 | **1.77** / 1.08 | 4,129 / 2,024 | 1.25, 10 GiB |
-| `BS-02` | `lex` | `production::preserve::lex` | own Rust | 10 | 343,104 B | 680,088 | 3.8 | 180,745 | **2.04** / 0.98 | 13,329 / 7,665 | 1.15, 9 GiB |
-| `BS-02` | `audit_tokens` | `production::preserve::audit_tokens` | own Rust | 10 | 343,104 B | 667,130 | 3.9 | 169,653 | **2.03** / 0.95 | 13,329 / 7,665 | 1.27, 5 GiB |
+| `BS-02` | `lex` | `production::preserve::lex` | own Rust | 10 | 343,104 B | 28.8 | 3.2 | 9 | 1.01 / 0.97 | 13,329 / 7,665 | 1.82, 10 GiB |
+| `BS-02` | `audit_tokens` | `production::preserve::audit_tokens` | own Rust | 10 | 343,104 B | 25.8 | 3.1 | 8 | 0.94 / 0.97 | 13,329 / 7,665 | 1.84, 10 GiB |
 | `BS-03` | `scan_source` | `source::scan::scan` | own Rust | 9 | 262,116 B | 29.9 | 4.7 | 6 | 1.06 / 1.01 | 13,890 / 10,495 | 1.59, 9 GiB |
 | `BS-03` | `reject_atoms` | `source::scan::reject_forbidden_atoms` | own Rust | 7 | 21,383 atoms | 12.2 | 0.058 | 208 | 0.98 / 0.99 | 0 / 0 | 1.78, 10 GiB |
 | `BS-04` | `check_program` | `calculus::check::check` | own Rust | 12 | 6,775 nodes | 88.6 | 1.1 | 79 | 1.19 / 0.91 | 7 / 6 | 1.12, 10 GiB |
@@ -44,26 +44,16 @@ One call to each `rust-std` package against its stage-0 oracle on the same input
 
 "Own Rust" means the root replaces code in `crates/lexlean`, not a crate. "None" under growth means the inputs sit in too narrow a band of sizes to fit one. Bold marks growth above 1.5.
 
-The ratio grows with size for a superlinear root, so its ratio holds only at the size shown. The issue's report of about 40 s on 87 KB for the lexer is confirmed: 64,757 B took 20 s, which scales to 37 s at 87 KB.
+The ratio grows with size for a superlinear root, so its ratio holds only at the size shown. The lexer before issue 373 shows it: its ratio was 180,745 at 343,104 B, and 64,757 B took 20 s, which confirmed the report of about 40 s on 87 KB.
 
 ## Superlinear components
 
-**`lex` (and `audit_tokens`, which calls it).** Cause: strict `let` bindings. The steps in `src/TokenAudit.lex.tex` bind every candidate scan before they branch on the byte, so the scans run whether or not they are used. It is not list accumulation: lexemes are consed and reversed once, which is linear. Two kinds of scan repeat:
+**`lex` (and `audit_tokens`, which calls it), fixed by issue 373.** Cause: strict `let` bindings. The steps in `src/TokenAudit.lex.tex` bound every candidate scan before they branched on the byte, so the scans ran whether or not they were used. It was not list accumulation: lexemes are consed and reversed once, which is linear. Two kinds of scan repeated:
 
-- **To the end of the text.** `stepLexAt` scans for a block comment at every position, whitespace included. `stepLexToken` scans for a string and `stepLexIdent` for a raw string, and each runs until its closing token.
-- **To the end of the line.** `stepLexAt` scans for a line comment at every position, and `scanSegmentsStep` looks for a closing guillemet on every segment of a dotted name. The test module has a line of 262,408 bytes.
+- **To the end of the text.** `stepLexAt` scanned for a block comment at every position, whitespace included. `stepLexToken` scanned for a string and `stepLexIdent` for a raw string, and each ran until its closing token.
+- **To the end of the line.** `stepLexAt` scanned for a line comment at every position, and `scanSegmentsStep` looked for a closing guillemet on every segment of a dotted name. The test module has a line of 262,408 bytes.
 
-The generated Rust shows this in `f7`, `f12`, `f30`, and `f73` of `tests/production-export/bootstrap/packages/rust-std/lex/src/lib.rs`.
-
-Fix: move each scan into the branch that reads it. This needs neither `Buffer` nor the loops of issue 105. A copy of that generated Rust with those scans guarded by their first byte, built into one binary with the committed module, returns the same lexemes on all of `TargetSemantics.lean` (42,236 of them):
-
-| Size | Committed, same build | Copy (best of 5) |
-| ---: | ---: | ---: |
-| 32,645 B | 695 ms | 4.8 ms |
-| 64,757 B | | 8.2 ms |
-| 343,104 B | 205,081 ms | 41.6 ms |
-
-The copy grows linearly and is about 11 times the oracle's 3.8 ms. Guarding only the first kind of scan left 105 s on the full file, so both kinds are needed. The copy tests the diagnosis; the change belongs in the source, where it also has to pass its proofs.
+Fix: each scan moved into the branch that reads it, in the source, where the proofs and BS-02 pass. It needed neither `Buffer` nor the loops of issue 105. Before the change, a copy of the generated Rust with those scans guarded by their first byte tested the diagnosis: it returned the same lexemes on all of `TargetSemantics.lean` (42,236 of them), and guarding only the first kind of scan left 105 s on the full file, so both kinds were needed. Through the harness the committed package now takes 28.8 ms at 343,104 B against 680,088 ms before, and grows at 1.01 against 2.04.
 
 **`parse_audit_output`.** Cause: `insertEntry` in `src/AxiomOutput.lex.tex` inserts each record into a sorted list, walking and rebuilding it, where the oracle uses a map. Fix: collect the records, sort once, and find duplicates in the sorted pass. The last doubling of the measured ladder grows at 2.13, so the fit's 1.77 understates it.
 
@@ -93,14 +83,14 @@ These fit about 0.5 s per project plus 0.42 s per MB. The corpus is 348 projects
 
 | Component | Basis | Time |
 | --- | --- | ---: |
-| `audit_tokens`, `lex` | 253 verify modules, 1.3 MB, largest 85 KB, if every one is held as text | at most 336 s, under 1 s once fixed |
+| `audit_tokens`, `lex` | 253 verify modules, 1.3 MB, largest 85 KB, if every one is held as text, at 84 ns per byte | about 0.1 s |
 | `reject_atoms` | 0.57 µs per atom, at most 2,000,000 atoms per project | at most 1.1 s per project |
 | `check`, `validate`, `correspond`, `print` | 256 packages, each at the largest cost measured or next doubling | under 75 s |
 | `scan_source` | 114 ns per byte over 141 MB | 16 s |
 | `sha256_hex` | 8.9 ns per byte over 184 MB, per pass | 1.6 s |
 | `parse_audit_output` | largest project about 1,800 declarations, under 200 KB of output | about 1 s per run |
 
-The lexer dominates what is ported, and only certificates held as text reach it, so 336 s is a ceiling.
+Before issue 373 the lexer dominated what is ported, at up to 336 s. Only certificates held as text reach it, so about 0.1 s is a ceiling now.
 
 **The phases still in Rust.** Most of the compiler is unmeasured. Applying the measured linear ratios to the 230 s:
 
@@ -111,7 +101,7 @@ The lexer dominates what is ported, and only certificates held as text reach it,
 | 80 | `check_program`, worst walker | 18,400 s (5.1 h) |
 | 158 | the budget | 36,800 s (10.2 h) |
 
-The breaker is growth, not the constant. `verify/source_audit.rs` reads all 43 MB of generated Lean with a separate lexer, still in Rust. At the committed lexer's rate on the test module that costs about 810,000 s, and 8.6 MB `Scales.lean` alone about 425,000 s (118 hours). About half of that rate comes from the module's long lines, so the range is 400,000 to 810,000 s, 11 to 22 gates. At the fixed copy's rate the same 43 MB takes under 20 s, allowing for the build difference below.
+The breaker was growth, not the constant. `verify/source_audit.rs` reads all 43 MB of generated Lean with a separate lexer, still in Rust. At the quadratic lexer's rate on the test module, a port of it would have cost about 810,000 s, and 8.6 MB `Scales.lean` alone about 425,000 s (118 hours); about half of that rate came from the module's long lines, so the range was 400,000 to 810,000 s, 11 to 22 gates. At the fixed lexer's 84 ns per byte the same 43 MB takes about 4 s, if the port keeps each scan in its branch.
 
 ## Stage 2 projection
 
@@ -123,11 +113,10 @@ Stage 2 recompiles the compiler. `crates/lexlean/src` is 5.8 MB of Rust. The one
 
 ## Faster first
 
-1. `lex`: the only component here that can break the budget, and any lexer ported from it inherits the shape. Issue 373 tracks the fix.
-2. `parse_audit_output`: harmless at today's declaration counts, about 1 s per run. It reaches minutes only near 3 MB of output.
-3. `join_with`: no present cost, but it should be fixed before a port joins long lists.
+1. `parse_audit_output`: harmless at today's declaration counts, about 1 s per run. It reaches minutes only near 3 MB of output.
+2. `join_with`: no present cost, but it should be fixed before a port joins long lists.
 
-Constant factors come after these. Nothing else measured is near the budget.
+`lex` led this list until issue 373 made it linear. Constant factors come after these. Nothing else measured is near the budget.
 
 ## Crates
 
@@ -145,13 +134,13 @@ LEXLEAN_PERF_DIR=/path/on/a/fast/disk cargo run --release -p repo-conformance --
 
 The limits on these numbers:
 
-- **Machine:** WSL2 Ubuntu on Windows 11, x86_64, 12 threads, rustc 1.97.1, CARGO_BUILD_JOBS=4, runs on 2026-11-01 at `ccbf03843`. CI runners differ, so the gate's seconds and these milliseconds are not on one clock; the projection's ratios assume they scale together.
-- **Noise:** the VM is shared with other jobs, not all of which take the build lock, so some timings may carry their load. The load and available memory beside each row are what was recorded; 1.1 to 1.8 throughout. Treat ratios within a factor of two as equal.
-- **Memory:** `audit_tokens` and the lexer copy ran with memory tight, about 6 GB available because `/tmp` is memory-backed and was full; the rest had 9 to 10 GiB. `audit_tokens` matches `lex` within 2% and its heap is small, so this does not appear to have moved it.
+- **Machine:** WSL2 Ubuntu on Windows 11, x86_64, 12 threads, rustc 1.97.1, CARGO_BUILD_JOBS=4, runs on 2026-11-01 at `ccbf03843`, and the `BS-02` rows on 2026-11-04 at `d34c1feb3`. CI runners differ, so the gate's seconds and these milliseconds are not on one clock; the projection's ratios assume they scale together.
+- **Noise:** the VM is shared with other jobs, not all of which take the build lock, so some timings may carry their load. The load and available memory beside each row are what was recorded; 1.1 to 1.9 throughout. Treat ratios within a factor of two as equal.
+- **Memory:** the lexer copy ran with memory tight, about 6 GB available because `/tmp` is memory-backed and was full; the rows had 9 to 10 GiB.
 - **Peak heap excludes the stack.** Recursive roots run on a stack of 4 GiB, and it is not counted.
 - **Thinned inputs:** `check_program`, `validate_crate`, `correspond_crate`, and `print_crate` time the largest input per doubling, because rendering every crate as a literal does not compile in 9 GiB. For the same reason `validate_crate` and `correspond_crate` leave out their largest input and `reject_atoms` its two largest. The projection allows for one more doubling.
 - **Build profiles:** packages build at opt-level 3 and their harness crates at opt-level 0. The oracle runs in one process, with no process start in its time.
-- **Builds differ:** the committed lexer took 205 s built into one binary with no counting allocator and 680 s through the harness, 3.3 times more, on the same input. The cause is not isolated. The harness is the form production links, a library crate, so the table keeps it, but compare times only within one build.
-- **Repeats:** a call repeats until it has run 25 times or for 200 ms, and the median is reported, so slow ones run once. The 680 s figure is one run.
+- **Builds differ:** the lexer before issue 373 took 205 s built into one binary with no counting allocator and 680 s through the harness, 3.3 times more, on the same input. The cause is not isolated. The harness is the form production links, a library crate, so the table keeps it, but compare times only within one build.
+- **Repeats:** a call repeats until it has run 25 times or for 200 ms, and the median is reported, so slow ones run once. The 680 s figure from before issue 373 was one run; the fixed lexer ran 7 times at its largest input.
 - **Refusals:** `audit_tokens` lexes the whole module and then refuses its largest input at a `set_option` that certificates may not hold, so that row times lexing plus the walk up to there. `validate_runtime`'s largest input is refused, and its inputs are one program with small changes, so it has no growth. `check_arguments` measures small inputs in a narrow band.
 - **One pass:** stage 1 here is one compile of each project. If it instead reruns the whole gate on the certified compiler, each in-process compile in the suites counts as well and the projection is low. That count is not measured.
