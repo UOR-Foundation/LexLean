@@ -18520,3 +18520,54 @@ README now enumerates exactly `SL-01` through `SL-08` and `SL-12`; this line
 has no `SL-09`, `SL-10` or `SL-11` rows. The gate and capability description
 are unchanged. This textual correction has not been run through RP-11 or
 the full acceptance gate.
+
+### PR #396 official fixture completion and focused validation
+
+On 2026-11-04, the official all-fixture writer ran once on the reviewed
+`61b776861c9d51be6776b184ace9ae42c12fee09` source (parent
+`84e38cb0230a1e0f52302f0d144ce10f2d5279c5`): frozen `xtask
+check-fixtures --write` completed all 313 fixtures in 1033.60 seconds with
+exit 0. The before/after ledger preserves all 2,400 fixture input entries,
+every case invocation and operational environment, and all diagnostic-code
+arrays and exit codes. Exactly twelve expected files changed: `command.json`
+and `diagnostics.json` in each of the six fixtures listed above. Only the
+observed certificate/source identities changed; artifact and hash expectations
+and every other tracked byte were preserved during this writer phase.
+
+Both `xtask` and `lexlean` were built from the admitted source and frozen
+before execution. Cargo-selected dependency root probes reported this exact
+checkout for the model, conformance support and production-export fixture
+roots. All 905 selected embedded compiler inputs equalled the admitted source
+bytes; no cache cleanup or provenance repair was needed. Frozen executable
+SHA-256 values were:
+
+- xtask: `2d97376ba8451ac3903fa5727c3a6a63811038ec9a90cf431432f0204e11a76c`
+- lexlean: `5076c71ebf88b4e40829915fafb51ca18d7f46d6242e1834a96ab878fb79152c`
+
+The first orchestration record ended with a comparison failure after the
+successful writer, before model, formatting or RP-11 execution. Its strict
+comparison recognized the heartbeat certificate's module identity but omitted
+the same identity in two typed
+`$STAGING/preserve-src/LexLeanPreserve/C<identity>/R0.lean` diagnostic paths.
+Independent review confirmed exactly one module-token and two typed-path
+substitutions in each heartbeat output, with every other byte unchanged.
+The original writer log, original expected files, before/after ledgers and
+failed orchestration record were retained. Expected outputs were never edited
+by hand, and the writer was not repeated.
+
+A separate validation-only continuation admitted those exact typed-path
+substitutions, preserving the comparison's byte equality everywhere else.
+It rechecked all twelve outputs and all 2,400 fixture inputs, then passed
+frozen `xtask validate-model` (483 IDs, 86 codes, documents current and audits
+clean), `cargo fmt --all -- --check`, and `git diff --check`. Its newly built
+conformance harness had the same correct file-reading roots and 905 matching
+embedded inputs. Listing the exact `conformance_rp_11` filter established one
+selected test; the test ran once and passed in 0.04 seconds, with 482 filtered
+out. No unsupported `--fail-fast` flag was supplied. The separate continuation
+record ended successfully; it does not erase the earlier orchestration failure.
+
+This completes the narrow fixture/README corrections identified by the old
+head's CI. It is not a complete `just vv` run or changed-head CI result. The
+final committed head still requires its full acceptance gate before merge;
+#409 remains open until that accepted change lands. This evidence makes no
+closure claim for #382, #271, #376 or #301.
