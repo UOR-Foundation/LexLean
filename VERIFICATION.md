@@ -18605,3 +18605,23 @@ child at 600,000 ms. A subsequent attempt was killed under the development
 workspace's 16 GiB memory limit while another artifact build was running; that
 run is not acceptance evidence. Large preservation checks run without a
 competing artifact build.
+
+The source review of PR #439 found that the new `host.rs` renderer was absent
+from `RENDERER_FILES` and the corresponding canonical unit's embedded sources.
+Both ordered lists now include it. The unchanged unit then failed against the
+old renderer pin and reported `a24f0546f398576cd7bf755dd5953be17db6f418cae95ae4bf40e7c1b5a53be8`;
+after recording that computed identity, the unit passed. The earlier artifact
+writer was stopped because its compiler identity was superseded. Its completed
+examples are development observations, not final acceptance of this revision.
+
+The bootstrap validator groups imported names, package roots, effects and
+package arities in one context record. Its source check and build pass. The
+official certificate generator measures 7,815,262 bytes of certificate source
+and 27,384,099 bytes of rendered Lean, a small reduction from the previous
+7,875,696-byte certificate. This measurement does not replace kernel checking.
+
+The native command contribution ports RB-24 from humuhumu33's PR #419 through
+`b70b5463ff6fb163a11033824307e9f1547e50c0`, on the Host interface delivered by
+PR #396. PR #439 carries the v0.5 integration and its corrections; it does not
+close #419, #426 or the broader #271. Delivery still requires the final
+regeneration and complete acceptance gate on this branch.

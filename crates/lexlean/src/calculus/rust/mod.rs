@@ -201,8 +201,9 @@ pub fn observable(outcome: &super::Outcome) -> Option<serde_json::Value> {
 
 /// The source files of the renderer, by name in `calculus/rust/`, in the
 /// order [`renderer_digest`] frames them.
-pub const RENDERER_FILES: [&str; 9] = [
+pub const RENDERER_FILES: [&str; 10] = [
     "ast.rs",
+    "host.rs",
     "lower.rs",
     "mod.rs",
     "moves.rs",
@@ -235,8 +236,9 @@ mod tests {
     /// compiler-semantics ID.
     #[test]
     fn the_compiler_semantics_records_the_renderer() {
-        let sources: [&[u8]; 9] = [
+        let sources: [&[u8]; 10] = [
             include_bytes!("ast.rs"),
+            include_bytes!("host.rs"),
             include_bytes!("lower.rs"),
             include_bytes!("mod.rs"),
             include_bytes!("moves.rs"),
