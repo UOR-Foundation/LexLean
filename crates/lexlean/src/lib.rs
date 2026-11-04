@@ -182,6 +182,7 @@ fn is_v1_2_file(path: &str) -> bool {
         || path == "schemas/production-eligibility.schema.json"
         || path == "schemas/preservation.schema.json"
         || path == crate::production::REGISTRY_PATH
+        || path == crate::calculus::rust::rt_decode::HOST_PATH
         || path.starts_with("language/lcnf-1.2/")
         || path.starts_with("language/package-1.2/")
         || path.starts_with("language/preservation-1.2/")

@@ -203,7 +203,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "Selections canonicalize to a sorted set. APIs and CLI results are always project result sets, even for one module." (nil String))
+      (cons "Selections canonicalize to a sorted set. Check, build and verify results are project result sets, even for one module; snapshot returns the owned semantic envelope (§24.1)." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -343,7 +343,7 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [4, 1, "`build`"],
+    arguments: [4, 1, "`snapshot`"],
     constructor: DocRows::Item.heading,
     type_arguments: []
   },
@@ -355,7 +355,7 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: ["text", (cons "lexlean build [--all | INPUT...]" (nil String))],
+    arguments: ["text", (cons "lexlean snapshot [--all | INPUT...]" (nil String))],
     constructor: DocRows::Item.fence,
     type_arguments: []
   },
@@ -364,6 +364,44 @@ definition{
 
 definition{
   name: i0029,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Runs the public `Engine::snapshot` entry point (§24.1) and prints its canonical snapshot document to stdout in either diagnostic mode (`CL-25`). It follows the normal project discovery and selection rules, writes no artifacts, invokes no backend, and makes no verification claim. Each module's `linked_ir` value and the envelope's `lexicon_closure` are the exact inputs of §21.4: collect the linked module values, in their snapshot order, under {\"spec\":\"lexlean/linked-ir/1\",\"modules\":[...]} and canonicalize that object and the lexicon closure. The snapshot envelope itself is not the linked IR. A failure emits the registered diagnostics in the selected mode, including a command-result object in JSON mode, and emits no partial snapshot." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0030,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [4, 1, "`build`"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0031,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: ["text", (cons "lexlean build [--all | INPUT...]" (nil String))],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0032,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -377,7 +415,7 @@ definition{
 }
 
 definition{
-  name: i0030,
+  name: i0033,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -389,7 +427,7 @@ definition{
 }
 
 definition{
-  name: i0031,
+  name: i0034,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -401,7 +439,7 @@ definition{
 }
 
 definition{
-  name: i0032,
+  name: i0035,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -413,7 +451,7 @@ definition{
 }
 
 definition{
-  name: i0033,
+  name: i0036,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -425,7 +463,7 @@ definition{
 }
 
 definition{
-  name: i0034,
+  name: i0037,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -437,7 +475,7 @@ definition{
 }
 
 definition{
-  name: i0035,
+  name: i0038,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -451,7 +489,7 @@ definition{
 }
 
 definition{
-  name: i0036,
+  name: i0039,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -463,7 +501,7 @@ definition{
 }
 
 definition{
-  name: i0037,
+  name: i0040,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -475,7 +513,7 @@ definition{
 }
 
 definition{
-  name: i0038,
+  name: i0041,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -489,7 +527,7 @@ definition{
 }
 
 definition{
-  name: i0039,
+  name: i0042,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -501,7 +539,7 @@ definition{
 }
 
 definition{
-  name: i0040,
+  name: i0043,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -513,7 +551,7 @@ definition{
 }
 
 definition{
-  name: i0041,
+  name: i0044,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -527,7 +565,7 @@ definition{
 }
 
 definition{
-  name: i0042,
+  name: i0045,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -539,7 +577,7 @@ definition{
 }
 
 definition{
-  name: i0043,
+  name: i0046,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -551,7 +589,7 @@ definition{
 }
 
 definition{
-  name: i0044,
+  name: i0047,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -565,7 +603,7 @@ definition{
 }
 
 definition{
-  name: i0045,
+  name: i0048,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -577,7 +615,7 @@ definition{
 }
 
 definition{
-  name: i0046,
+  name: i0049,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -592,7 +630,7 @@ definition{
 }
 
 definition{
-  name: i0047,
+  name: i0050,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -606,7 +644,7 @@ definition{
 }
 
 definition{
-  name: i0048,
+  name: i0051,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -618,7 +656,7 @@ definition{
 }
 
 definition{
-  name: i0049,
+  name: i0052,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -630,7 +668,7 @@ definition{
 }
 
 definition{
-  name: i0050,
+  name: i0053,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -644,7 +682,7 @@ definition{
 }
 
 definition{
-  name: i0051,
+  name: i0054,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -658,7 +696,7 @@ definition{
 }
 
 definition{
-  name: i0052,
+  name: i0055,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -670,7 +708,7 @@ definition{
 }
 
 definition{
-  name: i0053,
+  name: i0056,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -684,7 +722,7 @@ definition{
 }
 
 definition{
-  name: i0054,
+  name: i0057,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -698,7 +736,7 @@ definition{
 }
 
 definition{
-  name: i0055,
+  name: i0058,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -710,7 +748,7 @@ definition{
 }
 
 definition{
-  name: i0056,
+  name: i0059,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -722,7 +760,7 @@ definition{
 }
 
 definition{
-  name: i0057,
+  name: i0060,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -736,7 +774,7 @@ definition{
 }
 
 definition{
-  name: i0058,
+  name: i0061,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -748,12 +786,12 @@ definition{
 }
 
 definition{
-  name: i0059,
+  name: i0062,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "- exactly one canonical JSON command-result object to stdout;" (cons "- stderr empty unless the process cannot construct JSON because of an internal failure;" (cons "- no color or progress text." (nil String))))
+      (cons "- exactly one canonical JSON command-result object to stdout, except successful snapshot (§23.4) and production targets (§24.7), which emit their canonical document;" (cons "- stderr empty unless the process cannot construct JSON because of an internal failure;" (cons "- no color or progress text." (nil String))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -762,7 +800,7 @@ definition{
 }
 
 definition{
-  name: i0060,
+  name: i0063,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
