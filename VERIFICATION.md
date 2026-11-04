@@ -12762,3 +12762,16 @@ recursion, and executes all four existing `LLT4001` refusal plants and their
 no-backend-output assertions. No helper, gate, home value or source assertion
 was changed. This completes that focused case; no full acceptance run is
 claimed by this record.
+
+### README coverage correction found by final-head CI
+
+Run `41753808309` at `9f3ca0006fce13c2a61285fe3cc9e4088b797bce`
+found that README's whole-family `DF-01`..`DF-18` range omitted registered
+`DF-19`. Windows job `126326526519` and ARM Linux job `126326526543`
+each passed 469 conformance cases and failed only `RP-11`; the rest partition,
+job `126326527233`, passed 283 and failed only `RP-11`.
+
+The README range now ends at `DF-19`, retaining the whole-family coverage
+check. This correction changes no implementation, model, schema or identity
+input. No local validation of this correction is claimed here; targeted
+`RP-11` validation and complete changed-head CI remain required.
