@@ -11571,6 +11571,9 @@ the first panic message, trimmed.
 | `PD-02` | `production/eligibility.rs`: `analyse_module` no longer returns `Ok(None)` for a module without roots | `a module with formal content and no root is never analysed` |
 | `PD-03` | `production/eligibility.rs`: termination evidence is no longer inserted into `erased` | `termination evidence is erased, never realized` (`left: []`, `right: ["Production.Kernel.countdown_decreases"]`) |
 | `PD-06` | `production/eligibility.rs`: every `EffectRow` is built with no sources | `array shorter than minItems 1` at `/roots/1/targets/0/effects/0/sources` of `production-eligibility.schema.json` |
+| `PD-10` | `language/production-1.2.toml`: the row of `spawn` names `files` where it named `process` | `the effect of each request` (`left` holds `("spawn", Some("files"))`, `right` holds `("spawn", Some("process"))`) |
+| `PD-10` | `production/eligibility.rs`: a constructor of `Request` is not recorded as a request | `a closure realizes `files` through a call in another module` (`left: ["allocation"]`, `right: ["allocation", "files"]`) |
+| `PD-10` | `language/production-1.2.toml`: the row of `stop` is removed | `the effect of each request` (`left` has no `stop`) |
 | `TC-01` | `calculus/mod.rs`: `canonical` binds parameters but keeps their spelling | `assertion left == right failed: adt-evaluation` (alpha variant bytes differ) |
 | `TC-02` | `calculus/check.rs`: the match exhaustiveness test made `false &&` | `an invalid program loads: expected `the match is not exhaustive: Adt { constructor: 2 } is not covered`` |
 | `MD-01` | `ir/semantic.rs`: the language-1.1 gate `first_language_1_2_construct` made `&& false` | `tests/negative/model-under-1.1: expected "`contract declaration` is a language-1.2 construct"` |
@@ -12718,6 +12721,136 @@ not a change to the generated packages or a resolution of #164's consumer
 compiler-nesting question. A Windows rerun is required to establish whether
 this bounded partition removes the observed compiler failure.
 
+## Generated manifests and replay share the lowered-program depth (PX-07, #378)
+
+`generated_deep_program_and_manifest_read_back` constructs statically valid
+65- and 100-element list programs and requires both the program and its package
+manifest to serialize and read back equal. Before the fix it failed on the
+65-element program with `target program is malformed: recursion limit exceeded`.
+Restoring only the manifest writer's bounded `Json::parse` fails the same test
+with `package manifest is not canonical JSON: recursion limit exceeded at line
+1 column 10808`; that plant was restored.
+
+`deep_program_reader_boundaries_and_malformed_input` accepts a program at exactly
+512 JSON object/array levels and its manifest at 513 (the manifest adds one
+object), on the ordinary test thread for writing and on the existing module
+reader stack for reading. One more level is refused before recursive decoding.
+Malformed and trailing input, duplicate `spec` fields both literally and with an
+equivalent escaped spelling, and 50,000 unclosed arrays are refused. Both tests
+passed on Linux with Rust 1.97.1. The separate
+`deep_list_regression_project_checks_and_lowers` test also checks and lowers the
+actual 65-element LexLean source used by PX-07, confirms its lowered JSON nests
+past 128 levels, and reads it back equal; it passed without Lean.
+
+PX-07 additionally exports that temporary project and replays its bundle through
+`verify_artifact`. That Lean-backed half has not been run locally: the repository
+helper looks for Lean under `$HOME/.elan`, while this environment's pinned
+installation is under `ELAN_HOME`. Its final integration gate remains required.
+
+Final integration acceptance is pending. `package.rs` is one of the nine files framed
+by `calculus::rust::renderer_digest`, so its reader/writer changes and regressions
+require updating `rust_renderer` in `language/semantics-1.2.toml` and the normal
+identity-dependent regeneration. The existing
+`the_compiler_semantics_records_the_renderer` test correctly fails on this tree:
+the committed pin is `9c432ba86622c477155e1515a95fa962caebc4c5a3d4ed68a4e4b9a4a08c0aa3`,
+and the changed renderer digest is
+`743b9697131fb39817aeee95871e9ed485b48f4dbd6947ee4cf0c67a48885786`.
+The draft must be integrated with the scheduled release/v0.4 identity wave,
+regenerated, and pass the complete final gate before landing; this record does
+not claim that wave or the full gate has passed.
+
+## Host/Order and deep-package integration: source and regeneration evidence (2026-11-04)
+
+This record supersedes the earlier PX-07 integration status without erasing its
+failed attempts. Reviewed thin dispatchers preserve the original Rust constructor
+and production Cons/Record/Constructor/Pair lowering operations and order. The
+unchanged PX-07 passed (1 passed, 469 filtered, 386.63 s), including the 65-element
+production export/replay and tamper checks, on the prior equivalent functional
+source. This is provisional functional evidence, not execution on the final
+identity. That phase subsequently failed Clippy's closed-enum wildcard check;
+the explicit remaining-38-variants correction passed a separate formatting and
+Clippy continuation (2.65 s / 25.96 s). The seven earlier focused passes remain
+historical evidence. No stack, input limit, helper or assertion was relaxed.
+
+The renderer gate refused the old pin and passed the settled renderer pin
+`fa09fcc9bc9f32a91ba0dfca6fbdc3864f10dde9bd9688fc7f385b026d53eec5`.
+Compiler semantics 1.2 is
+`1b848115459ee6b099a8c55acc163f944de0812316e800b09870f5aefac05070`;
+1.0/1.1 are unchanged. Correctly rooted frozen executables and the 905 embedded
+inputs remained bound to the admitted source at writer boundaries. Official
+calculus write/comparison covered 977 files; 22 valid relocks reached a fixed
+point, 239 negative locks changed only compiler identity and 59 stayed exact.
+Three separately reviewed descriptor pin updates retained their planted defects
+and LLB6007/6006/6005 refusals. Helper locks and diagnostic instrumentation are
+excluded from the candidate.
+
+The final-source all-five export writer completed all 117 packages in 3002.16 s;
+owner and independent reviews found only admitted identity/provenance changes,
+with generated code/configuration and package file sets unchanged. The remaining
+official sequence terminated successfully at 05:06:11 UTC: golden (58.30 s),
+post-golden calculus write/comparison (20.95 / 10.42 s), fixtures (1063.80 s), and
+selected non-Atlas verification (3849.25 s). The calculus refresh follows the
+actual new compiler golden manifest because its semantic ID is a runtime input
+outside the embedded set. Stage inventories changed 111 / 351 / 0 / 12 / 2914
+paths respectively. Negative code arrays/outcomes and all 778 Atlas paths retain
+the reviewed boundaries; Atlas was not rerun locally.
+
+Owner and independent artifact reviews initially stopped on one nonidentity
+observation: bootstrap preservation R25's `__fits_80._unsafe_rec` reports
+`[propext]` instead of no axioms, duplicated in audit text and captured process
+stdout. That stop remains part of the evidence. Prerequisite review admitted
+this delta under SPEC §17.17's existing mutual-partial group-union contract,
+which `preserve::check_mutual_group` already enforces. The three actual partials
+80/115/156 each have exact pins `[propext]`; their printed observations changed
+from `[]` / `[propext]` / `[propext]` to `[propext]` for all three. The union is
+unchanged, and normalized proof bytes and root policies are unchanged. No policy
+code, oracle relaxation or validation retry was needed. Final artifact admission
+therefore retains the actual observation rather than rewriting it to the earlier
+printout. The 21 selected projects completed in 3849.247 s. The historical
+wrong-root harness and failed diagnostics remain non-acceptance evidence.
+
+Immutable records: `host-px07-combined-functional/results.json`
+SHA-256 `a21d2012ff7cec1cb1abe02aedb670836c9cfb5fe64d7012fb522cb2030b6f59`;
+`host-px07-format-clippy-continuation/results.json`
+`29318e9ac442faacead5ad178def8ee851856cae75b1db48cc80255984037509`;
+`host-px07-identity-phase-ac/results.json`
+`5f63c077ef61b33c6959c60cd65abe2eb7dd28ef46a1859e549947a428a9df33`;
+`host-px07-identity-phase-df/results.json`
+`f1ccdb1893b6eaafbc484cbba81b4002183e94b9252741f4c599c4c3bea6ef5d`;
+`host-px07-identity-phase-g/results.json`
+`413ff2a8b100f01c5602984d20c70e9991d3f2193ceb7ab3ec8bc4c236d566c2`;
+`host-px07-identity-remaining-writers/results.json`
+`6e4fd333036a26949dd478f86c73e1ed6d92551fcacb479d339fe2a067b67e3d`.
+These directories are retained under the maintenance workspace's `work/`.
+
+Contributor head `27e4525c` incorporates #390's BS-16 history. This integration
+intentionally retains that ancestry while leaving BS-16 source, registrations,
+expanded corpus and generated products to existing #390, preserving the reviewed
+Host/#402/release scope. Before this PR can merge, #390 must publish an
+independently reviewed explicit BS-16 reapplication atop the frozen Host candidate,
+including the reviewed `30171790` fixes. Its new head must be a normal descendant
+of its live branch, outside Host ancestry, with a nonempty diff; #390 remains
+draft and #432 open. The old #390 head alone would become reachable through
+`27e4525c` and would not preserve pending delivery.
+
+The exact reviewed #436 correction from `708f86dea` is retained in the final
+source: the generated differential workspace uses
+`[profile.dev] debug = "line-tables-only"`. It addresses demonstrated BS-15
+ENOSPC without changing corpus/assertions or identity inputs. Its resource effect
+has not been measured here; final hosted conformance must include it. No new
+identity wave is required by this test-helper correction.
+
+Actual reviewed integration tree/history and complete
+final-head hosted CI remain pending. Acceptance requires same-run honesty,
+actual test inventory, all supported hosts, Atlas shards/join and reproducibility;
+writer exits and prior release runs do not replace that gate. Prospective issue
+scope is #382/#378 only; #271 remains open. No #436 acceptance/closure follows
+from this source-only draft.
+
+Final source preparation initially stopped when `validate-model` rejected 37 rest-field patterns in the explicit 38-variant production delegation arm (the fieldless `Unit` is unchanged). A reviewed pattern-only correction names every actual ignored field, preserving variant order and the delegation expression; no audit rule or behavior was changed. This correction is outside renderer and embedded identity inputs; no writer or PX-07 rerun was performed.
+
+The README register sentence now states “All 470 registered conformance IDs have their named tests”, satisfying RP-11’s existing exact-count wording without claiming all tests or the full gate pass. Exact `conformance_rp_11` passed once using the immutable correctly rooted Host harness (SHA-256 `16af772ac485b63d692f325e15a50063d4af9102f501737c90db8245d975cc96`); this is a documentation-contract check, not final compiler-identity or full-gate acceptance.
+
 ## DF-19 preparation against the current release line (#284)
 
 Local integration `7bf1ce27b0561482ee9e6ca4d3e8745ae2dc42f7` combines the
@@ -12801,3 +12934,11 @@ builds every generated workspace member and every outcome remains compared.
 This is a source-only resource correction. Its disk savings have not been
 measured, and no local build or runtime validation of the correction is
 claimed. Exact BS-15 validation and complete changed-head CI remain required.
+
+
+### Host integration with accepted DF-19 release (source preparation)
+
+The prospective integration retains Host `88b078cc` and actual release `1a690b51` (accepted #284), including DF-19 and the byte-identical #436 generated-workspace profile. The combined register is 471; source, scenario, named-test and documentation count mirrors are reconciled without changing predicates. The old Host CI run remains historical evidence for its exact old-base tree; a complete changed-head gate is still required. The DF-19 fixture lock is demonstrably stale at the Host compiler semantics and awaits an explicitly reviewed single-fixture official relock. No new identity wave, product regeneration or runtime validation is claimed by this source preparation. #390 remains an open draft outside Host ancestry.
+
+
+The DF-19 lock prerequisite was discharged by one official frozen Host CLI invocation (SHA-256 `9f3a752ba37f0d514a61a7634be3193fddf7b26958f8c895ec175b767627dc07`), `lexlean --project <isolated-six-file-fixture>/lexlean.toml lock`, exit 0. The emitted lock differs from the accepted release lock only in compiler semantics `aac30cb0` to `1b848115`; all five other fixture files and project/workspace/package digests remain unchanged. Initial output review stopped on a newly created zero-byte `.lexlean/.lock` advisory guard; root admitted its exact owned LOCAL-ONLY disposition, and it was archived outside the candidate. The original stop and producer evidence remain retained. No helper entered the candidate, no official relock was repeated, and no manual identity edit was substituted for the emitted bytes. This establishes the lock producer boundary only: no DF-19 acceptance test used the older binary, no other writer or product regeneration ran, and complete changed-head CI remains required.

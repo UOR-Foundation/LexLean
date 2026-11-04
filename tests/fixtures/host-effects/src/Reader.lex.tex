@@ -1,0 +1,14 @@
+\begin{lexlean}{Reader}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Host}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: reader,
+  parameters: [path : String],
+  result: LexLeanStd.Host::Request,
+  body: (ctor LexLeanStd.Host::Request.read path),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -91,12 +91,23 @@ pub struct Construct {
     pub note: Option<String>,
 }
 
+/// One request row of the registry: a constructor of
+/// `LexLeanStd.Host::Request` and the effect a closure that builds it realizes.
+#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct RequestRow {
+    id: String,
+    #[serde(default)]
+    effect: Option<String>,
+}
+
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
 struct RegistryFile {
     spec: String,
     target: Vec<Target>,
     effect: Vec<Effect>,
+    request: Vec<RequestRow>,
     construct: Vec<Construct>,
 }
 
@@ -105,6 +116,9 @@ struct RegistryFile {
 pub struct Registry {
     pub targets: BTreeMap<String, Target>,
     pub effects: BTreeMap<String, Effect>,
+    /// The constructors of `LexLeanStd.Host::Request`, each with the effect
+    /// it realizes, if any.
+    pub requests: BTreeMap<String, Option<String>>,
     pub constructs: BTreeMap<String, Construct>,
     /// Construct keys in registry order.
     pub order: Vec<String>,
@@ -119,6 +133,7 @@ fn parse_registry(text: &str) -> Result<Registry, String> {
     let mut registry = Registry {
         targets: BTreeMap::new(),
         effects: BTreeMap::new(),
+        requests: BTreeMap::new(),
         constructs: BTreeMap::new(),
         order: Vec::new(),
     };
@@ -148,6 +163,28 @@ fn parse_registry(text: &str) -> Result<Registry, String> {
             .is_some()
         {
             return Err(format!("{REGISTRY_PATH}: duplicate effect `{}`", effect.id));
+        }
+    }
+    for request in file.request {
+        if request
+            .effect
+            .as_ref()
+            .is_some_and(|effect| !registry.effects.contains_key(effect))
+        {
+            return Err(format!(
+                "{REGISTRY_PATH}: request `{}` names an unregistered effect",
+                request.id
+            ));
+        }
+        if registry
+            .requests
+            .insert(request.id.clone(), request.effect)
+            .is_some()
+        {
+            return Err(format!(
+                "{REGISTRY_PATH}: duplicate request `{}`",
+                request.id
+            ));
         }
     }
     for construct in file.construct {
@@ -180,6 +217,10 @@ fn parse_registry(text: &str) -> Result<Registry, String> {
     }
     Ok(registry)
 }
+
+/// The prefix of the qualified name of a constructor of
+/// `LexLeanStd.Host::Request`, the type a command root returns its requests in.
+pub const HOST_REQUEST_PREFIX: &str = "LexLeanStd.Host.Request.";
 
 /// The embedded registry.
 ///

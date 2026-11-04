@@ -1658,6 +1658,12 @@ suite = "production"
 statement = "Every root that a conformance harness runs on a corpus and that admits `recursion` has a measured stack bound in `tests/stack-bounds.json`, whose rows are exactly the recursive packages of the committed `bootstrap` and `stdlib` exports, and the stack of the harness thread (`rust_harness::HARNESS_STACK`) and of the evaluator thread is at least the largest recorded bound times the stated headroom of 4, so that a harness stack below that bound is refused and a harness binary run on a quarter of its bound aborts instead of finishing; the bounds are measurements of the cases' own inputs on one host, evidence and not a guarantee for another host or input."
 
 [[id]]
+id = "PD-10"
+level = "build"
+suite = "production"
+statement = "The registry holds the effects `files` and `process` and one row per constructor of `LexLeanStd.Host::Request` naming the effect it realizes, so a production root whose closure builds a request admits that request's effect, and a root that does not, or that is declared for a target without allocation, fails with `LLT4005`."
+
+[[id]]
 id = "NE-01"
 level = "build"
 suite = "extraction"
@@ -2393,7 +2399,7 @@ statement = "GNAF evidence whose certificate has another identity than the reque
 id = "PX-07"
 level = "build"
 suite = "production-export"
-statement = "verify_artifact accepts an untouched bundle with status bindings-verified and names the four stages it does not re-run, and rejects with LLV7102 a bundle in which one byte of a package, crate, program, certificate, attestation, compiler input, or preservation record, one binding or certification field of the result with its identity recomputed, or one added or removed file differs, and with LLS8001 a bundle holding a symlink."
+statement = "verify_artifact accepts an untouched bundle, including an exported list of 65 elements whose program nests beyond 128 JSON levels, with status bindings-verified and names the four stages it does not re-run, and rejects with LLV7102 a bundle in which one byte of a package, crate, program, certificate, attestation, compiler input, or preservation record, one binding or certification field of the result with its identity recomputed, or one added or removed file differs, and with LLS8001 a bundle holding a symlink."
 
 [[id]]
 id = "PX-08"
