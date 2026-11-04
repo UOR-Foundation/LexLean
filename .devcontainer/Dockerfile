@@ -25,7 +25,7 @@ RUN curl -sSfL https://github.com/leanprover/elan/releases/download/v4.2.3/elan-
     && tar -xzf /tmp/elan.tar.gz -C /tmp/elan-bin \
     && /tmp/elan-bin/elan-init -y --no-modify-path --default-toolchain none \
     && rm -rf /tmp/elan.tar.gz /tmp/elan-bin \
-    && elan toolchain install leanprover/lean4:v4.32.1 \
+    && elan toolchain install leanprover/lean4:v4.33.1 \
     && ln -s /usr/local/elan /root/.elan
 
 RUN curl -sSfL https://github.com/casey/just/releases/download/1.57.0/just-1.57.0-x86_64-unknown-linux-musl.tar.gz -o /tmp/just.tar.gz \

@@ -624,7 +624,7 @@ fn prim_type(operation: &Prim, types: &[Ty]) -> Result<Ty, String> {
 }
 
 /// Primitive applications whose LexLean meaning a `reflexivity` proof
-/// cannot establish from a module file under pinned Lean 4.32.1: Lean's
+/// cannot establish from a module file under pinned Lean 4.33.1: Lean's
 /// elaborator checks such a proof by definitional unfolding before the
 /// kernel sees it, and does not unfold the definitions these reach
 /// (`String.splitOn`, `String.toInt?`, `ByteArray.toList`, `String.toUTF8`,

@@ -5,7 +5,7 @@
 //!
 //! Disclosed lowering decisions that the pinned toolchain forces:
 //!
-//! - **Unique existence.** Lean 4.32.1's `Init` has no `ExistsUnique`
+//! - **Unique existence.** Lean 4.33.1's `Init` has no `ExistsUnique`
 //!   constant, so the core `ExistsUnique (fun (x : T) => P)` term lowers to
 //!   its definitional expansion
 //!   `Exists (fun (x : T) => And (P) ((y : T) → P[x:=y] → Eq y x))`, with
@@ -2105,7 +2105,7 @@ pub fn render_module(
         sink.kw("module");
         sink.ws("\n");
         for import in module_imports(document, closure) {
-            // Under the Lean 4.32.1 module system a plain `import` is
+            // Under the Lean 4.33.1 module system a plain `import` is
             // private: constants of the imported module may not appear in
             // the signatures of this module's `public` declarations. Every
             // generated declaration is public API, so every import is a
@@ -2213,7 +2213,7 @@ fn render_declaration(
                 node,
                 aliases,
             };
-            // Lean 4.32.1's module system keeps declarations private to
+            // Lean 4.33.1's module system keeps declarations private to
             // their module unless marked `public`; the audit module and
             // cross-module imports require visibility (§18.9, §15.1).
             sink.kw("public");
@@ -2300,7 +2300,7 @@ fn render_declaration(
                 aliases,
             };
             // A document definition is a transparent, nonrecursive `def`
-            // (§18.6). Under the Lean 4.32.1 module system a definition's
+            // (§18.6). Under the Lean 4.33.1 module system a definition's
             // body is hidden from importing modules unless it is exposed, so
             // every generated definition is `@[expose] public def` (README,
             // documented deviations): a theorem in an importing module may

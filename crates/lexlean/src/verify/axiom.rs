@@ -1,8 +1,8 @@
 //! The exact axiom-output parser (SPEC.md §22.5): only the pinned Lean
-//! 4.32.1 payload forms are accepted; missing, duplicate, extra, or
+//! 4.33.1 payload forms are accepted; missing, duplicate, extra, or
 //! malformed records are rejected.
 //!
-//! A record is not a line. Lean 4.32.1 renders `#print axioms` through its
+//! A record is not a line. Lean 4.33.1 renders `#print axioms` through its
 //! pretty-printer at the default format width of 120 columns, so a
 //! declaration whose record is wider has its axiom list broken across
 //! indented continuation lines --- the shipped propositional-logic example
@@ -96,7 +96,7 @@ fn parse_payload(payload: &str) -> Result<(String, Vec<String>), AuditFailure> {
 }
 
 /// Strip the optional Lean information envelope from one audit line
-/// (§22.5). Lean 4.32.1's command-line driver prints an informational
+/// (§22.5). Lean 4.33.1's command-line driver prints an informational
 /// message bare (`Lean.SerialMessage.toString` adds a location only to
 /// warnings and errors), so the payload usually stands alone; the two
 /// envelope shapes Lean itself produces for information messages are the

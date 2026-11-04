@@ -1,3 +1,3 @@
 spec = "lexlean/certification-library/2"
-toolchain = "leanprover/lean4:v4.32.1"
+toolchain = "leanprover/lean4:v4.33.1"
 modules = ["LexLeanCertification.Trials", "LexLeanCertification.Tail", "LexLeanCertification.Factor", "LexLeanCertification.Schemas", "LexLeanCertification.Facts", "LexLeanCertification.PremiseSound", "LexLeanCertification.Positions", "LexLeanCertification.Lower", "LexLeanCertification.Frontier", "LexLeanCertification.Representation", "LexLeanCertification.Normality", "LexLeanCertification.Check", "LexLeanCertification.Soundness"]

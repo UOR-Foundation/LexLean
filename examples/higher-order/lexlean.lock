@@ -1,8 +1,8 @@
 spec = "lexlean/lock/2"
 language = "1.2"
-compiler_semantics = "0b48547157a44c7dafdc0c59cfd270f185a6a172b83bb42e5af79323d4fb84eb"
-project_config_sha256 = "2854e1de7560697fdce6b84ea09e897fa3936fd6c0fbca153d62201ce8ed4d61"
-lean_toolchain = "leanprover/lean4:v4.32.1"
+compiler_semantics = "69fd8ec2882e610ff0fb3017f8b535be83ba6fb326669da47e96e8e8c2dcdb3e"
+project_config_sha256 = "66df2915cf5f4fbed2fd0d845b319800d128f86a4ba02b41c4334dffc671b820"
+lean_toolchain = "leanprover/lean4:v4.33.1"
 
 [[workspace_file]]
 path = "lake-manifest.json"
@@ -14,7 +14,7 @@ sha256 = "56a62fa741a90d19e8131ac4a732f833e0be01c1f1c7c075091f8d48e6746c1b"
 
 [[workspace_file]]
 path = "lean-toolchain"
-sha256 = "8e3538e0ab5f81a3ee04927d8838c8c674e0e112838b4b3ce87ec218143276af"
+sha256 = "3aac669c7a910ec2389f4e4f921b605adf6ebf2d1e0c9b9cd0be4d33f3f5db71"
 
 [[package]]
 id = "higherorder.titles"

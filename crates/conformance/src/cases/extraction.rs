@@ -204,7 +204,7 @@ impl Probe {
             "name = \"probe\"\nversion = \"0.1.0\"\ndefaultTargets = [\"Probe\"]\n\n[[lean_lib]]\nname = \"Probe\"\nglobs = [\"Probe.+\"]\n",
         )
         .expect("lakefile");
-        std::fs::write(root.join("lean-toolchain"), "leanprover/lean4:v4.32.1\n")
+        std::fs::write(root.join("lean-toolchain"), "leanprover/lean4:v4.33.1\n")
             .expect("toolchain");
         std::fs::write(root.join("Probe/Main.lean"), PROBE_MODULE).expect("module");
         let probe = Self {
@@ -927,10 +927,10 @@ pub fn run(id: &str) {
         // §22.10: the authority interface is closed, pinned, and probed.
         "NE-04" => {
             let adapter = lcnf::adapter().expect("the adapter");
-            assert_eq!(adapter.authority.lean_version, "4.32.1");
+            assert_eq!(adapter.authority.lean_version, "4.33.1");
             assert_eq!(
                 adapter.authority.lean_githash,
-                "f054605aea4b840552cca2e725580bffd1e1b704"
+                "819816b2e0a3bf405af45ae5c7af2491d8f5bee6"
             );
             let model =
                 repo_model::Model::load(&support::repo_root().join("model").into_std_path_buf())
@@ -988,7 +988,7 @@ pub fn run(id: &str) {
                 value["lean"]["githash"] = "0000000000000000000000000000000000000000".into();
             });
             assert!(
-                matches!(extract(&foreign), Err(Rejection::Drift(reason)) if reason.contains("pinned to 4.32.1"))
+                matches!(extract(&foreign), Err(Rejection::Drift(reason)) if reason.contains("pinned to 4.33.1"))
             );
             if support::lean_backed("NE-04") {
                 ne_04_under_lean(adapter, &driver);

@@ -1111,7 +1111,7 @@ pub fn verified() -> &'static VerifiedFixture {
             .verify(VerifyRequest {
                 selection: Selection::Entrypoints,
             })
-            .expect("the literal example verifies (EX-01); is leanprover/lean4:v4.32.1 installed?");
+            .expect("the literal example verifies (EX-01); is leanprover/lean4:v4.33.1 installed?");
         let attestation: serde_json::Value = serde_json::from_slice(
             &std::fs::read(outcome.root.join("attestation.json").as_std_path())
                 .expect("attestation exists"),
@@ -2236,7 +2236,7 @@ pub fn verified_corpus() -> &'static VerifiedFixture {
                 selection: Selection::Entrypoints,
             })
             .unwrap_or_else(|error| {
-                panic!("the proof corpus verifies under pinned Lean 4.32.1: {error:#?}")
+                panic!("the proof corpus verifies under pinned Lean 4.33.1: {error:#?}")
             });
         let attestation: serde_json::Value = serde_json::from_slice(
             &std::fs::read(outcome.root.join("attestation.json").as_std_path())
@@ -2264,7 +2264,7 @@ pub fn verified_compiler() -> &'static VerifiedFixture {
                 selection: Selection::Entrypoints,
             })
             .unwrap_or_else(|error| {
-                panic!("the compiler project verifies under pinned Lean 4.32.1: {error:#?}")
+                panic!("the compiler project verifies under pinned Lean 4.33.1: {error:#?}")
             });
         let attestation: serde_json::Value = serde_json::from_slice(
             &std::fs::read(outcome.root.join("attestation.json").as_std_path())
@@ -2891,7 +2891,7 @@ pub fn lean_backed(id: &str) -> bool {
     }
     assert!(
         !normative_host(),
-        "{id}: the normative host (Linux x86-64) must have leanprover/lean4:v4.32.1 installed; a Lean-backed case never passes vacuously here (§8.3)"
+        "{id}: the normative host (Linux x86-64) must have leanprover/lean4:v4.33.1 installed; a Lean-backed case never passes vacuously here (§8.3)"
     );
     eprintln!(
         "{id}: platform-bound host without the pinned toolchain; only the platform-independent assertions ran (§8.3)"
@@ -3728,7 +3728,7 @@ pub fn verified_frames() -> &'static VerifiedFixture {
                 selection: Selection::Entrypoints,
             })
             .unwrap_or_else(|error| {
-                panic!("the frames module verifies under pinned Lean 4.32.1: {error:#?}")
+                panic!("the frames module verifies under pinned Lean 4.33.1: {error:#?}")
             });
         let attestation: serde_json::Value = serde_json::from_slice(
             &std::fs::read(outcome.root.join("attestation.json").as_std_path())
@@ -3799,7 +3799,7 @@ pub fn verified_polish() -> &'static VerifiedFixture {
                 selection: Selection::Entrypoints,
             })
             .unwrap_or_else(|error| {
-                panic!("the polish module verifies under pinned Lean 4.32.1: {error:#?}")
+                panic!("the polish module verifies under pinned Lean 4.33.1: {error:#?}")
             });
         let attestation: serde_json::Value = serde_json::from_slice(
             &std::fs::read(outcome.root.join("attestation.json").as_std_path())
@@ -4022,7 +4022,7 @@ features = ["article-an", "lower-case", "singular"]
 /// constant, a definition at a calculation endpoint), when negation is
 /// read as its function type, when an external predicate leaves the
 /// residual to Lean, and when the core arrow elaborates in math; every
-/// theorem verifies under pinned Lean 4.32.1.
+/// theorem verifies under pinned Lean 4.33.1.
 pub const F1_MODULE: &str = r"\begin{lexlean}{Main}
 \useglossary{lexlean.std.nat@1.0.0}
 \useglossary{test.f1@1.0.0}
@@ -4145,7 +4145,7 @@ pub fn verified_f1() -> &'static VerifiedFixture {
                 selection: Selection::Entrypoints,
             })
             .unwrap_or_else(|error| {
-                panic!("the WS-F1 module verifies under pinned Lean 4.32.1: {error:#?}")
+                panic!("the WS-F1 module verifies under pinned Lean 4.33.1: {error:#?}")
             });
         let attestation: serde_json::Value = serde_json::from_slice(
             &std::fs::read(outcome.root.join("attestation.json").as_std_path())

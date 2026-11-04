@@ -785,7 +785,7 @@ pub fn audit_atlas_exercise(root: &Path) -> Result<(), Fail> {
 /// `build` claim with a conformance ID, not a `some-true` citation. The check
 /// reads the citation up to its first semicolon --- its primary reference ---
 /// because a legitimate row may go on to name repository fixtures as the
-/// evidence a third party compares against, which `PRINT-AXIOMS-4-32-1` does.
+/// evidence a third party compares against, which `PRINT-AXIOMS-4-33-1` does.
 ///
 /// # Errors
 /// Returns the offending row, or reports the gate armed when no row exists.

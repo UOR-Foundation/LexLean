@@ -15,28 +15,28 @@
 spec = "lexlean/ledger/1"
 
 [[claim]]
-id = "AUTH-LEAN-REL-4-32-1"
+id = "AUTH-LEAN-REL-4-33-1"
 level = "some-true"
-statement = "Lean 4.32.1 is the release tagged leanprover/lean4:v4.32.1, built from source commit f054605aea4b840552cca2e725580bffd1e1b704."
-authority = "LEAN-REL-4-32-1"
+statement = "Lean 4.33.1 is the release tagged leanprover/lean4:v4.33.1, built from source commit 819816b2e0a3bf405af45ae5c7af2491d8f5bee6."
+authority = "LEAN-REL-4-33-1"
 
 [[claim]]
-id = "AUTH-LAKE-4-32-1"
+id = "AUTH-LAKE-4-33-1"
 level = "some-true"
-statement = "Lake as distributed with Lean 4.32.1 resolves a pinned workspace environment through lake env without network access when every locked dependency is locally available."
-authority = "LAKE-4-32-1"
+statement = "Lake as distributed with Lean 4.33.1 resolves a pinned workspace environment through lake env without network access when every locked dependency is locally available."
+authority = "LAKE-4-33-1"
 
 [[claim]]
-id = "AUTH-LEANCHECKER-4-32-1"
+id = "AUTH-LEANCHECKER-4-33-1"
 level = "some-true"
-statement = "The leanchecker executable distributed with Lean 4.32.1 replays a compiled module's environment through the Lean kernel in a separate process and is not an independent proof checker."
-authority = "LEANCHECKER-4-32-1"
+statement = "The leanchecker executable distributed with Lean 4.33.1 replays a compiled module's environment through the Lean kernel in a separate process and is not an independent proof checker."
+authority = "LEANCHECKER-4-33-1"
 
 [[claim]]
-id = "AUTH-LEAN-LCNF-4-32-1"
+id = "AUTH-LEAN-LCNF-4-33-1"
 level = "some-true"
-statement = "Lean 4.32.1 translates a code-generating definition to base-phase LCNF with Lean.Compiler.LCNF.toDecl, the compiler's own input to its later passes, so every constant the compiled definition can depend on at run time is named by that translation or by a definition it names."
-authority = "LEAN-LCNF-4-32-1"
+statement = "Lean 4.33.1 translates a code-generating definition to base-phase LCNF with Lean.Compiler.LCNF.toDecl, the compiler's own input to its later passes, so every constant the compiled definition can depend on at run time is named by that translation or by a definition it names."
+authority = "LEAN-LCNF-4-33-1"
 
 [[claim]]
 id = "AUTH-RUSTC-1-97-1"
@@ -45,10 +45,10 @@ statement = "rustc 1.97.1 compiles a safe Rust 2021 crate with the semantics The
 authority = "RUSTC-1-97-1"
 
 [[claim]]
-id = "AUTH-PRINT-AXIOMS-4-32-1"
+id = "AUTH-PRINT-AXIOMS-4-33-1"
 level = "some-true"
-statement = "Lean 4.32.1 reports the transitive axiom dependencies of a declaration through #print axioms in exactly the output forms recorded by the committed axiom-parser fixtures."
-authority = "PRINT-AXIOMS-4-32-1"
+statement = "Lean 4.33.1 reports the transitive axiom dependencies of a declaration through #print axioms in exactly the output forms recorded by the committed axiom-parser fixtures."
+authority = "PRINT-AXIOMS-4-33-1"
 
 [[claim]]
 id = "AUTH-UOR-GNAF-1-DRAFT-2"
