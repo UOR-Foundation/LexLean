@@ -620,6 +620,26 @@ of this tree show.
   inputs of the escaper and the scaffold, and 277 seeded mutants; twenty-one
   planted defects are each detected. No file of the renderer changes. The
   register is 467 IDs.
+Historical original #390 record (`ffb352ac`, before the final Host identity):
+the evidence and regeneration described in the following entry belong to that
+source. The current explicit redelivery is source-only; model projections,
+bootstrap products, combined counts and final acceptance remain pending.
+
+- The validation of a GNAF request as language-1.2 source, first part of the GNAF
+  requests and certification (SPEC.md §17.23, §17.15, §17.18, `BS-16`, #275; no new
+  diagnostic code, no change to the language-1.2 identity). `validateRequest` of
+  `GnafValidate` makes the checks `gnaf::validate` runs on a request, in the oracle's
+  order and with the same twenty-one refusals, and writes the refusal through the
+  standard library's `Buffer`; it is a production root for `rust-std`. It is held to
+  the oracle to the byte on 3,862 requests (60 committed, 802 hand-built, 3,000
+  seeded mutants; 3,522 refused), under the calculus evaluator and under the rendered
+  package compiled by the pinned rustc; twelve planted defects are each detected.
+  `bootstrap/lexlean.lock` and the production export are regenerated with the new
+  package, so the counts `BS-05`, `BS-06`, `BS-07`, `BS-08`, `BS-13`, `BS-14`, and
+  `BS-15` assert move by one manifest. What remains of #275: the answer, the
+  universe, and the certification (`BS-17` to `BS-19`), the premise facts after the
+  evaluator, `calculus::interp`, `realization`, and `Program::id`. The register is
+  470 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

@@ -19,6 +19,9 @@
     "bootstrap-check": [
       "BS-04"
     ],
+    "bootstrap-gnaf": [
+      "BS-16"
+    ],
     "bootstrap-lower": [
       "BS-07"
     ],

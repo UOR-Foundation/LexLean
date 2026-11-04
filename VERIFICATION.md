@@ -2245,6 +2245,16 @@ At landing regeneration: `tests/production-export/bootstrap/roots.json` adds `va
 
 The stack bound is now taken after every outcome of the differential is compared, so a package without a recorded bound cannot hide a disagreement. The plants of `RB-17` and `RB-19` are functions (`text_plants`, `ast_plants`, `probe_plants`) that both cases and this one use.
 
+### the GNAF request validation is source and agrees with the oracle (BS-16)
+
+`GnafValidate` (`bootstrap/src/GnafValidate.lex.tex`, 33 `definition` blocks, 4 `structure` blocks, and 10 `inductive` blocks, in the compiler's canonical form: `lexlean fmt --check --all` finds the 9 modules of `bootstrap/` canonical) is the first part of the GNAF requests and certification of #275: `validateRequest` is `gnaf::validate` (`crates/lexlean/src/gnaf.rs`) over the projection of a request that validation reads. The axiom audit of the pinned Lean observes no axiom in any of the 33 definitions, and each declares `axioms: []` (a first draft declared `[Quot.sound, propext]` on all of them, which `verify` refused: `LLV7005`, observed `[]`). The one production root is eligible for `rust-std` with exactly the effects `allocation` and `overflow`; the rejection is written through `LexLeanStd.Buffer`.
+
+Command and host: `cargo test -p repo-conformance --test conformance -- conformance_bs_16 --nocapture`, the 4-core 15 GB Linux x86-64 container with the pinned rustc and Lean (CI part `bdd-bootstrap-gnaf`, `LEXLEAN_BDD_PART=bootstrap-gnaf`). Measured on this branch merged with #371 at `32d317126`, with the package `validate_request` committed: the corpus is 3,862 requests (60 committed under `compiler/gnaf/`, 802 hand-built, 3,000 seeded mutants), 3,522 refused, by each of the 21 rejections and 43 pairs of a rule and an action kind; the evaluator agrees with the oracle on all 3,862 vectors (the requests of at most 4,000 nodes of data), the rustc differential of the rendered package builds 3 harness binaries and agrees on all 3,862 runs (built in 7.0 s, run in 0.2 s); the twelve planted defects are each detected; the exported package is byte-identical to the committed one and realizes the program; the case passes in 1,537 s, of which the regeneration of the export (`check-production-export --write`, 50 minutes on a quiet machine) is not part. The case asserts the eligibility and the effects of the root, not the size of its certificate; the largest part of the certificate of `validateRequest` is not measured in this change.
+
+Planted defects, each detected by the differential at the first vector named: `empty domain accepted` (vector 27), `constant charge of zero accepted` (55), `free preparation accepted under the complete boundary` (29), `prepared artifact matched against steps` (16), `duplicate counted at one occurrence` (0), `fallback not performed` (0), `domain capacity compared with at-least` (74), `universe size without the square` (1,032), `alias refused as unsupported` (39), `scalar and vector claim checks swapped` (1), `rust programs scope admitted` (40), `operand size checked before capacity` (92). A first form of the tenth plant (the two outcomes of the `ClGlobalOptimal` arm exchanged by renaming a pattern) was not a program: `LLT4001`, `duplicate match branch Objective.ObScalar`; it exchanges the outcomes instead.
+
+The production export is the committed one: `tests/production-export/bootstrap/roots.json` adds `validate_request`, `bootstrap/lexlean.lock` is relocked, and the packages, the `bootstrap/expected` records and the counts `BS-05` and `BS-06` assert are regenerated in this change, as for the other roots of `bootstrap/`.
+
 ### the memory of a buffer has its laws kernel-checked (SP-26)
 
 `RustMemory` (`compiler/src/RustMemory.lex.tex`, 16 KB, generated and written in the compiler's canonical form; two inductives `Flag` and `Cells`, two structures `Buf` and `Window`, and sixteen definitions) holds seventeen theorems: `size_put`, `get_put_same`, `get_put_below`, `get_put_above`, `size_blank`, `get_blank`, `no_room_at_capacity`, `room_before_slot`, `push_lands_in_slot`, `below_truncated`, `plus_assoc`, `push_at_capacity`, `put_in_slot`, `push_with_room`, `get_truncated`, `window_of_window`, and `window_count` (the count of `subWindow` is `minNat keep (minusNat count skip)`, by `simplify` over `subWindow`). Every statement is total, because the proof language has no hypothesis to assume (a prior theorem can be a rewrite rule, but a premise cannot): a fact about an index below a length is stated for a sum with a gap, or as the result of a guard (`guardGet`, `lessThan`, `both`). `push_at_capacity` states `none` and `push_with_room` states `some` of the buffer with the item in its slot and the length one more. `put` beyond the slots (`CNil`) is a no-op in the model and is not the runtime's behaviour, which refuses out-of-bounds access. Each proof is an induction (generalizing the indices it moves) with a `cases` on the index it consumes and a `simplify` over the definitions it unfolds, `below_truncated` using `term_cases` on `(lessThan at (less + 1))` with `[both, lessThan, minNat]`, `push_at_capacity` and `push_with_room` unfolding `bufPush` and simplifying with the prior theorems `no_room_at_capacity`, and `put_in_slot` and `room_before_slot` as rules, `get_truncated` unfolding `bufGet`/`bufTruncate`, and `window_of_window` applying `plus_assoc`; the lists of definitions were pruned to those the pinned Lean uses, because an unused argument is a verification error. Every definition observes no axiom and every theorem exactly `[propext]`.
@@ -10700,6 +10710,41 @@ export with the two roots passes `lexlean verify`; its first attempt was
 refused (`LLV7005`) for nine definitions whose comparison of byte strings
 observes `propext` and declared no axioms, which now declare it.
 
+With the package `validate_request` of `BS-16` committed, the committed manifests are 278
+and the counts the rows assert move with it, each measured by the first count
+assertion of the row that fails on the count it replaces: `BS-15` has 297 committed manifests
+(278 accepted), 182 rule manifests, 2,000 seeded mutants of the fields, 137 hand-built inputs
+and 278 seeded mutants of the render, 3,172 runs under rustc, and 241 renders under the
+evaluator as before; 278 manifests and packages, 195 programs, 254 crates; `BS-05` 492 and 355
+vectors (205 crates, 443 and 306 runs under the evaluator as before); `BS-06` 674 vectors of
+`printCrate` (508 committed distinct, 64 refused), 2,110 of `printExpr`, 576 of the
+evaluator's crates; `BS-07` 329 vectors, 278 within the bound; `BS-08` 388 crates, 339 within
+the bound; `BS-13` 98 vectors, 49 within the bound, and 125 mutants; `BS-14` 333 vectors
+(with the vector that #371 adds), 282 within the bound, and 547 mutants. `BS-05` passes on the tree before the merge of #371's fix
+(`ef961c75a`), in 2,566 s on the normative host; `BS-06` stopped at its count
+assertions on the 3,000 MB floor of the machine's disk, and the other rows' counts above
+are the ones the continuous integration measured. The records and packages of the
+bootstrap export are regenerated on the relocked project, which takes 50 minutes
+(`check-production-export --write`).
+
+This branch is merged with #364 at `aea1333c8`, which contains `release/v0.4` at `477a508d5`
+and adds `BS-20`, the tooling modules and the five roots of `Order`. The committed manifests
+are 284: the relock, the export, the `bootstrap/expected/verify` records and the
+`bootstrap/expected/build` records are regenerated on that tree by `cargo xtask check-production-export --write`,
+`cargo xtask verify-examples --write` with `LEXLEAN_EXAMPLES_PART=without:uor-atlas` (the records of the other
+examples were rewritten identically; `uor-atlas` was not run locally) and `cargo xtask check-golden --write`, after which
+`cargo xtask check-golden` finds every published artifact equal to its oracle (R10). Measured on that tree
+by the first count assertion each row fails on the count it replaces: `BS-05` and `BS-06` 284 committed manifests,
+122 fixtures, 201 distinct programs and 260 distinct crates (and 284 packages for `BS-06`); `BS-07` 335 vectors;
+`BS-08` 394 crates. `BS-09`, `BS-10` and `BS-11` pass on that tree with the counts they had (the seeded mutants
+of `BS-11` are unchanged by the regenerated records). Derived from the manifest count and not run locally: `BS-15` 303 manifests, 284 accepted and 284 seeded
+mutants of the render; the continuous integration at `7b854b6dc` passed `BS-07`, `BS-08`, `BS-10`, `BS-11`, `BS-12`,
+`BS-15`, `BS-16` and `BS-20` with these counts, and named the four that moved further: `BS-05` 496 runs of
+`validateCrate` (211 refused) and 361 of `correspondCrate`; `BS-06` 687 vectors of `printCrate` (65 refused,
+520 committed distinct); `BS-13` 104 vectors; `BS-14` 339 vectors. Those are the first count assertion of each
+row that failed; the counts the rows assert after them (the evaluator's runs and the printed counts that follow from them)
+are the ones the next run of the continuous integration reads.
+
 Each of twenty-one plants is made on a copy of `bootstrap/src/RustPackage.lex.tex`
 on every run and is caught by the oracle; the run is the index among the runs
 of the root (the committed manifests, then the rules, then the mutants for
@@ -12787,3 +12832,74 @@ from this source-only draft.
 Final source preparation initially stopped when `validate-model` rejected 37 rest-field patterns in the explicit 38-variant production delegation arm (the fieldless `Unit` is unchanged). A reviewed pattern-only correction names every actual ignored field, preserving variant order and the delegation expression; no audit rule or behavior was changed. This correction is outside renderer and embedded identity inputs; no writer or PX-07 rerun was performed.
 
 The README register sentence now states “All 470 registered conformance IDs have their named tests”, satisfying RP-11’s existing exact-count wording without claiming all tests or the full gate pass. Exact `conformance_rp_11` passed once using the immutable correctly rooted Host harness (SHA-256 `16af772ac485b63d692f325e15a50063d4af9102f501737c90db8245d975cc96`); this is a documentation-contract check, not final compiler-identity or full-gate acceptance.
+
+## BS-16 corpus counter repair prepared from current-head failures (#432)
+
+This source correction is pinned to PR #390 head
+`7b854b6dc6dcbb4c0d95367b5ec56a44625e2cb3`. Run 41667292905
+reported BS-05 `(496,211,361,100)`, BS-06
+`(687,520,65,2145,1532,0)`, BS-13 `(104,52,108)`, and BS-14
+`(339,285,580)` before those cases' later assertions could execute.
+These are observed corpus counters, not passing differential, mutation,
+evaluator, certificate, or final export results.
+
+The new `validate_request/package.json` adds one distinct program and one
+lowerable `rust-std` crate. The BS-05 totals are 260 committed crates plus
+129 rule runs, 17 branch crates, 34 loop crates, 55 machine crates and one
+list-match crate: 496 validation runs; correspondence has 260 + 12 + 34 + 55
+= 361. The committed crate contributes no refusal. BS-06 adds that crate and
+its exported-name package crate (520 committed runs); stepping through 260
+lowered crates by seven also adds index 259, whose capacity is one byte
+short, making 687 crate runs and 65 refusals. Expression counts do not move.
+The regenerated preserved program and the package program deduplicate in
+the BS-13/14 source corpus. That program has 1,021 expression nodes and
+self-tail calls, adding one looping and one whole-program vector while
+remaining above the 300-node evaluator bound. Thus the within-bound and
+seeded counters in the observed tuples do not move.
+
+The original Unicode comments and the `"é"` name fixture are restored from
+the predecessor of commit `305635aaa`; assertions and differential/mutation
+checks remain strict. Preparation used source/JSON inspection and
+`git diff --check` only. No Rust build, test, writer, identity update, or
+complete gate was run for this repair. Generated conformance documentation
+still requires the official model writer. Later assertions remain
+unexecuted for this correction. Integration with the active Host wave will
+require its own combined-corpus measurements and final acceptance evidence;
+these counters apply only to this PR head's corpus. #275 remains open.
+
+BS-15's existing PR CI job 126026329845 of run 41667292905 checked
+out synthetic merge `fc16794` of `7b854b6dc` into `0a01df682` and
+completed successfully (`conformance_bs_15 ... ok` at 18:44:51 UTC). Its
+asserted manifest/render counts are 303/284, with 182 header rules, 137
+render rules, 2,000 header mutants and 284 render mutants. The two rustc
+differential inputs therefore have 303 + 182 + 2,000 = 2,485 header runs
+and 284 + 137 + 284 = 705 render runs, totaling 3,190. The statement's
+302 manifests and 3,184 total were stale: 3,184 was the 301-manifest,
+282-accepted corpus recorded for Order; BS-20 and GnafValidate each add
+one manifest, one accepted render and one render mutant, three runs each.
+The manifest statement had already incorporated BS-20's increment to 302
+but omitted GnafValidate's increment. These prose mirrors now match the
+source and existing CI; this does not establish acceptance after restoring
+the Unicode fixture or after any further integration.
+
+
+## BS-16 explicit source redelivery after scoped Host integration
+
+Status on 2026-11-04: pending source-only redelivery, with no new execution.
+
+The inherited BS-16 changelog, regeneration and differential claims refer
+only to the original390 history at ffb352ac and its older compiler identity
+(renderer9c432ba8), before the final Host rendererfa09fcc9. They are
+historical evidence, not fresh passes or accepted outputs on this R tree.
+
+This source-only preparation reintroduces the BS-16 source intentionally
+excluded from the scoped Host tree despite its retained original390 ancestry.
+It preserves reviewed30171790 Unicode and BS-15 prose corrections, current
+Host/#402/413 maintenance and the436 generated-workspace profile fix.
+The original PR's corpus numbers and writer records above remain historical
+evidence for its original source; no current combined-corpus pass, resource
+improvement, generated projection or accepted regenerated BS-16 package is
+claimed. All strict assertions remain active, and combined counts must be
+measured and their normative mirrors reconciled in the coordinated393 wave.
+Official model, bootstrap lock/build/export/verification outputs remain owed.
+This delivery addresses432 only after acceptance;275 remains open.
