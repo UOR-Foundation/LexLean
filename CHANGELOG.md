@@ -24,8 +24,9 @@ workspace carried at those versions without a tag.
   to `canonical_json::Json::to_canonical_string` and `to_file_bytes`: keys in
   UTF-8 byte order with the last of a repeated key kept, shortest integers,
   the required escapes, no whitespace. `stdlib/lexlean.toml` gains the
-  entrypoint, so the locks of `stdlib` and its consumers move. The register is
-  472 IDs.
+  entrypoint, so the locks of `stdlib` and its consumers move, and the three
+  packages move the counts `BS-05` to `BS-08` and `BS-11` to `BS-15` assert.
+  The register is 472 IDs.
 - Structural recursion over the recursive family of a nested inductive type,
   #278 (SPEC.md §17.12, `DF-19`). A mutual definition group may decrease on any
   member of the family the pinned Lean takes as the motives of the type's

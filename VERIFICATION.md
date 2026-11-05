@@ -12977,3 +12977,37 @@ The prospective integration retains Host `88b078cc` and actual release `1a690b51
 
 
 The DF-19 lock prerequisite was discharged by one official frozen Host CLI invocation (SHA-256 `9f3a752ba37f0d514a61a7634be3193fddf7b26958f8c895ec175b767627dc07`), `lexlean --project <isolated-six-file-fixture>/lexlean.toml lock`, exit 0. The emitted lock differs from the accepted release lock only in compiler semantics `aac30cb0` to `1b848115`; all five other fixture files and project/workspace/package digests remain unchanged. Initial output review stopped on a newly created zero-byte `.lexlean/.lock` advisory guard; root admitted its exact owned LOCAL-ONLY disposition, and it was archived outside the candidate. The original stop and producer evidence remain retained. No helper entered the candidate, no official relock was repeated, and no manual identity edit was substituted for the emitted bytes. This establishes the lock producer boundary only: no DF-19 acceptance test used the older binary, no other writer or product regeneration ran, and complete changed-head CI remains required.
+
+## The three `Json` packages move the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (`SL-11`, #276)
+
+The three roots of `LexLeanStd.Json` (`SL-11`, #363) add three committed packages
+(`escape_string`, `write_json`, `write_json_file`), and these cases assert their
+corpus. The member was merged with `release/v0.4` at `0f359709a`, its export,
+stack bounds, build oracles and verify records regenerated on the normative host
+(WSL Ubuntu, Rust 1.97.1, Lean 4.32.1), and then the nine bootstrap parts of
+`.github/bdd-parts.json` were run there on that tree. Each row below is the
+number its own count assert reported against the committed one.
+
+| Count | `0f359709a` | member |
+| --- | --- | --- |
+| committed manifests and packages | 283 | 286 |
+| distinct programs | 200 | 203 |
+| distinct lowered crates | 259 | 262 |
+| `BS-07` vectors, within the bound | 334, 281 | 337, 282 |
+| `BS-08` crates, within the bound | 393, 342 | 396, 342 |
+| `BS-11` vectors, within the bound, mutants | 157, 156, 281 | 157, 156, 281 |
+| `BS-12` vectors, within the bound, mutants | 76, 75, 149 | 76, 75, 149 |
+| `BS-13` vectors, within the bound, mutants | 103, 52, 108 | 106, 53, 108 |
+| `BS-14` vectors, within the bound, mutants | 338, 285, 580 | 341, 286, 580 |
+| `BS-15` manifests, accepted, render mutants | 302, 283, 283 | 305, 286, 286 |
+
+`BS-11` and `BS-12` passed whole on the tree with the new records (2,010 s and
+2,872 s), so this time the records moved no mutant draw. The crates that differ
+are the three new ones: one is within the 300-node bound of `BS-07`, `BS-13` and
+`BS-14`, none is within the 400-expression bound of `BS-05` and `BS-08`, so the
+within counts of `BS-08` stay and `BS-05`'s 208 should too. The counts the cases
+assert after these (the run and refusal totals of `BS-05`, the vector totals
+and the evaluator's share of `BS-06`, the rustc runs of `BS-15`) had not been
+reached when this was written; the seven moved parts are rerunning on the
+mirrored counts on the normative host, and any that move follow in another
+commit.
