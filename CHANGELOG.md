@@ -25,7 +25,7 @@ workspace carried at those versions without a tag.
   UTF-8 byte order with the last of a repeated key kept, shortest integers,
   the required escapes, no whitespace. `stdlib/lexlean.toml` gains the
   entrypoint, so the locks of `stdlib` and its consumers move, and the three
-  packages move the counts `BS-05` to `BS-08` and `BS-11` to `BS-15` assert.
+  packages move the counts `BS-05` to `BS-08` and `BS-13` to `BS-15` assert.
   The register is 476 IDs.
 - Induction over a nested inductive type, #278 (SPEC.md §16.9, §17.10, §17.12,
   `SM-37`). A new proof step, `nested_induction`, proves a statement about a

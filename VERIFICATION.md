@@ -13402,3 +13402,36 @@ Independent actual review `67b0a369` cleared the eight-path source/projection
 delta. Result `6f2c0f5a` and final inventory `b10f93e0` retain exact outcomes.
 These are source/model checks, not BS06 or AU04 conformance-case passes; the
 complete changed-head hosted gate and all later obligations remain required.
+
+## The three `Json` packages move the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (`SL-11`, #276)
+
+The three roots of `LexLeanStd.Json` (`SL-11`, #363) add three committed packages
+(`escape_string`, `write_json`, `write_json_file`), and these cases assert their
+corpus. The member was merged with `release/v0.4` at `55be5514c` (after #393
+regenerated the line), its locks, export, stack bounds, build oracles and verify
+records regenerated on the normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1),
+and the nine bootstrap parts of `.github/bdd-parts.json` run there on that tree.
+Each row is the number its own count assert reported against the committed one.
+
+| Count | `55be5514c` | member |
+| --- | --- | --- |
+| committed manifests and packages | 284 | 287 |
+| distinct programs | 201 | 204 |
+| distinct lowered crates | 260 | 263 |
+| `BS-07` vectors, within the bound | 335, 281 | 338, 282 |
+| `BS-08` crates, within the bound | 394, 342 | 397, 342 |
+| `BS-11` vectors, within the bound, mutants | 157, 156, 281 | 157, 156, 281 |
+| `BS-12` vectors, within the bound, mutants | 76, 75, 149 | 76, 75, 149 |
+| `BS-13` vectors, within the bound, mutants | 104, 52, 108 | 107, 53, 108 |
+| `BS-14` vectors, within the bound, mutants | 339, 285, 580 | 342, 286, 580 |
+| `BS-15` manifests, accepted, render mutants | 303, 284, 284 | 306, 287, 287 |
+
+`BS-11` and `BS-12` passed whole on this tree (about 33 and 48 minutes each), so
+the new records moved no mutant draw. The crates that differ are the three new
+ones: one is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`, none is
+within the 400-expression bound of `BS-05` and `BS-08`, so `BS-08`'s within count
+stays. On the previous base (`c613290b8`) the same parts reported the same deltas
+(+3, +3, +3; +3/+1; +3/+0; +3/+1; +3/+1; +3/+3/+3), and the asserts after these
+moved `BS-05`'s runs to 498 and 363 and `BS-06`'s vectors to 691, 524 and 65
+refused; on this base those later counts, and `BS-15`'s rustc runs, are CI's to
+report, and follow in another commit.
