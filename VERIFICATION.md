@@ -13433,5 +13433,5 @@ within the 400-expression bound of `BS-05` and `BS-08`, so `BS-08`'s within coun
 stays. On the previous base (`c613290b8`) the same parts reported the same deltas
 (+3, +3, +3; +3/+1; +3/+0; +3/+1; +3/+1; +3/+3/+3), and the asserts after these
 moved `BS-05`'s runs to 498 and 363 and `BS-06`'s vectors to 691, 524 and 65
-refused; on this base those later counts, and `BS-15`'s rustc runs, are CI's to
-report, and follow in another commit.
+refused; on this base those counts, and `BS-15`'s rustc runs, are CI's to report, and
+the commit after this one records those that move.
