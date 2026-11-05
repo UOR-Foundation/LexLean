@@ -20,9 +20,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use super::model::{CheckStatement, Elaboration};
 use super::reasoning::Formula;
 use super::{
-    branch_binder_types, elimination_binder_types, infer_term, Environment, SemanticDeclaration,
-    SemanticFailure, SemanticInteger, SemanticParameter, SemanticPrimitive, SemanticProof,
-    SemanticTerm, SemanticType,
+    branch_binder_types, elimination_binder_types, infer_term, nested_branch_types, nested_family,
+    Environment, SemanticDeclaration, SemanticFailure, SemanticInteger, SemanticParameter,
+    SemanticPrimitive, SemanticProof, SemanticProofBranch, SemanticTerm, SemanticType,
 };
 
 type Locals = BTreeMap<String, SemanticType>;
@@ -218,6 +218,32 @@ fn proof(
             term(scrutinee, locals, env, counter)?;
             return Ok(());
         }
+        SemanticProof::NestedInduction {
+            scrutinee,
+            branches,
+            members,
+        } => {
+            // The induction eliminates the scrutinee, so neither a
+            // proposition nor a branch has it in scope.
+            let family = nested_family(scrutinee, locals, env)?;
+            let mut scope = locals.clone();
+            scope.remove(scrutinee.as_str());
+            nested_branches(&family[0], branches, &family, &scope, env, counter)?;
+            for member in members {
+                let mut motive = scope.clone();
+                motive.insert(member.binder.clone(), member.r#type.clone());
+                term(&mut member.statement, &motive, env, counter)?;
+                nested_branches(
+                    &member.r#type,
+                    &mut member.branches,
+                    &family,
+                    &scope,
+                    env,
+                    counter,
+                )?;
+            }
+            return Ok(());
+        }
         SemanticProof::Constructor { branches } => {
             for branch in branches {
                 self::proof(branch, locals, env, counter)?;
@@ -238,6 +264,44 @@ fn proof(
     for branch in branches {
         let mut nested = locals.clone();
         if let Some(types) = expected.get(&branch.constructor) {
+            for (binder, ty) in branch.binders.iter().zip(types) {
+                nested.insert(binder.clone(), ty.clone());
+            }
+        }
+        self::proof(&mut branch.proof, &nested, env, counter)?;
+    }
+    Ok(())
+}
+
+/// Elaborate the branches of one member of a `nested_induction` proof, and put
+/// them in the order of the constructors of the member. The Lean the proof
+/// lowers to names the goals of the recursor by position (the constructors of
+/// two members can share a name, which `induction ... with` refuses), so the
+/// elaboration carries each member's branches in the order of its minor
+/// premises, whatever order the source wrote them in; the source keeps its own
+/// order.
+fn nested_branches(
+    owner: &SemanticType,
+    branches: &mut [SemanticProofBranch],
+    family: &[SemanticType],
+    scope: &Locals,
+    env: &Environment<'_>,
+    counter: &mut State,
+) -> Result<(), SemanticFailure> {
+    let expected = nested_branch_types(owner, family, env);
+    let position = |branch: &SemanticProofBranch| {
+        expected
+            .iter()
+            .position(|(name, _)| *name == branch.constructor)
+            .unwrap_or(usize::MAX)
+    };
+    branches.sort_by_key(position);
+    for branch in branches {
+        let mut nested = scope.clone();
+        if let Some((_, types)) = expected
+            .iter()
+            .find(|(name, _)| *name == branch.constructor)
+        {
             for (binder, ty) in branch.binders.iter().zip(types) {
                 nested.insert(binder.clone(), ty.clone());
             }

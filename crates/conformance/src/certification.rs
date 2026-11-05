@@ -1233,7 +1233,7 @@ fn certificates(
 
 /// The requests the certificates are for: the GNAF fixtures and the ones
 /// written for certification.
-fn requests() -> BTreeMap<String, Request> {
+pub(crate) fn requests() -> BTreeMap<String, Request> {
     static REQUESTS: std::sync::OnceLock<BTreeMap<String, Request>> = std::sync::OnceLock::new();
     REQUESTS.get_or_init(generate_requests).clone()
 }

@@ -1,0 +1,62 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Expr,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: ELit, fields: [Nat, Nat]},
+    {name: ERead, fields: [Nat, Nat, Nat]},
+    {name: ENil, fields: []},
+    {name: ECons, fields: [Expr, Expr]}
+  ]
+}
+
+definition{
+  name: itemTail,
+  parameters: [items : Expr],
+  result: Expr,
+  body: (match items
+    | Expr.ELit v0 v1 => (ctor Expr.ENil)
+    | Expr.ERead v0 v1 v2 => (ctor Expr.ENil)
+    | Expr.ENil => (ctor Expr.ENil)
+    | Expr.ECons item itemsTail => itemsTail),
+  executable: true
+}
+
+definition{
+  name: itemHead,
+  parameters: [items : Expr],
+  result: Expr,
+  body: (match items
+    | Expr.ELit v0 v1 => (ctor Expr.ENil)
+    | Expr.ERead v0 v1 v2 => (ctor Expr.ENil)
+    | Expr.ENil => (ctor Expr.ENil)
+    | Expr.ECons item itemsTail => item),
+  executable: true
+}
+
+definition{
+  name: bumpedTail,
+  parameters: [items : Expr],
+  result: Expr,
+  body: (match items
+    | Expr.ELit v0 v1 => (ctor Expr.ELit (v0 + 1) v1)
+    | Expr.ERead v0 v1 v2 => (ctor Expr.ENil)
+    | Expr.ENil => (ctor Expr.ENil)
+    | Expr.ECons item itemsTail => itemsTail),
+  executable: true
+}
+
+definition{
+  name: tailOf,
+  parameters: [items : Expr],
+  result: Expr,
+  body: (bumpedTail (itemHead (itemTail items))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
