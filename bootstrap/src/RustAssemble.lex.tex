@@ -85,8 +85,8 @@ definition{
 definition{
   name: paramsOf,
   parameters: [
-    types : CalculusCheck::Ty,
     names : (List Nat),
+    types : CalculusCheck::Ty,
     body : CalculusCheck::Expr,
     known : CalculusCheck::Ty,
     position : Nat,
@@ -111,7 +111,7 @@ definition{
     | CalculusCheck::Ty.TNil => (ctor RustAst::Par.ParNil)
     | CalculusCheck::Ty.TCons head tail => (match names
       | List.nil => (ctor RustAst::Par.ParNil)
-      | List.cons name rest => (ctor RustAst::Par.ParCons (if (empty =? 0) then (binderPat head body name) else (if ((position + 1) =? empty) then (ctor RustAst::Pat.PBind (ctor RustValidate::Id.IdLocal name)) else (RustBodies::wildPat 0))) (RustLower::vty known head) (paramsOf tail rest body known (position + 1) empty)))),
+      | List.cons name rest => (ctor RustAst::Par.ParCons (if (empty =? 0) then (binderPat head body name) else (if ((position + 1) =? empty) then (ctor RustAst::Pat.PBind (ctor RustValidate::Id.IdLocal name)) else (RustBodies::wildPat 0))) (RustLower::vty known head) (paramsOf rest tail body known (position + 1) empty)))),
   executable: true,
   recursive_argument: types
 }
@@ -158,8 +158,8 @@ definition{
   ],
   result: RustAst::Def,
   body: (let resultTy : RustValidate::Ty := (if failing then (ctor RustValidate::Ty.TyUnary (ctor RustValidate::UnaryKind.UkFallible) (RustLower::vty known result)) else (RustLower::vty known result)); (match (firstEmpty types inhabited 0)
-    | Option.some empty => (ctor RustAst::Def.DFunction (ctor RustValidate::Id.IdFunction position) (paramsOf types names body known 0 (empty + 1)) resultTy (emptyBody (nameAt names empty) (typeAt types empty)) (functionAt 0))
-    | Option.none => (ctor RustAst::Def.DFunction (ctor RustValidate::Id.IdFunction position) (paramsOf types names body known 0 0) resultTy (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) (functionAt 0)))),
+    | Option.some empty => (ctor RustAst::Def.DFunction (ctor RustValidate::Id.IdFunction position) (paramsOf names types body known 0 (empty + 1)) resultTy (emptyBody (nameAt names empty) (typeAt types empty)) (functionAt 0))
+    | Option.none => (ctor RustAst::Def.DFunction (ctor RustValidate::Id.IdFunction position) (paramsOf names types body known 0 0) resultTy (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) (ctor RustAst::Expr.ENil)) (functionAt 0)))),
   executable: true
 }
 

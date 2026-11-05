@@ -7,6 +7,7 @@
 mod artifacts;
 mod authoring;
 mod authoring_core;
+mod binder_arm;
 mod bootstrap;
 /// The performance of the certified components against their oracles (#277).
 pub use bootstrap::perf as bootstrap_perf;
@@ -37,6 +38,7 @@ mod production;
 mod production_export;
 mod proofs;
 mod reasoning;
+mod recursive_argument;
 mod repository;
 mod runtime;
 mod runtime_semantics;
