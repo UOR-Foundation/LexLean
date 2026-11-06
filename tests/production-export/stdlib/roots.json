@@ -175,6 +175,30 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "escape_string",
+      "root": "LexLeanStd.Json.escapeString",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "write_json",
+      "root": "LexLeanStd.Json.writeJson",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "write_json_file",
+      "root": "LexLeanStd.Json.writeJsonFile",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

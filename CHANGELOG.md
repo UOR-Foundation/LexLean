@@ -17,6 +17,16 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Canonical JSON writing in the standard library, the third member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-11`). The module
+  `LexLeanStd.Json` holds the recursive value of §21.7 and the production
+  roots `writeJson`, `writeJsonFile`, and `escapeString` for `rust-std`, held
+  to `canonical_json::Json::to_canonical_string` and `to_file_bytes`: keys in
+  UTF-8 byte order with the last of a repeated key kept, shortest integers,
+  the required escapes, no whitespace. `stdlib/lexlean.toml` gains the
+  entrypoint, so the locks of `stdlib` and its consumers move, and the three
+  packages move the counts `BS-05` to `BS-08` and `BS-13` to `BS-15` assert.
+  The register is 476 IDs.
 - Induction over a nested inductive type, #278 (SPEC.md §16.9, §17.10, §17.12,
   `SM-37`). A new proof step, `nested_induction`, proves a statement about a
   value of a nested inductive type (a type with a constructor that holds

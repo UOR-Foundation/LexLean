@@ -10964,6 +10964,41 @@ ended at the start of the rustc stage with the host's 16 GB virtual machine
 reset, and the run with the bound passed that stage in 67 s. A library beyond the evaluator's bound now reaches rustc as
 its first 4,096 bytes, held to the recipe, as the shaped inputs do.
 
+`SL-11` holds `LexLeanStd.Json` (#276, member 3) to the compiler's own writer,
+`canonical_json::Json::to_canonical_string` and `to_file_bytes`: the three
+roots `writeJson`, `writeJsonFile`, and `escapeString` under the evaluator
+agree with it byte for byte on a seeded corpus of trees whose keys repeat, are
+prefixes of one another, and hold multibyte and control characters, and the
+rendered `rust-std` packages under the pinned rustc agree on a larger one.
+The oracle's object is a `BTreeMap`, so of a repeated key the last insertion
+stays; the module reaches the same by sorting the members stably and keeping
+the last of a run of equal keys. The plant, made by the case itself on a copy
+of the project on every run, keeps the first (`keepLast` returns `kept` where
+it returns `cons entry rest`):
+
+```text
+the planted writer disagrees on 24 of 300 runs, the first: run 11 on [Adt { constructor: 4, fields: [Adt { constructor: 7, fields: [Bytes { hex: "6b" }, … 1 …
+{"hex":"7b226a223a332c226b223a317d","kind":"bytes"} != {"hex":"7b226a223a332c226b223a347d","kind":"bytes"}
+```
+
+`7b226a223a332c226b223a317d` is `{"j":3,"k":1}` and
+`7b226a223a332c226b223a347d` is `{"j":3,"k":4}`: the tree `k:1, k:2, j:3, k:4`
+as the members were given. The plant still orders every key and escapes every
+byte, so the same writer agrees with the oracle on every tree in which no
+object repeats a key, which the case asserts; only a repeated key catches it.
+
+Removed: the plants are made on copies; the source was not changed.
+Validated on `member2-order` + this member: `check`, `build`, and `fmt --check`
+clean; the eligibility report has all three roots eligible for `rust-std` with
+exactly their declared effects (`escapeString` `[allocation, overflow]`,
+`writeJson` and `writeJsonFile` `[allocation, overflow, recursion]`);
+`conformance_sl_11` passes through the plant, 8.6 s, with the committed-exports
+check of `stack_bounds::observe` and the Lean export bypassed on this host
+(neither the three packages nor their stack-bound rows exist before the wave
+writes them); `cargo clippy -p repo-conformance -p xtask --all-targets
+--all-features -D warnings`, `validate-model` (461 ids), `validate-spec-links`
+(461 rows), `check-test-inventory`, and the five `bdd` meta-gate tests pass.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
@@ -13367,3 +13402,36 @@ Independent actual review `67b0a369` cleared the eight-path source/projection
 delta. Result `6f2c0f5a` and final inventory `b10f93e0` retain exact outcomes.
 These are source/model checks, not BS06 or AU04 conformance-case passes; the
 complete changed-head hosted gate and all later obligations remain required.
+
+## The three `Json` packages move the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (`SL-11`, #276)
+
+The three roots of `LexLeanStd.Json` (`SL-11`, #363) add three committed packages
+(`escape_string`, `write_json`, `write_json_file`), and these cases assert their
+corpus. The member was merged with `release/v0.4` at `55be5514c` (after #393
+regenerated the line), its locks, export, stack bounds, build oracles and verify
+records regenerated on the normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1),
+and the nine bootstrap parts of `.github/bdd-parts.json` run there on that tree.
+Each row is the number its own count assert reported against the committed one.
+
+| Count | `55be5514c` | member |
+| --- | --- | --- |
+| committed manifests and packages | 284 | 287 |
+| distinct programs | 201 | 204 |
+| distinct lowered crates | 260 | 263 |
+| `BS-07` vectors, within the bound | 335, 281 | 338, 282 |
+| `BS-08` crates, within the bound | 394, 342 | 397, 342 |
+| `BS-11` vectors, within the bound, mutants | 157, 156, 281 | 157, 156, 281 |
+| `BS-12` vectors, within the bound, mutants | 76, 75, 149 | 76, 75, 149 |
+| `BS-13` vectors, within the bound, mutants | 104, 52, 108 | 107, 53, 108 |
+| `BS-14` vectors, within the bound, mutants | 339, 285, 580 | 342, 286, 580 |
+| `BS-15` manifests, accepted, render mutants | 303, 284, 284 | 306, 287, 287 |
+
+`BS-11` and `BS-12` passed whole on this tree (about 33 and 48 minutes each), so
+the new records moved no mutant draw. The crates that differ are the three new
+ones: one is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`, none is
+within the 400-expression bound of `BS-05` and `BS-08`, so `BS-08`'s within count
+stays. On the previous base (`c613290b8`) the same parts reported the same deltas
+(+3, +3, +3; +3/+1; +3/+0; +3/+1; +3/+1; +3/+3/+3), and the asserts after these
+moved `BS-05`'s runs to 498 and 363 and `BS-06`'s vectors to 691, 524 and 65
+refused; on this base those counts, and `BS-15`'s rustc runs, are CI's to report, and
+the commit after this one records those that move.
