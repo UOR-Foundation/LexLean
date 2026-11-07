@@ -305,6 +305,26 @@
 'LexLeanStd.Json.writeJson' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Json.writeJsonFile' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Json.writeValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Map.containsStep' does not depend on any axioms
+'LexLeanStd.Map.dropStep' does not depend on any axioms
+'LexLeanStd.Map.getStep' does not depend on any axioms
+'LexLeanStd.Map.insertEntryStep' depends on axioms: [propext]
+'LexLeanStd.Map.keepIfIn' does not depend on any axioms
+'LexLeanStd.Map.keepIfOut' does not depend on any axioms
+'LexLeanStd.Map.lastWins' does not depend on any axioms
+'LexLeanStd.Map.mapExtend' depends on axioms: [propext]
+'LexLeanStd.Map.mapFromEntries' depends on axioms: [propext]
+'LexLeanStd.Map.mapGet' does not depend on any axioms
+'LexLeanStd.Map.mapInsert' depends on axioms: [propext]
+'LexLeanStd.Map.mapRemove' does not depend on any axioms
+'LexLeanStd.Map.removeEntryStep' does not depend on any axioms
+'LexLeanStd.Map.reverseEntries' does not depend on any axioms
+'LexLeanStd.Map.reverseKeys' does not depend on any axioms
+'LexLeanStd.Map.setContains' does not depend on any axioms
+'LexLeanStd.Map.setDifference' does not depend on any axioms
+'LexLeanStd.Map.setIntersection' does not depend on any axioms
+'LexLeanStd.Map.setRemove' does not depend on any axioms
+'LexLeanStd.Map.setUnion' depends on axioms: [propext]
 'LexLeanStd.Numeral.accumulate' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Numeral.byteValues' does not depend on any axioms
 'LexLeanStd.Numeral.canonicalDecimal' depends on axioms: [propext, Quot.sound]
