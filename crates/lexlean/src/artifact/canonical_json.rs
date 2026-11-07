@@ -111,7 +111,9 @@ impl Json {
         Self::from_serde(&value)
     }
 
-    fn from_serde(value: &serde_json::Value) -> Result<Self, String> {
+    /// Convert an already structured value while retaining the canonical domain checks.
+    /// Raw byte inputs must use `parse` so duplicate keys are checked before decoding.
+    pub(crate) fn from_serde(value: &serde_json::Value) -> Result<Self, String> {
         match value {
             serde_json::Value::Null => Err("canonical JSON has no null".to_owned()),
             serde_json::Value::Bool(b) => Ok(Self::Bool(*b)),

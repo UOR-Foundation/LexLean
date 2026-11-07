@@ -41,6 +41,24 @@ Outside `vv`:
 
 ## Falsifiability records
 
+### semantic snapshot nesting can fail
+
+Before the correction for #430, the focused
+`artifact::snapshot::tests` library filter ran two cases: existing shallow
+snapshot bytes passed, while serializing a 160-level linked value panicked
+at `snapshot.rs` with `recursion limit exceeded`. The snapshot DTO had
+already been constructed; its redundant byte parse imposed serde_json's
+raw-reader nesting limit on that structured value.
+
+Snapshot serialization now converts its structured value directly into the
+canonical JSON domain. The checks excluding null and non-integer numbers
+remain shared with raw parsing; raw parsing still checks duplicate keys.
+The deep regression round-trips the complete snapshot and its content digest,
+and the shallow regression compares exact bytes with the previous recipe.
+All 221 LexLean library tests pass on release/v0.4 with ordinary test stacks.
+This is library evidence, not a complete `vv` or consuming-app attestation.
+
+
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
 
 ### production bundle inventory can fail
