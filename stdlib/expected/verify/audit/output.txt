@@ -281,6 +281,30 @@
 'LexLeanStd.Buffer.writeEach' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Buffer.writeNumbers' does not depend on any axioms
 'LexLeanStd.Buffer.zeroStep' does not depend on any axioms
+'LexLeanStd.Host.Child' does not depend on any axioms
+'LexLeanStd.Host.Entry' does not depend on any axioms
+'LexLeanStd.Host.EntryKind' does not depend on any axioms
+'LexLeanStd.Host.Event' does not depend on any axioms
+'LexLeanStd.Host.Failure' does not depend on any axioms
+'LexLeanStd.Host.FailureKind' does not depend on any axioms
+'LexLeanStd.Host.Request' does not depend on any axioms
+'LexLeanStd.Host.Start' does not depend on any axioms
+'LexLeanStd.Host.Waited' does not depend on any axioms
+'LexLeanStd.Json.Json' does not depend on any axioms
+'LexLeanStd.Json.arrayText' does not depend on any axioms
+'LexLeanStd.Json.escapeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.escapeString' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.escapedPiece' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.integerText' does not depend on any axioms
+'LexLeanStd.Json.keepLast' does not depend on any axioms
+'LexLeanStd.Json.memberText' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.objectText' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.quoted' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.renderItems' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.renderMembers' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeJson' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeJsonFile' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeValue' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Numeral.accumulate' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Numeral.byteValues' does not depend on any axioms
 'LexLeanStd.Numeral.canonicalDecimal' depends on axioms: [propext, Quot.sound]

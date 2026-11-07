@@ -774,8 +774,8 @@ pub fn run(id: &str) {
         missed.is_empty(),
         "planted defects the fixed vectors do not detect: {missed:?}"
     );
-    // The measured stack bound of every package comes last, so that a bound not yet
-    // committed hides none of the results above.
+    // The measured stack bound of every package comes last, so that a bound the
+    // record lacks hides none of the results above.
     for (name, binary) in &binaries {
         crate::stack_bounds::observe(&crate::stack_bounds::subject("stdlib", name), binary);
     }
