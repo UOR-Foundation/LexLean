@@ -568,7 +568,7 @@ pub fn run(id: &str) {
     for (member, _) in MEMBERS {
         let low = &lowered[member];
         let manifest = rust_packages::manifest(
-            &format!("json_read_{}", snake(member)),
+            &format!("jsonread_{}", snake(member)),
             &low.program,
             low.entry(),
             Profile::Std,
