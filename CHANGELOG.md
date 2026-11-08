@@ -17,6 +17,16 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Maps and sets in the standard library, the fifth member the self-hosted
+  compiler needs, #276 (SPEC.md §17.22, `SL-14`). The module `LexLeanStd.Map`
+  holds ten production roots for `rust-std` over strictly ascending lists of
+  `Bytes` keys: `mapFromEntries`, `mapInsert`, `mapGet`, `mapRemove`, and
+  `mapExtend` for a map of `Bytes` values, and `setContains`, `setRemove`,
+  `setUnion`, `setIntersection`, and `setDifference` for a set, held to
+  `BTreeMap` and `BTreeSet`, whose `String` keys the front end's tables and name
+  sets use. `stdlib/lexlean.toml` gains the entrypoint, so the locks of `stdlib`
+  and its consumers move, and the ten packages move the counts `BS-05` to
+  `BS-08` and `BS-11` to `BS-15` assert. The register is 477 IDs.
 - Canonical JSON writing in the standard library, the third member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-11`). The module
   `LexLeanStd.Json` holds the recursive value of §21.7 and the production

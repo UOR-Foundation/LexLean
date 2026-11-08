@@ -13435,3 +13435,50 @@ stays. On the previous base (`c613290b8`) the same parts reported the same delta
 moved `BS-05`'s runs to 498 and 363 and `BS-06`'s vectors to 691, 524 and 65
 refused; on this base those counts, and `BS-15`'s rustc runs, are CI's to report, and
 the commit after this one records those that move.
+
+## The ten `Map` packages move the counts of `BS-05` to `BS-08` and `BS-11` to `BS-15` (`SL-14`, #276)
+
+The ten roots of `LexLeanStd.Map` (`SL-14`, #414) add ten committed packages
+(`map_from_entries`, `map_insert`, `map_get`, `map_remove`, `map_extend`,
+`set_contains`, `set_remove`, `set_union`, `set_intersection`,
+`set_difference`), and these cases assert their corpus. The member was merged
+with `release/v0.4` at `cb146c531` (after #363 landed), `Map.lex.tex` was
+formatted canonical under the line's formatter (`LLL1003`), its locks, export,
+stack bounds, build oracles and verify records were regenerated on the
+normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1), and the nine bootstrap
+parts of `.github/bdd-parts.json` were run there on that tree. Each row is the
+number its own count assert reported against the committed one.
+
+| Count | `cb146c531` | member |
+| --- | --- | --- |
+| committed manifests and packages | 287 | 297 |
+| distinct programs | 204 | 214 |
+| distinct lowered crates | 263 | 273 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 499, 364 | 509, 374 |
+| `BS-06` `printCrate` vectors, committed distinct, refused, `printExpr` vectors | 693, 526, 65, 2,145 | 714, 546, 66, 2,213 |
+| `BS-05` crates within the bound, evaluator `validateCrate` and `correspondCrate` runs | 208, 444, 309 | 217, 453, 318 |
+| `BS-06` evaluator crates, seeded expression mutants | 584, 394 | 605, 400 |
+| `BS-05` refused among the seeded mutants | 291, 252 | 273, 253 |
+| `BS-07` vectors, within the bound | 338, 282 | 348, 292 |
+| `BS-08` crates, within the bound | 397, 342 | 407, 351 |
+| `BS-11` vectors, within the bound, mutants | 157, 156, 281 | 157, 156, 272 |
+| `BS-12` vectors, within the bound, mutants | 76, 75, 149 | 76, 75, 154 |
+| `BS-13` vectors, within the bound, mutants | 107, 53, 108 | 117, 63, 130 |
+| `BS-14` vectors, within the bound, mutants | 342, 286, 580 | 352, 296, 534 |
+| `BS-15` manifests, accepted, render mutants | 306, 287, 287 | 316, 297, 297 |
+
+All ten new crates are within the 300-node bound of `BS-07`, `BS-13` and
+`BS-14`, and nine are within the 400-expression bound of `BS-05` and `BS-08`.
+The new stdlib verify records move the mutant draws of `BS-11` (-9), `BS-12`
+(+5), `BS-13` (+22) and `BS-14` (-46), as the Json records moved none.
+The vectors `BS-05` and `BS-06` assert once those counts hold are the rows
+of those two cases: each of the ten crates is a `validateCrate` and a
+`correspondCrate` run and a `printCrate` vector, the ten are committed
+distinct, one of them is the further run refused for the capacity one byte
+short of its output, and their function bodies are the 68 further `printExpr`
+vectors. The nine within the 400-expression bound are the further crates
+the evaluator of `BS-05` is given, 21 further `printCrate` vectors are under
+the 6,000-node bound of the evaluator of `BS-06`, and its seeded expression
+mutants draw six more from the crates of at most 80 expressions, as the
+500 and 500 of `BS-05` draw 18 fewer refused `validateCrate` mutants and one
+more refused `correspondCrate` mutant.

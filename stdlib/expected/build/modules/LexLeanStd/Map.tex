@@ -1,0 +1,168 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{reverseEntries}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (ByteArray))))}.\par
+\noindent Closure 1: binds \texttt{(reversed, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (reversed : List ((Prod (ByteArray) (ByteArray)))) (entry : (Prod (ByteArray) (ByteArray))) => (entry :: reversed))) (([] : List ((Prod (ByteArray) (ByteArray))))) (entries) : List ((Prod (ByteArray) (ByteArray))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reverseKeys}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(reversed, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (reversed : List (ByteArray)) (item : ByteArray) => (item :: reversed))) (([] : List (ByteArray))) (items) : List (ByteArray))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lastWins}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kept : List ((Prod (ByteArray) (ByteArray)))) (entry : (Prod (ByteArray) (ByteArray)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Definition: \texttt{(match kept with | List.nil => (entry :: kept) | List.cons head rest => (if (LexLeanRuntime.equal ((head).1) ((entry).1) : Bool) then (entry :: rest) else (entry :: kept)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mapFromEntries}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (ByteArray))))}.\par
+\noindent Closure 1: binds \texttt{(kept, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Definition: \texttt{reverseEntries ((LexLeanCollections.listFold ((fun (kept : List ((Prod (ByteArray) (ByteArray)))) (entry : (Prod (ByteArray) (ByteArray))) => lastWins (kept) (entry))) (([] : List ((Prod (ByteArray) (ByteArray))))) (LexLeanStd.Order.sortEntries (entries)) : List ((Prod (ByteArray) (ByteArray)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{insertEntryStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fresh : (Prod (ByteArray) (ByteArray))) (state : (Prod (Bool) (List ((Prod (ByteArray) (ByteArray)))))) (entry : (Prod (ByteArray) (ByteArray)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Bool) (List ((Prod (ByteArray) (ByteArray)))))}.\par
+\noindent Definition: \texttt{(match (state).1 with | Bool.true => (true, (entry :: (state).2)) | Bool.false => (if (LexLeanRuntime.equal ((fresh).1) ((entry).1) : Bool) then (true, (fresh :: (state).2)) else (if LexLeanStd.Order.lessBytes ((fresh).1) ((entry).1) then (true, (entry :: (fresh :: (state).2))) else (false, (entry :: (state).2)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{mapInsert}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (ByteArray)))) (key : ByteArray) (value : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state, entry)}, captures \texttt{(fresh)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Definition: \texttt{(let fresh : (Prod (ByteArray) (ByteArray)) := (key, value); (let done : (Prod (Bool) (List ((Prod (ByteArray) (ByteArray))))) := (LexLeanCollections.listFold ((fun (state : (Prod (Bool) (List ((Prod (ByteArray) (ByteArray)))))) (entry : (Prod (ByteArray) (ByteArray))) => insertEntryStep (fresh) (state) (entry))) ((false, ([] : List ((Prod (ByteArray) (ByteArray)))))) (entries) : (Prod (Bool) (List ((Prod (ByteArray) (ByteArray)))))); (match (done).1 with | Bool.true => reverseEntries ((done).2) | Bool.false => reverseEntries ((fresh :: (done).2)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{getStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : ByteArray) (found : Option (ByteArray)) (entry : (Prod (ByteArray) (ByteArray)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(if (LexLeanRuntime.equal (key) ((entry).1) : Bool) then Option.some ((entry).2) else found)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mapGet}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (ByteArray)))) (key : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, entry)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (ByteArray)) (entry : (Prod (ByteArray) (ByteArray))) => getStep (key) (found) (entry))) (Option.none) (entries) : Option (ByteArray))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{removeEntryStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : ByteArray) (kept : List ((Prod (ByteArray) (ByteArray)))) (entry : (Prod (ByteArray) (ByteArray)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Definition: \texttt{(if (LexLeanRuntime.equal (key) ((entry).1) : Bool) then kept else (entry :: kept))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mapRemove}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (ByteArray)))) (key : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(kept, entry)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Definition: \texttt{reverseEntries ((LexLeanCollections.listFold ((fun (kept : List ((Prod (ByteArray) (ByteArray)))) (entry : (Prod (ByteArray) (ByteArray))) => removeEntryStep (key) (kept) (entry))) (([] : List ((Prod (ByteArray) (ByteArray))))) (entries) : List ((Prod (ByteArray) (ByteArray)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mapExtend}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (ByteArray)))) (other : List ((Prod (ByteArray) (ByteArray))))}.\par
+\noindent Closure 1: binds \texttt{(merged, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (merged : List ((Prod (ByteArray) (ByteArray)))) (entry : (Prod (ByteArray) (ByteArray))) => mapInsert (merged) ((entry).1) ((entry).2))) (entries) (other) : List ((Prod (ByteArray) (ByteArray))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{containsStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : ByteArray) (found : Bool) (item : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if found then true else (LexLeanRuntime.equal (key) (item) : Bool))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{setContains}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray)) (key : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, item)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (item : ByteArray) => containsStep (key) (found) (item))) (false) (items) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{dropStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : ByteArray) (kept : List (ByteArray)) (item : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(if (LexLeanRuntime.equal (key) (item) : Bool) then kept else (item :: kept))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{setRemove}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray)) (key : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(kept, item)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{reverseKeys ((LexLeanCollections.listFold ((fun (kept : List (ByteArray)) (item : ByteArray) => dropStep (key) (kept) (item))) (([] : List (ByteArray))) (items) : List (ByteArray)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{setUnion}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (ByteArray)) (right : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(merged, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (merged : List (ByteArray)) (item : ByteArray) => LexLeanStd.Order.insertSorted (merged) (item))) (left) (right) : List (ByteArray))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{keepIfIn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(other : List (ByteArray)) (kept : List (ByteArray)) (item : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(if setContains (other) (item) then (item :: kept) else kept)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{setIntersection}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (ByteArray)) (right : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(kept, item)}, captures \texttt{(right)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{reverseKeys ((LexLeanCollections.listFold ((fun (kept : List (ByteArray)) (item : ByteArray) => keepIfIn (right) (kept) (item))) (([] : List (ByteArray))) (left) : List (ByteArray)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{keepIfOut}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(other : List (ByteArray)) (kept : List (ByteArray)) (item : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(if setContains (other) (item) then kept else (item :: kept))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{setDifference}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (ByteArray)) (right : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(kept, item)}, captures \texttt{(right)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{reverseKeys ((LexLeanCollections.listFold ((fun (kept : List (ByteArray)) (item : ByteArray) => keepIfOut (right) (kept) (item))) (([] : List (ByteArray))) (left) : List (ByteArray)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}
