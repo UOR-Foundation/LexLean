@@ -618,11 +618,18 @@ pub(super) fn case() {
         mutated.len(),
         started.elapsed()
     );
-    assert_eq!(
-        (all.len(), within.len(), mutated.len()),
-        (VECTORS, VECTORS_WITHIN, EVALUATOR_MUTANTS),
-        "the vectors, those the evaluator is given, and the mutants"
+    crate::counts!(
+        "BS-11",
+        "the vectors, those the evaluator is given, and the mutants",
+        {
+            VECTORS: all.len(),
+            VECTORS_WITHIN: within.len(),
+            EVALUATOR_MUTANTS: mutated.len(),
+        }
     );
+    if crate::counts::stop_before_runs("BS-11") {
+        return;
+    }
     let checked = support::checked_project(&project);
     let uses = super::lower(&checked, &project, TYPING, "useTrees");
     let moves = super::lower(&checked, &project, MOVES, "applyMoves");

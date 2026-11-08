@@ -3041,15 +3041,15 @@ pub(super) fn case() {
     // The counts SPEC.md §17.23, the register statement, and the scenario
     // state are asserted here, so a repository that grows fails the case
     // instead of leaving a stale statement behind.
-    assert_eq!(
-        (manifests, fixtures, distinct, all.len()),
-        (
-            COMMITTED_MANIFESTS,
-            COMMITTED_FIXTURES,
-            COMMITTED_PROGRAMS,
-            COMMITTED_CRATES
-        ),
-        "the committed manifests, fixtures, distinct programs, and distinct crates"
+    crate::counts!(
+        "BS-05",
+        "the committed manifests, fixtures, distinct programs, and distinct crates",
+        {
+            COMMITTED_MANIFESTS: manifests,
+            COMMITTED_FIXTURES: fixtures,
+            COMMITTED_PROGRAMS: distinct,
+            COMMITTED_CRATES: all.len(),
+        }
     );
     let bases = small(&all, BASE_CAP);
     let (mut rule_validate, rule_correspond) = rule_vectors(&bases, RULES_EACH);
@@ -3059,25 +3059,23 @@ pub(super) fn case() {
         .chain(machine_crates())
         .chain(list_match_crates())
         .collect();
-    assert_eq!(
-        (rule_validate.len(), rule_correspond.len()),
-        (RULE_VALIDATE_RUNS, RULE_CORRESPOND_RUNS),
-        "the rule runs: each reachable refusal {RULES_EACH} times"
+    crate::counts!(
+        "BS-05",
+        &format!("the rule runs: each reachable refusal {RULES_EACH} times"),
+        {
+            RULE_VALIDATE_RUNS: rule_validate.len(),
+            RULE_CORRESPOND_RUNS: rule_correspond.len(),
+        }
     );
-    assert_eq!(
-        (
-            branch_crates().len(),
-            loop_crates().len(),
-            machine_crates().len(),
-            list_match_crates().len()
-        ),
-        (
-            BRANCH_CRATES,
-            LOOP_CRATES,
-            MACHINE_CRATES,
-            LIST_MATCH_CRATES
-        ),
-        "the hand-built crates"
+    crate::counts!(
+        "BS-05",
+        "the hand-built crates",
+        {
+            BRANCH_CRATES: branch_crates().len(),
+            LOOP_CRATES: loop_crates().len(),
+            MACHINE_CRATES: machine_crates().len(),
+            LIST_MATCH_CRATES: list_match_crates().len(),
+        }
     );
     rule_validate.extend(by_hand.iter().map(validate_run));
     let mut rule_correspond = rule_correspond;
@@ -3110,20 +3108,15 @@ pub(super) fn case() {
     );
     let vectors_validate = merged(&[&accepted_validate, &rule_validate]);
     let vectors_correspond = merged(&[&accepted_correspond, &rule_correspond]);
-    assert_eq!(
-        (
-            vectors_validate.len(),
-            refused(&vectors_validate),
-            vectors_correspond.len(),
-            refused(&vectors_correspond)
-        ),
-        (
-            VECTORS_VALIDATE,
-            REFUSED_VALIDATE,
-            VECTORS_CORRESPOND,
-            REFUSED_CORRESPOND
-        ),
-        "the vectors of validateCrate and correspondCrate, and the refused among them"
+    crate::counts!(
+        "BS-05",
+        "the vectors of validateCrate and correspondCrate, and the refused among them",
+        {
+            VECTORS_VALIDATE: vectors_validate.len(),
+            REFUSED_VALIDATE: refused(&vectors_validate),
+            VECTORS_CORRESPOND: vectors_correspond.len(),
+            REFUSED_CORRESPOND: refused(&vectors_correspond),
+        }
     );
     // The corpora of the normative host are made here, so that every count
     // the row states is asserted before the first leg runs.
@@ -3143,36 +3136,37 @@ pub(super) fn case() {
         .map(|index| accepted_correspond[*index].clone())
         .chain(rule_correspond.iter().cloned())
         .collect();
-    assert_eq!(
-        (
-            within.len(),
-            evaluator_validate.len(),
-            evaluator_correspond.len()
-        ),
-        (EVALUATOR_CRATES, EVALUATOR_VALIDATE, EVALUATOR_CORRESPOND),
-        "the crates of at most {EVALUATOR_CAP} expressions and the vectors the evaluator is given"
+    crate::counts!(
+        "BS-05",
+        &format!("the crates of at most {EVALUATOR_CAP} expressions and the vectors the evaluator is given"),
+        {
+            EVALUATOR_CRATES: within.len(),
+            EVALUATOR_VALIDATE: evaluator_validate.len(),
+            EVALUATOR_CORRESPOND: evaluator_correspond.len(),
+        }
     );
     let mut seeded = Seeded(0x0B55_0005);
     let (seeded_validate, seeded_correspond) = mutants(&bases, &mut seeded, EVALUATOR_MUTANTS);
     assert_eq!(
-        (
-            seeded_validate.len(),
-            seeded_correspond.len(),
-            refused(&seeded_validate),
-            refused(&seeded_correspond)
-        ),
-        (
-            EVALUATOR_MUTANTS,
-            EVALUATOR_MUTANTS,
-            SEEDED_REFUSED_VALIDATE,
-            SEEDED_REFUSED_CORRESPOND
-        ),
-        "the seeded mutants the evaluator is given, and the refused among them"
+        (seeded_validate.len(), seeded_correspond.len()),
+        (EVALUATOR_MUTANTS, EVALUATOR_MUTANTS),
+        "the seeded mutants the evaluator is given"
+    );
+    crate::counts!(
+        "BS-05",
+        "the refused among the seeded mutants",
+        {
+            SEEDED_REFUSED_VALIDATE: refused(&seeded_validate),
+            SEEDED_REFUSED_CORRESPOND: refused(&seeded_correspond),
+        }
     );
     eprintln!(
         "BS-05: the vectors are the counted ones ({:?})",
         started.elapsed()
     );
+    if crate::counts::stop_before_runs("BS-05") {
+        return;
+    }
     let checked = support::checked_project(&project);
     let validate_root = super::lower(&checked, &project, MODULE, "validateCrate");
     let correspond_root = super::lower(&checked, &project, MODULE, "correspondCrate");

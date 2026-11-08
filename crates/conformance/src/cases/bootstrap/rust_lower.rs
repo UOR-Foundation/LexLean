@@ -917,22 +917,22 @@ pub(super) fn case() {
     let mut large = Seeded(0x00B5_0207);
     let rustc_mutants = seeded_mutants(&sources, &mut large, RUSTC_MUTANTS, BASE_NODES);
     assert_eq!(
-        (
-            rules.len(),
-            all.len(),
-            evaluator.len(),
-            evaluator_mutants.len(),
-            rustc_mutants.len()
-        ),
-        (
-            RULE_PROGRAMS,
-            VECTORS,
-            VECTORS_WITHIN,
-            EVALUATOR_MUTANTS,
-            RUSTC_MUTANTS
-        ),
-        "the programs of the rules, the vectors, those the evaluator is given, and the mutants"
+        (evaluator_mutants.len(), rustc_mutants.len()),
+        (EVALUATOR_MUTANTS, RUSTC_MUTANTS),
+        "the mutants"
     );
+    crate::counts!(
+        "BS-07",
+        "the programs of the rules, the vectors, and those the evaluator is given",
+        {
+            RULE_PROGRAMS: rules.len(),
+            VECTORS: all.len(),
+            VECTORS_WITHIN: evaluator.len(),
+        }
+    );
+    if crate::counts::stop_before_runs("BS-07") {
+        return;
+    }
     eprintln!(
         "BS-07: {} vectors ({} within {EVALUATOR_NODES} nodes), {} + {} mutants ({:?})",
         all.len(),

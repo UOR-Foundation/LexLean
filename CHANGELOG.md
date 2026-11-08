@@ -17,6 +17,16 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- A one-pass writer for the counts of the bootstrap count cases, #92.
+  Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
+  `BS-15` records every count it checks in `target/count-report/` instead of
+  failing at the first that moved, and stops before its evaluator and rustc
+  runs (`LEXLEAN_COUNTS=report` runs it whole); `cargo xtask counts --write`
+  carries the moved counts into the case's constants, its §31 row, register
+  statement and scenario, and the prose of §17.23 that repeats them, and
+  lists every number it cannot place unambiguously. A landing that moved
+  the counts took a run and a hand mirror per stage of the cases; it takes
+  one pass. Unset, the cases assert as before. The register is unchanged.
 - Maps and sets in the standard library, the fifth member the self-hosted
   compiler needs, #276 (SPEC.md §17.22, `SL-14`). The module `LexLeanStd.Map`
   holds ten production roots for `rust-std` over strictly ascending lists of

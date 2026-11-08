@@ -916,27 +916,22 @@ pub(super) fn case() {
         within.len(),
         started.elapsed()
     );
-    assert_eq!(
-        (
-            manifests.len(),
-            renders.len(),
-            rules.len(),
-            shaped.len(),
-            mutants.len(),
-            render_mutants.len(),
-            within.len()
-        ),
-        (
-            MANIFESTS,
-            ACCEPTED,
-            HEADER_RULES,
-            RENDER_RULES,
-            HEADER_MUTANTS,
-            RENDER_MUTANTS,
-            EVALUATOR_RENDERS
-        ),
-        "the manifests, the accepted ones, the rule inputs, the mutants, and the renders the evaluator is given"
+    crate::counts!(
+        "BS-15",
+        "the manifests, the accepted ones, the rule inputs, the mutants, and the renders the evaluator is given",
+        {
+            MANIFESTS: manifests.len(),
+            ACCEPTED: renders.len(),
+            HEADER_RULES: rules.len(),
+            RENDER_RULES: shaped.len(),
+            HEADER_MUTANTS: mutants.len(),
+            RENDER_MUTANTS: render_mutants.len(),
+            EVALUATOR_RENDERS: within.len(),
+        }
     );
+    if crate::counts::stop_before_runs("BS-15") {
+        return;
+    }
 
     let checked = support::checked_project(&project);
     let check_root = super::lower(&checked, &project, MODULE, "checkManifest");
