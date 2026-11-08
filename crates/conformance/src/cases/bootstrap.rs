@@ -21,6 +21,7 @@ use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support::{self, P};
 
+mod gnaf_validate;
 mod runtime_validate;
 mod rust_assemble;
 mod rust_bodies;
@@ -2453,6 +2454,7 @@ fn case(id: &str) {
         "BS-13" => rust_loops::case(),
         "BS-14" => rust_assemble::case(),
         "BS-15" => rust_package::case(),
+        "BS-16" => gnaf_validate::case(),
         // §17.23, §17.20: the canonical LaTeX of a tooling module.
         "BS-20" => tooling_latex::case(),
         other => panic!("no bootstrap case is wired for {other}"),

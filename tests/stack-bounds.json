@@ -98,6 +98,12 @@
     },
     "bootstrap/validate_runtime": {
       "debug": 4259840
+    },
+    "stdlib/write_json": {
+      "debug": 1245184
+    },
+    "stdlib/write_json_file": {
+      "debug": 1245184
     }
   }
 }

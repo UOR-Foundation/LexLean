@@ -40,23 +40,24 @@ namespace LexLeanBoot.RustAssemble
 
 @[expose] public def binderPat (type : LexLeanBoot.CalculusCheck.Ty) (body : LexLeanBoot.CalculusCheck.Expr) (name : Nat) : LexLeanBoot.RustAst.Pat := (if ((!LexLeanBoot.CalculusCheck.tyEq (type) (LexLeanBoot.CalculusCheck.Ty.TUnit)) && LexLeanBoot.RustBodies.mentions (body) (name)) then LexLeanBoot.RustAst.Pat.PBind (LexLeanBoot.RustValidate.Id.IdLocal (name)) else LexLeanBoot.RustBodies.wildPat (0))
 
-@[expose] public def paramsOf : (types : LexLeanBoot.CalculusCheck.Ty) -> (names : List (Nat)) -> (body : LexLeanBoot.CalculusCheck.Expr) -> (known : LexLeanBoot.CalculusCheck.Ty) -> (position : Nat) -> (empty : Nat) -> LexLeanBoot.RustAst.Par
-  | LexLeanBoot.CalculusCheck.Ty.TUnit, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TBool, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TNat, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TInt, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TFixed _, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TString, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TBytes, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TOrdering, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TOption _, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TResult _ _, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TList _, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TPair _ _, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TAdt _, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TFn _ _, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TNil, _names, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
-  | LexLeanBoot.CalculusCheck.Ty.TCons head tail, names, body, known, position, empty => (match names with | List.nil => LexLeanBoot.RustAst.Par.ParNil | List.cons name rest => LexLeanBoot.RustAst.Par.ParCons ((if (Nat.beq (empty) (0)) then binderPat (head) (body) (name) else (if (Nat.beq ((position + 1)) (empty)) then LexLeanBoot.RustAst.Pat.PBind (LexLeanBoot.RustValidate.Id.IdLocal (name)) else LexLeanBoot.RustBodies.wildPat (0)))) (LexLeanBoot.RustLower.vty (known) (head)) (paramsOf (tail) (rest) (body) (known) ((position + 1)) (empty)))
+@[expose] public def paramsOf : (names : List (Nat)) -> (types : LexLeanBoot.CalculusCheck.Ty) -> (body : LexLeanBoot.CalculusCheck.Expr) -> (known : LexLeanBoot.CalculusCheck.Ty) -> (position : Nat) -> (empty : Nat) -> LexLeanBoot.RustAst.Par
+  | _names, LexLeanBoot.CalculusCheck.Ty.TUnit, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TBool, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TNat, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TInt, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TFixed _, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TString, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TBytes, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TOrdering, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TOption _, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TResult _ _, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TList _, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TPair _ _, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TAdt _, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TFn _ _, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | _names, LexLeanBoot.CalculusCheck.Ty.TNil, _body, _known, _position, _empty => LexLeanBoot.RustAst.Par.ParNil
+  | names, LexLeanBoot.CalculusCheck.Ty.TCons head tail, body, known, position, empty => (match names with | List.nil => LexLeanBoot.RustAst.Par.ParNil | List.cons name rest => LexLeanBoot.RustAst.Par.ParCons ((if (Nat.beq (empty) (0)) then binderPat (head) (body) (name) else (if (Nat.beq ((position + 1)) (empty)) then LexLeanBoot.RustAst.Pat.PBind (LexLeanBoot.RustValidate.Id.IdLocal (name)) else LexLeanBoot.RustBodies.wildPat (0)))) (LexLeanBoot.RustLower.vty (known) (head)) (paramsOf (rest) (tail) (body) (known) ((position + 1)) (empty)))
+termination_by structural _ types _ _ _ _ => types
 
 @[expose] public def emptyBody (name : Nat) (ty : LexLeanBoot.CalculusCheck.Ty) : LexLeanBoot.RustAst.Expr := LexLeanBoot.RustAst.Expr.EBlock (LexLeanBoot.RustAst.Expr.ENil) (LexLeanBoot.RustAst.Expr.EMatch (LexLeanBoot.RustAst.Expr.ERead (LexLeanBoot.RustValidate.ReadKind.RkMove) (LexLeanBoot.RustValidate.Id.IdLocal (name)) (typeOrigin (ty))) (LexLeanBoot.RustAst.Expr.ENil) (typeOrigin (ty)))
 
@@ -64,7 +65,7 @@ namespace LexLeanBoot.RustAssemble
 
 @[expose] public def typeAt (types : LexLeanBoot.CalculusCheck.Ty) (index : Nat) : LexLeanBoot.CalculusCheck.Ty := (match LexLeanBoot.RustTerms.chainGet (types) (index) with | Option.some found => found | Option.none => LexLeanBoot.CalculusCheck.Ty.TNil)
 
-@[expose] public def shell (names : List (Nat)) (types : LexLeanBoot.CalculusCheck.Ty) (result : LexLeanBoot.CalculusCheck.Ty) (failing : Bool) (body : LexLeanBoot.CalculusCheck.Expr) (known : LexLeanBoot.CalculusCheck.Ty) (inhabited : LexLeanBoot.CalculusCheck.Ty) (position : Nat) : LexLeanBoot.RustAst.Def := (let resultTy : LexLeanBoot.RustValidate.Ty := (if failing then LexLeanBoot.RustValidate.Ty.TyUnary (LexLeanBoot.RustValidate.UnaryKind.UkFallible) (LexLeanBoot.RustLower.vty (known) (result)) else LexLeanBoot.RustLower.vty (known) (result)); (match firstEmpty (types) (inhabited) (0) with | Option.some empty => LexLeanBoot.RustAst.Def.DFunction (LexLeanBoot.RustValidate.Id.IdFunction (position)) (paramsOf (types) (names) (body) (known) (0) ((empty + 1))) (resultTy) (emptyBody (nameAt (names) (empty)) (typeAt (types) (empty))) (functionAt (0)) | Option.none => LexLeanBoot.RustAst.Def.DFunction (LexLeanBoot.RustValidate.Id.IdFunction (position)) (paramsOf (types) (names) (body) (known) (0) (0)) (resultTy) (LexLeanBoot.RustAst.Expr.EBlock (LexLeanBoot.RustAst.Expr.ENil) (LexLeanBoot.RustAst.Expr.ENil)) (functionAt (0))))
+@[expose] public def shell (names : List (Nat)) (types : LexLeanBoot.CalculusCheck.Ty) (result : LexLeanBoot.CalculusCheck.Ty) (failing : Bool) (body : LexLeanBoot.CalculusCheck.Expr) (known : LexLeanBoot.CalculusCheck.Ty) (inhabited : LexLeanBoot.CalculusCheck.Ty) (position : Nat) : LexLeanBoot.RustAst.Def := (let resultTy : LexLeanBoot.RustValidate.Ty := (if failing then LexLeanBoot.RustValidate.Ty.TyUnary (LexLeanBoot.RustValidate.UnaryKind.UkFallible) (LexLeanBoot.RustLower.vty (known) (result)) else LexLeanBoot.RustLower.vty (known) (result)); (match firstEmpty (types) (inhabited) (0) with | Option.some empty => LexLeanBoot.RustAst.Def.DFunction (LexLeanBoot.RustValidate.Id.IdFunction (position)) (paramsOf (names) (types) (body) (known) (0) ((empty + 1))) (resultTy) (emptyBody (nameAt (names) (empty)) (typeAt (types) (empty))) (functionAt (0)) | Option.none => LexLeanBoot.RustAst.Def.DFunction (LexLeanBoot.RustValidate.Id.IdFunction (position)) (paramsOf (names) (types) (body) (known) (0) (0)) (resultTy) (LexLeanBoot.RustAst.Expr.EBlock (LexLeanBoot.RustAst.Expr.ENil) (LexLeanBoot.RustAst.Expr.ENil)) (functionAt (0))))
 
 @[expose] public def shellsFrom : (bodies : LexLeanBoot.CalculusCheck.Expr) -> (names : List (List (Nat))) -> (types : LexLeanBoot.CalculusCheck.Ty) -> (results : LexLeanBoot.CalculusCheck.Ty) -> (fallible : List (Bool)) -> (known : LexLeanBoot.CalculusCheck.Ty) -> (inhabited : LexLeanBoot.CalculusCheck.Ty) -> (position : Nat) -> LexLeanBoot.RustAst.Def
   | LexLeanBoot.CalculusCheck.Expr.EValue _ _, _names, _types, _results, _fallible, _known, _inhabited, _position => LexLeanBoot.RustAst.Def.DNil

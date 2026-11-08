@@ -1,0 +1,73 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Json}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{null}: \texttt{()}.\par
+\noindent Constructor \texttt{text}: \texttt{(String)}.\par
+\noindent Constructor \texttt{array}: \texttt{(List (Json))}.\par
+\noindent Constructor \texttt{object}: \texttt{(List ((Prod (String) (Json))))}.\par
+\subsection*{\texttt{size}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Size}, decreasing on \texttt{value}.\par
+\noindent Parameters: \texttt{(value : Json)}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match value with | Json.null => 1 | Json.text \_ => 1 | Json.array items => (1 + sizeList (items)) | Json.object entries => (1 + sizeEntries (entries)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{sizeList}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Size}, decreasing on \texttt{items}.\par
+\noindent Parameters: \texttt{(items : List (Json))}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match items with | List.nil => 0 | List.cons head tail => (size (head) + sizeList (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{sizeEntries}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Size}, decreasing on \texttt{entries}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (String) (Json))))}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match entries with | List.nil => 0 | List.cons head tail => (sizeEntry (head) + sizeEntries (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{sizeEntry}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Size}, decreasing on \texttt{entry}.\par
+\noindent Parameters: \texttt{(entry : (Prod (String) (Json)))}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match entry with | Prod.mk \_ value => size (value))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{leaves}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Leaves}, decreasing on \texttt{value}.\par
+\noindent Parameters: \texttt{(value : Json)}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match value with | Json.null => 1 | Json.text \_ => 1 | Json.array items => leavesList (items) | Json.object entries => leavesEntries (entries))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{leavesList}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Leaves}, decreasing on \texttt{items}.\par
+\noindent Parameters: \texttt{(items : List (Json))}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match items with | List.nil => 0 | List.cons head tail => (leaves (head) + leavesList (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{leavesEntries}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Leaves}, decreasing on \texttt{entries}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (String) (Json))))}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match entries with | List.nil => 0 | List.cons head tail => (leavesEntry (head) + leavesEntries (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{leavesEntry}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Leaves}, decreasing on \texttt{entry}.\par
+\noindent Parameters: \texttt{(entry : (Prod (String) (Json)))}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match entry with | Prod.mk \_ value => leaves (value))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{leaves\_le\_size}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(value : Json)}.\par
+\noindent Statement: \texttt{(leaves (value) <= size (value))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

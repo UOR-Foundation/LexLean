@@ -41,7 +41,11 @@ definition{
 
 definition{
   name: insertEntryStep,
-  parameters: [fresh : (Bytes * Bytes), state : (Bool * (List (Bytes * Bytes))), entry : (Bytes * Bytes)],
+  parameters: [
+    fresh : (Bytes * Bytes),
+    state : (Bool * (List (Bytes * Bytes))),
+    entry : (Bytes * Bytes)
+  ],
   result: (Bool * (List (Bytes * Bytes))),
   body: (match (first state)
     | Bool.true => (true, (cons entry (second state)))
