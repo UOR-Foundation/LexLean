@@ -857,7 +857,7 @@ pub fn format_int(p0: i64) -> Str {
 
 #[derive(Clone)]
 pub enum Fn0 {
-    F3(List<Bytes>),
+    F3(Bytes),
     F4,
 }
 
@@ -870,20 +870,7 @@ impl Fn0 {
     }
 }
 
-#[derive(Clone)]
-pub enum Fn1 {
-    F8(Bytes),
-}
-
-impl Fn1 {
-    pub fn apply(&self, p0: bool, p1: Bytes) -> bool {
-        match self {
-            Fn1::F8(k0) => f8(k0.clone(), p0, p1),
-        }
-    }
-}
-
-pub fn f0(v0: List<Bytes>, v1: List<Bytes>) -> List<Bytes> {
+pub fn f0(v0: List<Bytes>, v1: Bytes) -> List<Bytes> {
     f1(f2(Fn0::F3(v1), List::<Bytes>::nil(), v0))
 }
 
@@ -919,7 +906,7 @@ pub fn f2(v0: Fn0, p4: List<Bytes>, p5: List<Bytes>) -> List<Bytes> {
     }
 }
 
-pub fn f3(v0: List<Bytes>, v1: List<Bytes>, v2: Bytes) -> List<Bytes> {
+pub fn f3(v0: Bytes, v1: List<Bytes>, v2: Bytes) -> List<Bytes> {
     f5(v0, v1, v2)
 }
 
@@ -927,56 +914,12 @@ pub fn f4(v0: List<Bytes>, v1: Bytes) -> List<Bytes> {
     List::cons(v1, v0)
 }
 
-pub fn f5(v0: List<Bytes>, v1: List<Bytes>, v2: Bytes) -> List<Bytes> {
-    if f6(v0, v2.clone()) {
-        List::cons(v2, v1)
-    } else {
+pub fn f5(v0: Bytes, v1: List<Bytes>, v2: Bytes) -> List<Bytes> {
+    let a6 = v0;
+    let a7 = v2.clone();
+    if equal(a6, a7) {
         v1
-    }
-}
-
-pub fn f6(v0: List<Bytes>, v1: Bytes) -> bool {
-    f7(Fn1::F8(v1), false, v0)
-}
-
-pub fn f7(v0: Fn1, p9: bool, p10: List<Bytes>) -> bool {
-    let m8 = (p9, p10);
-    {
-        let mut m8 = m8;
-        loop {
-            let step = {
-                let (v1, v2) = m8;
-                let m6 = v2;
-                match m6.uncons() {
-                    None => {
-                        Err::<(bool, List<Bytes>), bool>(v1)
-                    }
-                    Some((v3, v4)) => {
-                        Ok::<(bool, List<Bytes>), bool>(({
-                            let c7: Fn1 = v0.clone();
-                            c7.apply(v1, v3)
-                        }, v4))
-                    }
-                }
-            };
-            match step {
-                Ok(next) => { m8 = next; }
-                Err(done) => break done,
-            }
-        }
-    }
-}
-
-pub fn f8(v0: Bytes, v1: bool, v2: Bytes) -> bool {
-    f9(v0, v1, v2)
-}
-
-pub fn f9(v0: Bytes, v1: bool, v2: Bytes) -> bool {
-    if v1 {
-        true
     } else {
-        let a11 = v0;
-        let a12 = v2;
-        equal(a11, a12)
+        List::cons(v2, v1)
     }
 }
