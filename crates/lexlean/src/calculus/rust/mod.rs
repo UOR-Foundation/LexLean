@@ -74,7 +74,7 @@ impl Profile {
 /// The calculus elements a lowering realizes: the program's own, and the
 /// structural realizations it uses (§17.14): `function` always, `overflow`
 /// when a primitive or successor can fail, and `indirection` when a type
-/// holds itself.
+/// holds itself or, in `rust-std`, a stored field is a shared box.
 fn elements(program: &Program, lowering: &Lowering<'_>) -> BTreeSet<String> {
     let mut out = super::realization::program_elements(program);
     out.insert("function".to_owned());

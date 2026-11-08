@@ -999,6 +999,14 @@ impl<'a> Lowering<'a> {
         self.reaches
             .iter()
             .any(|(owner, reached)| reached.contains(owner))
+            || (self.profile == Profile::Std
+                && self
+                    .program
+                    .adts
+                    .iter()
+                    .flat_map(|adt| adt.constructors.iter().flatten())
+                    .chain(self.stored.values().flatten().flat_map(|(_, held)| held))
+                    .any(|ty| self.shared(ty)))
     }
 
     /// Whether a field of type `ty` stored in `owner` reaches `owner` again
