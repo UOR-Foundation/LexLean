@@ -13454,6 +13454,11 @@ number its own count assert reported against the committed one.
 | committed manifests and packages | 287 | 297 |
 | distinct programs | 204 | 214 |
 | distinct lowered crates | 263 | 273 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 499, 364 | 509, 374 |
+| `BS-06` `printCrate` vectors, committed distinct, refused, `printExpr` vectors | 693, 526, 65, 2,145 | 714, 546, 66, 2,213 |
+| `BS-05` crates within the bound, evaluator `validateCrate` and `correspondCrate` runs | 208, 444, 309 | 217, 453, 318 |
+| `BS-06` evaluator crates, seeded expression mutants | 584, 394 | 605, 400 |
+| `BS-05` refused among the seeded mutants | 291, 252 | 273, 253 |
 | `BS-07` vectors, within the bound | 338, 282 | 348, 292 |
 | `BS-08` crates, within the bound | 397, 342 | 407, 351 |
 | `BS-11` vectors, within the bound, mutants | 157, 156, 281 | 157, 156, 272 |
@@ -13466,3 +13471,14 @@ All ten new crates are within the 300-node bound of `BS-07`, `BS-13` and
 `BS-14`, and nine are within the 400-expression bound of `BS-05` and `BS-08`.
 The new stdlib verify records move the mutant draws of `BS-11` (-9), `BS-12`
 (+5), `BS-13` (+22) and `BS-14` (-46), as the Json records moved none.
+The vectors `BS-05` and `BS-06` assert once those counts hold are the rows
+of those two cases: each of the ten crates is a `validateCrate` and a
+`correspondCrate` run and a `printCrate` vector, the ten are committed
+distinct, one of them is the further run refused for the capacity one byte
+short of its output, and their function bodies are the 68 further `printExpr`
+vectors. The nine within the 400-expression bound are the further crates
+the evaluator of `BS-05` is given, 21 further `printCrate` vectors are under
+the 6,000-node bound of the evaluator of `BS-06`, and its seeded expression
+mutants draw six more from the crates of at most 80 expressions, as the
+500 and 500 of `BS-05` draw 18 fewer refused `validateCrate` mutants and one
+more refused `correspondCrate` mutant.

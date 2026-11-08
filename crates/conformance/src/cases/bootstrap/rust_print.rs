@@ -1194,14 +1194,14 @@ const COMMITTED_FIXTURES: usize = 122;
 const COMMITTED_PROGRAMS: usize = 214;
 const COMMITTED_CRATES: usize = 273;
 const COMMITTED_PACKAGES: usize = 297;
-const VECTORS_CRATE: usize = 693;
-const COMMITTED_DISTINCT: usize = 526;
-const REFUSED_CRATE: usize = 65;
-const VECTORS_EXPR: usize = 2_145;
+const VECTORS_CRATE: usize = 714;
+const COMMITTED_DISTINCT: usize = 546;
+const REFUSED_CRATE: usize = 66;
+const VECTORS_EXPR: usize = 2_213;
 const HAND_EXPR: usize = 1_532;
-const EVALUATOR_CRATE: usize = 584;
+const EVALUATOR_CRATE: usize = 605;
 const SEEDED_CRATE: usize = 400;
-const SEEDED_EXPR: usize = 394;
+const SEEDED_EXPR: usize = 400;
 const RUSTC_SEEDED_RUNS: usize = 2_989;
 
 /// The crates the evaluator is given in full: those of at most this many
