@@ -20,9 +20,7 @@ inductive{
   name: Reading,
   type_parameters: [],
   parameters: [],
-  constructors: [
-    {name: Read, fields: [Nat, Nat, (List Frame), Json::Json]}
-  ]
+  constructors: [{name: Read, fields: [Nat, Nat, (List Frame), Json::Json]}]
 }
 
 definition{
@@ -205,17 +203,10 @@ definition{
   parameters: [text : Bytes, position : Nat, mode : Nat, stack : (List Frame), byte : Nat],
   result: Reading,
   body: (if (byte =? 34) then (match (scanString text (position + 1))
-      | Option.some scanned => (complete (first scanned) stack (ctor Json::Json.JStr (second scanned)))
-      | Option.none => (broken position))
-    else (if (byte =? 116) then (if (prim equal (Text::sliceOr text position 4) 0x74727565 : Bool) then (complete (position + 4) stack (ctor Json::Json.JBool true)) else (broken position))
-    else (if (byte =? 102) then (if (prim equal (Text::sliceOr text position 5) 0x66616c7365 : Bool) then (complete (position + 5) stack (ctor Json::Json.JBool false)) else (broken position))
-    else (if (byte =? 91) then (ctor Reading.Read (position + 1) 1 (cons (ctor Frame.FrameArr (ctor Json::Json.JNil)) stack) (ctor Json::Json.JNil))
-    else (if (byte =? 123) then (ctor Reading.Read (position + 1) 3 (cons (ctor Frame.FrameObj 0x (ctor Json::Json.JNil)) stack) (ctor Json::Json.JNil))
-    else (if ((byte =? 93) && (mode =? 1)) then (close text position stack)
-    else (if ((byte =? 45) || ((47 <? byte) && (byte <? 58))) then (match (readInteger text position)
-      | Option.some read => (complete (first read) stack (second read))
-      | Option.none => (broken position))
-    else (broken position)))))))),
+    | Option.some scanned => (complete (first scanned) stack (ctor Json::Json.JStr (second scanned)))
+    | Option.none => (broken position)) else (if (byte =? 116) then (if (prim equal (Text::sliceOr text position 4) 0x74727565 : Bool) then (complete (position + 4) stack (ctor Json::Json.JBool true)) else (broken position)) else (if (byte =? 102) then (if (prim equal (Text::sliceOr text position 5) 0x66616c7365 : Bool) then (complete (position + 5) stack (ctor Json::Json.JBool false)) else (broken position)) else (if (byte =? 91) then (ctor Reading.Read (position + 1) 1 (cons (ctor Frame.FrameArr (ctor Json::Json.JNil)) stack) (ctor Json::Json.JNil)) else (if (byte =? 123) then (ctor Reading.Read (position + 1) 3 (cons (ctor Frame.FrameObj 0x (ctor Json::Json.JNil)) stack) (ctor Json::Json.JNil)) else (if ((byte =? 93) && (mode =? 1)) then (close text position stack) else (if ((byte =? 45) || ((47 <? byte) && (byte <? 58))) then (match (readInteger text position)
+    | Option.some read => (complete (first read) stack (second read))
+    | Option.none => (broken position)) else (broken position)))))))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -225,13 +216,12 @@ definition{
   parameters: [text : Bytes, position : Nat, mode : Nat, stack : (List Frame), byte : Nat],
   result: Reading,
   body: (if (byte =? 34) then (match (scanString text (position + 1))
-      | Option.some scanned => (match stack
-        | List.nil => (broken position)
-        | List.cons top below => (match top
-          | Frame.FrameArr acc => (broken position)
-          | Frame.FrameObj pending acc => (if (keyAdmitted acc (second scanned)) then (ctor Reading.Read (first scanned) 4 (cons (ctor Frame.FrameObj (second scanned) acc) below) (ctor Json::Json.JNil)) else (broken position))))
-      | Option.none => (broken position))
-    else (if ((byte =? 125) && (mode =? 3)) then (close text position stack) else (broken position))),
+    | Option.some scanned => (match stack
+      | List.nil => (broken position)
+      | List.cons top below => (match top
+        | Frame.FrameArr acc => (broken position)
+        | Frame.FrameObj pending acc => (if (keyAdmitted acc (second scanned)) then (ctor Reading.Read (first scanned) 4 (cons (ctor Frame.FrameObj (second scanned) acc) below) (ctor Json::Json.JNil)) else (broken position))))
+    | Option.none => (broken position)) else (if ((byte =? 125) && (mode =? 3)) then (close text position stack) else (broken position))),
   axioms: [Quot.sound, propext],
   executable: true
 }
