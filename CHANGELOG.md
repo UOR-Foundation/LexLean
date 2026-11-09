@@ -17,6 +17,37 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Canonical JSON reading in the standard library, the fourth member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
+  `LexLeanStd.JsonRead` holds the production roots `readJson` and
+  `readJsonFile` for `rust-std`, which read the canonical JSON of §21.7 back
+  into the `Json` value of `LexLeanStd.Json` and refuse any text the writer
+  would not write: whitespace, `null`, a number past `i64` or not in its
+  shortest form, keys out of order or repeated, an escape the writer does not
+  emit, and a byte after the value. They are held to `Json::parse` with the
+  text required to be what `to_canonical_string` writes of it. `stdlib/lexlean.toml`
+  gains the entrypoint, so the locks of `stdlib` and its consumers move. The
+  register is 478 IDs.
+- Maps and sets in the standard library, the fifth member the self-hosted
+  compiler needs, #276 (SPEC.md §17.22, `SL-14`). The module `LexLeanStd.Map`
+  holds ten production roots for `rust-std` over strictly ascending lists of
+  `Bytes` keys: `mapFromEntries`, `mapInsert`, `mapGet`, `mapRemove`, and
+  `mapExtend` for a map of `Bytes` values, and `setContains`, `setRemove`,
+  `setUnion`, `setIntersection`, and `setDifference` for a set, held to
+  `BTreeMap` and `BTreeSet`, whose `String` keys the front end's tables and name
+  sets use. `stdlib/lexlean.toml` gains the entrypoint, so the locks of `stdlib`
+  and its consumers move, and the ten packages move the counts `BS-05` to
+  `BS-08` and `BS-11` to `BS-15` assert. The register is 477 IDs.
+- Canonical JSON writing in the standard library, the third member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-11`). The module
+  `LexLeanStd.Json` holds the recursive value of §21.7 and the production
+  roots `writeJson`, `writeJsonFile`, and `escapeString` for `rust-std`, held
+  to `canonical_json::Json::to_canonical_string` and `to_file_bytes`: keys in
+  UTF-8 byte order with the last of a repeated key kept, shortest integers,
+  the required escapes, no whitespace. `stdlib/lexlean.toml` gains the
+  entrypoint, so the locks of `stdlib` and its consumers move, and the three
+  packages move the counts `BS-05` to `BS-08` and `BS-13` to `BS-15` assert.
+  The register is 476 IDs.
 - Induction over a nested inductive type, #278 (SPEC.md §16.9, §17.10, §17.12,
   `SM-37`). A new proof step, `nested_induction`, proves a statement about a
   value of a nested inductive type (a type with a constructor that holds

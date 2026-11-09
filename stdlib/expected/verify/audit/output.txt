@@ -290,6 +290,68 @@
 'LexLeanStd.Host.Request' does not depend on any axioms
 'LexLeanStd.Host.Start' does not depend on any axioms
 'LexLeanStd.Host.Waited' does not depend on any axioms
+'LexLeanStd.Json.Json' does not depend on any axioms
+'LexLeanStd.Json.arrayText' does not depend on any axioms
+'LexLeanStd.Json.escapeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.escapeString' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.escapedPiece' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.integerText' does not depend on any axioms
+'LexLeanStd.Json.keepLast' does not depend on any axioms
+'LexLeanStd.Json.memberText' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.objectText' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.quoted' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.renderItems' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.renderMembers' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeJson' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeJsonFile' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.Frame' does not depend on any axioms
+'LexLeanStd.JsonRead.Reading' does not depend on any axioms
+'LexLeanStd.JsonRead.advance' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.afterAt' does not depend on any axioms
+'LexLeanStd.JsonRead.broken' does not depend on any axioms
+'LexLeanStd.JsonRead.byteOf' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.close' does not depend on any axioms
+'LexLeanStd.JsonRead.complete' does not depend on any axioms
+'LexLeanStd.JsonRead.controlEscape' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.digitStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.digitsEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.escapeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.inRange' does not depend on any axioms
+'LexLeanStd.JsonRead.keyAdmitted' depends on axioms: [propext]
+'LexLeanStd.JsonRead.keyAt' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.readInteger' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.readJson' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.readJsonFile' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.readStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.readValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.reverseSpine' does not depend on any axioms
+'LexLeanStd.JsonRead.reverseStep' does not depend on any axioms
+'LexLeanStd.JsonRead.scanString' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.shortForm' does not depend on any axioms
+'LexLeanStd.JsonRead.simpleEscape' does not depend on any axioms
+'LexLeanStd.JsonRead.stringStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.valueAt' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Map.containsStep' does not depend on any axioms
+'LexLeanStd.Map.dropStep' does not depend on any axioms
+'LexLeanStd.Map.getStep' does not depend on any axioms
+'LexLeanStd.Map.insertEntryStep' depends on axioms: [propext]
+'LexLeanStd.Map.keepIfIn' does not depend on any axioms
+'LexLeanStd.Map.keepIfOut' does not depend on any axioms
+'LexLeanStd.Map.lastWins' does not depend on any axioms
+'LexLeanStd.Map.mapExtend' depends on axioms: [propext]
+'LexLeanStd.Map.mapFromEntries' depends on axioms: [propext]
+'LexLeanStd.Map.mapGet' does not depend on any axioms
+'LexLeanStd.Map.mapInsert' depends on axioms: [propext]
+'LexLeanStd.Map.mapRemove' does not depend on any axioms
+'LexLeanStd.Map.removeEntryStep' does not depend on any axioms
+'LexLeanStd.Map.reverseEntries' does not depend on any axioms
+'LexLeanStd.Map.reverseKeys' does not depend on any axioms
+'LexLeanStd.Map.setContains' does not depend on any axioms
+'LexLeanStd.Map.setDifference' does not depend on any axioms
+'LexLeanStd.Map.setIntersection' does not depend on any axioms
+'LexLeanStd.Map.setRemove' does not depend on any axioms
+'LexLeanStd.Map.setUnion' depends on axioms: [propext]
 'LexLeanStd.Numeral.accumulate' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Numeral.byteValues' does not depend on any axioms
 'LexLeanStd.Numeral.canonicalDecimal' depends on axioms: [propext, Quot.sound]

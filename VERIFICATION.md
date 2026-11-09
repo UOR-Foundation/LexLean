@@ -10964,6 +10964,41 @@ ended at the start of the rustc stage with the host's 16 GB virtual machine
 reset, and the run with the bound passed that stage in 67 s. A library beyond the evaluator's bound now reaches rustc as
 its first 4,096 bytes, held to the recipe, as the shaped inputs do.
 
+`SL-11` holds `LexLeanStd.Json` (#276, member 3) to the compiler's own writer,
+`canonical_json::Json::to_canonical_string` and `to_file_bytes`: the three
+roots `writeJson`, `writeJsonFile`, and `escapeString` under the evaluator
+agree with it byte for byte on a seeded corpus of trees whose keys repeat, are
+prefixes of one another, and hold multibyte and control characters, and the
+rendered `rust-std` packages under the pinned rustc agree on a larger one.
+The oracle's object is a `BTreeMap`, so of a repeated key the last insertion
+stays; the module reaches the same by sorting the members stably and keeping
+the last of a run of equal keys. The plant, made by the case itself on a copy
+of the project on every run, keeps the first (`keepLast` returns `kept` where
+it returns `cons entry rest`):
+
+```text
+the planted writer disagrees on 24 of 300 runs, the first: run 11 on [Adt { constructor: 4, fields: [Adt { constructor: 7, fields: [Bytes { hex: "6b" }, … 1 …
+{"hex":"7b226a223a332c226b223a317d","kind":"bytes"} != {"hex":"7b226a223a332c226b223a347d","kind":"bytes"}
+```
+
+`7b226a223a332c226b223a317d` is `{"j":3,"k":1}` and
+`7b226a223a332c226b223a347d` is `{"j":3,"k":4}`: the tree `k:1, k:2, j:3, k:4`
+as the members were given. The plant still orders every key and escapes every
+byte, so the same writer agrees with the oracle on every tree in which no
+object repeats a key, which the case asserts; only a repeated key catches it.
+
+Removed: the plants are made on copies; the source was not changed.
+Validated on `member2-order` + this member: `check`, `build`, and `fmt --check`
+clean; the eligibility report has all three roots eligible for `rust-std` with
+exactly their declared effects (`escapeString` `[allocation, overflow]`,
+`writeJson` and `writeJsonFile` `[allocation, overflow, recursion]`);
+`conformance_sl_11` passes through the plant, 8.6 s, with the committed-exports
+check of `stack_bounds::observe` and the Lean export bypassed on this host
+(neither the three packages nor their stack-bound rows exist before the wave
+writes them); `cargo clippy -p repo-conformance -p xtask --all-targets
+--all-features -D warnings`, `validate-model` (461 ids), `validate-spec-links`
+(461 rows), `check-test-inventory`, and the five `bdd` meta-gate tests pass.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
@@ -13368,6 +13403,140 @@ delta. Result `6f2c0f5a` and final inventory `b10f93e0` retain exact outcomes.
 These are source/model checks, not BS06 or AU04 conformance-case passes; the
 complete changed-head hosted gate and all later obligations remain required.
 
+## The three `Json` packages move the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (`SL-11`, #276)
+
+The three roots of `LexLeanStd.Json` (`SL-11`, #363) add three committed packages
+(`escape_string`, `write_json`, `write_json_file`), and these cases assert their
+corpus. The member was merged with `release/v0.4` at `55be5514c` (after #393
+regenerated the line), its locks, export, stack bounds, build oracles and verify
+records regenerated on the normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1),
+and the nine bootstrap parts of `.github/bdd-parts.json` run there on that tree.
+Each row is the number its own count assert reported against the committed one.
+
+| Count | `55be5514c` | member |
+| --- | --- | --- |
+| committed manifests and packages | 284 | 287 |
+| distinct programs | 201 | 204 |
+| distinct lowered crates | 260 | 263 |
+| `BS-07` vectors, within the bound | 335, 281 | 338, 282 |
+| `BS-08` crates, within the bound | 394, 342 | 397, 342 |
+| `BS-11` vectors, within the bound, mutants | 157, 156, 281 | 157, 156, 281 |
+| `BS-12` vectors, within the bound, mutants | 76, 75, 149 | 76, 75, 149 |
+| `BS-13` vectors, within the bound, mutants | 104, 52, 108 | 107, 53, 108 |
+| `BS-14` vectors, within the bound, mutants | 339, 285, 580 | 342, 286, 580 |
+| `BS-15` manifests, accepted, render mutants | 303, 284, 284 | 306, 287, 287 |
+
+`BS-11` and `BS-12` passed whole on this tree (about 33 and 48 minutes each), so
+the new records moved no mutant draw. The crates that differ are the three new
+ones: one is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`, none is
+within the 400-expression bound of `BS-05` and `BS-08`, so `BS-08`'s within count
+stays. On the previous base (`c613290b8`) the same parts reported the same deltas
+(+3, +3, +3; +3/+1; +3/+0; +3/+1; +3/+1; +3/+3/+3), and the asserts after these
+moved `BS-05`'s runs to 498 and 363 and `BS-06`'s vectors to 691, 524 and 65
+refused; on this base those counts, and `BS-15`'s rustc runs, are CI's to report, and
+the commit after this one records those that move.
+
+## The ten `Map` packages move the counts of `BS-05` to `BS-08` and `BS-11` to `BS-15` (`SL-14`, #276)
+
+The ten roots of `LexLeanStd.Map` (`SL-14`, #414) add ten committed packages
+(`map_from_entries`, `map_insert`, `map_get`, `map_remove`, `map_extend`,
+`set_contains`, `set_remove`, `set_union`, `set_intersection`,
+`set_difference`), and these cases assert their corpus. The member was merged
+with `release/v0.4` at `cb146c531` (after #363 landed), `Map.lex.tex` was
+formatted canonical under the line's formatter (`LLL1003`), its locks, export,
+stack bounds, build oracles and verify records were regenerated on the
+normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1), and the nine bootstrap
+parts of `.github/bdd-parts.json` were run there on that tree. Each row is the
+number its own count assert reported against the committed one.
+
+| Count | `cb146c531` | member |
+| --- | --- | --- |
+| committed manifests and packages | 287 | 297 |
+| distinct programs | 204 | 214 |
+| distinct lowered crates | 263 | 273 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 499, 364 | 509, 374 |
+| `BS-06` `printCrate` vectors, committed distinct, refused, `printExpr` vectors | 693, 526, 65, 2,145 | 714, 546, 66, 2,213 |
+| `BS-05` crates within the bound, evaluator `validateCrate` and `correspondCrate` runs | 208, 444, 309 | 217, 453, 318 |
+| `BS-06` evaluator crates, seeded expression mutants | 584, 394 | 605, 400 |
+| `BS-05` refused among the seeded mutants | 291, 252 | 273, 253 |
+| `BS-07` vectors, within the bound | 338, 282 | 348, 292 |
+| `BS-08` crates, within the bound | 397, 342 | 407, 351 |
+| `BS-11` vectors, within the bound, mutants | 157, 156, 281 | 157, 156, 272 |
+| `BS-12` vectors, within the bound, mutants | 76, 75, 149 | 76, 75, 154 |
+| `BS-13` vectors, within the bound, mutants | 107, 53, 108 | 117, 63, 130 |
+| `BS-14` vectors, within the bound, mutants | 342, 286, 580 | 352, 296, 534 |
+| `BS-15` manifests, accepted, render mutants | 306, 287, 287 | 316, 297, 297 |
+
+All ten new crates are within the 300-node bound of `BS-07`, `BS-13` and
+`BS-14`, and nine are within the 400-expression bound of `BS-05` and `BS-08`.
+The new stdlib verify records move the mutant draws of `BS-11` (-9), `BS-12`
+(+5), `BS-13` (+22) and `BS-14` (-46), as the Json records moved none.
+The vectors `BS-05` and `BS-06` assert once those counts hold are the rows
+of those two cases: each of the ten crates is a `validateCrate` and a
+`correspondCrate` run and a `printCrate` vector, the ten are committed
+distinct, one of them is the further run refused for the capacity one byte
+short of its output, and their function bodies are the 68 further `printExpr`
+vectors. The nine within the 400-expression bound are the further crates
+the evaluator of `BS-05` is given, 21 further `printCrate` vectors are under
+the 6,000-node bound of the evaluator of `BS-06`, and its seeded expression
+mutants draw six more from the crates of at most 80 expressions, as the
+500 and 500 of `BS-05` draw 18 fewer refused `validateCrate` mutants and one
+more refused `correspondCrate` mutant.
+
+
+## JsonRead uses its reserved SL-13 claim (#415, #422)
+
+The canonical JSON reader's claim is renamed from SL-12 to SL-13, preserving
+Host's separate SL-12 reservation. The register, normative SPEC row and prose,
+scenario tag, named conformance test, dispatch, case assertions and labels,
+README and CHANGELOG now use SL-13 together. No reader implementation, corpus,
+plant or axiom policy changed; the greater-than-nineteen-digit refusal and its
+new plant remain exactly as at contributor head e7adf7c6a.
+
+This is source-only namespace preparation on that exact head. Static comparison
+checks the register/SPEC/scenario/test correspondence and the unchanged source
+blobs; no Cargo, Lean or official writer ran. CONFORMANCE.md is intentionally
+left as the existing generated projection until the admitted official model
+writer runs. Complete source integration, generated projections, coordinated
+artifact regeneration and final-head acceptance remain required. This does not
+close #276 or establish final acceptance for #422.
+
+
+## The two `JsonRead` packages move the counts of `BS-05` to `BS-08` and `BS-12` to `BS-15` (`SL-13`, #276)
+
+The two roots of `LexLeanStd.JsonRead` (`SL-13`, #415) add two committed
+packages (`read_json`, `read_json_file`), and these cases assert their corpus.
+The member was merged with `release/v0.4` at `f1b70fe34` (after #414 landed),
+`JsonRead.lex.tex` was formatted canonical under the line's formatter
+(`LLL1003`), and its locks, export, build oracles and verify records were
+regenerated on the normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1). The
+`SL-13` case names its crates `jsonread_<member>`, so its stack-bound lookup
+reads them as the exported packages; it passes with the stack measured, and
+the two roots do not recurse. Each row below is the number its own count
+check reported on that tree against the committed one.
+
+| Count | `f1b70fe34` | member |
+| --- | --- | --- |
+| committed manifests and packages | 297 | 299 |
+| distinct programs | 214 | 216 |
+| distinct lowered crates | 273 | 275 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 509, 374 | 511, 376 |
+| `BS-06` `printCrate` vectors, committed distinct, refused | 714, 546, 66 | 719, 550, 67 |
+| `BS-06` evaluator crates | 605 | 604 |
+| `BS-07` vectors | 348 | 350 |
+| `BS-08` crates | 407 | 409 |
+| `BS-12` mutants | 154 | 150 |
+| `BS-13` vectors, mutants | 117, 130 | 119, 132 |
+| `BS-14` vectors, mutants | 352, 534 | 354, 539 |
+| `BS-15` manifests, accepted, render mutants | 316, 297, 297 | 318, 299, 299 |
+
+Neither new crate is within the 300-node bound of `BS-07`, `BS-13` and
+`BS-14` or the 400-expression bound of `BS-05` and `BS-08`, so every count of
+the crates and vectors those evaluators are given is unchanged, as are the
+`printExpr` vectors of `BS-06` and every count of `BS-11`. The new stdlib
+verify records move the mutant draws of `BS-12` (-4), `BS-13` (+2) and
+`BS-14` (+5).
+
 ## PR394 after actual393 landing: observed producer results (2026-11-05)
 
 The integration retains contributor d80997cf050ac70319a9517fff6a93f98e227712 (including d34/1170/0a36 history) and actual accepted393 landing55be5514cf4fe377c186059260d7666c7c9c2304, whose tested/reviewed/landed tree is3065516167862533e0594427c28be8fe74406aae. Only the exact admitted TokenAudit/PERFORMANCE source was adopted; source-compatible original frozen CLI/xtask and archived selected905 inputs/errors were reused. Physical review393 remained detached atc613 with its original raw index/logical0328 tree. No new identity, model, blanket-lock, fixture or calculus wave was run.
@@ -13379,3 +13548,15 @@ One official frozen `check-golden --write` passed in59.073s. Independent actual 
 One official frozen `verify-examples --write`, supported selector `without:uor-atlas`, passed all22 selected projects in3879.170s. Independent actual review3db1314850f8c6a9b6a45cd951bbe4021d3c2135c91efe50f1e2573748b09700 binds results0a4f79f9d11fe94a83165b2c183b8045320fd4afc4e935d70464db9768bbeaed and finalinventorycb0b60d777b4ba0e55a8f300187040da595b9bc454f897738e8382990f1a1088. The668 changed paths are exclusively bootstrap verification outputs:329 additions,329 removals and10 modifications. Bootstrap has463 normalized records and278 normalized process records with exit_code0;278 is the bootstrap count, not the total over22 projects. Other21 projects, Atlas, source, locks, pins, negative inputs and unrelated products remained exact. All24 source-module axiom audit outputs retained the exact prior [Quot.sound,propext] policy; pre-existing preservation/library Classical.choice remained unchanged. The LCNF extraction retains3104 constants; only scanSegmentsStep,stepLexAt,stepLexIdent,stepLexToken changed, with genuine preservation program28 lex/program29 auditTokens changes and their certificates explicitly reviewed. Official normalized executable placeholders are not a new physical-executable measurement.
 
 Entry and terminal guards retained exact905 selected input bytes, closed errors, original frozen artifacts, helpers, source/index/root and compiler/calculus dependencies. These producer outcomes do not establish the complete combined-head hosted gate, new Atlas run or final merge acceptance. No additional BS02 or performance run was executed. The prior named/full compiler partition BS02 pass atd809, receipt84ad2eb22c420a1d777208ce44ba6bb8b0ff8d57205f385d294f5c36fd89828c, and old-c61344-job gate remain prior-tree evidence. PERFORMANCE retains the author's d34 harness/WSL and host/comparison/timing caveats; no final-tree timing or speedup is inferred here. One complete changed-head hosted gate, same-run honesty, reproducibility, independent final tree/history review and actual landing/tree equality remain required. The closure scope is #373 only.
+
+## PR394 after actual 4dc release: observed golden reconciliation (2026-11-09)
+
+This continuation preserves actual PR head 281de5b5d41adda58e152ab49227c99f0f1fa24a and actual release/v0.4 4dc5b803c5b0771f9f19563373515d0a2c2f313a as the ordered future merge parents. Thus contributor d809/d34/1170/0a36 and accepted55be/363/414/415 history remain ancestors. The complete current 4dc VERIFICATION history and exact prior 281 appendix precede this additive entry. No #444 source is adopted: its run42647185072 ended cancelled (44 successful jobs and one cancelled Intel job), and it was not merged.
+
+Independent static reuse review 195005d179987435fd506bf9a355209473fae586ef7611681da91fbda73f38d8 established the exact selected 22-module source/import closure, unchanged compiler implementation and 905 selected semantic inputs. The 64 bootstrap production-export and 668 normalized-verification changes already produced and reviewed on 281 remain exact. New Map/Json/JsonRead modules are outside this selected closure. No export or 22-project verification phase was repeated. Those Nov5 durations and process/axiom/program evidence above retain their actual 55be+281 scope; they are not new currentbase executions or measurements.
+
+Under separate root admission ca0818e03f221445d77bfab595b64e255f1eb5d0f5cb74df61274a92aa6e208a, the exact ac7e9bb3278c0fed576c7441b264d3ba5094ead3 seed was adopted and ONE official frozen xtask `check-golden --write` completed with exit0 in 77.579s. Results ac776f08e6b9d8c892aff8cabcc19c7ec76918e9fc907c90cf5683713fbea8b5, final inventory 767440ccc3cc84eade3024e2168405ade9d6a65a30480784483714cacdc32c68, and independent actual artifact review 1b9bd71727fef0136451e5054648b552db2e784fbbd5ea61baef489e877e2026 bind this observed outcome. Exactly 23 bootstrap build files changed: 22 maps changed only source_id, and the manifest reconciled source_id/build_id, the lock input SHA and those 22 map output hashes. Semantic ID remained unchanged; source/build envelopes now follow the actual combined lock/source inputs. All other golden/runtime/tooling/export/verification products remained exact. No additional comparison, calculus writer, identity/model/lock/fixture wave, BS02 run or performance measurement was introduced.
+
+The reviewed physical ledger contains 12,551 entries and 10,900 present files, including 8 symlinks. Physical review393 remains detached at c613 with raw index f2a12ce1d4f383096de2ab9913efd25c55a5a3d01913a670429252ea4ee961eb and logical 0328 source tree; the external pre-documentation capture is 6dcf464632e277916cedfacb5656699c89872c47. Current frozen BOTH/probe artifacts, 905 inputs, closed errors, archived selected build metadata, helper ownership and all producer outputs passed entry and terminal preservation guards. The final additive VI is prepared externally, without changing that physical root.
+
+This is source/product readiness evidence, not complete combined-head acceptance. The historical281 draft run 41964177567 ran only plan/honesty/rest with seven required host/Atlas groups skipped; repro 41964177626 passed, and the prior ready run 41964083701 was cancelled. None accepts the new currentbase combination. One complete new-head hosted gate, same-run honesty, reproducibility, final review and eventual actual landing/tree equality remain mandatory. Existing d34/WSL PERFORMANCE rows and timing/host/comparison caveats retain their original scope; no new linearity measurement is claimed. Closure scope remains #373 only after its combined proof/BS02 and final gate requirements pass.
