@@ -853,7 +853,9 @@ const PLANTS: &[Plant] = &[
         root: 0,
         site: "(if (isBare word) then (if ((codeAt toks (pos + 1)) =? 0)",
         replacement: "(if true then (if ((codeAt toks (pos + 1)) =? 0)",
-        vector: "a name that is no name",
+        // Two bare words never reach the test of bareness; a word that begins
+        // with a digit and is no integer does.
+        vector: "a word of digits and a letter",
     },
     Plant {
         label: "the largest integer is one less",

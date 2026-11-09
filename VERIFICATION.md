@@ -11130,7 +11130,7 @@ regeneration, which produces the `bootstrap/render_doc` package.
 `BS-24` holds the two production roots of `LexLeanBoot.SurfaceGeneric`
 (`bootstrap/src/SurfaceGeneric.lex.tex`), `parseGeneric` and `printGeneric`, to
 `surface::generic::parse` and `surface::generic::print`, over the standard
-library's `Json` (`SL-11`, `SL-12`). It composes the lexer of `BS-22` and the
+library's `Json` (`SL-11`, `SL-13`). It composes the lexer of `BS-22` and the
 layout algebra of `BS-23`. `parseGeneric` reads the tokens with an explicit stack
 of frames and admits no `recursion`; `printGeneric` walks the value by structural
 recursion over the three cases of `Json` and admits `recursion`. The case has the
@@ -11148,14 +11148,24 @@ pass, and the eligibility report gives `parseGeneric` exactly `allocation` and
 On the project the lock is current and every module checks. The register agrees
 with the §31 table on 476 IDs, by the same parse `validate-spec-links` makes.
 
-The case has not run. It has not been compiled either, and `lexlean verify` has
-not been run on the module. `printGeneric` admits `recursion`, so
-`bootstrap/print_generic` owes a measured row in `tests/stack-bounds.json`
-(`PD-08`), which the case reads before it passes; the measurement is one of the
-heavy jobs the case owes, with its first run, to pin the counts of its corpora,
-and the landing regeneration, which produces the `bootstrap/parse_generic` and
-`bootstrap/print_generic` packages. The branch is stacked on `BS-22`, `BS-23`, and
-the standard library members `SL-11`, `SL-12`, and `SL-14`, and lands after them.
+The case was first compiled and run on the normative host on this member merged
+with `BS-23`, `BS-22`, `BS-21` and `SL-13` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_24`, 259 s). Its corpus is 163 named vectors (118
+read, 45 printed), the 3,906 committed JSON files, and 162 and 1,301 printed
+texts for the evaluator and rustc. The evaluator agrees with the oracle on 1,080
+reads and 607 prints, and each of the 32 planted defects is detected by its own
+vector. The first run found two faults. The printer's rank table spelt the key
+`axioms` as `axoims`, so a seeded object printed `axioms` after an unranked key,
+where the oracle prints it before; the member is now spelt as the oracle spells
+it. The plant `a tag need not be a name` was tried on `a b`, two bare words that
+never reach the test of bareness (now `a word of digits and a letter`, `1a`,
+which the oracle refuses and the planted reader admits). The case then stops at
+the stack-bound step, `bootstrap/parse_generic is no package of the committed
+exports`, as `BS-21`, `BS-22` and `BS-23` did before their regeneration, which
+produces the `bootstrap/parse_generic` and `bootstrap/print_generic` packages and
+measures the row of `print_generic` in `tests/stack-bounds.json` (`PD-08`). The
+branch is stacked on `BS-22`, `BS-23`, and the standard library members `SL-11`,
+`SL-13`, and `SL-14`, and lands after them.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
