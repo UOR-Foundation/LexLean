@@ -1,0 +1,33 @@
+== 2026-11-09T13:55:39Z build lexlean+xtask (cold)
+== 2026-11-09T13:57:23Z locks
+  ./bootstrap: wrote lexlean.lock
+  ./compiler: wrote lexlean.lock
+  ./examples/collections: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/collections/../target/debug/lexlean: No such file or directory
+  ./examples/fold-laws: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/fold-laws/../target/debug/lexlean: No such file or directory
+  ./examples/helpdesk: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/helpdesk/../target/debug/lexlean: No such file or directory
+  ./examples/higher-order: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/higher-order/../target/debug/lexlean: No such file or directory
+  ./examples/language-1.2: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/language-1.2/../target/debug/lexlean: No such file or directory
+  ./examples/list-induction: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/list-induction/../target/debug/lexlean: No such file or directory
+  ./examples/models: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/models/../target/debug/lexlean: No such file or directory
+  ./examples/nat-add-zero: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/nat-add-zero/../target/debug/lexlean: No such file or directory
+  ./examples/nested-induction: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/nested-induction/../target/debug/lexlean: No such file or directory
+  ./examples/peano-arithmetic: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/peano-arithmetic/../target/debug/lexlean: No such file or directory
+  ./examples/production: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/production/../target/debug/lexlean: No such file or directory
+  ./examples/production-coverage: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/production-coverage/../target/debug/lexlean: No such file or directory
+  ./examples/propositional-logic: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/propositional-logic/../target/debug/lexlean: No such file or directory
+  ./examples/reasoning: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/reasoning/../target/debug/lexlean: No such file or directory
+  ./examples/recursion: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/recursion/../target/debug/lexlean: No such file or directory
+  ./examples/recursive-data: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/recursive-data/../target/debug/lexlean: No such file or directory
+  ./examples/semantic-1.1: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/semantic-1.1/../target/debug/lexlean: No such file or directory
+  ./examples/uor-atlas: bash: line 11: /home/humuhumu33/LexLean-276-m5/examples/uor-atlas/../target/debug/lexlean: No such file or directory
+  ./std-models: wrote lexlean.lock
+  ./std-reasoning: wrote lexlean.lock
+  ./stdlib: wrote lexlean.lock
+== 2026-11-09T13:57:29Z model-write
+wrote /home/humuhumu33/LexLean-276-m5/CONFORMANCE.md and /home/humuhumu33/LexLean-276-m5/ERRORS.md
+== 2026-11-09T13:57:29Z validate-model
+validate-model: documents current, 479 ids, 86 codes, meta-gate and audits clean (R1)
+== 2026-11-09T13:58:04Z spec-links
+validate-spec-links: 479 table rows bijective with the register (RP-07)
+== 2026-11-09T13:58:04Z fmt
+fmt-ok

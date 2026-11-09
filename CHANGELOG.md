@@ -17,6 +17,27 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
+  command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
+  new language-1.2 module `RuntimeHost`, that calls the step and carries out each
+  request with one standard-library call (no signal API, no third-party crate).
+  The package manifest gains `entry`, the provenance gains `entry` and the digest
+  of `src/main.rs`, `RuntimeSyntax` gains the `cfgItem` item, the closed table of
+  the standard library grows from 51 to 121 names, and the validator gains the
+  rules `hidden-effect`, `cfg-condition`, `cfg-item`, and `cfg-pair`. The
+  language-1.2 compiler-semantics ID moves; 1.0 and 1.1 do not.
+  The register is 479 IDs.
+- Canonical JSON reading in the standard library, the fourth member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
+  `LexLeanStd.JsonRead` holds the production roots `readJson` and
+  `readJsonFile` for `rust-std`, which read the canonical JSON of §21.7 back
+  into the `Json` value of `LexLeanStd.Json` and refuse any text the writer
+  would not write: whitespace, `null`, a number past `i64` or not in its
+  shortest form, keys out of order or repeated, an escape the writer does not
+  emit, and a byte after the value. They are held to `Json::parse` with the
+  text required to be what `to_canonical_string` writes of it. `stdlib/lexlean.toml`
+  gains the entrypoint, so the locks of `stdlib` and its consumers move. The
+  register is 478 IDs.
 - Maps and sets in the standard library, the fifth member the self-hosted
   compiler needs, #276 (SPEC.md §17.22, `SL-14`). The module `LexLeanStd.Map`
   holds ten production roots for `rust-std` over strictly ascending lists of
@@ -87,15 +108,6 @@ workspace carried at those versions without a tag.
   such a parameter, where Lean's own search took that parameter and left the
   definition stuck on it (`LLV7013`). `lean_backend` of language 1.2 moves.
 
-- `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
-  command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
-  new language-1.2 module `RuntimeHost`, that calls the step and carries out each
-  request with one standard-library call (no signal API, no third-party crate).
-  The package manifest gains `entry`, the provenance gains `entry` and the digest
-  of `src/main.rs`, `RuntimeSyntax` gains the `cfgItem` item, the closed table of
-  the standard library grows from 51 to 121 names, and the validator gains the
-  rules `hidden-effect`, `cfg-condition`, `cfg-item`, and `cfg-pair`. The
-  language-1.2 compiler-semantics ID moves; 1.0 and 1.1 do not.
 - The #34 closure pass (documentation and evidence; no register row, language
   datum, schema, or compiler source moves). Sixteen examples carry a `README.md`
   that names the register rows whose gates run on them, what
