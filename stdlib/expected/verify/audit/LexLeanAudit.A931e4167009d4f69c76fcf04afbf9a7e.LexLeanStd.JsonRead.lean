@@ -1,0 +1,29 @@
+module
+import LexLeanStd.JsonRead
+#print axioms LexLeanStd.JsonRead.Frame
+#print axioms LexLeanStd.JsonRead.Reading
+#print axioms LexLeanStd.JsonRead.advance
+#print axioms LexLeanStd.JsonRead.afterAt
+#print axioms LexLeanStd.JsonRead.broken
+#print axioms LexLeanStd.JsonRead.byteOf
+#print axioms LexLeanStd.JsonRead.close
+#print axioms LexLeanStd.JsonRead.complete
+#print axioms LexLeanStd.JsonRead.controlEscape
+#print axioms LexLeanStd.JsonRead.digitStep
+#print axioms LexLeanStd.JsonRead.digitsEnd
+#print axioms LexLeanStd.JsonRead.escapeStep
+#print axioms LexLeanStd.JsonRead.inRange
+#print axioms LexLeanStd.JsonRead.keyAdmitted
+#print axioms LexLeanStd.JsonRead.keyAt
+#print axioms LexLeanStd.JsonRead.readInteger
+#print axioms LexLeanStd.JsonRead.readJson
+#print axioms LexLeanStd.JsonRead.readJsonFile
+#print axioms LexLeanStd.JsonRead.readStep
+#print axioms LexLeanStd.JsonRead.readValue
+#print axioms LexLeanStd.JsonRead.reverseSpine
+#print axioms LexLeanStd.JsonRead.reverseStep
+#print axioms LexLeanStd.JsonRead.scanString
+#print axioms LexLeanStd.JsonRead.shortForm
+#print axioms LexLeanStd.JsonRead.simpleEscape
+#print axioms LexLeanStd.JsonRead.stringStep
+#print axioms LexLeanStd.JsonRead.valueAt

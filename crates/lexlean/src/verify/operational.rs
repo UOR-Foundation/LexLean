@@ -362,6 +362,37 @@ fn invalid_memory(text: &str) -> Diagnostic {
 mod tests {
     use super::{Hint, Operational, DEFAULT_WIDTH, HINTS_VARIABLE, MAX_WIDTH, MEMORY_VARIABLE};
 
+    /// One case's hold on the process environment. The variables
+    /// `from_environment` reads are process-wide and tests run in parallel, so
+    /// every case that sets them holds this: they take turns, and each starts
+    /// and ends with them unset, even when a failed assertion ends it.
+    struct Environment {
+        _turn: std::sync::MutexGuard<'static, ()>,
+    }
+
+    impl Environment {
+        fn hold() -> Self {
+            static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+            let turn = LOCK
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            Self::unset();
+            Self { _turn: turn }
+        }
+
+        fn unset() {
+            for variable in [super::WIDTH_VARIABLE, HINTS_VARIABLE, MEMORY_VARIABLE] {
+                std::env::remove_var(variable);
+            }
+        }
+    }
+
+    impl Drop for Environment {
+        fn drop(&mut self) {
+            Self::unset();
+        }
+    }
+
     #[test]
     fn the_width_is_a_plain_decimal_integer_in_range() {
         assert_eq!(Operational::parse_width(None), Ok(DEFAULT_WIDTH));
@@ -434,6 +465,7 @@ mod tests {
 
     #[test]
     fn the_environment_is_read_as_bytes() {
+        let _environment = Environment::hold();
         let raw = not_unicode();
         std::env::set_var(super::WIDTH_VARIABLE, &raw);
         let refused = Operational::from_environment();
@@ -474,6 +506,7 @@ mod tests {
 
     #[test]
     fn a_hints_file_from_the_environment() {
+        let _environment = Environment::hold();
         let directory = tempfile::tempdir().expect("tempdir");
         let path = directory.path().join("hints.json");
         std::fs::write(&path, "{\"Mod.A\": {\"wall_ms\": 5}}").expect("write");

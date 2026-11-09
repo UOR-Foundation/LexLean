@@ -291,6 +291,28 @@ pub fn compare_parts(
             }
         }
     }
+    for (part, targets) in &plan.targets {
+        let listed = parts
+            .iter()
+            .find(|(name, _)| name == part)
+            .ok_or_else(|| format!("RP-13: target part `{part}` is missing"))?;
+        for target in targets {
+            let expected: BTreeSet<&Entry> = owned
+                .entries
+                .iter()
+                .filter(|entry| crate_of_target(&entry.target) == target.replace('-', "_"))
+                .collect();
+            if expected.is_empty()
+                || !expected
+                    .iter()
+                    .all(|entry| listed.1.entries.contains(*entry))
+            {
+                return Err(format!(
+                    "RP-13: part `{part}` does not own complete target `{target}`"
+                ));
+            }
+        }
+    }
     Ok(parts.len())
 }
 

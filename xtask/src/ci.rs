@@ -83,7 +83,7 @@ fn list_tests(
 /// --all-features`, the whole `repo-conformance` suite, or, when
 /// `LEXLEAN_BDD_PART` names a part of `.github/bdd-parts.json`, the same
 /// command with that part's harness filters. Unset or empty, which is what
-/// `just vv` and `release.yml` run, the recipe is the command it always was.
+/// local `just vv` runs, the recipe is the command it always was.
 /// The filters select tests; no case decides whether it runs, and the
 /// inventory proves from the harness's own lists that the parts are the whole
 /// suite, each test in one part (RP-13).
@@ -92,44 +92,41 @@ pub fn bdd(root: &Path) -> Result<(), Fail> {
     let part = std::env::var(PART_VARIABLE)
         .ok()
         .filter(|value| !value.is_empty());
-    let mut harness: Vec<String> = Vec::new();
-    if let Some(part) = &part {
+    let mut harness = Vec::new();
+    let targets = if let Some(part) = &part {
         let plan = Plan::read(root)?;
-        harness.push("--".to_owned());
         harness.extend(plan.harness_filters(part)?);
-        let what = if *part == plan.remainder {
-            format!(
-                "every test but the {} the other parts name",
-                plan.named_tests().len()
-            )
-        } else {
-            format!("{} conformance cases", plan.parts[part].len())
-        };
-        println!("bdd: the part `{part}` of {PLAN_FILE}: {what} (§9.4)");
-    }
+        println!("bdd: the part `{part}` of {PLAN_FILE} (§9.4)");
+        plan.cargo_targets(part, &owned_targets(root)?.1)?
+    } else {
+        vec![Vec::new()]
+    };
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
-    let status = Command::new(cargo)
-        .current_dir(root)
-        .arg("test")
-        .args(CARGO_ARGUMENTS)
-        .args(&harness)
-        .stdin(Stdio::null())
-        .status()?;
-    if !status.success() {
-        return Err(format!(
-            "bdd: `cargo test {}`{} failed",
-            CARGO_ARGUMENTS.join(" "),
-            part.map(|part| format!(" (the part `{part}`)"))
-                .unwrap_or_default()
-        )
-        .into());
+    let mut failed = false;
+    for selected in targets {
+        let status = Command::new(&cargo)
+            .current_dir(root)
+            .arg("test")
+            .args(CARGO_ARGUMENTS)
+            .args(&selected)
+            .arg("--")
+            .args(&harness)
+            .stdin(Stdio::null())
+            .status()?;
+        if !status.success() {
+            eprintln!("bdd: cargo test failed for part {part:?}, targets {selected:?}");
+            failed = true;
+        }
+    }
+    if failed {
+        return Err(format!("bdd: cargo test failed for part {part:?}").into());
     }
     Ok(())
 }
 
 /// The names of the binaries that carry the tests of `repo-conformance`:
 /// its library and each of its test targets, from `cargo metadata`.
-fn owned_crates(root: &Path) -> Result<BTreeSet<String>, Fail> {
+fn owned_targets(root: &Path) -> Result<(BTreeSet<String>, BTreeSet<String>), Fail> {
     let cargo = std::env::var_os("CARGO").unwrap_or_else(|| "cargo".into());
     let output = Command::new(cargo)
         .current_dir(root)
@@ -142,6 +139,7 @@ fn owned_crates(root: &Path) -> Result<BTreeSet<String>, Fail> {
     }
     let metadata: Value = serde_json::from_slice(&output.stdout)?;
     let mut crates = BTreeSet::new();
+    let mut integration = BTreeSet::new();
     for package in metadata["packages"].as_array().into_iter().flatten() {
         if package["name"] != inventory::OWNED_PACKAGE {
             continue;
@@ -158,10 +156,13 @@ fn owned_crates(root: &Path) -> Result<BTreeSet<String>, Fail> {
                 .any(|kind| matches!(*kind, "lib" | "rlib" | "bin" | "test"));
             if let (true, Some(name)) = (tested, target["name"].as_str()) {
                 crates.insert(name.replace('-', "_"));
+                if kinds.contains(&"test") {
+                    integration.insert(name.to_owned());
+                }
             }
         }
     }
-    Ok(crates)
+    Ok((crates, integration))
 }
 
 /// RP-13: `test` and `bdd` partition `cargo test --workspace --all-features`,
@@ -185,11 +186,22 @@ pub fn check_test_inventory(root: &Path) -> Result<(), Fail> {
     let workspace = list_tests(root, &reference, &[])?;
     let ordinary = list_tests(root, &inventory::recipe_arguments(&ordinary_line)?, &[])?;
     let owned = list_tests(root, &owned_arguments, &[])?;
-    let summary = inventory::compare(&workspace, &ordinary, &owned, &owned_crates(root)?)?;
+    let (crates, integration) = owned_targets(root)?;
+    let summary = inventory::compare(&workspace, &ordinary, &owned, &crates)?;
     let plan = Plan::read(root)?;
     let mut parts = Vec::new();
     for name in plan.names() {
-        let listed = list_tests(root, &owned_arguments, &plan.harness_filters(&name)?)?;
+        let mut listed = inventory::Parsed::default();
+        for selected in plan.cargo_targets(&name, &integration)? {
+            let arguments: Vec<String> = owned_arguments.iter().chain(&selected).cloned().collect();
+            let command = list_tests(root, &arguments, &plan.harness_filters(&name)?)?;
+            listed.targets.extend(command.targets);
+            for entry in command.entries {
+                if !listed.entries.insert(entry.clone()) {
+                    return Err(format!("RP-13: part `{name}` runs `{}` twice", entry.name).into());
+                }
+            }
+        }
         parts.push((name, listed));
     }
     let count = inventory::compare_parts(&owned, &parts, &plan)?;

@@ -1,0 +1,101 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{BinderKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{BkExplicit}: \texttt{()}.\par
+\noindent Constructor \texttt{BkImplicit}: \texttt{()}.\par
+\noindent Constructor \texttt{BkInstance}: \texttt{()}.\par
+\subsection*{\texttt{Sig}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{SgConst}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{SgVar}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{SgApp}: \texttt{(Sig, Sig)}.\par
+\noindent Constructor \texttt{SgArrow}: \texttt{(Sig, Sig)}.\par
+\noindent Constructor \texttt{SgPi}: \texttt{(Option (ByteArray), BinderKind, Sig, Sig)}.\par
+\noindent Constructor \texttt{SgType}: \texttt{(Option (ByteArray))}.\par
+\noindent Constructor \texttt{SgOpt}: \texttt{(Sig, Sig)}.\par
+\noindent Constructor \texttt{SgEmpty}: \texttt{()}.\par
+\noindent Constructor \texttt{SgNat}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{SgNil}: \texttt{()}.\par
+\noindent Constructor \texttt{SgCons}: \texttt{(Sig, Sig)}.\par
+\subsection*{\texttt{Ty}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{TyConst}: \texttt{(ByteArray, Ty)}.\par
+\noindent Constructor \texttt{TyParam}: \texttt{(ByteArray, Ty)}.\par
+\noindent Constructor \texttt{TyFn}: \texttt{(Ty, Ty)}.\par
+\noindent Constructor \texttt{TyIndex}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{TyNil}: \texttt{()}.\par
+\noindent Constructor \texttt{TyCons}: \texttt{(Ty, Ty)}.\par
+\subsection*{\texttt{Pars}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{PrNil}: \texttt{()}.\par
+\noindent Constructor \texttt{PrCons}: \texttt{(ByteArray, Ty, Pars)}.\par
+\subsection*{\texttt{Term}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{TmVar}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{TmNat}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{TmStr}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{TmChar}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{TmName}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{TmCall}: \texttt{(ByteArray, Ty, Term)}.\par
+\noindent Constructor \texttt{TmConstruct}: \texttt{(ByteArray, Ty, Term)}.\par
+\noindent Constructor \texttt{TmField}: \texttt{(Term, ByteArray)}.\par
+\noindent Constructor \texttt{TmList}: \texttt{(Ty, Term)}.\par
+\noindent Constructor \texttt{TmArray}: \texttt{(Ty, Term)}.\par
+\noindent Constructor \texttt{TmLet}: \texttt{(ByteArray, Ty, Term, Term)}.\par
+\noindent Constructor \texttt{TmLambda}: \texttt{(Pars, Term)}.\par
+\noindent Constructor \texttt{TmApply}: \texttt{(Term, Term)}.\par
+\noindent Constructor \texttt{TmIf}: \texttt{(Term, Term, Term)}.\par
+\noindent Constructor \texttt{TmMatch}: \texttt{(Term, Term)}.\par
+\noindent Constructor \texttt{TmNil}: \texttt{()}.\par
+\noindent Constructor \texttt{TmCons}: \texttt{(Term, Term)}.\par
+\noindent Constructor \texttt{TmBranchNil}: \texttt{()}.\par
+\noindent Constructor \texttt{TmBranch}: \texttt{(Option (ByteArray), List (ByteArray), Term, Term)}.\par
+\subsection*{\texttt{ParamKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{KdType}: \texttt{()}.\par
+\noindent Constructor \texttt{KdConstructor}: \texttt{()}.\par
+\noindent Constructor \texttt{KdIndex}: \texttt{(ByteArray)}.\par
+\subsection*{\texttt{Atom}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{AtToken}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{AtIdent}: \texttt{()}.\par
+\noindent Constructor \texttt{AtType}: \texttt{()}.\par
+\subsection*{\texttt{InvokeArg}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{IaIdent}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{IaType}: \texttt{(Sig)}.\par
+\subsection*{\texttt{TypeParam}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{name}: \texttt{ByteArray}.\par
+\noindent Field \texttt{kind}: \texttt{ParamKind}.\par
+\subsection*{\texttt{Requires}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{parameter}: \texttt{ByteArray}.\par
+\noindent Field \texttt{target}: \texttt{ByteArray}.\par
+\subsection*{\texttt{Constructor}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{name}: \texttt{ByteArray}.\par
+\noindent Field \texttt{members}: \texttt{Pars}.\par
+\noindent Field \texttt{requires}: \texttt{Option (Requires)}.\par
+\subsection*{\texttt{Typing}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{callee}: \texttt{ByteArray}.\par
+\noindent Field \texttt{params}: \texttt{List (ByteArray)}.\par
+\subsection*{\texttt{Pin}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{file}: \texttt{ByteArray}.\par
+\noindent Field \texttt{sha256}: \texttt{ByteArray}.\par
+\subsection*{\texttt{Decl}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{DType}: \texttt{(ByteArray, List (TypeParam), List (Constructor), Bool, Option (Ty), Pin)}.\par
+\noindent Constructor \texttt{DCall}: \texttt{(ByteArray, Sig, ByteArray, Pin)}.\par
+\noindent Constructor \texttt{DPlumbing}: \texttt{(List (ByteArray))}.\par
+\noindent Constructor \texttt{DFunction}: \texttt{(ByteArray, Bool, Bool, Option (ByteArray), List (ByteArray), Pars, Ty, Term)}.\par
+\noindent Constructor \texttt{DCommand}: \texttt{(ByteArray, List (Atom), ByteArray)}.\par
+\noindent Constructor \texttt{DInvoke}: \texttt{(ByteArray, List (InvokeArg))}.\par
+\noindent Constructor \texttt{DEvaluate}: \texttt{(ByteArray, Term)}.\par
+\end{document}
