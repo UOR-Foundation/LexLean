@@ -1068,6 +1068,136 @@
 'LexLeanBoot.RustValidate.widthKind' does not depend on any axioms
 'LexLeanBoot.RustValidate.wrapConstruct' does not depend on any axioms
 'LexLeanBoot.RustValidate.zeroStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Arg' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ArgAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ArgScan' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Block' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.BlocksCtx' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.CalcStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.CaseRow' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.CasesHeader' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Ctx' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.DataForm' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Decl' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.DeclFrame' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.DeclKind' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.EnvAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ItemAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.LabelScan' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.LabeledHeader' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Machine' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Mode' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ModuleAst' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Origin' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Policy' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.PolicyAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.PolicyKind' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Proof' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ProofCtx' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ProofFrame' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Ps' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Quoting' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Row' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.SectionFrame' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Sentence' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.SentenceAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.SentenceScan' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.argList' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.argNext' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.argStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.atBeginOf' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.atControl' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.atomAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.atomIs' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.before' depends on axioms: [propext]
+'LexLeanBoot.StructuralGrammar.beginEnv' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.blocksOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.blocksStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.brace' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.braceWith' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.calcStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.calculateItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.casesNext' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.cat' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.chainBlocks' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.chainCases' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.chainItems' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.chainLabeled' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.closeBlocks' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.componentArg' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.componentByte' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.componentStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.cover' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.coverMetadata' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.coverPayload' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.coverRange' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.coverStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.dataForm' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.declKindOf' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.enterProof' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.envOrigin' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.expectAtom' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.expectControl' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.expectEnd' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.fail' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.finishDecl' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.finishModule' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.foundEnd' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.foundText' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.haveItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.headerRows' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.insertName' depends on axioms: [propext]
+'LexLeanBoot.StructuralGrammar.insertStep' depends on axioms: [propext]
+'LexLeanBoot.StructuralGrammar.isAtom' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.isComponentId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.isLeanName' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.isTheoremLike' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.joined' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.labelStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.labeledNext' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.leafItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.leanStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.lit' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.machineStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.metadata' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.moved' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.nameStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.nestingMessage' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.noForm' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.openDeclaration' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.openSection' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.parseBody' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.parseLabel' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.parseModule' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.placeHere' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.policyNamed' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.policyOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.proofEnvItem' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.proofStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.pushBlock' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.pushItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.quoteRun' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.quoteStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.refuse' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.returnProof' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.rewriteItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.rewriteStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.rowOf' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.same' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.sentence' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.sentenceControl' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.sentenceMove' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.sentenceStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.sentenceStop' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.simplifyItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.simplifyStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.skipStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.skipWs' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.structural' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ticked' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.verbatimBody' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.verbatimStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.wholeFile' does not depend on any axioms
 'LexLeanBoot.TokenAudit.AuditState' does not depend on any axioms
 'LexLeanBoot.TokenAudit.CommentState' does not depend on any axioms
 'LexLeanBoot.TokenAudit.LexState' does not depend on any axioms
@@ -1513,6 +1643,27 @@
 'LexLeanStd.Buffer.writeEach' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Buffer.writeNumbers' does not depend on any axioms
 'LexLeanStd.Buffer.zeroStep' does not depend on any axioms
+'LexLeanStd.Numeral.accumulate' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.byteValues' does not depend on any axioms
+'LexLeanStd.Numeral.canonicalDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.decimal' does not depend on any axioms
+'LexLeanStd.Numeral.decimalDigits' does not depend on any axioms
+'LexLeanStd.Numeral.decimalEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.decimalValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.digitStep' does not depend on any axioms
+'LexLeanStd.Numeral.digits' does not depend on any axioms
+'LexLeanStd.Numeral.hex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexByte' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexDigits' does not depend on any axioms
+'LexLeanStd.Numeral.hexNat' does not depend on any axioms
+'LexLeanStd.Numeral.hexStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.isDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.isHex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.pairStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.parseDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.parseHex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.pick' does not depend on any axioms
 'LexLeanStd.Sha256.Digest' does not depend on any axioms
 'LexLeanStd.Sha256.Schedule' does not depend on any axioms
 'LexLeanStd.Sha256.Working' does not depend on any axioms
