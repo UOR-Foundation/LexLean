@@ -10999,6 +10999,60 @@ writes them); `cargo clippy -p repo-conformance -p xtask --all-targets
 --all-features -D warnings`, `validate-model` (461 ids), `validate-spec-links`
 (461 rows), `check-test-inventory`, and the five `bdd` meta-gate tests pass.
 
+### the LSE reader and printer are source (BS-25)
+
+`BS-25` holds the two production roots of `LexLeanBoot.LexiconLse`
+(`bootstrap/src/LexiconLse.lex.tex`), `parseLse` and `printLse`, to
+`lexicon::lse::parse` and `Lse::print`. It is the first slice of the lexicon
+(§13) as source, and imports the standard library's `Numeral`, `Order`, and
+`Text` and nothing of the bootstrap project. `parseLse` reads a text in the
+oracle's three phases, each an iteration over an explicit state (the tokenizer,
+the reader with its stack of open lists bounded by the depth argument, and the
+conversion with its work stack, which visits a form's parts in the oracle's
+order and builds the form when they are on the value stack), so that it admits
+no `recursion` and states the oracle's first error with its message to the byte,
+the depth error apart from the syntax errors as `ParseError` keeps them.
+`printLse` writes the canonical text by structural recursion over the
+expression, its chains, and its universes, with the binders renamed in printing
+order when asked, and admits `recursion`. The case has the shape of its
+predecessors: hand-built texts that reach each error of the reader and the limit
+on nesting, hand-built expressions of every form printed as read and renamed,
+every `signature` and `value` of the committed lexicon entries read, printed
+both ways, and read back, and seeded expressions and seeded edits. Each planted
+defect names the one vector that catches it, and the case asserts that the site
+of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `LexiconLse`: `lexlean check`, `lexlean build`, and `lexlean
+verify` pass, and the eligibility report gives `parseLse` exactly `allocation`
+and `overflow` and `printLse` exactly `allocation`, `overflow`, and `recursion`.
+On the project the lock is current and every module checks. The register agrees
+with the §31 table on 479 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `release/v0.4` at
+`4dc5b803c` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_25`). Its corpus is 139 named vectors (105 read, 34 printed),
+the 417 committed expressions (834 reads, of the text and of its canonical
+form, and 834 prints, as read and renamed), and 300 seeded expressions under
+the evaluator (300 prints, 600 reads) and 1,500 under rustc. The evaluator
+agrees with the oracle on 1,539 reads and 1,168 prints, and each of the 30
+planted defects is detected by its own vector. The reader agreed on every run
+of its first run. The printer did not: it closed a constant's universe list and
+not the constant, so `(const pkg::entry (u))` lost its last parenthesis; the
+vector `a const with universes printed` caught it. Before the case, `lexlean
+verify` rejected certificate B of `parseLse`: the scanner of a package or entry
+ID kept its state as nested pairs and tested a component as a condition, which
+the correspondence certificate of the Rust lowering does not type; the state is
+now a structure, as the other scanners of the project keep theirs. The linker
+refused three binders spelled like Lean's `id`, like the declaration
+`modeText`, and like Lean's `syntax`, and Lean's audit corrected the axiom
+policy of 24 definitions. The case then stops at the stack-bound step,
+`bootstrap/parse_lse is no package of the committed exports`, as `BS-21` to
+`BS-24` did before their regeneration, which produces the `bootstrap/parse_lse`
+and `bootstrap/print_lse` packages and measures the row of `print_lse` in
+`tests/stack-bounds.json` (`PD-08`). The branch is based on `release/v0.4`
+after `SL-13` and stacks on nothing.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
