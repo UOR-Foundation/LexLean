@@ -290,6 +290,41 @@
 'LexLeanStd.Host.Request' does not depend on any axioms
 'LexLeanStd.Host.Start' does not depend on any axioms
 'LexLeanStd.Host.Waited' does not depend on any axioms
+'LexLeanStd.Json.Json' does not depend on any axioms
+'LexLeanStd.Json.arrayText' does not depend on any axioms
+'LexLeanStd.Json.escapeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.escapeString' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.escapedPiece' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.integerText' does not depend on any axioms
+'LexLeanStd.Json.keepLast' does not depend on any axioms
+'LexLeanStd.Json.memberText' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.objectText' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.quoted' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.renderItems' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.renderMembers' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeJson' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeJsonFile' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Map.containsStep' does not depend on any axioms
+'LexLeanStd.Map.dropStep' does not depend on any axioms
+'LexLeanStd.Map.getStep' does not depend on any axioms
+'LexLeanStd.Map.insertEntryStep' depends on axioms: [propext]
+'LexLeanStd.Map.keepIfIn' does not depend on any axioms
+'LexLeanStd.Map.keepIfOut' does not depend on any axioms
+'LexLeanStd.Map.lastWins' does not depend on any axioms
+'LexLeanStd.Map.mapExtend' depends on axioms: [propext]
+'LexLeanStd.Map.mapFromEntries' depends on axioms: [propext]
+'LexLeanStd.Map.mapGet' does not depend on any axioms
+'LexLeanStd.Map.mapInsert' depends on axioms: [propext]
+'LexLeanStd.Map.mapRemove' does not depend on any axioms
+'LexLeanStd.Map.removeEntryStep' does not depend on any axioms
+'LexLeanStd.Map.reverseEntries' does not depend on any axioms
+'LexLeanStd.Map.reverseKeys' does not depend on any axioms
+'LexLeanStd.Map.setContains' does not depend on any axioms
+'LexLeanStd.Map.setDifference' does not depend on any axioms
+'LexLeanStd.Map.setIntersection' does not depend on any axioms
+'LexLeanStd.Map.setRemove' does not depend on any axioms
+'LexLeanStd.Map.setUnion' depends on axioms: [propext]
 'LexLeanStd.Numeral.accumulate' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Numeral.byteValues' does not depend on any axioms
 'LexLeanStd.Numeral.canonicalDecimal' depends on axioms: [propext, Quot.sound]
@@ -311,6 +346,24 @@
 'LexLeanStd.Numeral.parseDecimal' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Numeral.parseHex' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Numeral.pick' does not depend on any axioms
+'LexLeanStd.Order.ascendStep' depends on axioms: [propext]
+'LexLeanStd.Order.dedupStep' does not depend on any axioms
+'LexLeanStd.Order.insertSorted' depends on axioms: [propext]
+'LexLeanStd.Order.insertStep' depends on axioms: [propext]
+'LexLeanStd.Order.isAscending' depends on axioms: [propext]
+'LexLeanStd.Order.keysOf' does not depend on any axioms
+'LexLeanStd.Order.lessBytes' depends on axioms: [propext]
+'LexLeanStd.Order.mergeEntries' depends on axioms: [propext]
+'LexLeanStd.Order.mergePass' depends on axioms: [propext]
+'LexLeanStd.Order.mergeStep' depends on axioms: [propext]
+'LexLeanStd.Order.passStep' depends on axioms: [propext]
+'LexLeanStd.Order.reverseList' does not depend on any axioms
+'LexLeanStd.Order.sortByKey' depends on axioms: [propext]
+'LexLeanStd.Order.sortBytes' depends on axioms: [propext]
+'LexLeanStd.Order.sortEntries' depends on axioms: [propext]
+'LexLeanStd.Order.sortStep' depends on axioms: [propext]
+'LexLeanStd.Order.sortedSet' depends on axioms: [propext]
+'LexLeanStd.Order.withUnit' does not depend on any axioms
 'LexLeanStd.Sha256.Digest' does not depend on any axioms
 'LexLeanStd.Sha256.Schedule' does not depend on any axioms
 'LexLeanStd.Sha256.Working' does not depend on any axioms

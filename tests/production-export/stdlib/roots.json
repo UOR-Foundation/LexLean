@@ -135,6 +135,150 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "sort_bytes",
+      "root": "LexLeanStd.Order.sortBytes",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sort_entries",
+      "root": "LexLeanStd.Order.sortEntries",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sorted_set",
+      "root": "LexLeanStd.Order.sortedSet",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "insert_sorted",
+      "root": "LexLeanStd.Order.insertSorted",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "is_ascending",
+      "root": "LexLeanStd.Order.isAscending",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "escape_string",
+      "root": "LexLeanStd.Json.escapeString",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "write_json",
+      "root": "LexLeanStd.Json.writeJson",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "write_json_file",
+      "root": "LexLeanStd.Json.writeJsonFile",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "map_from_entries",
+      "root": "LexLeanStd.Map.mapFromEntries",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "map_insert",
+      "root": "LexLeanStd.Map.mapInsert",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "map_get",
+      "root": "LexLeanStd.Map.mapGet",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "map_remove",
+      "root": "LexLeanStd.Map.mapRemove",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "map_extend",
+      "root": "LexLeanStd.Map.mapExtend",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "set_contains",
+      "root": "LexLeanStd.Map.setContains",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "set_remove",
+      "root": "LexLeanStd.Map.setRemove",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "set_union",
+      "root": "LexLeanStd.Map.setUnion",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "set_intersection",
+      "root": "LexLeanStd.Map.setIntersection",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "set_difference",
+      "root": "LexLeanStd.Map.setDifference",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

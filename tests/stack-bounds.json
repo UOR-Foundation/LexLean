@@ -81,6 +81,9 @@
     "bootstrap/print_expr": {
       "debug": 4259840
     },
+    "bootstrap/render_tooling_latex": {
+      "debug": 3342336
+    },
     "bootstrap/site_trees": {
       "debug": 6029312
     },
@@ -95,6 +98,12 @@
     },
     "bootstrap/validate_runtime": {
       "debug": 4259840
+    },
+    "stdlib/write_json": {
+      "debug": 1245184
+    },
+    "stdlib/write_json_file": {
+      "debug": 1245184
     }
   }
 }

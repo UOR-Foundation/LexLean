@@ -12,7 +12,7 @@
 # tree is the tree of its second parent, a run on that parent. A run counts
 # when every job of it concluded `success` and it holds the join of Atlas,
 # every host of the matrix, and every leg of `.github/vv-rows.json`; a
-# draft run, which has only the `rest` leg, never does. A tag on a commit no
+# draft run, which has only honesty and the `rest` leg, never does. A tag on a commit no
 # such run verified is refused, naming what was looked for.
 #
 # Inputs, all from the environment: REPO (owner/name), SHA (the tagged
@@ -42,13 +42,16 @@ jobs_of() {
 
 # Whether a jobs listing is the whole gate, passed.
 whole_gate_passed() {
-  local jobs=$1 part
+  local jobs=$1 part job
   [ -n "$jobs" ] || return 1
   printf '%s\n' "$jobs" | awk -F'\t' '$2 != "success" { bad = 1 } END { exit bad }' || return 1
-  printf '%s\n' "$jobs" | grep -qxP 'atlas \(join\)\tsuccess\t.*' || return 1
+  # Quiet grep can close the pipe early and make printf fail under pipefail.
+  printf '%s\n' "$jobs" | grep -xP 'atlas \(join\)\tsuccess\t.*' >/dev/null || return 1
   [ "$(printf '%s\n' "$jobs" | grep -c '^build and non-Lean tests (')" -eq "$hosts" ] || return 1
   for part in $parts; do
-    printf '%s\n' "$jobs" | grep -qP "^just vv \(\Q$part\E\)\tsuccess\t" || return 1
+    job="just vv ($part)"
+    [ "$part" != honesty ] || job=honesty
+    printf '%s\n' "$jobs" | grep -P "^\Q$job\E\tsuccess\t" >/dev/null || return 1
   done
 }
 

@@ -61,8 +61,8 @@ fn parse_table(spec: &str) -> Result<Vec<TableRow>, Fail> {
 pub fn validate(root: &Path) -> Result<(), Fail> {
     let spec = std::fs::read_to_string(root.join("SPEC.md"))?;
     let rows = parse_table(&spec)?;
-    if rows.len() != 469 {
-        return Err(format!("RP-07: the §31 table has {} rows, not 469", rows.len()).into());
+    if rows.len() != 478 {
+        return Err(format!("RP-07: the §31 table has {} rows, not 478", rows.len()).into());
     }
     // The prose total under the table is part of the contract a reader
     // relies on; a row added without it would leave §31 contradicting itself.
