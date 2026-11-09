@@ -17,6 +17,11 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Where the module of a source is, as language-1.2 source (SPEC.md §17.23,
+  §17.21, `BS-28`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `locateModule` of `SurfaceModule` returns what
+  `surface::module::locate` returns and admits no `recursion`. The register is
+  479 IDs.
 - Canonical JSON reading in the standard library, the fourth member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
   `LexLeanStd.JsonRead` holds the production roots `readJson` and
