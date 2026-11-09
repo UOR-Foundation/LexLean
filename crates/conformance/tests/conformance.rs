@@ -2326,6 +2326,11 @@ fn conformance_bs_25() {
 }
 
 #[test]
+fn conformance_bs_26() {
+    repo_conformance::cases::run("BS-26");
+}
+
+#[test]
 fn conformance_pk_01() {
     repo_conformance::cases::run("PK-01");
 }
