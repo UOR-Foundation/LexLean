@@ -1001,6 +1001,14 @@ impl<'a> Lowering<'a> {
         self.reaches
             .iter()
             .any(|(owner, reached)| reached.contains(owner))
+            || (self.profile == Profile::Std
+                && self
+                    .program
+                    .adts
+                    .iter()
+                    .flat_map(|adt| adt.constructors.iter().flatten())
+                    .chain(self.stored.values().flatten().flat_map(|(_, held)| held))
+                    .any(|ty| self.shared(ty)))
     }
 
     /// Whether a field of type `ty` stored in `owner` reaches `owner` again
@@ -1032,7 +1040,24 @@ impl<'a> Lowering<'a> {
                 self.profile.target()
             ));
         }
-        Ok(cyclic)
+        Ok(cyclic || (self.profile == Profile::Std && self.shared(ty)))
+    }
+
+    /// Whether `rust-std` stores a field of type `ty` behind a shared box
+    /// although it need not: the field is a datatype with a constructor that
+    /// carries fields. Rust values are copied on every clone and move, and the
+    /// target's value semantics clones a record to read one field, so a
+    /// record held in place is copied whole each time its owner is read; a
+    /// shared box makes that copy a reference-count increment. Datatypes
+    /// whose constructors carry nothing stay in place.
+    fn shared(&self, ty: &Ty) -> bool {
+        match ty {
+            Ty::Adt { index } => usize::try_from(*index)
+                .ok()
+                .and_then(|at| self.program.adts.get(at))
+                .is_some_and(|adt| adt.constructors.iter().any(|fields| !fields.is_empty())),
+            _ => false,
+        }
     }
 
     /// Which functions and function types can overflow: a function can when
