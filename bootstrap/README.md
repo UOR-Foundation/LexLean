@@ -18,3 +18,7 @@ payloads a printer reads); `src/RustPrint.lex.tex` also imports the standard
 library's `Buffer` (`stdlib/src/Buffer.lex.tex`), which it writes through.
 `src/GnafValidate.lex.tex` (SPEC.md §17.15, `BS-16`) imports `Buffer` alone and
 writes the rejection of a GNAF request through it.
+
+`src/LexiconLse.lex.tex` (SPEC.md §17.23, `BS-25`) imports the standard library's `Numeral`,
+`Order`, and `Text`, and nothing of the bootstrap project: its expressions, universes, and
+S-expression trees are sorts of its own, each list of a sort's values a chain in the sort.
