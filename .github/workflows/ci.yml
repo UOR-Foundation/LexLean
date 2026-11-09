@@ -380,13 +380,191 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-  # The shards that need only `prefix`: `CensusCert4` and its ten pieces, the
-  # other `CensusCert*` modules, and the replays of the prefix.
+  # These shards need only `prefix`, but their consumers need different
+  # subsets: replay needs `cert4`; closure also needs `census-a` and `census-b`.
+  # Separate those jobs so neither waits for the unrelated census tail.
+  atlas-cert4:
+    name: atlas (cert4)
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    needs: [plan, atlas-prefix]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      LEXLEAN_CI_TELEMETRY: ${{ github.workspace }}/ci-evidence
+      # The part of the examples recipe this job runs (§9.4), and where the
+      # parts of the run exchange their output.
+      LEXLEAN_EXAMPLES_PART: shard:uor-atlas:cert4
+      LEXLEAN_EXAMPLES_PARTS: ${{ github.workspace }}/ci-parts
+      # The resource profile of the examples leg (§22.11), the same for every
+      # shard; operational only.
+      LEXLEAN_VERIFY_WIDTH: "2"
+      LEXLEAN_VERIFY_MEMORY_KIB: "12582912"
+      LEXLEAN_VERIFY_HINTS: ${{ github.workspace }}/.github/verify-hints.json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install elan and the pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      # What the jobs of this run before this one wrote: the gate's executable
+      # and every shard's output so far, each under the name it was uploaded
+      # with. The verifier reads the shards this one needs and no other.
+      - name: Take the gate's executable and the shards before this one from the run
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: atlas-*
+          path: ci-parts
+      - name: Place the parts under the names of their shards
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ci-parts/atlas-xtask/xtask
+          for part in ci-parts/atlas-part-*; do
+            mv "$part" "ci-parts/${part#ci-parts/atlas-part-}"
+          done
+          ls ci-parts
+      - name: Reserve bounded overflow memory for native Atlas
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo chmod 600 "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo mkswap "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo swapon "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo sysctl vm.swappiness=10
+          swapon --show
+      - name: Run the shard
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-evidence ci-parts
+          sample_resources() {
+            set +e
+            while true; do
+              avail=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
+              swap=$(awk '/^SwapTotal:/ {t=$2} /^SwapFree:/ {f=$2} END {print t-f}' /proc/meminfo)
+              top=$( (ps -eo rss= --sort=-rss || true) | awk 'NR==1 {print $1}')
+              printf '%s\t%s\t%s\t%s\n' "$(date +%s.%N | cut -c1-14)" "$avail" "$swap" "${top:-0}"
+              sleep 5
+            done
+          }
+          sample_resources > ci-evidence/resources.tsv &
+          sample_pid=$!
+          trap 'kill "$sample_pid" 2>/dev/null || true; wait "$sample_pid" 2>/dev/null || true' EXIT
+          ci-parts/atlas-xtask/xtask verify-examples 2>&1 | tee ci-evidence/vv.txt
+      - name: Summarize the run's timing and memory
+        if: ${{ !cancelled() }}
+        run: ci-parts/atlas-xtask/xtask ci-summary --evidence ci-evidence
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: atlas-part-cert4
+          path: ci-parts/cert4
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: acceptance-gate-evidence-atlas-cert4
+          path: ci-evidence
+          if-no-files-found: error
+          retention-days: 14
+
+  # The census shards imported by `closure`.
   atlas-l1:
     name: atlas (${{ matrix.shard }})
     if: ${{ needs.plan.outputs.full == 'true' }}
     needs: [plan, atlas-prefix]
-    strategy: { fail-fast: false, matrix: { shard: [cert4, census-a, census-b, census-c, census-d] } }
+    strategy: { fail-fast: false, matrix: { shard: [census-a, census-b] } }
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      LEXLEAN_CI_TELEMETRY: ${{ github.workspace }}/ci-evidence
+      # The part of the examples recipe this job runs (§9.4), and where the
+      # parts of the run exchange their output.
+      LEXLEAN_EXAMPLES_PART: shard:uor-atlas:${{ matrix.shard }}
+      LEXLEAN_EXAMPLES_PARTS: ${{ github.workspace }}/ci-parts
+      # The resource profile of the examples leg (§22.11), the same for every
+      # shard; operational only.
+      LEXLEAN_VERIFY_WIDTH: "2"
+      LEXLEAN_VERIFY_MEMORY_KIB: "12582912"
+      LEXLEAN_VERIFY_HINTS: ${{ github.workspace }}/.github/verify-hints.json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install elan and the pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      # What the jobs of this run before this one wrote: the gate's executable
+      # and every shard's output so far, each under the name it was uploaded
+      # with. The verifier reads the shards this one needs and no other.
+      - name: Take the gate's executable and the shards before this one from the run
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: atlas-*
+          path: ci-parts
+      - name: Place the parts under the names of their shards
+        shell: bash
+        run: |
+          set -euo pipefail
+          chmod +x ci-parts/atlas-xtask/xtask
+          for part in ci-parts/atlas-part-*; do
+            mv "$part" "ci-parts/${part#ci-parts/atlas-part-}"
+          done
+          ls ci-parts
+      - name: Reserve bounded overflow memory for native Atlas
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo chmod 600 "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo mkswap "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo swapon "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo sysctl vm.swappiness=10
+          swapon --show
+      - name: Run the shard
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-evidence ci-parts
+          sample_resources() {
+            set +e
+            while true; do
+              avail=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
+              swap=$(awk '/^SwapTotal:/ {t=$2} /^SwapFree:/ {f=$2} END {print t-f}' /proc/meminfo)
+              top=$( (ps -eo rss= --sort=-rss || true) | awk 'NR==1 {print $1}')
+              printf '%s\t%s\t%s\t%s\n' "$(date +%s.%N | cut -c1-14)" "$avail" "$swap" "${top:-0}"
+              sleep 5
+            done
+          }
+          sample_resources > ci-evidence/resources.tsv &
+          sample_pid=$!
+          trap 'kill "$sample_pid" 2>/dev/null || true; wait "$sample_pid" 2>/dev/null || true' EXIT
+          ci-parts/atlas-xtask/xtask verify-examples 2>&1 | tee ci-evidence/vv.txt
+      - name: Summarize the run's timing and memory
+        if: ${{ !cancelled() }}
+        run: ci-parts/atlas-xtask/xtask ci-summary --evidence ci-evidence
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: atlas-part-${{ matrix.shard }}
+          path: ci-parts/${{ matrix.shard }}
+          if-no-files-found: error
+          retention-days: 1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: acceptance-gate-evidence-atlas-${{ matrix.shard }}
+          path: ci-evidence
+          if-no-files-found: error
+          retention-days: 14
+
+  # These shards join with the rest but are not prerequisites of `closure`.
+  atlas-census-tail:
+    name: atlas (${{ matrix.shard }})
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    needs: [plan, atlas-prefix]
+    strategy: { fail-fast: false, matrix: { shard: [census-c, census-d] } }
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -475,7 +653,7 @@ jobs:
   atlas-cert4-replay:
     name: atlas (cert4-replay)
     if: ${{ needs.plan.outputs.full == 'true' }}
-    needs: [plan, atlas-prefix, atlas-l1]
+    needs: [plan, atlas-prefix, atlas-cert4]
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -564,7 +742,7 @@ jobs:
   atlas-closure:
     name: atlas (closure)
     if: ${{ needs.plan.outputs.full == 'true' }}
-    needs: [plan, atlas-prefix, atlas-l1]
+    needs: [plan, atlas-prefix, atlas-cert4, atlas-l1]
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
@@ -744,7 +922,7 @@ jobs:
   atlas-join:
     name: atlas (join)
     if: ${{ needs.plan.outputs.full == 'true' }}
-    needs: [plan, atlas-prefix, atlas-l1, atlas-cert4-replay, atlas-closure, atlas-l3]
+    needs: [plan, atlas-prefix, atlas-cert4, atlas-l1, atlas-census-tail, atlas-cert4-replay, atlas-closure, atlas-l3]
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     env:
