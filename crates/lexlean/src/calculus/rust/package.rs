@@ -784,6 +784,7 @@ mod depth_tests {
             }],
             sources: vec![],
             effects: vec!["allocation".to_owned(), "overflow".to_owned()],
+            entry: None,
         }
     }
 

@@ -12,7 +12,7 @@ use std::path::Path;
 use std::time::{Duration, Instant};
 
 use lexlean::calculus::rust::package::{Errors, Export, Passing};
-use lexlean::calculus::rust::rt::Item;
+use lexlean::calculus::rust::rt::{Crate, Item, Profile};
 use lexlean::calculus::rust::rt_validate::Host;
 use lexlean::calculus::rust::{host, rt_decode, rt_validate};
 use lexlean::calculus::{Program, Ty};
@@ -77,8 +77,31 @@ fn read(path: &str) -> String {
         .unwrap_or_else(|error| panic!("{path}: {error}"))
 }
 
-/// The module and its shipped copy, and each of its crates under the
-/// validator, with the effects that make its names admitted.
+/// The crates of the module composed as the renderer composes a driver: the
+/// base, a step, and a group of each effect, each `use` kept once.
+fn compose(text: &str, parts: &[&str]) -> Crate {
+    let mut items: Vec<Item> = Vec::new();
+    for part in parts {
+        let krate = rt_decode::decode_host(text, part)
+            .unwrap_or_else(|error| panic!("{part} decodes: {error}"));
+        for item in krate.items {
+            if matches!(item, Item::Use(..)) && items.contains(&item) {
+                continue;
+            }
+            items.push(item);
+        }
+    }
+    Crate {
+        profile: Profile::Std,
+        items,
+    }
+}
+
+/// The module and its shipped copy, and every driver the renderer can
+/// compose of its crates under the validator, with the effects that make its
+/// names admitted. A crate is not checked alone: the base names the type of
+/// each effect's group (`Files`, `Procs`), which the group declares, so only
+/// a composition is a closed crate.
 fn module() {
     let text = read(MODULE);
     assert_eq!(
@@ -89,44 +112,65 @@ fn module() {
     let embedded = rt_decode::embedded_host().expect("the embedded module");
     assert_eq!(embedded, text, "the embedded copy is the shipped one");
     for name in CRATES {
-        let krate = rt_decode::decode_host(&text, name)
+        rt_decode::decode_host(&text, name)
             .unwrap_or_else(|error| panic!("{name} decodes: {error}"));
-        let all = Host {
-            roots: &["host"],
-            effects: &["files", "process"],
-        };
-        rt_validate::validate_in(&krate, all)
-            .unwrap_or_else(|error| panic!("{name} is valid: {error}"));
-        // A crate that realizes an effect is refused by a root that lacks
-        // it; the others name nothing of the host.
-        let bare = Host {
-            roots: &["host"],
-            effects: &[],
-        };
-        let verdict = rt_validate::validate_in(&krate, bare);
-        match name {
-            "filesOn" | "processOn" => {
-                let error = verdict.expect_err(name);
-                assert!(error.contains("hidden-effect"), "{name}: {error}");
+    }
+    // Each composition is valid with exactly the effects its groups realize,
+    // and refused as `hidden-effect` by a root that lacks one of them.
+    for step in ["stepFallible", "stepPlain"] {
+        for files in [true, false] {
+            for process in [true, false] {
+                let parts = [
+                    "hostBase",
+                    step,
+                    if files { "filesOn" } else { "filesOff" },
+                    if process { "processOn" } else { "processOff" },
+                ];
+                let krate = compose(&text, &parts);
+                let mut effects: Vec<&str> = Vec::new();
+                if files {
+                    effects.push("files");
+                }
+                if process {
+                    effects.push("process");
+                }
+                rt_validate::validate_in(
+                    &krate,
+                    Host {
+                        roots: &["host"],
+                        effects: &effects,
+                    },
+                )
+                .unwrap_or_else(|error| panic!("{parts:?} is valid: {error}"));
+                for effect in effects.clone() {
+                    let fewer: Vec<&str> = effects
+                        .iter()
+                        .copied()
+                        .filter(|held| *held != effect)
+                        .collect();
+                    let error = rt_validate::validate_in(
+                        &krate,
+                        Host {
+                            roots: &["host"],
+                            effects: &fewer,
+                        },
+                    )
+                    .expect_err("a group whose effect the root lacks");
+                    assert!(
+                        error.contains("hidden-effect"),
+                        "{parts:?} without {effect}: {error}"
+                    );
+                }
             }
-            _ => assert!(
-                verdict.is_ok(),
-                "{name} names nothing of the host: {verdict:?}"
-            ),
         }
     }
-    // A crate with one effect admitted refuses the other's names.
-    let files = rt_decode::decode_host(&text, "filesOn").expect("filesOn");
-    let process_only = Host {
+    // The validator refuses a `cfg` function without its twin.
+    let full = compose(&text, &["hostBase", "stepFallible", "filesOn", "processOn"]);
+    let both = Host {
         roots: &["host"],
-        effects: &["process"],
+        effects: &["files", "process"],
     };
-    assert!(rt_validate::validate_in(&files, process_only)
-        .expect_err("files without the effect")
-        .contains("hidden-effect"));
-    // The validator refuses a `cfg` that is not of the closed set, and a
-    // `cfg` function without its twin.
-    let mut lone = rt_decode::decode_host(&text, "processOn").expect("processOn");
+    let mut lone = full.clone();
     lone.items.retain(|item| match item {
         Item::Cfg(condition, inner) => {
             !(condition == "not_unix"
@@ -135,16 +179,12 @@ fn module() {
         }
         _ => true,
     });
-    let both = Host {
-        roots: &["host"],
-        effects: &["files", "process"],
-    };
+    assert!(lone.items.len() < full.items.len(), "the twin is removed");
     assert!(rt_validate::validate_in(&lone, both)
         .expect_err("a cfg function without its twin")
         .contains("cfg-pair"));
     // A condition outside the two, and an item that is neither a `use` nor a
     // function under one.
-    let base = rt_decode::decode_host(&text, "hostBase").expect("hostBase");
     for (what, condition, inner, rule) in [
         (
             "a condition outside the closed set",
@@ -159,7 +199,7 @@ fn module() {
             "cfg-item",
         ),
     ] {
-        let mut planted = base.clone();
+        let mut planted = full.clone();
         planted
             .items
             .push(Item::Cfg(condition.to_owned(), Box::new(inner)));
@@ -246,26 +286,37 @@ fn rendered(program: &Program, effects: &[&str]) -> String {
     host::main_rs(&command, "command_driver", &effects).expect("the driver prints")
 }
 
+/// Whether `text` names `name`: as a whole name, so the driver's own type
+/// `Files`, which every driver declares, is not the standard library's `File`.
+fn mentions(text: &str, name: &str) -> bool {
+    let word = |c: char| c.is_alphanumeric() || c == '_';
+    text.match_indices(name).any(|(at, _)| {
+        let before = text[..at].chars().next_back();
+        let after = text[at + name.len()..].chars().next();
+        !before.is_some_and(word) && (name.ends_with(':') || !after.is_some_and(word))
+    })
+}
+
 /// A root that admits an effect has the names of its group, and one that does
 /// not has none of them, only refusals.
 fn effects(program: &Program) {
     let full = rendered(program, &["allocation", "files", "overflow", "process"]);
     for name in HOST_NAMES {
         assert!(
-            full.contains(name),
+            mentions(&full, name),
             "a root with both effects names `{name}`"
         );
     }
     let bare = rendered(program, &["allocation", "overflow"]);
     for name in HOST_NAMES {
         assert!(
-            !bare.contains(name),
+            !mentions(&bare, name),
             "a root with neither effect names `{name}`"
         );
     }
     assert!(bare.contains("refuse"), "the groups it lacks refuse");
     let files_only = rendered(program, &["allocation", "files", "overflow"]);
-    assert!(files_only.contains("fs::") && !files_only.contains("Command"));
+    assert!(mentions(&files_only, "fs::") && !mentions(&files_only, "Command"));
 }
 
 /// Run `binary` in `directory` and wait at most `limit`: its status, standard
@@ -301,10 +352,11 @@ fn execute(
     }
 }
 
+/// What a run of the driver gives: its exit status, standard output, and standard error.
+type Ran = (Option<i32>, Vec<u8>, Vec<u8>);
+
 /// Build the package `files` under cargo and run it, as the `run` function does.
-fn build_and_run(
-    files: &BTreeMap<String, Vec<u8>>,
-) -> Result<Option<(Option<i32>, Vec<u8>, Vec<u8>)>, String> {
+fn build_and_run(files: &BTreeMap<String, Vec<u8>>) -> Result<Option<Ran>, String> {
     let directory = tempfile::tempdir().expect("a directory");
     let package = directory.path().join("package");
     // The driver is the binary of the package itself, so the files are

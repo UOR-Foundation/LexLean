@@ -211,7 +211,7 @@ impl Walk<'_> {
                 self.ty(left, a, owner, constructor)?;
                 return self.ty(right, b, owner, constructor);
             }
-            (Want::Host(name), Ty::Adt { index }) => return self.host(*name, *index),
+            (Want::Host(name), Ty::Adt { index }) => return self.host(name, *index),
             _ => false,
         };
         if same {

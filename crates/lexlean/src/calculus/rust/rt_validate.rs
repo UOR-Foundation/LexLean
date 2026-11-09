@@ -214,25 +214,28 @@ pub fn allocating() -> Vec<String> {
     out
 }
 
-/// The names of the closed table that reach the host, with the effect each
-/// realizes (`files` or `process`), by the name a path starts at, a type is
+/// The names of the closed table that reach the host, with the effects that
+/// realize each (`files`, `process`), by the name a path starts at, a type is
 /// written as, or a `use` ends in. A crate names one only if its root admits
-/// the effect: the hidden effect the validator refuses, as `hidden-allocation`
-/// is refused in a `rust-core` crate. `env`, `io`, and `process` are not
+/// one of its effects: the hidden effect the validator refuses, as
+/// `hidden-allocation` is refused in a `rust-core` crate. `File` is also
+/// `process`'s: a `spawn` request names the files a child's output and errors
+/// are written to, and creating them is part of carrying it out, as a child
+/// has the authority of the process that started it. `env`, `io`, and `process` are not
 /// here: the arguments, the environment, and the standard streams are
 /// inputs and the exit of a root, which need no effect (§17.13).
-const HOST: [(&str, &str); 11] = [
-    ("fs", "files"),
-    ("File", "files"),
-    ("Metadata", "files"),
-    ("MetadataExt", "files"),
-    ("Command", "process"),
-    ("CommandExt", "process"),
-    ("Stdio", "process"),
-    ("Child", "process"),
-    ("Instant", "process"),
-    ("Duration", "process"),
-    ("thread", "process"),
+const HOST: [(&str, &[&str]); 11] = [
+    ("fs", &["files"]),
+    ("File", &["files", "process"]),
+    ("Metadata", &["files"]),
+    ("MetadataExt", &["files"]),
+    ("Command", &["process"]),
+    ("CommandExt", &["process"]),
+    ("Stdio", &["process"]),
+    ("Child", &["process"]),
+    ("Instant", &["process"]),
+    ("Duration", &["process"]),
+    ("thread", &["process"]),
 ];
 
 /// The names a package exports that a command's driver imports from the
@@ -1235,13 +1238,19 @@ impl<'a> Scope<'a> {
         }
     }
 
-    /// `name` is not a name of the host table whose effect the root lacks.
+    /// `name` is not a name of the host table none of whose effects the root
+    /// admits.
     fn admit(&self, name: &str) -> Result<(), String> {
         match HOST.iter().find(|(known, _)| *known == name) {
-            Some((_, effect)) if !self.effects.contains(effect) => rule(
-                "hidden-effect",
-                format!("`{name}` realizes `{effect}`, which the root does not admit"),
-            ),
+            Some((_, effects)) if !effects.iter().any(|effect| self.effects.contains(effect)) => {
+                rule(
+                    "hidden-effect",
+                    format!(
+                        "`{name}` realizes `{}`, which the root does not admit",
+                        effects.join("` or `")
+                    ),
+                )
+            }
             _ => Ok(()),
         }
     }
@@ -1259,7 +1268,10 @@ impl<'a> Scope<'a> {
                 ),
             };
         }
+        // A free function of the crate named alone is the function as a
+        // value, as the driver hands `drive` to the thread it spawns.
         if self.imported.iter().any(|name| name == head)
+            || (path.len() == 1 && self.functions.contains_key(head))
             || self.structs.contains_key(head)
             || self.statics.contains(&head)
             || INTEGERS.contains(&head)
