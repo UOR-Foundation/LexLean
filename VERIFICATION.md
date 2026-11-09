@@ -13704,3 +13704,36 @@ the crates and vectors those evaluators are given is unchanged, as are the
 `printExpr` vectors of `BS-06` and every count of `BS-11`. The new stdlib
 verify records move the mutant draws of `BS-12` (-4), `BS-13` (+2) and
 `BS-14` (+5).
+
+
+## The front-end packages of `BS-21` to `BS-24` move the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (#269)
+
+The roots of `StructuralGrammar` (`BS-21`), `SurfaceLex` (`BS-22`),
+`SurfaceDoc` (`BS-23`), and `SurfaceGeneric` (`BS-24`) add six committed
+packages, and these cases assert their corpus. The members were merged with
+the tree of `release/v0.4` after `SL-13`, and the lock, export, build oracles,
+verify records, and the stack bound of `bootstrap/print_generic` were
+regenerated on the normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1) at
+verify width 1; the `BS-24` case passed whole on that tree with the stack
+measured (1,894 s). Each row below is the number its own count check reported
+on that tree against the committed one, under `LEXLEAN_COUNTS=fast`, and the
+constants, rows, statements, scenarios and prose were rewritten by the writer
+of #442.
+
+| Count | `4dc5b803c` | members |
+| --- | --- | --- |
+| committed manifests and packages | 299 | 305 |
+| distinct programs | 216 | 222 |
+| distinct lowered crates | 275 | 281 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 511, 376 | 517, 382 |
+| `BS-06` `printCrate` vectors, committed distinct, evaluator crates, refused | 719, 550, 604, 67 | 732, 562, 605, 68 |
+| `BS-07` vectors | 350 | 356 |
+| `BS-08` crates | 409 | 415 |
+| `BS-13` vectors | 119 | 125 |
+| `BS-14` vectors | 354 | 360 |
+| `BS-15` manifests, accepted, render mutants | 318, 299, 299 | 324, 305, 305 |
+
+Every new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`
+and the 400-expression bound of `BS-08`, so each of those vector counts grows
+by six. Every count of `BS-11` and `BS-12` is unchanged, as is every mutant
+draw: the stdlib verify records did not move.
