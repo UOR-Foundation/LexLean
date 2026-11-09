@@ -11106,10 +11106,24 @@ and the eligibility report gives the root `rust-std` with exactly `allocation`
 and `overflow`. The register agrees with the §31 table on 471 IDs, by the same
 parse `validate-spec-links` makes.
 
-The case has not run. It has not been compiled either, and `lexlean verify` has
-not been run on the module. It owes its first run, to pin the counts of its
-corpora, and the landing regeneration, which produces the `bootstrap/render_doc`
-package.
+The case was first compiled and run on the normative host on this member merged
+with `BS-22`, `BS-21` and `SL-13` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_23`, 705 s). Its corpus is 65 named vectors, 3,907
+JSON documents (1,242 and 3,990 runs), and 500 and 2,500 seeded runs. The
+evaluator agrees with the oracle on 1,807 runs and the rendered package under the
+pinned rustc (83 harness binaries) on 6,555, and each of the 21 planted defects is
+detected by its own vector. The first run found three plants their vectors did
+not reach, each a vector's fault and none the layout's: `the delete is no
+scalar` was tried at the group's exact width, where one column less still fits
+(now `a group of the delete one column short`, width 2); `a group is tried at no
+column past the width` was tried on a group with visible content, which fails
+to fit past the width either way, so only a group of one soft break tells the
+two apart (now `an empty group past the width`); and `the layout stops one node
+early` was tried on a concatenation, whose parts the node budget counts twice,
+so it had steps to spare (now `a text beyond the width`, one node and one step).
+The case then stops at the stack-bound step, `bootstrap/render_doc is no
+package of the committed exports`, as `BS-21` and `BS-22` did before their
+regeneration, which produces the `bootstrap/render_doc` package.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 

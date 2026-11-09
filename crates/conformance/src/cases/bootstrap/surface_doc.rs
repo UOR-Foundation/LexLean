@@ -296,6 +296,13 @@ fn named() -> Vec<Vector> {
         pair("\u{7f}", "b"),
         3,
     );
+    // One column short: the delete is the column that decides it, so a
+    // layout that counts it as no column lays the group out flat.
+    add(
+        "a group of the delete one column short",
+        pair("\u{7f}", "b"),
+        2,
+    );
     add(
         "a group of a soft break at its exact width",
         seq(vec![t("["), Doc::Soft, t("]")]).group(),
@@ -349,6 +356,13 @@ fn named() -> Vec<Vector> {
     add(
         "a group after text past the width",
         seq(vec![t("abcdefgh"), pair("a", "b")]),
+        4,
+    );
+    // A group of nothing but a soft break takes no column flat, so past the
+    // width only the test of the column itself keeps it from fitting.
+    add(
+        "an empty group past the width",
+        seq(vec![t("abcdefgh"), Doc::Soft.group()]),
         4,
     );
     add(
@@ -582,7 +596,7 @@ const PLANTS: &[Plant] = &[
         label: "the delete is no scalar",
         site: "(if (value <? 128) then",
         replacement: "(if (value <? 127) then",
-        vector: "a group of the delete at its exact width",
+        vector: "a group of the delete one column short",
     },
     Plant {
         label: "a flat line is no column",
@@ -618,7 +632,7 @@ const PLANTS: &[Plant] = &[
         label: "a group is tried at no column past the width",
         site: "(width <? column)",
         replacement: "false",
-        vector: "a group after text past the width",
+        vector: "an empty group past the width",
     },
     Plant {
         label: "the rest of the stack is not read",
@@ -688,9 +702,11 @@ const PLANTS: &[Plant] = &[
     },
     Plant {
         label: "the layout stops one node early",
+        // A concatenation counts its parts twice in the budget, so it has
+        // steps to spare; one text is one node and one step.
         site: "(nodes + 1) (record Layout",
         replacement: "(prim subtract nodes 1 : Nat) (record Layout",
-        vector: "a concatenation",
+        vector: "a text beyond the width",
     },
     Plant {
         label: "the width test of a group is starved of nodes",
