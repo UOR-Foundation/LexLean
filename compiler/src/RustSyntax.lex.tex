@@ -160,7 +160,8 @@ inductive{
     {name: formatInt, fields: []},
     {name: formatFixed, fields: [TargetSyntax::IntKind]},
     {name: parseInt, fields: []},
-    {name: parseFixed, fields: [TargetSyntax::IntKind]}
+    {name: parseFixed, fields: [TargetSyntax::IntKind]},
+    {name: updateBytes, fields: []}
   ]
 }
 
@@ -208,7 +209,8 @@ inductive{
     {name: utf8Decode, fields: []},
     {name: bytesCompare, fields: []},
     {name: stringSplit, fields: []},
-    {name: stringJoin, fields: []}
+    {name: stringJoin, fields: []},
+    {name: bytesUpdate, fields: []}
   ]
 }
 

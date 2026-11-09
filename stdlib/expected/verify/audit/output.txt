@@ -259,6 +259,7 @@
 'LexLeanRuntime.slice' does not depend on any axioms
 'LexLeanRuntime.splitExact' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanRuntime.subtract' does not depend on any axioms
+'LexLeanRuntime.update' does not depend on any axioms
 'LexLeanRuntime.utf8Decode' depends on axioms: [propext, Classical.choice, Quot.sound]
 'LexLeanRuntime.utf8Encode' does not depend on any axioms
 'LexLeanStd.Buffer.Buffer' does not depend on any axioms

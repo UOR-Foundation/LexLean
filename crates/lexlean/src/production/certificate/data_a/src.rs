@@ -267,6 +267,7 @@ impl Writer<'_, '_> {
             | SemanticPrimitive::Length
             | SemanticPrimitive::Index
             | SemanticPrimitive::Slice
+            | SemanticPrimitive::Update
             | SemanticPrimitive::Utf8Encode
             | SemanticPrimitive::Utf8Decode
             | SemanticPrimitive::CompareBytes
@@ -423,6 +424,7 @@ impl Writer<'_, '_> {
                     | SemanticPrimitive::ShiftRight
                     | SemanticPrimitive::Index
                     | SemanticPrimitive::Slice
+                    | SemanticPrimitive::Update
                     | SemanticPrimitive::Utf8Encode
                     | SemanticPrimitive::Utf8Decode
                     | SemanticPrimitive::CompareBytes
@@ -551,7 +553,8 @@ impl Writer<'_, '_> {
                 leading.push(self.lean_ty(ty)?);
                 leading.push(self.decimal_instance(site, ty)?);
             }
-            SemanticPrimitive::Utf8Encode
+            SemanticPrimitive::Update
+            | SemanticPrimitive::Utf8Encode
             | SemanticPrimitive::Utf8Decode
             | SemanticPrimitive::CompareBytes
             | SemanticPrimitive::SplitExact

@@ -260,6 +260,7 @@ pub enum Item {
     FormatFixed(IntKind),
     ParseInt,
     ParseFixed(IntKind),
+    UpdateBytes,
 }
 
 impl Item {
@@ -318,6 +319,7 @@ impl Item {
             Self::FormatFixed(kind) => format!("format_{}", kind.name()),
             Self::ParseInt => "parse_int".to_owned(),
             Self::ParseFixed(kind) => format!("parse_{}", kind.name()),
+            Self::UpdateBytes => "update_bytes".to_owned(),
         }
     }
 
@@ -385,6 +387,7 @@ impl Item {
                 | Self::FormatFixed(_)
                 | Self::ParseInt
                 | Self::ParseFixed(_)
+                | Self::UpdateBytes
         )
     }
 
@@ -428,6 +431,7 @@ impl Item {
             Self::Join,
             Self::FormatInt,
             Self::ParseInt,
+            Self::UpdateBytes,
         ];
         for kind in IntKind::ALL {
             out.extend([

@@ -252,6 +252,7 @@ pub(super) fn enc_item(item: Item) -> Value {
         Item::FormatFixed(kind) => family(47, Some(kind)),
         Item::ParseInt => family(48, None),
         Item::ParseFixed(kind) => family(49, Some(kind)),
+        Item::UpdateBytes => family(50, None),
     }
 }
 
@@ -2960,15 +2961,15 @@ const RULE_VALIDATE_RUNS: usize = 132;
 const RULE_CORRESPOND_RUNS: usize = 12;
 const BRANCH_CRATES: usize = 17;
 const LOOP_CRATES: usize = 34;
-const MACHINE_CRATES: usize = 40 + 3 + 1 + 2 + 2 + 3;
-const VECTORS_VALIDATE: usize = 466;
-const REFUSED_VALIDATE: usize = 209;
-const VECTORS_CORRESPOND: usize = 329;
-const REFUSED_CORRESPOND: usize = 96;
+const MACHINE_CRATES: usize = 41 + 3 + 1 + 2 + 2 + 3;
+const VECTORS_VALIDATE: usize = 467;
+const REFUSED_VALIDATE: usize = 210;
+const VECTORS_CORRESPOND: usize = 330;
+const REFUSED_CORRESPOND: usize = 97;
 const EVALUATOR_CRATES: usize = 201;
-const EVALUATOR_VALIDATE: usize = 435;
-const EVALUATOR_CORRESPOND: usize = 298;
-const SEEDED_REFUSED_VALIDATE: usize = 271;
+const EVALUATOR_VALIDATE: usize = 436;
+const EVALUATOR_CORRESPOND: usize = 299;
+const SEEDED_REFUSED_VALIDATE: usize = 273;
 const SEEDED_REFUSED_CORRESPOND: usize = 244;
 
 pub(super) fn case() {

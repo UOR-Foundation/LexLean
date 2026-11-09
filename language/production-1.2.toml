@@ -945,6 +945,14 @@ recursion = false
 note = "Realized through its elaboration: a let, bit tests by bit_and and equal, conditionals, and a natural-number sum, which never leaves the 64-bit range."
 
 [[construct]]
+key = "primitive.update"
+disposition = "runtime"
+allocation = true
+overflow = []
+recursion = false
+note = "Replaces one byte of a byte string; the runtime writes in place when it holds the only reference and copies otherwise."
+
+[[construct]]
 key = "declaration.structure"
 disposition = "runtime"
 allocation = false

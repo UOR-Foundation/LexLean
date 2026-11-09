@@ -448,6 +448,10 @@ fn spelling(operation: SemanticPrimitive) -> Spelling {
             name: "slice",
             int64: None,
         },
+        SemanticPrimitive::Update => Spelling::Runtime {
+            name: "update",
+            int64: None,
+        },
         SemanticPrimitive::Utf8Encode => Spelling::Runtime {
             name: "utf8Encode",
             int64: None,

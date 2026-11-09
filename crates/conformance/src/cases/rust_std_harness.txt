@@ -140,6 +140,21 @@ fn main() {
             seen!("slice_bytes", w0, x.map(|b| b.octets().to_vec()));
         }
     }
+//@ update_bytes
+    for a in &byte_cases {
+        let n = a.len() as u64;
+        for at in [0, 1, n / 2, n.saturating_sub(1), n, n + 1, u64::MAX] {
+            for byte in [0u8, 0x5a, 255] {
+                let w0 = m::work();
+                let x = m::update_bytes(m::Bytes::lit(a), at, byte);
+                seen!("update_bytes", w0, x.map(|b| b.octets().to_vec()));
+                let kept = m::Bytes::lit(a);
+                let w1 = m::work();
+                let y = m::update_bytes(kept.clone(), at, byte);
+                seen!("update_bytes", w1, (y.map(|b| b.octets().to_vec()), kept.octets().to_vec()));
+            }
+        }
+    }
 //@ utf8_encode
     for a in &text_cases {
         let w0 = m::work();

@@ -6028,11 +6028,11 @@ shipped byte for byte at `language/rust-runtime-1.2/RustStd.lex.tex`, defines `s
 with the validator that checks every rendering, and prints each function where the handwritten function of the
 same name stood; the handwritten std runtime is not in the tree, and `tests/rust-runtime-golden/transcript.txt` (section `std`) holds what it returned and counted. The functions are the list functions `append_list`, `length_list`, `index_list`, and `slice_list` and the byte and text
 functions `append_bytes`, `length_bytes`, `length_string`, `index_bytes`, `slice_bytes`, `utf8_encode`, `utf8_decode`,
-`compare_bytes`, `split_exact`, and `join`. The body of each is one machine call on its moved parameters,
+`compare_bytes`, `split_exact`, `join`, and `update_bytes`. The body of each is one machine call on its moved parameters,
 `Machine.listAppend`, `listLength`, `listIndex`, `listSlice`, `bytesAppend`, `bytesLength`, `stringLength`,
-`bytesIndex`, `bytesSlice`, `utf8Encode`, `utf8Decode`, `bytesCompare`, `stringSplit`, and `stringJoin`, whose meaning
+`bytesIndex`, `bytesSlice`, `utf8Encode`, `utf8Decode`, `bytesCompare`, `stringSplit`, `stringJoin`, and `bytesUpdate`, whose meaning
 `machinePrimitive` states as the calculus primitive of the runtime item of the same function (`append`, `length`,
-`index`, `slice`, `utf8Encode`, `utf8Decode`, `compareBytes`, `splitExact`, `join` of `TargetSyntax.Prim`), as the
+`index`, `slice`, `utf8Encode`, `utf8Decode`, `compareBytes`, `splitExact`, `join`, `update` of `TargetSyntax.Prim`), as the
 arithmetic items of the core runtime are one machine call each. The signatures are those of the handwritten functions
 with the type parameter `T: Clone` of the list functions (`fn append_list<T: Clone>(a: List<T>, b: List<T>) ->
 List<T>`, and so on; `fn index_bytes(a: Bytes, i: u64) -> Option<u8>`, `fn split_exact(text: Str, delimiter: Str,
@@ -6059,7 +6059,9 @@ widths) is in `RuntimeStd` and in the transcript, on the bounds of each width an
 (`production/rust_cert.rs`); the two are different Lean modules (`LexLeanTarget.RustStd` here, `<certificate A>.RustStd`
 there) and nothing imports one as the other. The shipped crate changes in this row, each with its plant in the case:
 `RustType.param` and the generic list it prints (a signature printed without it does not compile), the fourteen machine
-families 26 to 39 (arity one to three, refused with the wrong number of operands by the validator), and the decoder of
+families 26 to 39 (arity one to three, refused with the wrong number of operands by the validator), the machine family 40
+(`Machine.bytesUpdate`, printed `Bytes::update(a, at, byte)`, the byte string with the byte at `at` replaced, or `None`
+past its end; it writes in place when the buffer is unique and copies it otherwise, with the copy counted), and the decoder of
 the std crate (a module without `stdCrate` or of another profile is refused), the decoder of `RuntimeStd` (a module without `stdSupportCrate` or of another profile is refused), and the validator rule for an associated function (`Gauge::absent` and `Gauge::fresh()` are refused). The bootstrap validator twin of
 `RustValidate` names a machine call by its family and so learns the twenty-seventh to the fortieth; its measurement is
 repeated with this row.

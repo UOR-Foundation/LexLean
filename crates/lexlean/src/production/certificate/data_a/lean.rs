@@ -630,6 +630,7 @@ impl Writer<'_, '_> {
             Prim::Length => "length",
             Prim::Index => "index",
             Prim::Slice => "slice",
+            Prim::Update => "update",
             Prim::Utf8Encode => "utf8Encode",
             Prim::Utf8Decode => "utf8Decode",
             Prim::CompareBytes => "compareBytes",

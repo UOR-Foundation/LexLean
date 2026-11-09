@@ -312,6 +312,7 @@ pub enum Machine {
     BytesCompare,
     StringSplit,
     StringJoin,
+    BytesUpdate,
 }
 
 impl Machine {
@@ -347,6 +348,7 @@ impl Machine {
             Self::BytesCompare,
             Self::StringSplit,
             Self::StringJoin,
+            Self::BytesUpdate,
         ];
         for kind in IntKind::ALL {
             out.extend([
@@ -415,13 +417,14 @@ impl Machine {
             Self::BytesCompare => 37,
             Self::StringSplit => 38,
             Self::StringJoin => 39,
+            Self::BytesUpdate => 40,
         }
     }
 
     /// One primitive of each family, at `u8` where it has a width, in the
     /// order of [`Machine::family`].
     #[must_use]
-    pub const fn families() -> [Self; 40] {
+    pub const fn families() -> [Self; 41] {
         let kind = IntKind::U8;
         [
             Self::CheckedAdd(kind),
@@ -464,6 +467,7 @@ impl Machine {
             Self::BytesCompare,
             Self::StringSplit,
             Self::StringJoin,
+            Self::BytesUpdate,
         ]
     }
 
@@ -510,7 +514,8 @@ impl Machine {
             | Self::Utf8Decode
             | Self::BytesCompare
             | Self::StringSplit
-            | Self::StringJoin => None,
+            | Self::StringJoin
+            | Self::BytesUpdate => None,
         }
     }
 
@@ -559,6 +564,7 @@ impl Machine {
             Self::BytesCompare => "bytes_compare",
             Self::StringSplit => "string_split",
             Self::StringJoin => "string_join",
+            Self::BytesUpdate => "bytes_update",
         }
     }
 
@@ -581,6 +587,7 @@ impl Machine {
             | Self::CheckedIntQuot
             | Self::ListSlice
             | Self::BytesSlice
+            | Self::BytesUpdate
             | Self::StringSplit => 3,
             _ => 2,
         }
@@ -641,6 +648,7 @@ impl Machine {
             Self::BytesCompare => format!("Bytes::compare(&{}, &{})", args[0], args[1]),
             Self::StringSplit => format!("Str::split_exact(&{}, &{}, {})", args[0], args[1], args[2]),
             Self::StringJoin => format!("Str::join({}, &{})", args[0], args[1]),
+            Self::BytesUpdate => format!("Bytes::update({}, {}, {})", args[0], args[1], args[2]),
         }
     }
 }

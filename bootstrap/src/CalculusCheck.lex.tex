@@ -153,7 +153,8 @@ inductive{
     {name: FormatDecimal, fields: []},
     {name: Compare, fields: []},
     {name: Convert, fields: [IntKind]},
-    {name: ParseDecimal, fields: [Ty]}
+    {name: ParseDecimal, fields: [Ty]},
+    {name: Update, fields: []}
   ]
 }
 
@@ -962,7 +963,8 @@ definition{
     | Prim.FormatDecimal => (text "FormatDecimal")
     | Prim.Compare => (text "Compare")
     | Prim.Convert target => (cat (text "Convert { target: ") (cat (kindDebug target) (text " }")))
-    | Prim.ParseDecimal target => (cat (text "ParseDecimal { target: ") (cat (tyDebug target) (text " }")))),
+    | Prim.ParseDecimal target => (cat (text "ParseDecimal { target: ") (cat (tyDebug target) (text " }")))
+    | Prim.Update => (text "Update")),
   executable: true
 }
 
@@ -1505,7 +1507,8 @@ definition{
     | Prim.FormatDecimal => (let yes115 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TNil)) types (ctor Ty.TString)); (let no116 : (Result Ty Bytes) := (inapplicable operation types); (if (if ((tyTag lead) =? 3) then true else (if ((tyTag lead) =? 4) then true else false)) then yes115 else no116)))
     | Prim.Compare => (let yes117 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TCons lead (ctor Ty.TNil))) types (ctor Ty.TOrdering)); (let no118 : (Result Ty Bytes) := (inapplicable operation types); (if (orderable lead) then yes117 else no118)))
     | Prim.Convert target => (let yes119 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons lead (ctor Ty.TNil)) types (ctor Ty.TOption (ctor Ty.TFixed target))); (let no120 : (Result Ty Bytes) := (inapplicable operation types); (if (if ((tyTag lead) =? 3) then true else (if ((tyTag lead) =? 4) then true else false)) then yes119 else no120)))
-    | Prim.ParseDecimal target => (let targetTag : Nat := (tyTag target); (let yes121 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons (ctor Ty.TString) (ctor Ty.TNil)) types (ctor Ty.TOption target)); (let no122 : (Result Ty Bytes) := (inapplicable operation types); (if (if (targetTag =? 3) then true else (targetTag =? 4)) then yes121 else no122))))))),
+    | Prim.ParseDecimal target => (let targetTag : Nat := (tyTag target); (let yes121 : (Result Ty Bytes) := (exactly operation (ctor Ty.TCons (ctor Ty.TString) (ctor Ty.TNil)) types (ctor Ty.TOption target)); (let no122 : (Result Ty Bytes) := (inapplicable operation types); (if (if (targetTag =? 3) then true else (targetTag =? 4)) then yes121 else no122))))
+    | Prim.Update => (exactly operation (ctor Ty.TCons (ctor Ty.TBytes) (ctor Ty.TCons (ctor Ty.TNat) (ctor Ty.TCons (ctor Ty.TFixed (ctor IntKind.U8)) (ctor Ty.TNil)))) types (ctor Ty.TOption (ctor Ty.TBytes)))))),
   executable: true
 }
 

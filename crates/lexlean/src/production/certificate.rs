@@ -780,6 +780,7 @@ fn primitive_name(operation: SemanticPrimitive) -> Result<(&'static str, &'stati
         SemanticPrimitive::Length => ("LexLeanRuntime", "length"),
         SemanticPrimitive::Index => ("LexLeanRuntime", "index"),
         SemanticPrimitive::Slice => ("LexLeanRuntime", "slice"),
+        SemanticPrimitive::Update => ("LexLeanRuntime", "update"),
         SemanticPrimitive::Utf8Encode => ("LexLeanRuntime", "utf8Encode"),
         SemanticPrimitive::Utf8Decode => ("LexLeanRuntime", "utf8Decode"),
         SemanticPrimitive::CompareBytes => ("LexLeanRuntime", "compareBytes"),

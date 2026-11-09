@@ -366,6 +366,7 @@ impl Writer<'_, '_> {
             Item::FormatFixed(width) => wide(self, "formatFixed", width),
             Item::ParseInt => plain(self, "parseInt"),
             Item::ParseFixed(width) => wide(self, "parseFixed", width),
+            Item::UpdateBytes => plain(self, "updateBytes"),
         }
     }
 
@@ -522,6 +523,7 @@ impl Writer<'_, '_> {
             Machine::BytesCompare => "bytesCompare",
             Machine::StringSplit => "stringSplit",
             Machine::StringJoin => "stringJoin",
+            Machine::BytesUpdate => "bytesUpdate",
         };
         match machine.width() {
             Some(width) => {

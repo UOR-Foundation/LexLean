@@ -867,6 +867,15 @@ impl<'a> Scope<'a> {
                     binds(pattern, &mut bound)?;
                     self.pattern(pattern)?;
                     inner = inner.with(bound, false);
+                    // A binding declared at a type keeps it: `let x: &mut [u8] = ..` may
+                    // be assigned through.
+                    if let (Pat::Bind(name) | Pat::BindMut(name), Some(ty)) = (pattern, ty) {
+                        if let Some(last) = inner.variables.last_mut() {
+                            if &last.0 == name {
+                                last.2 = Some(ty.clone());
+                            }
+                        }
+                    }
                 }
                 other => self.expr(other, &inner)?,
             }

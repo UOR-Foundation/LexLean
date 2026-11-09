@@ -552,6 +552,10 @@ fn prim_type(operation: &Prim, types: &[Ty]) -> Result<Ty, String> {
         Prim::Length if matches!(first, Ty::List { .. } | Ty::Bytes | Ty::String) => {
             exactly(&[first], Ty::Nat)
         }
+        Prim::Update => exactly(
+            &[Ty::Bytes, Ty::Nat, Ty::Fixed { width: IntKind::U8 }],
+            option(Ty::Bytes),
+        ),
         Prim::Index => match &first {
             Ty::List { element } => {
                 exactly(&[first.clone(), Ty::Nat], option(element.as_ref().clone()))
@@ -746,6 +750,7 @@ pub fn kernel_opaque(program: &Program) -> Result<BTreeSet<&'static str>, String
                     | Prim::Length
                     | Prim::Index
                     | Prim::Slice
+                    | Prim::Update
                     | Prim::Utf8Decode
                     | Prim::Compare
                     | Prim::Convert { .. } => None,
