@@ -8724,7 +8724,7 @@ remainder.
 
 The generic notation (§17.21) is the fourth component of the front end (`BS-24`,
 issue 269), the module `SurfaceGeneric`, over the standard library's `Json`
-(`SL-11`, `SL-12`), with two production roots for `rust-std`:
+(`SL-11`, `SL-13`), with two production roots for `rust-std`:
 
 | Root | Takes | Returns | Oracle |
 | --- | --- | --- | --- |
