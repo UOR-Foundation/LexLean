@@ -11053,6 +11053,50 @@ and `bootstrap/print_lse` packages and measures the row of `print_lse` in
 `tests/stack-bounds.json` (`PD-08`). The branch is based on `release/v0.4`
 after `SL-13` and stacks on nothing.
 
+### the LRE reader and the facts of a render are source (BS-26)
+
+`BS-26` holds the two production roots of `LexLeanBoot.LexiconLre`
+(`bootstrap/src/LexiconLre.lex.tex`), `parseLre` and `renderFacts`, to
+`lexicon::lre::parse` and the walkers of `Render` (`slots`, `tokens`,
+`form_refs`, `self_form_refs`, `operator_names`, `math_only_construct`, and
+`script_operand_error`). It is the second slice of the lexicon as source and
+imports `LexiconLse` (`BS-25`), whose tokenizer and tree reader it reads with,
+and the standard library's `Order`. `parseLre` converts the tree with a work
+stack that visits the operands of a form in the oracle's order and builds the
+form when they are on the value stack; `renderFacts` walks the render once,
+pre-order over an explicit stack the host bounds by the number of nodes, and
+collects every fact the entry validator reads in one pass. Neither root admits
+`recursion`. The case has the shape of its predecessors: hand-built texts that
+reach each error of the reader and the limit on nesting, hand-built renders of
+every shape and every script-operand problem, every `math` render of the
+committed lexicon entries read and walked, and seeded renders and seeded edits.
+Each planted defect names the one vector that catches it, and the case asserts
+that the site of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+entrypoints are `LexiconLse` and `LexiconLre`: `lexlean check`, `lexlean
+build`, and `lexlean verify` pass, and the eligibility report gives each root
+exactly `allocation` and `overflow`. The register agrees with the §31 table on
+480 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `BS-25` over
+`release/v0.4` at `4dc5b803c` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_26`). Its corpus is 88 named vectors (69 read,
+19 walked), the 216 committed renders (216 reads and 216 walks), and 300
+seeded renders under the evaluator (300 walks, 600 reads) and 1,500 under
+rustc. The evaluator agrees with the oracle on 885 reads and 535 walks, the
+rendered packages under the pinned rustc on 5,020 runs, and each of the 20
+planted defects is detected by its own vector. The first run found one plant
+its vector did not reach, and no fault of the module: `the second operand is
+checked first` was tried on a render whose two problems sit in different
+operators, so the order within one operator never decided it (now `a sub whose
+operands fail differently`, a `sub` whose base renders nothing and whose script
+is a bare script). Lean's audit corrected the axiom policy of 12 definitions.
+The case then stops at the stack-bound step, `bootstrap/parse_lre is no package
+of the committed exports`, as `BS-21` to `BS-25` did before their regeneration,
+which produces the `bootstrap/parse_lre` and `bootstrap/render_facts` packages.
+The branch is stacked on `BS-25` and lands after it.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
