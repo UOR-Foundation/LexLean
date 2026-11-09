@@ -25,6 +25,9 @@
     "bootstrap-check": [
       "BS-04"
     ],
+    "bootstrap-gnaf": [
+      "BS-16"
+    ],
     "bootstrap-lower": [
       "BS-07"
     ],
@@ -39,6 +42,9 @@
     ],
     "bootstrap-terms": [
       "BS-10"
+    ],
+    "bootstrap-tooling-latex": [
+      "BS-20"
     ],
     "bootstrap-validate": [
       "BS-05"
@@ -247,7 +253,12 @@
       "SP-28"
     ],
     "preservation-std": [
-      "SP-29"
+      "SP-29",
+      "SP-32",
+      "SP-33"
     ]
+  },
+  "targets": {
+    "honesty": ["bdd"]
   }
 }

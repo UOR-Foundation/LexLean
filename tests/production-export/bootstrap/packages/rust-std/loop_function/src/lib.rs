@@ -1895,8 +1895,7 @@ pub fn f7(v0: Adt12) -> Adt12 {
             Adt12::C12
         }
         Adt12::C11(r165, _) => {
-            let v34 = (*r165).clone();
-            f14(v34)
+            (*r165).clone()
         }
         Adt12::C12 => {
             Adt12::C12
@@ -1953,8 +1952,7 @@ pub fn f8(v0: Adt12) -> Adt12 {
             Adt12::C12
         }
         Adt12::C11(_, r167) => {
-            let v35 = (*r167).clone();
-            f14(v35)
+            (*r167).clone()
         }
         Adt12::C12 => {
             Adt12::C12
@@ -2167,7 +2165,7 @@ pub fn f11(v0: Adt1, v1: Adt12, v2: u64) -> bool {
             false
         }
         Adt1::C1(v4) => {
-            let a197 = f15(v1, v2, v4);
+            let a197 = f14(v1, v2, v4);
             bool_not(a197)
         }
         Adt1::C2(_) => {
@@ -2321,7 +2319,7 @@ pub fn f13(v0: Adt0, v1: Adt12, v2: Adt12, v3: u64, v4: Adt14) -> R<Adt12> {
         }
         Adt0::C1(v5, _, r225) => {
             let v7 = (*r225).clone();
-            Ok(f16(f11(v5, v1.clone(), v3), v2.clone(), v3, f13(v7, v1, v2, {
+            Ok(f15(f11(v5, v1.clone(), v3), v2.clone(), v3, f13(v7, v1, v2, {
                 let a223 = v3;
                 let a224 = 1u64;
                 nat_add(a223, a224)?
@@ -2330,11 +2328,7 @@ pub fn f13(v0: Adt0, v1: Adt12, v2: Adt12, v3: u64, v4: Adt14) -> R<Adt12> {
     }
 }
 
-pub fn f14(v0: Adt12) -> Adt12 {
-    v0
-}
-
-pub fn f15(p230: Adt12, v1: u64, v2: Adt3) -> bool {
+pub fn f14(p230: Adt12, v1: u64, v2: Adt3) -> bool {
     let m229 = p230;
     {
         let mut m229 = m229;
@@ -2385,7 +2379,7 @@ pub fn f15(p230: Adt12, v1: u64, v2: Adt3) -> bool {
                     Adt12::C13(r227, r228) => {
                         let v38 = (*r227).clone();
                         let v39 = (*r228).clone();
-                        if f17(f18(v38, v1), v2.clone()) {
+                        if f16(f17(v38, v1), v2.clone()) {
                             Ok::<Adt12, bool>(v39)
                         } else {
                             Err::<Adt12, bool>(false)
@@ -2410,19 +2404,19 @@ pub fn f15(p230: Adt12, v1: u64, v2: Adt3) -> bool {
     }
 }
 
-pub fn f16(v0: bool, v1: Adt12, v2: u64, v3: Adt12, v4: Adt14) -> Adt12 {
+pub fn f15(v0: bool, v1: Adt12, v2: u64, v3: Adt12, v4: Adt14) -> Adt12 {
     if v0 {
         if f2(v3.clone()) {
-            f18(v1, v2)
+            f17(v1, v2)
         } else {
-            Adt12::C6(std::rc::Rc::new(f18(v1, v2)), std::rc::Rc::new(v3), v4)
+            Adt12::C6(std::rc::Rc::new(f17(v1, v2)), std::rc::Rc::new(v3), v4)
         }
     } else {
         v3
     }
 }
 
-pub fn f17(v0: Adt12, v1: Adt3) -> bool {
+pub fn f16(v0: Adt12, v1: Adt3) -> bool {
     let m231 = v0;
     match m231 {
         Adt12::C0(_, _) => {
@@ -2432,16 +2426,16 @@ pub fn f17(v0: Adt12, v1: Adt3) -> bool {
             let m232 = v4;
             match m232 {
                 Adt15::C0 => {
-                    f19(v5, v1)
+                    f18(v5, v1)
                 }
                 Adt15::C1 => {
-                    f19(v5, v1)
+                    f18(v5, v1)
                 }
                 Adt15::C2 => {
-                    f19(v5, v1)
+                    f18(v5, v1)
                 }
                 Adt15::C3 => {
-                    f19(v5, v1)
+                    f18(v5, v1)
                 }
                 Adt15::C4 => {
                     false
@@ -2496,7 +2490,7 @@ pub fn f17(v0: Adt12, v1: Adt3) -> bool {
     }
 }
 
-pub fn f18(p238: Adt12, p239: u64) -> Adt12 {
+pub fn f17(p238: Adt12, p239: u64) -> Adt12 {
     let m237 = (p238, p239);
     {
         let mut m237 = m237;
@@ -2549,7 +2543,7 @@ pub fn f18(p238: Adt12, p239: u64) -> Adt12 {
                         let v38 = (*r236).clone();
                         let m234 = v1;
                         if m234 == 0 {
-                            Err::<(Adt12, u64), Adt12>(f14(v37))
+                            Err::<(Adt12, u64), Adt12>(v37)
                         } else {
                             let v39 = m234 - 1;
                             Ok::<(Adt12, u64), Adt12>((v38, v39))
@@ -2574,19 +2568,19 @@ pub fn f18(p238: Adt12, p239: u64) -> Adt12 {
     }
 }
 
-pub fn f19(v0: Adt3, v1: Adt3) -> bool {
-    let a240 = f20(v0.clone());
-    let a241 = f20(v1.clone());
+pub fn f18(v0: Adt3, v1: Adt3) -> bool {
+    let a240 = f19(v0.clone());
+    let a241 = f19(v1.clone());
     if nat_eq(a240, a241) {
-        let a242 = f21(v0);
-        let a243 = f21(v1);
+        let a242 = f20(v0);
+        let a243 = f20(v1);
         nat_eq(a242, a243)
     } else {
         false
     }
 }
 
-pub fn f20(v0: Adt3) -> u64 {
+pub fn f19(v0: Adt3) -> u64 {
     let m244 = v0;
     match m244 {
         Adt3::C0(_) => {
@@ -2622,7 +2616,7 @@ pub fn f20(v0: Adt3) -> u64 {
     }
 }
 
-pub fn f21(v0: Adt3) -> u64 {
+pub fn f20(v0: Adt3) -> u64 {
     let m245 = v0;
     match m245 {
         Adt3::C0(v1) => {
