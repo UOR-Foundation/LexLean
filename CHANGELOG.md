@@ -17,6 +17,12 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The generic notation as language-1.2 source, fourth slice of the front end
+  (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
+  the language-1.2 identity). `parseGeneric` and `printGeneric` of
+  `SurfaceGeneric` return what `surface::generic::parse` and `print` return, over
+  the standard library's `Json`; the reader admits no `recursion` and the printer
+  admits it. The register is 482 IDs.
 - The layout algebra of the authoring notation as language-1.2 source, third
   slice of the front end (SPEC.md §17.23, §17.21, `BS-23`, #269; no new
   diagnostic code, no change to the language-1.2 identity). `renderDoc` of

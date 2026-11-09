@@ -36,6 +36,7 @@ mod rust_validate;
 mod scan;
 mod structural_grammar;
 mod surface_doc;
+mod surface_generic;
 mod surface_lex;
 mod tooling_latex;
 
@@ -2463,6 +2464,7 @@ fn case(id: &str) {
         "BS-21" => structural_grammar::case(),
         "BS-22" => surface_lex::case(),
         "BS-23" => surface_doc::case(),
+        "BS-24" => surface_generic::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

@@ -25,6 +25,9 @@
     "bootstrap-surface-doc": [
       "BS-23"
     ],
+    "bootstrap-surface-generic": [
+      "BS-24"
+    ],
     "bootstrap-check": [
       "BS-04"
     ],
