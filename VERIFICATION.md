@@ -13579,3 +13579,36 @@ the crates and vectors those evaluators are given is unchanged, as are the
 `printExpr` vectors of `BS-06` and every count of `BS-11`. The new stdlib
 verify records move the mutant draws of `BS-12` (-4), `BS-13` (+2) and
 `BS-14` (+5).
+
+
+## The `parse_module` package moves the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (`BS-21`, #269)
+
+The root of `LexLeanBoot.StructuralGrammar` (`BS-21`, #395) adds one committed
+package (`parse_module`), and these cases assert their corpus. The member was
+merged with the tree of `release/v0.4` at `4dc5b803c` (after #415 landed), and
+its lock, export, build oracles and verify records were regenerated on the
+normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1) at verify width 1; the
+`BS-21` case passed whole on that tree with the stack measured (3,006 s), and
+the root does not recurse. Each row below is the number its own count check
+reported on that tree against the committed one, under `LEXLEAN_COUNTS=fast`,
+and the constants, rows, statements, scenarios and prose were rewritten by the
+writer of #442.
+
+| Count | `4dc5b803c` | member |
+| --- | --- | --- |
+| committed manifests and packages | 299 | 300 |
+| distinct programs | 216 | 217 |
+| distinct lowered crates | 275 | 276 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 511, 376 | 512, 377 |
+| `BS-06` `printCrate` vectors, committed distinct | 719, 550 | 721, 552 |
+| `BS-07` vectors | 350 | 351 |
+| `BS-08` crates | 409 | 410 |
+| `BS-13` vectors | 119 | 120 |
+| `BS-14` vectors | 354 | 355 |
+| `BS-15` manifests, accepted, render mutants | 318, 299, 299 | 319, 300, 300 |
+
+The new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`,
+so each of their vector counts grows by one, and within the 400-expression
+bound of `BS-08`. Every count of `BS-11` and `BS-12` is unchanged, as are the
+`printExpr` vectors of `BS-06` and every mutant draw: the stdlib verify records
+did not move.
