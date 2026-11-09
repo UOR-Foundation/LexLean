@@ -305,6 +305,33 @@
 'LexLeanStd.Json.writeJson' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Json.writeJsonFile' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Json.writeValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.Frame' does not depend on any axioms
+'LexLeanStd.JsonRead.Reading' does not depend on any axioms
+'LexLeanStd.JsonRead.advance' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.afterAt' does not depend on any axioms
+'LexLeanStd.JsonRead.broken' does not depend on any axioms
+'LexLeanStd.JsonRead.byteOf' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.close' does not depend on any axioms
+'LexLeanStd.JsonRead.complete' does not depend on any axioms
+'LexLeanStd.JsonRead.controlEscape' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.digitStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.digitsEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.escapeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.inRange' does not depend on any axioms
+'LexLeanStd.JsonRead.keyAdmitted' depends on axioms: [propext]
+'LexLeanStd.JsonRead.keyAt' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.readInteger' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.readJson' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.readJsonFile' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.readStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.readValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.reverseSpine' does not depend on any axioms
+'LexLeanStd.JsonRead.reverseStep' does not depend on any axioms
+'LexLeanStd.JsonRead.scanString' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.shortForm' does not depend on any axioms
+'LexLeanStd.JsonRead.simpleEscape' does not depend on any axioms
+'LexLeanStd.JsonRead.stringStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.JsonRead.valueAt' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Map.containsStep' does not depend on any axioms
 'LexLeanStd.Map.dropStep' does not depend on any axioms
 'LexLeanStd.Map.getStep' does not depend on any axioms

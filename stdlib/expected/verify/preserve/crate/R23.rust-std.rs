@@ -857,207 +857,143 @@ pub fn format_int(p0: i64) -> Str {
 
 #[derive(Clone)]
 pub enum Fn0 {
-    F3,
-    F5,
+    F6,
 }
 
 impl Fn0 {
-    pub fn apply(&self, p0: List<Bytes>, p1: Bytes) -> List<Bytes> {
+    pub fn apply(&self, p0: List<Bytes>, p1: (Bytes, ())) -> List<Bytes> {
         match self {
-            Fn0::F3 => f3(p0, p1),
-            Fn0::F5 => f5(p0, p1),
+            Fn0::F6 => f6(p0, p1),
         }
     }
 }
 
 #[derive(Clone)]
 pub enum Fn1 {
-    F11,
+    F9,
 }
 
 impl Fn1 {
-    pub fn apply(&self, p0: List<Bytes>, p1: (Bytes, ())) -> List<Bytes> {
+    pub fn apply(&self, p0: List<List<(Bytes, ())>>, p1: (Bytes, ())) -> List<List<(Bytes, ())>> {
         match self {
-            Fn1::F11 => f11(p0, p1),
+            Fn1::F9 => f9(p0, p1),
         }
     }
 }
 
 #[derive(Clone)]
 pub enum Fn2 {
-    F14,
+    F11,
 }
 
 impl Fn2 {
-    pub fn apply(&self, p0: List<List<(Bytes, ())>>, p1: (Bytes, ())) -> List<List<(Bytes, ())>> {
+    pub fn apply(&self, p0: List<List<(Bytes, ())>>) -> R<Option<List<List<(Bytes, ())>>>> {
         match self {
-            Fn2::F14 => f14(p0, p1),
+            Fn2::F11 => f11(p0),
         }
     }
 }
 
 #[derive(Clone)]
 pub enum Fn3 {
-    F16,
+    F14,
 }
 
 impl Fn3 {
-    pub fn apply(&self, p0: List<List<(Bytes, ())>>) -> R<Option<List<List<(Bytes, ())>>>> {
+    pub fn apply(&self, p0: List<(Bytes, ())>, p1: Bytes) -> List<(Bytes, ())> {
         match self {
-            Fn3::F16 => f16(p0),
+            Fn3::F14 => f14(p0, p1),
         }
     }
 }
 
 #[derive(Clone)]
 pub enum Fn4 {
-    F19,
+    F16,
 }
 
 impl Fn4 {
-    pub fn apply(&self, p0: List<(Bytes, ())>, p1: Bytes) -> List<(Bytes, ())> {
+    pub fn apply(&self, p0: List<Bytes>, p1: Bytes) -> List<Bytes> {
         match self {
-            Fn4::F19 => f19(p0, p1),
+            Fn4::F16 => f16(p0, p1),
         }
     }
 }
 
 #[derive(Clone)]
 pub enum Fn5 {
-    F21,
+    F18,
 }
 
 impl Fn5 {
     pub fn apply(&self, p0: List<List<(Bytes, ())>>, p1: List<(Bytes, ())>) -> List<List<(Bytes, ())>> {
         match self {
-            Fn5::F21 => f21(p0, p1),
+            Fn5::F18 => f18(p0, p1),
         }
     }
 }
 
 #[derive(Clone)]
 pub enum Fn6 {
-    F24,
+    F21,
 }
 
 impl Fn6 {
     pub fn apply(&self, p0: List<(Bytes, ())>, p1: (Bytes, ())) -> List<(Bytes, ())> {
         match self {
-            Fn6::F24 => f24(p0, p1),
+            Fn6::F21 => f21(p0, p1),
         }
     }
 }
 
 #[derive(Clone)]
 pub enum Fn7 {
-    F27,
+    F24,
 }
 
 impl Fn7 {
     pub fn apply(&self, p0: (List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)) -> R<Option<(List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)>> {
         match self {
-            Fn7::F27 => f27(p0),
+            Fn7::F24 => f24(p0),
         }
     }
 }
 
 #[derive(Clone)]
 pub enum Fn8 {
-    F31,
+    F28,
 }
 
 impl Fn8 {
     pub fn apply(&self, p0: (List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))) -> Option<(List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))> {
         match self {
-            Fn8::F31 => f31(p0),
+            Fn8::F28 => f28(p0),
         }
     }
 }
 
 pub fn f0(v0: List<Bytes>) -> R<List<Bytes>> {
-    Ok(f1(f2(Fn0::F3, List::<Bytes>::nil(), f4(v0)?)))
+    Ok(f1(f2(f3(v0))?))
 }
 
-pub fn f1(v0: List<Bytes>) -> List<Bytes> {
-    f2(Fn0::F5, List::<Bytes>::nil(), v0)
+pub fn f1(v0: List<(Bytes, ())>) -> List<Bytes> {
+    f4(f5(Fn0::F6, List::<Bytes>::nil(), v0))
 }
 
-pub fn f2(v0: Fn0, p4: List<Bytes>, p5: List<Bytes>) -> List<Bytes> {
-    let m3 = (p4, p5);
-    {
-        let mut m3 = m3;
-        loop {
-            let step = {
-                let (v1, v2) = m3;
-                let m1 = v2;
-                match m1.uncons() {
-                    None => {
-                        Err::<(List<Bytes>, List<Bytes>), List<Bytes>>(v1)
-                    }
-                    Some((v3, v4)) => {
-                        Ok::<(List<Bytes>, List<Bytes>), List<Bytes>>(({
-                            let c2: Fn0 = v0.clone();
-                            c2.apply(v1, v3)
-                        }, v4))
-                    }
-                }
+pub fn f2(v0: List<(Bytes, ())>) -> R<List<(Bytes, ())>> {
+    let v1: List<List<(Bytes, ())>> = f7(f8(Fn1::F9, List::<List<(Bytes, ())>>::nil(), v0.clone()));
+    let m5 = {
+        let (h1, _) = f10(Fn2::F11, {
+            let a3 = {
+                let a2 = v0;
+                length_list(a2)
             };
-            match step {
-                Ok(next) => { m3 = next; }
-                Err(done) => break done,
-            }
-        }
-    }
-}
-
-pub fn f3(v0: List<Bytes>, v1: Bytes) -> List<Bytes> {
-    f6(v0, v1)
-}
-
-pub fn f4(v0: List<Bytes>) -> R<List<Bytes>> {
-    Ok(f7(f8(f9(v0))?))
-}
-
-pub fn f5(v0: List<Bytes>, v1: Bytes) -> List<Bytes> {
-    List::cons(v1, v0)
-}
-
-pub fn f6(v0: List<Bytes>, v1: Bytes) -> List<Bytes> {
-    let m6 = v0.clone();
-    match m6.uncons() {
-        None => {
-            List::cons(v1, v0)
-        }
-        Some((v2, _)) => {
-            let a7 = v2;
-            let a8 = v1.clone();
-            if equal(a7, a8) {
-                v0
-            } else {
-                List::cons(v1, v0)
-            }
-        }
-    }
-}
-
-pub fn f7(v0: List<(Bytes, ())>) -> List<Bytes> {
-    f1(f10(Fn1::F11, List::<Bytes>::nil(), v0))
-}
-
-pub fn f8(v0: List<(Bytes, ())>) -> R<List<(Bytes, ())>> {
-    let v1: List<List<(Bytes, ())>> = f12(f13(Fn2::F14, List::<List<(Bytes, ())>>::nil(), v0.clone()));
-    let m13 = {
-        let (h9, _) = f15(Fn3::F16, {
-            let a11 = {
-                let a10 = v0;
-                length_list(a10)
-            };
-            let a12 = 1u64;
-            nat_add(a11, a12)?
+            let a4 = 1u64;
+            nat_add(a3, a4)?
         }, v1)?;
-        h9
+        h1
     };
-    match m13.uncons() {
+    match m5.uncons() {
         None => {
             Ok(List::<(Bytes, ())>::nil())
         }
@@ -1067,98 +1003,102 @@ pub fn f8(v0: List<(Bytes, ())>) -> R<List<(Bytes, ())>> {
     }
 }
 
-pub fn f9(v0: List<Bytes>) -> List<(Bytes, ())> {
-    f17(f18(Fn4::F19, List::<(Bytes, ())>::nil(), v0))
+pub fn f3(v0: List<Bytes>) -> List<(Bytes, ())> {
+    f12(f13(Fn3::F14, List::<(Bytes, ())>::nil(), v0))
 }
 
-pub fn f10(v0: Fn1, p17: List<Bytes>, p18: List<(Bytes, ())>) -> List<Bytes> {
-    let m16 = (p17, p18);
+pub fn f4(v0: List<Bytes>) -> List<Bytes> {
+    f15(Fn4::F16, List::<Bytes>::nil(), v0)
+}
+
+pub fn f5(v0: Fn0, p9: List<Bytes>, p10: List<(Bytes, ())>) -> List<Bytes> {
+    let m8 = (p9, p10);
     {
-        let mut m16 = m16;
+        let mut m8 = m8;
         loop {
             let step = {
-                let (v1, v2) = m16;
-                let m14 = v2;
-                match m14.uncons() {
+                let (v1, v2) = m8;
+                let m6 = v2;
+                match m6.uncons() {
                     None => {
                         Err::<(List<Bytes>, List<(Bytes, ())>), List<Bytes>>(v1)
                     }
                     Some((v3, v4)) => {
                         Ok::<(List<Bytes>, List<(Bytes, ())>), List<Bytes>>(({
-                            let c15: Fn1 = v0.clone();
-                            c15.apply(v1, v3)
+                            let c7: Fn0 = v0.clone();
+                            c7.apply(v1, v3)
                         }, v4))
                     }
                 }
             };
             match step {
-                Ok(next) => { m16 = next; }
+                Ok(next) => { m8 = next; }
                 Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f11(v0: List<Bytes>, v1: (Bytes, ())) -> List<Bytes> {
+pub fn f6(v0: List<Bytes>, v1: (Bytes, ())) -> List<Bytes> {
     List::cons({
-        let (h19, _) = v1;
-        h19
+        let (h11, _) = v1;
+        h11
     }, v0)
 }
 
-pub fn f12(v0: List<List<(Bytes, ())>>) -> List<List<(Bytes, ())>> {
-    f20(Fn5::F21, List::<List<(Bytes, ())>>::nil(), v0)
+pub fn f7(v0: List<List<(Bytes, ())>>) -> List<List<(Bytes, ())>> {
+    f17(Fn5::F18, List::<List<(Bytes, ())>>::nil(), v0)
 }
 
-pub fn f13(v0: Fn2, p23: List<List<(Bytes, ())>>, p24: List<(Bytes, ())>) -> List<List<(Bytes, ())>> {
-    let m22 = (p23, p24);
+pub fn f8(v0: Fn1, p15: List<List<(Bytes, ())>>, p16: List<(Bytes, ())>) -> List<List<(Bytes, ())>> {
+    let m14 = (p15, p16);
     {
-        let mut m22 = m22;
+        let mut m14 = m14;
         loop {
             let step = {
-                let (v1, v2) = m22;
-                let m20 = v2;
-                match m20.uncons() {
+                let (v1, v2) = m14;
+                let m12 = v2;
+                match m12.uncons() {
                     None => {
                         Err::<(List<List<(Bytes, ())>>, List<(Bytes, ())>), List<List<(Bytes, ())>>>(v1)
                     }
                     Some((v3, v4)) => {
                         Ok::<(List<List<(Bytes, ())>>, List<(Bytes, ())>), List<List<(Bytes, ())>>>(({
-                            let c21: Fn2 = v0.clone();
-                            c21.apply(v1, v3)
+                            let c13: Fn1 = v0.clone();
+                            c13.apply(v1, v3)
                         }, v4))
                     }
                 }
             };
             match step {
-                Ok(next) => { m22 = next; }
+                Ok(next) => { m14 = next; }
                 Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f14(v0: List<List<(Bytes, ())>>, v1: (Bytes, ())) -> List<List<(Bytes, ())>> {
+pub fn f9(v0: List<List<(Bytes, ())>>, v1: (Bytes, ())) -> List<List<(Bytes, ())>> {
     List::cons(List::cons(v1, List::<(Bytes, ())>::nil()), v0)
 }
 
-pub fn f15(v0: Fn3, p29: u64, p30: List<List<(Bytes, ())>>) -> R<(List<List<(Bytes, ())>>, bool)> {
-    let m28 = (p29, p30);
+pub fn f10(v0: Fn2, p21: u64, p22: List<List<(Bytes, ())>>) -> R<(List<List<(Bytes, ())>>, bool)> {
+    let m20 = (p21, p22);
     {
-        let mut m28 = m28;
+        let mut m20 = m20;
         loop {
             let step = {
-                let (v1, v2) = m28;
-                let m25 = v1;
-                if m25 == 0 {
+                let (v1, v2) = m20;
+                let m17 = v1;
+                if m17 == 0 {
                     Err::<(u64, List<List<(Bytes, ())>>), R<(List<List<(Bytes, ())>>, bool)>>(Ok((v2, false)))
                 } else {
-                    let v3 = m25 - 1;
-                    let m27 = {
-                        let c26: Fn3 = v0.clone();
-                        c26.apply(v2.clone())?
+                    let v3 = m17 - 1;
+                    let m19 = {
+                        let c18: Fn2 = v0.clone();
+                        c18.apply(v2.clone())?
                     };
-                    match m27 {
+                    match m19 {
                         None => {
                             Err::<(u64, List<List<(Bytes, ())>>), R<(List<List<(Bytes, ())>>, bool)>>(Ok((v2, true)))
                         }
@@ -1169,164 +1109,196 @@ pub fn f15(v0: Fn3, p29: u64, p30: List<List<(Bytes, ())>>) -> R<(List<List<(Byt
                 }
             };
             match step {
-                Ok(next) => { m28 = next; }
+                Ok(next) => { m20 = next; }
                 Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f16(v0: List<List<(Bytes, ())>>) -> R<Option<List<List<(Bytes, ())>>>> {
-    f22(v0)
+pub fn f11(v0: List<List<(Bytes, ())>>) -> R<Option<List<List<(Bytes, ())>>>> {
+    f19(v0)
 }
 
-pub fn f17(v0: List<(Bytes, ())>) -> List<(Bytes, ())> {
-    f23(Fn6::F24, List::<(Bytes, ())>::nil(), v0)
+pub fn f12(v0: List<(Bytes, ())>) -> List<(Bytes, ())> {
+    f20(Fn6::F21, List::<(Bytes, ())>::nil(), v0)
 }
 
-pub fn f18(v0: Fn4, p34: List<(Bytes, ())>, p35: List<Bytes>) -> List<(Bytes, ())> {
-    let m33 = (p34, p35);
+pub fn f13(v0: Fn3, p26: List<(Bytes, ())>, p27: List<Bytes>) -> List<(Bytes, ())> {
+    let m25 = (p26, p27);
     {
-        let mut m33 = m33;
+        let mut m25 = m25;
         loop {
             let step = {
-                let (v1, v2) = m33;
-                let m31 = v2;
-                match m31.uncons() {
+                let (v1, v2) = m25;
+                let m23 = v2;
+                match m23.uncons() {
                     None => {
                         Err::<(List<(Bytes, ())>, List<Bytes>), List<(Bytes, ())>>(v1)
                     }
                     Some((v3, v4)) => {
                         Ok::<(List<(Bytes, ())>, List<Bytes>), List<(Bytes, ())>>(({
-                            let c32: Fn4 = v0.clone();
-                            c32.apply(v1, v3)
+                            let c24: Fn3 = v0.clone();
+                            c24.apply(v1, v3)
                         }, v4))
                     }
                 }
             };
             match step {
-                Ok(next) => { m33 = next; }
+                Ok(next) => { m25 = next; }
                 Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f19(v0: List<(Bytes, ())>, v1: Bytes) -> List<(Bytes, ())> {
+pub fn f14(v0: List<(Bytes, ())>, v1: Bytes) -> List<(Bytes, ())> {
     List::cons((v1, ()), v0)
 }
 
-pub fn f20(v0: Fn5, p39: List<List<(Bytes, ())>>, p40: List<List<(Bytes, ())>>) -> List<List<(Bytes, ())>> {
-    let m38 = (p39, p40);
+pub fn f15(v0: Fn4, p31: List<Bytes>, p32: List<Bytes>) -> List<Bytes> {
+    let m30 = (p31, p32);
     {
-        let mut m38 = m38;
+        let mut m30 = m30;
         loop {
             let step = {
-                let (v1, v2) = m38;
-                let m36 = v2;
-                match m36.uncons() {
+                let (v1, v2) = m30;
+                let m28 = v2;
+                match m28.uncons() {
+                    None => {
+                        Err::<(List<Bytes>, List<Bytes>), List<Bytes>>(v1)
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(List<Bytes>, List<Bytes>), List<Bytes>>(({
+                            let c29: Fn4 = v0.clone();
+                            c29.apply(v1, v3)
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m30 = next; }
+                Err(done) => break done,
+            }
+        }
+    }
+}
+
+pub fn f16(v0: List<Bytes>, v1: Bytes) -> List<Bytes> {
+    List::cons(v1, v0)
+}
+
+pub fn f17(v0: Fn5, p36: List<List<(Bytes, ())>>, p37: List<List<(Bytes, ())>>) -> List<List<(Bytes, ())>> {
+    let m35 = (p36, p37);
+    {
+        let mut m35 = m35;
+        loop {
+            let step = {
+                let (v1, v2) = m35;
+                let m33 = v2;
+                match m33.uncons() {
                     None => {
                         Err::<(List<List<(Bytes, ())>>, List<List<(Bytes, ())>>), List<List<(Bytes, ())>>>(v1)
                     }
                     Some((v3, v4)) => {
                         Ok::<(List<List<(Bytes, ())>>, List<List<(Bytes, ())>>), List<List<(Bytes, ())>>>(({
-                            let c37: Fn5 = v0.clone();
-                            c37.apply(v1, v3)
+                            let c34: Fn5 = v0.clone();
+                            c34.apply(v1, v3)
                         }, v4))
                     }
                 }
             };
             match step {
-                Ok(next) => { m38 = next; }
+                Ok(next) => { m35 = next; }
                 Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f21(v0: List<List<(Bytes, ())>>, v1: List<(Bytes, ())>) -> List<List<(Bytes, ())>> {
+pub fn f18(v0: List<List<(Bytes, ())>>, v1: List<(Bytes, ())>) -> List<List<(Bytes, ())>> {
     List::cons(v1, v0)
 }
 
-pub fn f22(v0: List<List<(Bytes, ())>>) -> R<Option<List<List<(Bytes, ())>>>> {
-    let a42 = {
-        let a41 = v0.clone();
-        length_list(a41)
+pub fn f19(v0: List<List<(Bytes, ())>>) -> R<Option<List<List<(Bytes, ())>>>> {
+    let a39 = {
+        let a38 = v0.clone();
+        length_list(a38)
     };
-    let a43 = 1u64;
-    if nat_le(a42, a43) {
+    let a40 = 1u64;
+    if nat_le(a39, a40) {
         Ok(None::<List<List<(Bytes, ())>>>)
     } else {
-        Ok(Some(f25(v0)?))
+        Ok(Some(f22(v0)?))
     }
 }
 
-pub fn f23(v0: Fn6, p47: List<(Bytes, ())>, p48: List<(Bytes, ())>) -> List<(Bytes, ())> {
-    let m46 = (p47, p48);
+pub fn f20(v0: Fn6, p44: List<(Bytes, ())>, p45: List<(Bytes, ())>) -> List<(Bytes, ())> {
+    let m43 = (p44, p45);
     {
-        let mut m46 = m46;
+        let mut m43 = m43;
         loop {
             let step = {
-                let (v1, v2) = m46;
-                let m44 = v2;
-                match m44.uncons() {
+                let (v1, v2) = m43;
+                let m41 = v2;
+                match m41.uncons() {
                     None => {
                         Err::<(List<(Bytes, ())>, List<(Bytes, ())>), List<(Bytes, ())>>(v1)
                     }
                     Some((v3, v4)) => {
                         Ok::<(List<(Bytes, ())>, List<(Bytes, ())>), List<(Bytes, ())>>(({
-                            let c45: Fn6 = v0.clone();
-                            c45.apply(v1, v3)
+                            let c42: Fn6 = v0.clone();
+                            c42.apply(v1, v3)
                         }, v4))
                     }
                 }
             };
             match step {
-                Ok(next) => { m46 = next; }
+                Ok(next) => { m43 = next; }
                 Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f24(v0: List<(Bytes, ())>, v1: (Bytes, ())) -> List<(Bytes, ())> {
+pub fn f21(v0: List<(Bytes, ())>, v1: (Bytes, ())) -> List<(Bytes, ())> {
     List::cons(v1, v0)
 }
 
-pub fn f25(v0: List<List<(Bytes, ())>>) -> R<List<List<(Bytes, ())>>> {
-    Ok(f12({
-        let (_, h49) = {
-            let (h50, _) = f26(Fn7::F27, {
-                let a52 = {
-                    let a51 = v0.clone();
-                    length_list(a51)
+pub fn f22(v0: List<List<(Bytes, ())>>) -> R<List<List<(Bytes, ())>>> {
+    Ok(f7({
+        let (_, h46) = {
+            let (h47, _) = f23(Fn7::F24, {
+                let a49 = {
+                    let a48 = v0.clone();
+                    length_list(a48)
                 };
-                let a53 = 1u64;
-                nat_add(a52, a53)?
+                let a50 = 1u64;
+                nat_add(a49, a50)?
             }, (v0, List::<List<(Bytes, ())>>::nil()))?;
-            h50
+            h47
         };
-        h49
+        h46
     }))
 }
 
-pub fn f26(v0: Fn7, p58: u64, p59: (List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)) -> R<((List<List<(Bytes, ())>>, List<List<(Bytes, ())>>), bool)> {
-    let m57 = (p58, p59);
+pub fn f23(v0: Fn7, p55: u64, p56: (List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)) -> R<((List<List<(Bytes, ())>>, List<List<(Bytes, ())>>), bool)> {
+    let m54 = (p55, p56);
     {
-        let mut m57 = m57;
+        let mut m54 = m54;
         loop {
             let step = {
-                let (v1, v2) = m57;
-                let m54 = v1;
-                if m54 == 0 {
+                let (v1, v2) = m54;
+                let m51 = v1;
+                if m51 == 0 {
                     Err::<(u64, (List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)), R<((List<List<(Bytes, ())>>, List<List<(Bytes, ())>>), bool)>>(Ok((v2, false)))
                 } else {
-                    let v3 = m54 - 1;
-                    let m56 = {
-                        let c55: Fn7 = v0.clone();
-                        c55.apply(v2.clone())?
+                    let v3 = m51 - 1;
+                    let m53 = {
+                        let c52: Fn7 = v0.clone();
+                        c52.apply(v2.clone())?
                     };
-                    match m56 {
+                    match m53 {
                         None => {
                             Err::<(u64, (List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)), R<((List<List<(Bytes, ())>>, List<List<(Bytes, ())>>), bool)>>(Ok((v2, true)))
                         }
@@ -1337,90 +1309,90 @@ pub fn f26(v0: Fn7, p58: u64, p59: (List<List<(Bytes, ())>>, List<List<(Bytes, (
                 }
             };
             match step {
-                Ok(next) => { m57 = next; }
+                Ok(next) => { m54 = next; }
                 Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f27(v0: (List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)) -> R<Option<(List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)>> {
-    f28(v0)
+pub fn f24(v0: (List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)) -> R<Option<(List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)>> {
+    f25(v0)
 }
 
-pub fn f28(v0: (List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)) -> R<Option<(List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)>> {
+pub fn f25(v0: (List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)) -> R<Option<(List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)>> {
     let v1: List<List<(Bytes, ())>> = {
-        let (h60, _) = v0;
-        h60
+        let (h57, _) = v0;
+        h57
     };
     let v2: List<List<(Bytes, ())>> = {
-        let (_, h61) = v0;
-        h61
+        let (_, h58) = v0;
+        h58
     };
-    let m62 = v1;
-    match m62.uncons() {
+    let m59 = v1;
+    match m59.uncons() {
         None => {
             Ok(None::<(List<List<(Bytes, ())>>, List<List<(Bytes, ())>>)>)
         }
         Some((v3, v4)) => {
-            let m63 = v4;
-            match m63.uncons() {
+            let m60 = v4;
+            match m60.uncons() {
                 None => {
                     Ok(Some((List::<List<(Bytes, ())>>::nil(), List::cons(v3, v2))))
                 }
                 Some((v5, v6)) => {
-                    Ok(Some((v6, List::cons(f29(v3, v5)?, v2))))
+                    Ok(Some((v6, List::cons(f26(v3, v5)?, v2))))
                 }
             }
         }
     }
 }
 
-pub fn f29(v0: List<(Bytes, ())>, v1: List<(Bytes, ())>) -> R<List<(Bytes, ())>> {
+pub fn f26(v0: List<(Bytes, ())>, v1: List<(Bytes, ())>) -> R<List<(Bytes, ())>> {
     let v2: u64 = {
-        let a68 = {
-            let a66 = {
-                let a64 = v0.clone();
-                length_list(a64)
+        let a65 = {
+            let a63 = {
+                let a61 = v0.clone();
+                length_list(a61)
             };
-            let a67 = {
-                let a65 = v1.clone();
-                length_list(a65)
+            let a64 = {
+                let a62 = v1.clone();
+                length_list(a62)
             };
-            nat_add(a66, a67)?
+            nat_add(a63, a64)?
         };
-        let a69 = 1u64;
-        nat_add(a68, a69)?
+        let a66 = 1u64;
+        nat_add(a65, a66)?
     };
-    Ok(f17({
-        let (_, h70) = {
-            let (_, h71) = {
-                let (h72, _) = f30(Fn8::F31, v2, (v0, (v1, List::<(Bytes, ())>::nil())));
-                h72
+    Ok(f12({
+        let (_, h67) = {
+            let (_, h68) = {
+                let (h69, _) = f27(Fn8::F28, v2, (v0, (v1, List::<(Bytes, ())>::nil())));
+                h69
             };
-            h71
+            h68
         };
-        h70
+        h67
     }))
 }
 
-pub fn f30(v0: Fn8, p77: u64, p78: (List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))) -> ((List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>)), bool) {
-    let m76 = (p77, p78);
+pub fn f27(v0: Fn8, p74: u64, p75: (List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))) -> ((List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>)), bool) {
+    let m73 = (p74, p75);
     {
-        let mut m76 = m76;
+        let mut m73 = m73;
         loop {
             let step = {
-                let (v1, v2) = m76;
-                let m73 = v1;
-                if m73 == 0 {
+                let (v1, v2) = m73;
+                let m70 = v1;
+                if m70 == 0 {
                     Err::<(u64, (List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))), ((List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>)), bool)>((v2, false))
                 } else {
-                    let v3 = m73 - 1;
-                    let m75 = {
-                        let c74: Fn8 = v0.clone();
-                        c74.apply(v2.clone())
+                    let v3 = m70 - 1;
+                    let m72 = {
+                        let c71: Fn8 = v0.clone();
+                        c71.apply(v2.clone())
                     };
-                    match m75 {
+                    match m72 {
                         None => {
                             Err::<(u64, (List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))), ((List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>)), bool)>((v2, true))
                         }
@@ -1431,41 +1403,41 @@ pub fn f30(v0: Fn8, p77: u64, p78: (List<(Bytes, ())>, (List<(Bytes, ())>, List<
                 }
             };
             match step {
-                Ok(next) => { m76 = next; }
+                Ok(next) => { m73 = next; }
                 Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f31(v0: (List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))) -> Option<(List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))> {
-    f32(v0)
+pub fn f28(v0: (List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))) -> Option<(List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))> {
+    f29(v0)
 }
 
-pub fn f32(v0: (List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))) -> Option<(List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))> {
+pub fn f29(v0: (List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))) -> Option<(List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))> {
     let v1: List<(Bytes, ())> = {
-        let (h79, _) = v0.clone();
-        h79
+        let (h76, _) = v0.clone();
+        h76
     };
     let v2: List<(Bytes, ())> = {
-        let (h80, _) = {
-            let (_, h81) = v0.clone();
-            h81
+        let (h77, _) = {
+            let (_, h78) = v0.clone();
+            h78
         };
-        h80
+        h77
     };
     let v3: List<(Bytes, ())> = {
-        let (_, h82) = {
-            let (_, h83) = v0;
-            h83
+        let (_, h79) = {
+            let (_, h80) = v0;
+            h80
         };
-        h82
+        h79
     };
-    let m84 = v1.clone();
-    match m84.uncons() {
+    let m81 = v1.clone();
+    match m81.uncons() {
         None => {
-            let m85 = v2;
-            match m85.uncons() {
+            let m82 = v2;
+            match m82.uncons() {
                 None => {
                     None::<(List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))>
                 }
@@ -1475,18 +1447,18 @@ pub fn f32(v0: (List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))) -> O
             }
         }
         Some((v6, v7)) => {
-            let m86 = v2.clone();
-            match m86.uncons() {
+            let m83 = v2.clone();
+            match m83.uncons() {
                 None => {
                     Some((v7, (List::<(Bytes, ())>::nil(), List::cons(v6, v3))))
                 }
                 Some((v8, v9)) => {
-                    if f33({
-                        let (h87, _) = v8.clone();
-                        h87
+                    if f30({
+                        let (h84, _) = v8.clone();
+                        h84
                     }, {
-                        let (h88, _) = v6.clone();
-                        h88
+                        let (h85, _) = v6.clone();
+                        h85
                     }) {
                         Some((v1, (v9, List::cons(v8, v3))))
                     } else {
@@ -1498,16 +1470,16 @@ pub fn f32(v0: (List<(Bytes, ())>, (List<(Bytes, ())>, List<(Bytes, ())>))) -> O
     }
 }
 
-pub fn f33(v0: Bytes, v1: Bytes) -> bool {
-    let a93 = {
-        let a89 = v0;
-        let a90 = v1;
-        compare_bytes(a89, a90)
+pub fn f30(v0: Bytes, v1: Bytes) -> bool {
+    let a90 = {
+        let a86 = v0;
+        let a87 = v1;
+        compare_bytes(a86, a87)
     };
-    let a94 = {
-        let a91 = Bytes::lit(&[]);
-        let a92 = Bytes::lit(&[0x01]);
-        compare_bytes(a91, a92)
+    let a91 = {
+        let a88 = Bytes::lit(&[]);
+        let a89 = Bytes::lit(&[0x01]);
+        compare_bytes(a88, a89)
     };
-    equal(a93, a94)
+    equal(a90, a91)
 }
