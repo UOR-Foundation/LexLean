@@ -420,22 +420,6 @@ definition{
 }
 
 definition{
-  name: keepE,
-  parameters: [value : RustAst::Expr],
-  result: RustAst::Expr,
-  body: value,
-  executable: true
-}
-
-definition{
-  name: keepP,
-  parameters: [value : RustAst::Pat],
-  result: RustAst::Pat,
-  body: value,
-  executable: true
-}
-
-definition{
   name: blockOn,
   parameters: [subject : RustAst::Expr, whole : RustAst::Expr],
   result: RustAst::Expr,
@@ -449,7 +433,7 @@ definition{
     | RustAst::Expr.EPair u13x0 u13x1 u13x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
     | RustAst::Expr.EIf u13x0 u13x1 u13x2 u13x3 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
     | RustAst::Expr.EMatch u13x0 u13x1 u13x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
-    | RustAst::Expr.EBlockE inner => (keepE inner)
+    | RustAst::Expr.EBlockE inner => inner
     | RustAst::Expr.EProbe u13x0 u13x1 u13x2 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
     | RustAst::Expr.EBlock u13x0 u13x1 => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
     | RustAst::Expr.ENil => (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ENil) whole)
@@ -484,7 +468,7 @@ definition{
     | RustAst::Expr.EMatch u14x0 u14x1 u14x2 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EBlockE u14x0 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EProbe u14x0 u14x1 u14x2 => (ctor RustAst::Expr.ENil)
-    | RustAst::Expr.EBlock lets tail => (keepE lets)
+    | RustAst::Expr.EBlock lets tail => lets
     | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ECons u14x0 u14x1 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ELet u14x0 u14x1 u14x2 u14x3 u14x4 u14x5 => (ctor RustAst::Expr.ENil)
@@ -509,7 +493,7 @@ definition{
     | RustAst::Expr.EMatch u15x0 u15x1 u15x2 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EBlockE u15x0 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EProbe u15x0 u15x1 u15x2 => (ctor RustAst::Expr.ENil)
-    | RustAst::Expr.EBlock lets tail => (keepE tail)
+    | RustAst::Expr.EBlock lets tail => tail
     | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ECons u15x0 u15x1 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ELet u15x0 u15x1 u15x2 u15x3 u15x4 u15x5 => (ctor RustAst::Expr.ENil)
@@ -824,7 +808,7 @@ definition{
       | RustAst::Expr.ELit u23x0 u23x1 => false
       | RustAst::Expr.ERead kind read at => (match kind
         | RustValidate::ReadKind.RkMove => (idEq bound read)
-        | RustValidate::ReadKind.RkClone => false
+        | RustValidate::ReadKind.RkClone => (idEq bound read)
         | RustValidate::ReadKind.RkCopy => (idEq bound read)
         | RustValidate::ReadKind.RkDeref => false
         | RustValidate::ReadKind.RkUnbox => false)
@@ -1319,7 +1303,7 @@ definition{
     | RustAst::Expr.EWrap u45x0 u45x1 u45x2 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ECall u45x0 u45x1 u45x2 u45x3 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EApply u45x0 u45x1 u45x2 u45x3 => (ctor RustAst::Expr.ENil)
-    | RustAst::Expr.EConstruct con args at => (keepE args)
+    | RustAst::Expr.EConstruct con args at => args
     | RustAst::Expr.EPair u45x0 u45x1 u45x2 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EIf u45x0 u45x1 u45x2 u45x3 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EMatch u45x0 u45x1 u45x2 => (ctor RustAst::Expr.ENil)
@@ -1762,7 +1746,7 @@ definition{
     | RustAst::Expr.ENil => (ctor RustAst::Pat.PNil)
     | RustAst::Expr.ECons u63x0 u63x1 => (ctor RustAst::Pat.PNil)
     | RustAst::Expr.ELet u63x0 u63x1 u63x2 u63x3 u63x4 u63x5 => (ctor RustAst::Pat.PNil)
-    | RustAst::Expr.EArm pats block rest => (keepP pats)
+    | RustAst::Expr.EArm pats block rest => pats
     | RustAst::Expr.ELoop u63x0 u63x1 => (ctor RustAst::Pat.PNil)),
   executable: true
 }
@@ -1787,7 +1771,7 @@ definition{
     | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ECons u64x0 u64x1 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ELet u64x0 u64x1 u64x2 u64x3 u64x4 u64x5 => (ctor RustAst::Expr.ENil)
-    | RustAst::Expr.EArm pats block rest => (keepE block)
+    | RustAst::Expr.EArm pats block rest => block
     | RustAst::Expr.ELoop u64x0 u64x1 => (ctor RustAst::Expr.ENil)),
   executable: true
 }
@@ -1810,7 +1794,7 @@ definition{
     | RustAst::Expr.EProbe u65x0 u65x1 u65x2 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EBlock u65x0 u65x1 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
-    | RustAst::Expr.ECons item itemsTail => (keepE item)
+    | RustAst::Expr.ECons item itemsTail => item
     | RustAst::Expr.ELet u65x0 u65x1 u65x2 u65x3 u65x4 u65x5 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EArm u65x0 u65x1 u65x2 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ELoop u65x0 u65x1 => (ctor RustAst::Expr.ENil)),
@@ -1835,7 +1819,7 @@ definition{
     | RustAst::Expr.EProbe u66x0 u66x1 u66x2 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EBlock u66x0 u66x1 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
-    | RustAst::Expr.ECons item itemsTail => (keepE itemsTail)
+    | RustAst::Expr.ECons item itemsTail => itemsTail
     | RustAst::Expr.ELet u66x0 u66x1 u66x2 u66x3 u66x4 u66x5 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EArm u66x0 u66x1 u66x2 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ELoop u66x0 u66x1 => (ctor RustAst::Expr.ENil)),
@@ -1881,7 +1865,7 @@ definition{
     | RustAst::Pat.PAdt u68x0 u68x1 u68x2 => (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild))
     | RustAst::Pat.PNil => (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild))
     | RustAst::Pat.PCons head tail => (match position
-      | Nat.zero => (keepP head)
+      | Nat.zero => head
       | Nat.succ previous => (patAt tail previous))
     | RustAst::Pat.POrdering u68x0 => (ctor RustAst::Pat.PLeaf (ctor RustAst::PatLeaf.PlWild))),
   executable: true,
@@ -2025,7 +2009,7 @@ definition{
   body: (match pat
     | RustAst::Pat.PLeaf u69x0 => (ctor RustAst::Pat.PNil)
     | RustAst::Pat.PBind u69x0 => (ctor RustAst::Pat.PNil)
-    | RustAst::Pat.PTuple items => (keepP items)
+    | RustAst::Pat.PTuple items => items
     | RustAst::Pat.PWrap u69x0 u69x1 => (ctor RustAst::Pat.PNil)
     | RustAst::Pat.PAdt u69x0 u69x1 u69x2 => (ctor RustAst::Pat.PNil)
     | RustAst::Pat.PNil => (ctor RustAst::Pat.PNil)
@@ -2160,7 +2144,7 @@ definition{
     | RustAst::Expr.EBlock u72x0 u72x1 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ENil => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.ECons head tail => (match position
-      | Nat.zero => (keepE head)
+      | Nat.zero => head
       | Nat.succ previous => (argAt tail previous))
     | RustAst::Expr.ELet u72x0 u72x1 u72x2 u72x3 u72x4 u72x5 => (ctor RustAst::Expr.ENil)
     | RustAst::Expr.EArm u72x0 u72x1 u72x2 => (ctor RustAst::Expr.ENil)

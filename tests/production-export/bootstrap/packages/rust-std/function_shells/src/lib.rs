@@ -1670,10 +1670,10 @@ pub fn f9(v0: List<u64>, v1: Adt0, v2: Adt0, v3: bool, v4: Adt2, v5: Adt0, v6: A
     let m38 = f13(v1.clone(), v6, 0u64)?;
     match m38 {
         None => {
-            Ok(Adt10::C2(Adt21::C8(v7), f14(v1, v0, v4, v5, 0u64, 0u64)?, v8, Adt27::C11(std::rc::Rc::new(Adt27::C12), std::rc::Rc::new(Adt27::C12)), f18(0u64)))
+            Ok(Adt10::C2(Adt21::C8(v7), f14(v0, v1, v4, v5, 0u64, 0u64)?, v8, Adt27::C11(std::rc::Rc::new(Adt27::C12), std::rc::Rc::new(Adt27::C12)), f18(0u64)))
         }
         Some(v9) => {
-            Ok(Adt10::C2(Adt21::C8(v7), f14(v1.clone(), v0.clone(), v4, v5, 0u64, {
+            Ok(Adt10::C2(Adt21::C8(v7), f14(v0.clone(), v1.clone(), v4, v5, 0u64, {
                 let a39 = v9;
                 let a40 = 1u64;
                 nat_add(a39, a40)?
@@ -1846,8 +1846,8 @@ pub fn f13(p61: Adt0, v1: Adt0, p62: u64) -> R<Option<u64>> {
     }
 }
 
-pub fn f14(v0: Adt0, v1: List<u64>, v2: Adt2, v3: Adt0, v4: u64, v5: u64) -> R<Adt22> {
-    let m63 = v0;
+pub fn f14(v0: List<u64>, v1: Adt0, v2: Adt2, v3: Adt0, v4: u64, v5: u64) -> R<Adt22> {
+    let m63 = v1;
     match m63 {
         Adt0::C0 => {
             Ok(Adt22::C0)
@@ -1897,7 +1897,7 @@ pub fn f14(v0: Adt0, v1: List<u64>, v2: Adt2, v3: Adt0, v4: u64, v5: u64) -> R<A
         Adt0::C15(r73, r74) => {
             let v16 = (*r73).clone();
             let v17 = (*r74).clone();
-            let m64 = v1;
+            let m64 = v0;
             match m64.uncons() {
                 None => {
                     Ok(Adt22::C0)
@@ -1921,7 +1921,7 @@ pub fn f14(v0: Adt0, v1: List<u64>, v2: Adt2, v3: Adt0, v4: u64, v5: u64) -> R<A
                                 f25(0u64)
                             }
                         }
-                    }, f12(v3.clone(), v16)?, std::rc::Rc::new(f14(v17, v19, v2, v3, {
+                    }, f12(v3.clone(), v16)?, std::rc::Rc::new(f14(v19, v17, v2, v3, {
                         let a71 = v4;
                         let a72 = 1u64;
                         nat_add(a71, a72)?

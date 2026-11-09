@@ -316,6 +316,9 @@ fn named() -> Vec<Vector> {
         ("an empty string", "\"\""),
         ("a string", "\"abc\""),
         ("a string with a space", "\"a b\""),
+        // A run of plain bytes is read by `rawStep`, which has its own bound,
+        // so the check of `scanStep` meets a space only where a piece starts.
+        ("a string that starts with a space", "\" a\""),
         ("a string after tokens", "{ a: \"x\" }"),
         ("a string beyond ASCII", "\"\u{e9}\u{2115}\u{1f600}\""),
         ("a string with a delete", "\"a\u{7f}b\""),
@@ -923,7 +926,7 @@ const PLANTS: &[Plant] = &[
         root: 0,
         site: "(byteNum subject position) <? 32)",
         replacement: "(byteNum subject position) <? 33)",
-        vector: "a string with a space",
+        vector: "a string that starts with a space",
     },
     Plant {
         label: "the unit separator is no control character",

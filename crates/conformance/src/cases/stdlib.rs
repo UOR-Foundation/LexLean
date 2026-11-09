@@ -675,6 +675,12 @@ pub fn run(id: &str) {
         "SL-09" => super::stdlib_numeral::run(id),
         // §17.22: sorting and order (#276).
         "SL-10" => super::stdlib_order::run(id),
+        // §17.22: canonical JSON writing (#276).
+        "SL-11" => super::stdlib_json::run(id),
+        // §17.22: canonical JSON reading (#276).
+        "SL-13" => super::stdlib_json_read::run(id),
+        // §17.22: maps and sets (#276).
+        "SL-14" => super::stdlib_map::run(id),
         other => panic!("no stdlib case is wired for {other}"),
     }
 }
