@@ -22,3 +22,6 @@ writes the rejection of a GNAF request through it.
 `src/LexiconLse.lex.tex` (SPEC.md §17.23, `BS-25`) imports the standard library's `Numeral`,
 `Order`, and `Text`, and nothing of the bootstrap project: its expressions, universes, and
 S-expression trees are sorts of its own, each list of a sort's values a chain in the sort.
+
+`src/LexiconLre.lex.tex` (SPEC.md §17.23, `BS-26`) imports `LexiconLse`, whose tokenizer and
+tree reader it reads with, and the standard library's `Order`.
