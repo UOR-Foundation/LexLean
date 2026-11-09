@@ -11167,6 +11167,53 @@ measures the row of `print_generic` in `tests/stack-bounds.json` (`PD-08`). The
 branch is stacked on `BS-22`, `BS-23`, and the standard library members `SL-11`,
 `SL-13`, and `SL-14`, and lands after them.
 
+### the notation of a tooling module is source (BS-27)
+
+`BS-27` holds the three production roots of `LexLeanBoot.SurfaceTooling`
+(`bootstrap/src/SurfaceTooling.lex.tex`), `printToolingModule`,
+`parseToolingModule`, and `declarationSpans`, to `surface::tooling::print_module`,
+`parse_module`, and `declaration_spans`. It composes the generic notation of
+`BS-24`: the printer, the reader, and the value reader `readFrom` started at a
+depth, which is the oracle's `generic::value` at that depth. `printToolingModule`
+removes the `spec` by structural recursion over the members and admits
+`recursion`; `parseToolingModule` reads one object and adds the implied `spec`
+in order of key; `declarationSpans` walks the members of the module with a
+state machine over the tokens, reading a member at depth 1 and an element of
+`declarations` at depth 2, and admits no `recursion`. The case holds the roots
+to the oracle on hand-built modules, texts, and values that reach every error of
+the three and the limit on nesting at both depths, on the committed JSON files
+printed as modules and read and spanned back, on the committed tooling modules
+written in the notation, and on seeded edits of printed modules. Each planted
+defect names the one vector that catches it, and the case asserts that the site
+of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `SurfaceTooling`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and the eligibility report gives `printToolingModule`
+exactly `allocation`, `overflow`, and `recursion` and the other two exactly
+`allocation` and `overflow`. The register agrees with the §31 table on 483
+IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `BS-24` over
+`BS-23`, `BS-22`, `BS-21`, and `SL-13` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_27`, 178 s). Its corpus is 55 named vectors (12
+printed, 16 read, 27 spanned), the 3,906 committed JSON files (642 printed
+under the evaluator and 1,885 under rustc, each printed module read and spanned
+back), the 4 committed tooling modules of at most 64,000 bytes, and 200 and
+1,000 seeded edits. The evaluator agrees with the oracle on 654 prints, 218
+reads, and 229 spans, the rendered packages under the pinned rustc on 5,098
+runs, and each of the 20 planted defects is detected by its own vector. The
+first runs found no fault of the module: Lean's preservation pass refused a
+recursive definition that returned its own matched parameter from an arm (each
+arm now rebuilds its value), Lean's audit corrected the axiom policy of six
+definitions, and the vectors of the limit on nesting were one level short of
+it (now 256 levels in a declaration and 257 in a member). The case then stops
+at the stack-bound step, `bootstrap/print_tooling_module is no package of the
+committed exports`, as `BS-21` to `BS-26` did before their regeneration, which
+produces the three packages and measures the row of `print_tooling_module` in
+`tests/stack-bounds.json` (`PD-08`). The branch is stacked on `BS-24` and lands
+after it.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

@@ -25,6 +25,9 @@
     "bootstrap-surface-doc": [
       "BS-23"
     ],
+    "bootstrap-surface-tooling": [
+      "BS-27"
+    ],
     "bootstrap-surface-generic": [
       "BS-24"
     ],

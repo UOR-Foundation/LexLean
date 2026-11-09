@@ -17,6 +17,13 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The authoring notation of a tooling module as language-1.2 source, the fifth
+  slice of the front end (SPEC.md §17.23, §17.20, §17.21, `BS-27`, #269; no new
+  diagnostic code, no change to the language-1.2 identity).
+  `printToolingModule`, `parseToolingModule`, and `declarationSpans` of
+  `SurfaceTooling` return what `surface::tooling::print_module`,
+  `parse_module`, and `declaration_spans` return; the printer admits
+  `recursion` and the other two do not. The register is 483 IDs.
 - The generic notation as language-1.2 source, fourth slice of the front end
   (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
   the language-1.2 identity). `parseGeneric` and `printGeneric` of
