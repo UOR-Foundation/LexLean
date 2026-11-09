@@ -13482,3 +13482,57 @@ the 6,000-node bound of the evaluator of `BS-06`, and its seeded expression
 mutants draw six more from the crates of at most 80 expressions, as the
 500 and 500 of `BS-05` draw 18 fewer refused `validateCrate` mutants and one
 more refused `correspondCrate` mutant.
+
+
+## JsonRead uses its reserved SL-13 claim (#415, #422)
+
+The canonical JSON reader's claim is renamed from SL-12 to SL-13, preserving
+Host's separate SL-12 reservation. The register, normative SPEC row and prose,
+scenario tag, named conformance test, dispatch, case assertions and labels,
+README and CHANGELOG now use SL-13 together. No reader implementation, corpus,
+plant or axiom policy changed; the greater-than-nineteen-digit refusal and its
+new plant remain exactly as at contributor head e7adf7c6a.
+
+This is source-only namespace preparation on that exact head. Static comparison
+checks the register/SPEC/scenario/test correspondence and the unchanged source
+blobs; no Cargo, Lean or official writer ran. CONFORMANCE.md is intentionally
+left as the existing generated projection until the admitted official model
+writer runs. Complete source integration, generated projections, coordinated
+artifact regeneration and final-head acceptance remain required. This does not
+close #276 or establish final acceptance for #422.
+
+
+## The two `JsonRead` packages move the counts of `BS-05` to `BS-08` and `BS-12` to `BS-15` (`SL-13`, #276)
+
+The two roots of `LexLeanStd.JsonRead` (`SL-13`, #415) add two committed
+packages (`read_json`, `read_json_file`), and these cases assert their corpus.
+The member was merged with `release/v0.4` at `f1b70fe34` (after #414 landed),
+`JsonRead.lex.tex` was formatted canonical under the line's formatter
+(`LLL1003`), and its locks, export, build oracles and verify records were
+regenerated on the normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1). The
+`SL-13` case names its crates `jsonread_<member>`, so its stack-bound lookup
+reads them as the exported packages; it passes with the stack measured, and
+the two roots do not recurse. Each row below is the number its own count
+check reported on that tree against the committed one.
+
+| Count | `f1b70fe34` | member |
+| --- | --- | --- |
+| committed manifests and packages | 297 | 299 |
+| distinct programs | 214 | 216 |
+| distinct lowered crates | 273 | 275 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 509, 374 | 511, 376 |
+| `BS-06` `printCrate` vectors, committed distinct, refused | 714, 546, 66 | 719, 550, 67 |
+| `BS-06` evaluator crates | 605 | 604 |
+| `BS-07` vectors | 348 | 350 |
+| `BS-08` crates | 407 | 409 |
+| `BS-12` mutants | 154 | 150 |
+| `BS-13` vectors, mutants | 117, 130 | 119, 132 |
+| `BS-14` vectors, mutants | 352, 534 | 354, 539 |
+| `BS-15` manifests, accepted, render mutants | 316, 297, 297 | 318, 299, 299 |
+
+Neither new crate is within the 300-node bound of `BS-07`, `BS-13` and
+`BS-14` or the 400-expression bound of `BS-05` and `BS-08`, so every count of
+the crates and vectors those evaluators are given is unchanged, as are the
+`printExpr` vectors of `BS-06` and every count of `BS-11`. The new stdlib
+verify records move the mutant draws of `BS-12` (-4), `BS-13` (+2) and
+`BS-14` (+5).
