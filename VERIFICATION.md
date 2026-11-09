@@ -11066,11 +11066,22 @@ and the eligibility report gives both roots `rust-std` with exactly
 are canonical, and 22 modules check. The register agrees with the §31 table on
 470 IDs, by the same parse `validate-spec-links` makes.
 
-The case has not run. It has not been compiled either, and `lexlean verify`,
-which holds the axioms each definition declares to the pinned Lean, has not been
-run on the module. What it owes is its first run, to pin the counts of its
-corpora, and the landing regeneration, which produces the `bootstrap/lex_text`
-and `bootstrap/quote_text` packages.
+The case was first compiled and run on the normative host on this member merged
+with `BS-21` and `SL-13` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_22`, 293 s). Its corpus is 234 named vectors (183 lexed, 123 of
+them accepted, and 51 quoted), 1,045 committed sources, and 600 and 2,400 seeded
+runs. The evaluator agrees with the oracle on 1,828 `lexText` and 1,362
+`quoteText` runs, the rendered packages under the pinned rustc (41 harness
+binaries) on 5,738 runs, and each of the 46 planted defects is detected by its
+own vector. The first run found one plant its vector missed, `the space is a
+control character`: a run of plain bytes is read by `rawStep`, which has its own
+bound, so the check the plant changes in `scanStep` meets a space only where a
+piece of the string starts, and `"a b"` never reaches it. Its vector is now
+`a string that starts with a space`, `" a"`, and the lexer is unchanged. The
+case then stops at the stack-bound step, `bootstrap/lex_text is no package of
+the committed exports`, as `BS-21` did before its regeneration: the landing
+regeneration produces the `bootstrap/lex_text` and `bootstrap/quote_text`
+packages.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
