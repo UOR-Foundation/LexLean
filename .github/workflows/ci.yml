@@ -147,6 +147,8 @@ jobs:
       - uses: taiki-e/install-action@b6b84cf49ebfe0176417bdce007c624f0db37f20 # v2.86.2
         with:
           tool: just
+      - name: Test the Intel construction and inventory checks
+        run: python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'
       - name: Run the honesty part of the acceptance gate
         shell: bash
         run: |
@@ -1017,7 +1019,10 @@ jobs:
   # reports which ones it skipped; on Linux x86-64 the same gate makes the
   # toolchain mandatory, so nothing passes vacuously where it matters.
   #
-  # There is no separate build step: `cargo test` with the same `--locked
+  # The three hosts below keep their original single invocation. Intel's
+  # conformance execution is partitioned below after one construction; its
+  # final aggregate retains the fourth supported-host status (issue #449).
+  # There is no separate build step here: `cargo test` with the same `--locked
   # --workspace --all-features` builds, in the same profile, the library and the
   # binary of `lexlean` (its integration tests run the binary) before it runs a
   # test, so a crate that does not build fails this job at the same step. A
@@ -1032,26 +1037,10 @@ jobs:
       matrix:
         include:
           - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
-          - { os: macos-15-intel, target: x86_64-apple-darwin }
           - { os: macos-15, target: aarch64-apple-darwin }
           - { os: windows-2022, target: x86_64-pc-windows-msvc }
     runs-on: ${{ matrix.os }}
-    # The Intel macOS runner took 51 to 61 minutes for this job before the data
-    # certificates, 100 with their stress arithmetic (#177), and 140 when BS-02's
-    # evaluator and seeded differential ran on every host (#190); #190's split
-    # brought it back to about 60. The register has grown since (the stack
-    # bounds record, the bootstrap roots, the text laws), and the three full
-    # gates before 2026-10-20 took 74, 92, and 100 minutes on this leg; on
-    # 2026-10-20 the 430 conformance tests passed in 99 minutes and the leg
-    # was cancelled at the 120-minute limit it then had, during the last test
-    # binaries. At afe1a002 on 2026-11-02 the leg took 144 minutes (run
-    # 41478333299), 124.5 of them in the conformance binary. #235 moves SP-02's
-    # complete stress families and TC-03's seeded fuel sweep to the normative
-    # host, keeping fixed vectors here, and reads the shared declaration
-    # inventory once in TC-03 and TC-05. At 30612d265 on 2026-11-03 the
-    # post-change leg took 117m01s (run 41592896657), 100m21s in conformance.
-    # The 240-minute bound is about twice that observed runtime; no timeout
-    # reduction.
+    # Keep the existing bound; scheduling changes do not extend it.
     timeout-minutes: 240
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -1075,3 +1064,98 @@ jobs:
       # further one costs a whole run of the leg. The job fails exactly when a
       # test fails, as before; only what it reports is complete (SPEC.md §8.3).
       - run: cargo test --locked --workspace --all-features --no-fail-fast
+
+  # Construct Intel workspace tests once, then keep ordinary tests, every
+  # non-conformance harness, and all doctests on their original runner. The
+  # conformance binary embeds its checkout path and builds generated packages
+  # offline, so its same-run handoff includes those explicit dependencies.
+  # No build cache, credentials, or evidence from another run is admitted.
+  intel-construction:
+    name: Intel test construction and local targets
+    needs: [plan, honesty]
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    runs-on: macos-15-intel
+    timeout-minutes: 240
+    outputs:
+      lanes: ${{ steps.construct.outputs.lanes }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Construct tests and execute the producer's complete targets
+        id: construct
+        run: python3 .github/scripts/intel_host_tests.py build --output "$RUNNER_TEMP/intel-construction"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ always() }}
+        with:
+          name: intel-construction
+          path: ${{ runner.temp }}/intel-construction
+          if-no-files-found: error
+          retention-days: 14
+
+  intel-part:
+    name: Intel conformance (${{ matrix.lane }})
+    needs: [plan, intel-construction]
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: ${{ fromJSON(needs.intel-construction.outputs.lanes) }}
+    runs-on: macos-15-intel
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: intel-construction
+          path: ${{ runner.temp }}/intel-input/intel-construction
+      - name: Execute this lane against the checked construction
+        run: python3 .github/scripts/intel_host_tests.py execute --construction "$RUNNER_TEMP/intel-input/intel-construction" --lane ${{ matrix.lane }} --output "$RUNNER_TEMP/intel-${{ matrix.lane }}"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ always() }}
+        with:
+          name: intel-${{ matrix.lane }}
+          path: ${{ runner.temp }}/intel-${{ matrix.lane }}
+          if-no-files-found: error
+          retention-days: 14
+
+  # This is the fourth §8.3 host status, not an additional acceptance owner.
+  # Run even after failure so missing parts and all reported failures are
+  # visible together. Successful construction alone never accepts a host.
+  intel-join:
+    name: build and non-Lean tests (x86_64-apple-darwin)
+    needs: [plan, intel-construction, intel-part]
+    if: ${{ always() && needs.plan.outputs.full == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: intel-*
+          path: ${{ runner.temp }}/intel-input
+      - name: Verify the complete Intel inventory and execution receipts
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/intel-evidence"
+          python3 .github/scripts/intel_host_tests.py join --artifacts "$RUNNER_TEMP/intel-input" 2>&1 | tee "$RUNNER_TEMP/intel-evidence/intel-join.txt"
+      - name: All Intel execution jobs succeeded
+        if: ${{ always() }}
+        shell: bash
+        env:
+          CONSTRUCTION_RESULT: ${{ needs.intel-construction.result }}
+          PART_RESULT: ${{ needs.intel-part.result }}
+        run: |
+          set -euo pipefail
+          test "$CONSTRUCTION_RESULT" = success
+          test "$PART_RESULT" = success
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: acceptance-gate-evidence-intel
+          path: ${{ runner.temp }}/intel-evidence
+          if-no-files-found: error
+          retention-days: 14
