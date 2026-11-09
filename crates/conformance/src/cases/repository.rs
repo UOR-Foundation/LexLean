@@ -1550,7 +1550,10 @@ pub(crate) fn run(id: &str) {
             // Normative gate jobs and the Intel receipt join run on the
             // standard runner. Only host execution runs elsewhere (§8.3).
             for (key, body) in &jobs {
-                if matches!(key.as_str(), "host-matrix" | "intel-construction" | "intel-part") {
+                if matches!(
+                    key.as_str(),
+                    "host-matrix" | "intel-construction" | "intel-part"
+                ) {
                     continue;
                 }
                 assert!(
@@ -2106,10 +2109,7 @@ pub(crate) fn run(id: &str) {
                     "name: build and non-Lean tests (x86_64-apple-darwin)",
                     "name: Intel aggregate",
                 ),
-                (
-                    "needs: [plan, intel-construction]",
-                    "needs: [plan]",
-                ),
+                ("needs: [plan, intel-construction]", "needs: [plan]"),
                 (
                     "needs: [plan, intel-construction, intel-part]",
                     "needs: [plan, intel-construction]",
@@ -2136,7 +2136,10 @@ pub(crate) fn run(id: &str) {
                     "echo factory checks",
                 ),
             ] {
-                assert!(ci.contains(from), "the plant must change the workflow: {from}");
+                assert!(
+                    ci.contains(from),
+                    "the plant must change the workflow: {from}"
+                );
                 assert!(
                     intel_host_workflow(&ci.replacen(from, to, 1)).is_err(),
                     "the Intel graph must refuse `{from}` replaced by `{to}`"
@@ -3116,8 +3119,10 @@ fn intel_host_workflow(ci: &str) -> Result<(), String> {
     let mut expected = supported_host_contexts();
     expected.sort();
     if contexts != expected {
-        return Err("RP-14: the matrix and Intel aggregate must expose each exact host context once"
-            .to_owned());
+        return Err(
+            "RP-14: the matrix and Intel aggregate must expose each exact host context once"
+                .to_owned(),
+        );
     }
     require(
         &matrix,
@@ -3154,7 +3159,12 @@ fn intel_host_workflow(ci: &str) -> Result<(), String> {
                 "RP-14: {key} does not follow its full-gate dependency policy"
             ));
         }
-        for forbidden in ["run-id:", "github-token:", "continue-on-error", "actions/cache"] {
+        for forbidden in [
+            "run-id:",
+            "github-token:",
+            "continue-on-error",
+            "actions/cache",
+        ] {
             if body.contains(forbidden) {
                 return Err(format!("RP-14: {key} admits `{forbidden}`"));
             }
@@ -3163,7 +3173,9 @@ fn intel_host_workflow(ci: &str) -> Result<(), String> {
         // operation must not be guarded by a success/skip shortcut.
         for step in body.split("\n      - ") {
             if step.contains(".github/scripts/intel_host_tests.py ")
-                && step.lines().any(|line| line.trim_start().starts_with("if:"))
+                && step
+                    .lines()
+                    .any(|line| line.trim_start().starts_with("if:"))
             {
                 return Err(format!(
                     "RP-14: {key} conditionally skips its factory operation"
@@ -3188,7 +3200,9 @@ fn intel_host_workflow(ci: &str) -> Result<(), String> {
             .and_then(|value| value.parse::<u32>().ok())
             .ok_or("RP-14: an Intel execution job has no timeout")?;
         if timeout == 0 || timeout > 240 {
-            return Err("RP-14: Intel execution cannot raise the prior 240-minute bound".to_owned());
+            return Err(
+                "RP-14: Intel execution cannot raise the prior 240-minute bound".to_owned(),
+            );
         }
     }
     for (body, command) in [
@@ -3207,12 +3221,18 @@ fn intel_host_workflow(ci: &str) -> Result<(), String> {
         (&construction, "id: construct"),
         (&construction, "name: intel-construction"),
         (&part, "fail-fast: false"),
-        (&part, "lane: ${{ fromJSON(needs.intel-construction.outputs.lanes) }}"),
+        (
+            &part,
+            "lane: ${{ fromJSON(needs.intel-construction.outputs.lanes) }}",
+        ),
         (&part, "name: intel-construction"),
         (&part, "name: intel-${{ matrix.lane }}"),
         (&part, "--lane ${{ matrix.lane }}"),
         (&join, "pattern: intel-*"),
-        (&join, "CONSTRUCTION_RESULT: ${{ needs.intel-construction.result }}"),
+        (
+            &join,
+            "CONSTRUCTION_RESULT: ${{ needs.intel-construction.result }}",
+        ),
         (&join, "PART_RESULT: ${{ needs.intel-part.result }}"),
         (&join, "test \"$CONSTRUCTION_RESULT\" = success"),
         (&join, "test \"$PART_RESULT\" = success"),
@@ -3596,8 +3616,7 @@ fn release_gate_decisions() {
             ("foreign replacement", foreign),
             ("suffixed", suffixed),
         ] {
-            let (code, evidence, stderr) =
-                decide(&head, &[(head.as_str(), run_line("25"))], &jobs);
+            let (code, evidence, stderr) = decide(&head, &[(head.as_str(), run_line("25"))], &jobs);
             assert_eq!(code, 1, "{defect} host context `{host}`: {stderr}");
             assert!(evidence.is_empty(), "{defect} host writes no evidence");
         }

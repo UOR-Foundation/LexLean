@@ -148,6 +148,8 @@ jobs:
         with:
           tool: just
       - name: Test the Intel construction and inventory checks
+        env:
+          PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'
       - name: Run the honesty part of the acceptance gate
         shell: bash
