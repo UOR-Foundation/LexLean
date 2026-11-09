@@ -181,6 +181,7 @@ pub const TABLE: &[(&str, &[&str])] = &[
     ("primitive.length", &["prim:length"]),
     ("primitive.index", &["prim:index"]),
     ("primitive.slice", &["prim:slice"]),
+    ("primitive.update", &["prim:update"]),
     ("primitive.utf8_encode", &["prim:utf8_encode"]),
     ("primitive.utf8_decode", &["prim:utf8_decode"]),
     ("primitive.compare_bytes", &["prim:compare_bytes"]),
@@ -571,6 +572,7 @@ fn prim_samples() -> Vec<Prim> {
             target: IntKind::U8,
         },
         Prim::ParseDecimal { target: Ty::Int },
+        Prim::Update,
     ]
 }
 
@@ -618,6 +620,7 @@ const fn prim_index(prim: &Prim) -> usize {
         Prim::Compare => 39,
         Prim::Convert { .. } => 40,
         Prim::ParseDecimal { .. } => 41,
+        Prim::Update => 42,
     }
 }
 

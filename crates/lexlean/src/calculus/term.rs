@@ -212,6 +212,7 @@ fn prim(prim: &Prim) -> Json {
         Prim::Length => simple("length"),
         Prim::Index => simple("index"),
         Prim::Slice => simple("slice"),
+        Prim::Update => simple("update"),
         Prim::Utf8Encode => simple("utf8Encode"),
         Prim::Utf8Decode => simple("utf8Decode"),
         Prim::CompareBytes => simple("compareBytes"),

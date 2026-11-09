@@ -498,7 +498,8 @@ definition{
     | RustSyntax::Item.formatInt => (ctor TargetSyntax::Prim.formatDecimal)
     | RustSyntax::Item.formatFixed ignoredFormat => (ctor TargetSyntax::Prim.formatDecimal)
     | RustSyntax::Item.parseInt => (ctor TargetSyntax::Prim.parseDecimal (ctor TargetSyntax::Ty.int))
-    | RustSyntax::Item.parseFixed kind => (ctor TargetSyntax::Prim.parseDecimal (ctor TargetSyntax::Ty.fixed kind)))
+    | RustSyntax::Item.parseFixed kind => (ctor TargetSyntax::Prim.parseDecimal (ctor TargetSyntax::Ty.fixed kind))
+    | RustSyntax::Item.updateBytes => (ctor TargetSyntax::Prim.update))
 }
 
 definition{
@@ -555,7 +556,8 @@ definition{
     | RustSyntax::Item.formatInt => false
     | RustSyntax::Item.formatFixed kind => false
     | RustSyntax::Item.parseInt => true
-    | RustSyntax::Item.parseFixed kind => false)
+    | RustSyntax::Item.parseFixed kind => false
+    | RustSyntax::Item.updateBytes => false)
 }
 
 definition{
@@ -612,7 +614,8 @@ definition{
     | RustSyntax::Item.formatInt => true
     | RustSyntax::Item.formatFixed kind => true
     | RustSyntax::Item.parseInt => true
-    | RustSyntax::Item.parseFixed kind => true)
+    | RustSyntax::Item.parseFixed kind => true
+    | RustSyntax::Item.updateBytes => true)
 }
 
 definition{
@@ -673,7 +676,8 @@ definition{
     | RustSyntax::Item.formatInt => values
     | RustSyntax::Item.formatFixed ignored242 => values
     | RustSyntax::Item.parseInt => values
-    | RustSyntax::Item.parseFixed ignored243 => values)
+    | RustSyntax::Item.parseFixed ignored243 => values
+    | RustSyntax::Item.updateBytes => values)
 }
 
 definition{
@@ -939,7 +943,8 @@ definition{
     | RustSyntax::Item.formatInt => (ctor Option.none [TargetSyntax::IntKind])
     | RustSyntax::Item.formatFixed kind => (ctor Option.some [TargetSyntax::IntKind] kind)
     | RustSyntax::Item.parseInt => (ctor Option.none [TargetSyntax::IntKind])
-    | RustSyntax::Item.parseFixed kind => (ctor Option.none [TargetSyntax::IntKind]))
+    | RustSyntax::Item.parseFixed kind => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Item.updateBytes => (ctor Option.none [TargetSyntax::IntKind]))
 }
 
 definition{
@@ -996,7 +1001,8 @@ definition{
     | RustSyntax::Item.formatInt => false
     | RustSyntax::Item.formatFixed kind => false
     | RustSyntax::Item.parseInt => false
-    | RustSyntax::Item.parseFixed kind => false)
+    | RustSyntax::Item.parseFixed kind => false
+    | RustSyntax::Item.updateBytes => false)
 }
 
 definition{
@@ -1143,7 +1149,8 @@ definition{
     | RustSyntax::Item.formatInt => true
     | RustSyntax::Item.formatFixed ignored509 => true
     | RustSyntax::Item.parseInt => true
-    | RustSyntax::Item.parseFixed ignored510 => true)
+    | RustSyntax::Item.parseFixed ignored510 => true
+    | RustSyntax::Item.updateBytes => (isBytes var{name: first}))
 }
 
 definition{
@@ -1233,7 +1240,8 @@ definition{
     | RustSyntax::Machine.utf8Decode => (ctor TargetSyntax::Prim.utf8Decode)
     | RustSyntax::Machine.bytesCompare => (ctor TargetSyntax::Prim.compareBytes)
     | RustSyntax::Machine.stringSplit => (ctor TargetSyntax::Prim.splitExact)
-    | RustSyntax::Machine.stringJoin => (ctor TargetSyntax::Prim.join))
+    | RustSyntax::Machine.stringJoin => (ctor TargetSyntax::Prim.join)
+    | RustSyntax::Machine.bytesUpdate => (ctor TargetSyntax::Prim.update))
 }
 
 definition{
@@ -1280,7 +1288,8 @@ definition{
     | RustSyntax::Machine.utf8Decode => (ctor Option.none [TargetSyntax::IntKind])
     | RustSyntax::Machine.bytesCompare => (ctor Option.none [TargetSyntax::IntKind])
     | RustSyntax::Machine.stringSplit => (ctor Option.none [TargetSyntax::IntKind])
-    | RustSyntax::Machine.stringJoin => (ctor Option.none [TargetSyntax::IntKind]))
+    | RustSyntax::Machine.stringJoin => (ctor Option.none [TargetSyntax::IntKind])
+    | RustSyntax::Machine.bytesUpdate => (ctor Option.none [TargetSyntax::IntKind]))
 }
 
 definition{
@@ -1327,7 +1336,8 @@ definition{
     | RustSyntax::Machine.utf8Decode => false
     | RustSyntax::Machine.bytesCompare => false
     | RustSyntax::Machine.stringSplit => false
-    | RustSyntax::Machine.stringJoin => false)
+    | RustSyntax::Machine.stringJoin => false
+    | RustSyntax::Machine.bytesUpdate => false)
 }
 
 definition{
@@ -1374,7 +1384,8 @@ definition{
     | RustSyntax::Machine.utf8Decode => false
     | RustSyntax::Machine.bytesCompare => false
     | RustSyntax::Machine.stringSplit => false
-    | RustSyntax::Machine.stringJoin => false)
+    | RustSyntax::Machine.stringJoin => false
+    | RustSyntax::Machine.bytesUpdate => false)
 }
 
 definition{

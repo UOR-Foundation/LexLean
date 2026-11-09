@@ -1146,6 +1146,7 @@ fn runtime_kind(base: &str) -> String {
         ("length_", "length"),
         ("index_", "index"),
         ("slice_", "slice"),
+        ("update_", "update"),
     ] {
         if base.starts_with(prefix) {
             return kind.to_owned();
@@ -1345,6 +1346,7 @@ pub const CORRESPONDENCE: &[(&str, &[&str])] = &[
     ("call:runtime:length", &["prim:length"]),
     ("call:runtime:index", &["prim:index"]),
     ("call:runtime:slice", &["prim:slice"]),
+    ("call:runtime:update", &["prim:update"]),
     ("call:runtime:utf8_encode", &["prim:utf8_encode"]),
     ("call:runtime:utf8_decode", &["prim:utf8_decode"]),
     ("call:runtime:compare_bytes", &["prim:compare_bytes"]),

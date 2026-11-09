@@ -109,6 +109,7 @@ fn prim_at(operation: &Prim, types: &[Ty]) -> Origin {
         | Prim::Length
         | Prim::Index
         | Prim::Slice
+        | Prim::Update
         | Prim::Utf8Encode
         | Prim::Utf8Decode
         | Prim::CompareBytes
@@ -659,6 +660,7 @@ fn item(operation: &Prim, operands: &[Ty]) -> Result<Item, String> {
         )?,
         Prim::Index => sequence(Item::IndexList, Item::IndexBytes, None)?,
         Prim::Slice => sequence(Item::SliceList, Item::SliceBytes, None)?,
+        Prim::Update => Item::UpdateBytes,
         Prim::Utf8Encode => Item::Utf8Encode,
         Prim::Utf8Decode => Item::Utf8Decode,
         Prim::CompareBytes => Item::CompareBytes,

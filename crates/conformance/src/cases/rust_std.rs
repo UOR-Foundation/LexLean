@@ -34,7 +34,7 @@ const IMPORTED: [&str; 4] = [
 /// Each function the module defines with the theorem that refines it and the
 /// names its statement must be about: a theorem of the right name that runs
 /// another function or another item is refused.
-const LAWS: [(&str, &str, &[&str]); 14] = [
+const LAWS: [(&str, &str, &[&str]); 15] = [
     (
         "append_list",
         "refines_append_list",
@@ -101,6 +101,11 @@ const LAWS: [(&str, &str, &[&str]); 14] = [
         &["runExport", "runItem"],
     ),
     ("join", "refines_join", &["runExport", "runItem"]),
+    (
+        "update_bytes",
+        "refines_update_bytes",
+        &["runExport", "runItem"],
+    ),
 ];
 
 /// The harness: a prelude that builds lists of four shapes, then one section per

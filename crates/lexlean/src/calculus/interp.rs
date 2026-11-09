@@ -235,6 +235,17 @@ fn primitive(operation: &Prim, values: &[Rv]) -> Out {
         (Prim::Slice, [Bytes(a), Nat(start), Nat(count)]) => {
             option(slice(a, *start, *count).map(|part| Bytes(part.to_vec())))
         }
+        (Prim::Update, [Bytes(a), Nat(i), Fixed(IntKind::U8, byte)]) => option(
+            usize::try_from(*i)
+                .ok()
+                .filter(|at| *at < a.len())
+                .and_then(|at| u8::try_from(*byte).ok().map(|value| (at, value)))
+                .map(|(at, value)| {
+                    let mut out = a.clone();
+                    out[at] = value;
+                    Bytes(out)
+                }),
+        ),
         (Prim::Utf8Encode, [Str(a)]) => Out::Value(Bytes(a.as_bytes().to_vec()), 0),
         (Prim::Utf8Decode, [Bytes(a)]) => option(String::from_utf8(a.clone()).ok().map(Str)),
         (Prim::CompareBytes, [Bytes(a), Bytes(b)]) => Out::Value(Rv::Ord(a.cmp(b)), 0),

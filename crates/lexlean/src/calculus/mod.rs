@@ -339,6 +339,9 @@ pub enum Prim {
     Compare,
     Convert { target: IntKind },
     ParseDecimal { target: Ty },
+    /// One byte of a byte string replaced: `none` when the position is out
+    /// of range (language 1.2).
+    Update,
 }
 
 /// A match arm.

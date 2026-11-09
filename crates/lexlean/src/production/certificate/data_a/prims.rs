@@ -209,6 +209,7 @@ impl<'a> Writer<'_, 'a> {
                 Sequence::Bytes => plain("prim_slice_bytes".to_owned()),
                 Sequence::String => return Err("Slice of a string".to_owned()),
             },
+            SemanticPrimitive::Update => plain("prim_update_bytes".to_owned()),
             SemanticPrimitive::Utf8Encode => plain("prim_utf8Encode".to_owned()),
             SemanticPrimitive::Utf8Decode => plain("prim_utf8Decode".to_owned()),
             SemanticPrimitive::CompareBytes => plain("prim_compareBytes".to_owned()),
@@ -318,6 +319,7 @@ impl<'a> Writer<'_, 'a> {
             | SemanticPrimitive::Length
             | SemanticPrimitive::Index
             | SemanticPrimitive::Slice
+            | SemanticPrimitive::Update
             | SemanticPrimitive::Utf8Encode
             | SemanticPrimitive::Utf8Decode
             | SemanticPrimitive::CompareBytes

@@ -1,4 +1,4 @@
-lexlean/runtime-transcript/1 sha256:a4b75fe455e31ed5222588558ee7bdf23afca2ccd977e0c1417d4c3735708a74
+lexlean/runtime-transcript/1 sha256:16b68b9f2569a1f303a8aedef08f12cfcf726883e0cc1d720213743b1776248c
 core bool_and d04a7f2ad483af94
 core bool_not 7e15c229370671aa
 core bool_or 568ebc4dfa003a00
@@ -147,5 +147,6 @@ std support compare text 9d66104510eb1361
 std support equal bytes 7df6fd0ce861efdd
 std support equal text f1b9370915272f95
 std support uncons dc2f5f0f94cf2a23
+std update_bytes 382c3fb04a458b38
 std utf8_decode f8f79f9c4ca5bc64
 std utf8_encode 9ba9df00bb96d6ae

@@ -75,6 +75,10 @@ pub enum SemanticPrimitive {
     Length,
     Index,
     Slice,
+    /// The byte string with one in-range position replaced, or none when
+    /// the position is out of range; realized in place when the string is
+    /// uniquely held.
+    Update,
     Utf8Encode,
     Utf8Decode,
     CompareBytes,
@@ -202,6 +206,7 @@ impl SemanticPrimitive {
             | Self::Length
             | Self::Index
             | Self::Slice
+            | Self::Update
             | Self::Utf8Encode
             | Self::Utf8Decode
             | Self::CompareBytes
@@ -7319,6 +7324,16 @@ fn infer_primitive(
                 value: Box::new(first),
             })
         }
+        P::Update => {
+            require_observed(
+                arguments,
+                &[SemanticType::Bytes, SemanticType::Nat, SemanticType::UInt8],
+                operation,
+            )?;
+            exact_result(SemanticType::Option {
+                value: Box::new(SemanticType::Bytes),
+            })
+        }
         P::Utf8Encode => {
             require_observed(arguments, &[SemanticType::String], operation)?;
             exact_result(SemanticType::Bytes)
@@ -9962,6 +9977,7 @@ mod tests {
         accepts(P::Length, &[T::String], T::Nat);
         accepts(P::Index, &[T::Bytes, T::Nat], option(T::UInt8));
         accepts(P::Slice, &[T::Bytes, T::Nat, T::Nat], option(T::Bytes));
+        accepts(P::Update, &[T::Bytes, T::Nat, T::UInt8], option(T::Bytes));
         accepts(P::Utf8Encode, &[T::String], T::Bytes);
         accepts(P::Utf8Decode, &[T::Bytes], option(T::String));
         accepts(P::CompareBytes, &[T::Bytes, T::Bytes], T::Ordering);

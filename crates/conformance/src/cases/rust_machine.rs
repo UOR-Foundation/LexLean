@@ -91,6 +91,10 @@ fn signature(machine: Machine) -> (Vec<Type>, Type) {
             vec![Type::Int, Type::Int, Type::Int],
             Type::Option(Box::new(Type::Int)),
         ),
+        Machine::BytesUpdate => (
+            vec![Type::Bytes, Type::Nat, Type::Fixed(IntKind::U8)],
+            Type::Option(Box::new(Type::Bytes)),
+        ),
     }
 }
 
@@ -228,6 +232,7 @@ pub fn run(id: &str) {
                     | Machine::StringLength
                     | Machine::BytesIndex
                     | Machine::BytesSlice
+                    | Machine::BytesUpdate
                     | Machine::Utf8Encode
                     | Machine::Utf8Decode
                     | Machine::BytesCompare

@@ -1746,7 +1746,17 @@ definition LexLeanRuntime.subtract : @4728 := @4740 {
   reducibility: regular{height: 2},
   transparency: semireducible
 }
-definition LexLeanRuntime.utf8Decode : @4742 := @4745 {
+definition LexLeanRuntime.update : @4743 := @4759 {
+  all: [LexLeanRuntime.update],
+  class: false,
+  compiled: true,
+  generated: false,
+  inline: noinline,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 9},
+  transparency: semireducible
+}
+definition LexLeanRuntime.utf8Decode : @4761 := @4764 {
   all: [LexLeanRuntime.utf8Decode],
   class: false,
   compiled: true,
@@ -1756,7 +1766,7 @@ definition LexLeanRuntime.utf8Decode : @4742 := @4745 {
   reducibility: regular{height: 24},
   transparency: semireducible
 }
-definition LexLeanRuntime.utf8Encode : @4746 := @4749 {
+definition LexLeanRuntime.utf8Encode : @4765 := @4768 {
   all: [LexLeanRuntime.utf8Encode],
   class: false,
   compiled: true,
@@ -3980,18 +3990,19 @@ definition LexLeanRuntime.utf8Encode : @4746 := @4749 {
     (fun (value : @59) => @3203 @59 (@3146 @59 instDecidableEqNat) @1 @2813)
 @4406 := @2080 @3515
 @4407 := @2088 @3515
-@4409 := @2568 (@262 @3515)
+@4408 := @262 @3515
+@4409 := @2568 @4408
 @4412 := @2910 @59 instLENat
 @4421 := @2616 @59 @59 @59 (@2620 @59 instAddNat) @2 @1
 @4422 := @4412 @4421
 @4423 := @4365 @3
 @4425 := @4409 (@4422 @4423)
 @4427 := Nat.decLe @4421
-@4442 := @4407
-    (fun (value : @3515) =>
-    fun (start : @59) =>
-    fun (count : @59) =>
-    @4425 (@4427 @4423) (@2597 @3515 (ByteArray.extract @3 @2 @4421)) (@2584 @3515))
+@4429 := @4425 (@4427 @4423)
+@4430 := @2597 @3515
+@4436 := @4429 (@4430 (ByteArray.extract @3 @2 @4421))
+@4437 := @2584 @3515
+@4442 := @4407 (fun (value : @3515) => fun (start : @59) => fun (count : @59) => @4436 @4437)
 @4444 := {α : @0} -> @2080 @3628
 @4445 := @2088 @3628
 @4447 := @2568 (@262 @4264)
@@ -4136,9 +4147,14 @@ definition LexLeanRuntime.utf8Encode : @4746 := @4749 {
 @4740 := fun {α : @0} =>
   fun [inst._@.LexLeanRuntime.Portable.#739024333._hygCtx._hyg.#3 : @4726] =>
   fun (left : @2) => fun (right : @3) => @2784 @12 @12 @12 (@2788 @12 @3) @2 @1
-@4742 := (value : @3515) -> @262 @261
-@4745 := fun (value : @3515) => String.fromUTF8? @1
-@4746 := (value : @261) -> @3515
-@4749 := fun (value : @261) => String.toUTF8 @1
+@4743 := (value : @3515) -> (offset : @59) -> (byte : @3521) -> @4408
+@4759 := fun (value : @3515) =>
+  fun (offset : @59) =>
+  fun (byte : @3521) =>
+  @4409 (@3753 @2 @4423) (@3763 @2 @4423) (@4430 (ByteArray.set! @3 @2 @1)) @4437
+@4761 := (value : @3515) -> @262 @261
+@4764 := fun (value : @3515) => String.fromUTF8? @1
+@4765 := (value : @261) -> @3515
+@4768 := fun (value : @261) => String.toUTF8 @1
 \end{coremodule}
 \end{lexlean}

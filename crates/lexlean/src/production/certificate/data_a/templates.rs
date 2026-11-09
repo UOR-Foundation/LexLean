@@ -896,6 +896,7 @@ impl<'a> Writer<'_, 'a> {
             | SemanticPrimitive::Length
             | SemanticPrimitive::Index
             | SemanticPrimitive::Slice
+            | SemanticPrimitive::Update
             | SemanticPrimitive::Utf8Encode
             | SemanticPrimitive::Utf8Decode
             | SemanticPrimitive::CompareBytes
