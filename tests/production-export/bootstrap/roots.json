@@ -65,6 +65,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "diagnostic_text",
+      "root": "LexLeanBoot.Diagnostics.diagnosticText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "fallible_functions",
       "root": "LexLeanBoot.RustLower.fallibleFunctions",
       "targets": [
@@ -193,6 +201,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "report_diagnostics",
+      "root": "LexLeanBoot.Diagnostics.reportDiagnostics",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "scan_source",
       "root": "LexLeanBoot.PrimitiveScan.scanSource",
       "targets": [
@@ -203,6 +219,14 @@
     {
       "name": "site_trees",
       "root": "LexLeanBoot.CalculusCheck.siteTrees",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sort_diagnostics",
+      "root": "LexLeanBoot.Diagnostics.sortDiagnostics",
       "targets": [
         "rust-std"
       ],
