@@ -26,12 +26,11 @@
 #
 # Inputs, all from the environment: EVENT, DRAFT, BASE (the base branch of a
 # pull request), REPO. The jobs read `full`
-# and `rows` from GITHUB_OUTPUT. `LEXLEAN_CI_ROWS` and `LEXLEAN_CI_WORKFLOW`
-# name the legs file and the workflow when a test runs the script elsewhere.
+# and `rows` from GITHUB_OUTPUT. `LEXLEAN_CI_ROWS` names the legs file
+# when a test runs the script elsewhere.
 set -euo pipefail
 
 rows_file=${LEXLEAN_CI_ROWS:-.github/vv-rows.json}
-workflow=${LEXLEAN_CI_WORKFLOW:-.github/workflows/ci.yml}
 event=${EVENT:?EVENT names the workflow event}
 draft=${DRAFT:-}
 base=${BASE:-}
@@ -50,17 +49,37 @@ whole_gate() {
   printf '%s\n' "$1" >> "$summary"
 }
 
+# These are the four auxiliary §8.3 contexts, not the number of matrix rows.
+# Linux x86-64 is the normative gate; Intel macOS is a static aggregate. Every
+# required context must occur exactly once, so a duplicate or foreign context
+# cannot replace a missing host even when the total count remains four.
+hosts_passed() {
+  awk -F'\t' '
+    BEGIN {
+      expected["build and non-Lean tests (aarch64-unknown-linux-gnu)"] = 1
+      expected["build and non-Lean tests (x86_64-apple-darwin)"] = 1
+      expected["build and non-Lean tests (aarch64-apple-darwin)"] = 1
+      expected["build and non-Lean tests (x86_64-pc-windows-msvc)"] = 1
+    }
+    /^build and non-Lean tests \(/ {
+      if (!($1 in expected) || ++seen[$1] != 1 || $2 != "success") bad = 1
+    }
+    END {
+      for (host in expected) if (seen[host] != 1) bad = 1
+      exit bad
+    }'
+}
+
 # The id of a pull request run of this workflow on the second parent of HEAD
 # that ran every job of the gate and passed every one, when HEAD is a merge of
 # that parent with the same tree. A draft run has honesty and the `rest` leg, so it is
-# never one: the run must hold the join of Atlas, every host of the matrix, and
+# never one: the run must hold the join of Atlas, every exact supported-host context, and
 # every leg of the rows file, and no job that did not conclude `success`.
 verified_parent_run() {
-  local parent head_tree hosts runs id names part job
+  local parent head_tree runs id names part job
   parent=$(git rev-parse --verify --quiet 'HEAD^2') || return 1
   head_tree=$(git rev-parse 'HEAD^{tree}')
   [ "$head_tree" = "$(git rev-parse "$parent^{tree}")" ] || return 1
-  hosts=$(grep -c '^          - { os: ' "$workflow")
   runs=$(gh api "repos/$repo/actions/workflows/ci.yml/runs?head_sha=$parent&event=pull_request&status=success&per_page=30" \
     --jq ".workflow_runs[] | select(.head_repository.full_name == \"$repo\") | .id") || return 1
   for id in $runs; do
@@ -68,7 +87,7 @@ verified_parent_run() {
       --jq '.jobs[] | "\(.name)\t\(.conclusion)"') || continue
     if printf '%s\n' "$names" | awk -F'\t' '$2 != "success" { bad = 1 } END { exit bad }' \
       && printf '%s\n' "$names" | grep -xF $'atlas (join)\tsuccess' >/dev/null \
-      && [ "$(printf '%s\n' "$names" | grep -c '^build and non-Lean tests (')" -eq "$hosts" ]; then
+      && printf '%s\n' "$names" | hosts_passed; then
       for part in $(jq -r '.[].part' "$rows_file"); do
         job="just vv ($part)"
         [ "$part" != honesty ] || job=honesty
