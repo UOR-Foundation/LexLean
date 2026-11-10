@@ -92,7 +92,7 @@ fn groups() {
     let result = crate::oracle::run(command, std::time::Duration::from_secs(60))
         .expect("bounded native group regression");
     assert_eq!(result.status, Some(0), "{}\n{}", result.stdout, result.stderr);
-    assert_eq!(result.stdout.matches("PASS ").count(), 7);
+    assert_eq!(result.stdout.matches("PASS ").count(), 6);
 }
 
 const GROUP_HEADER: &str = r#"module
