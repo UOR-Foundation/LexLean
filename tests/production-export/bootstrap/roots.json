@@ -153,6 +153,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "parse_module",
+      "root": "LexLeanBoot.StructuralGrammar.parseModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "print_crate",
       "root": "LexLeanBoot.RustPrint.printCrate",
       "targets": [

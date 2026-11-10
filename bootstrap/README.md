@@ -18,3 +18,6 @@ payloads a printer reads); `src/RustPrint.lex.tex` also imports the standard
 library's `Buffer` (`stdlib/src/Buffer.lex.tex`), which it writes through.
 `src/GnafValidate.lex.tex` (SPEC.md §17.15, `BS-16`) imports `Buffer` alone and
 writes the rejection of a GNAF request through it.
+
+`src/StructuralGrammar.lex.tex` imports `PrimitiveScan` for the atoms it reads
+and the refusal it returns, and `Buffer` and `Numeral` from the standard library.
