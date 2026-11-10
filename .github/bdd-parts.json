@@ -37,6 +37,9 @@
     "bootstrap-terms": [
       "BS-10"
     ],
+    "bootstrap-lock-text": [
+      "BS-31"
+    ],
     "bootstrap-tooling-latex": [
       "BS-20"
     ],
