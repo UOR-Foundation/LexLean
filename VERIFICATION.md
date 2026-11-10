@@ -11089,6 +11089,47 @@ writes them); `cargo clippy -p repo-conformance -p xtask --all-targets
 --all-features -D warnings`, `validate-model` (461 ids), `validate-spec-links`
 (461 rows), `check-test-inventory`, and the five `bdd` meta-gate tests pass.
 
+### the build manifest is source (BS-34)
+
+`BS-34` holds the production root `buildManifest` of `LexLeanBoot.ManifestText`
+(`bootstrap/src/ManifestText.lex.tex`) to the file bytes of
+`artifact::manifest::BuildManifest::to_json`: the specification, the compiler
+version and semantics ID, the language, the project, the source, semantic, and
+build IDs, the pinned Lean toolchain, the selection and the module rows in their
+order, a module's origin only when it has one, and the input and output rows
+sorted by kind, path, length, and digest. The root builds the manifest's JSON
+value and writes it with the standard library's `writeJsonFile`, which orders
+the keys; the rows are sorted with the stable merge sort of `Order` by a key of
+the kind and the path, each with its NUL bytes escaped and a two-byte end, the
+big-endian length, and the digest. The root admits exactly `allocation`,
+`overflow`, and `recursion`, the last through the JSON writer. The oracle is the
+existing public code of `manifest.rs`; no Rust outside the case changes. The
+case holds the root to the oracle on hand-built manifests that reach every key
+of the row order, lengths across a byte, a kind that is a prefix of another, a
+module's origin, and escapes; on every committed `expected/build/manifest.json`,
+each of which the case asserts is the oracle's text of its own fields; and on
+seeded manifests. Each planted defect names the one vector that catches it, and
+the case asserts that the site of each plant occurs once. The row's statement
+carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `ManifestText`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and the eligibility report gives the root exactly
+`allocation`, `overflow`, and `recursion`. The register agrees with the §31
+table on 480 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host over
+`release/v0.4` at `c66f83d05` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_34`, 102 s). Its corpus is 10 named vectors, the
+26 committed build manifests, and 200 and 1,000 seeded runs. The evaluator
+agrees with the oracle on 236 manifests, the rendered package under the pinned
+rustc on 1,036 runs, and each of the 10 planted defects is detected by its own
+vector. The first runs found no fault of the writer: Lean asked for exactly the
+axioms the module now declares. The case then stops at the stack-bound step,
+`bootstrap/build_manifest is no package of the committed exports`, as each
+bootstrap member did before its regeneration, which produces the package and
+measures the root's stack bound.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

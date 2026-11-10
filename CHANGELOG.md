@@ -17,6 +17,11 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The build manifest as language-1.2 source (SPEC.md §17.23, §21.6, `BS-34`,
+  #274; no new diagnostic code, no change to the language-1.2 identity).
+  `buildManifest` of `ManifestText` returns the file bytes of
+  `BuildManifest::to_json` through the standard library's `Json` writer, and
+  admits `recursion` through it. The register is 480 IDs.
 - The structural grammar as language-1.2 source, first slice of the front end
   (SPEC.md §17.23, §15.1, §15.2, `BS-21`, #269; no new diagnostic code, no change
   to the language-1.2 identity). `parseModule` of `StructuralGrammar` reads the
