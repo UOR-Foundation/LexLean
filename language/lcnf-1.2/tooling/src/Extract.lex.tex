@@ -4172,85 +4172,109 @@
             ],
             body: if{
               condition: call{
-                arguments: [var{name: c}, char{value: 34}],
+                arguments: [var{name: c}, char{value: 47}],
                 function: BEq.beq,
                 type_arguments: [const{name: Char, arguments: []}]
               },
               else_branch: if{
                 condition: call{
-                  arguments: [var{name: c}, char{value: 92}],
+                  arguments: [var{name: c}, char{value: 58}],
                   function: BEq.beq,
                   type_arguments: [const{name: Char, arguments: []}]
                 },
                 else_branch: if{
                   condition: call{
-                    arguments: [
-                      call{arguments: [var{name: c}], function: Char.toNat, type_arguments: []},
-                      nat{value: "32"}
-                    ],
-                    function: Nat.blt,
-                    type_arguments: []
+                    arguments: [var{name: c}, char{value: 34}],
+                    function: BEq.beq,
+                    type_arguments: [const{name: Char, arguments: []}]
                   },
-                  else_branch: call{
-                    arguments: [var{name: out}, var{name: c}],
-                    function: String.push,
-                    type_arguments: []
-                  },
-                  then_branch: call{
-                    arguments: [
-                      var{name: out},
-                      call{
+                  else_branch: if{
+                    condition: call{
+                      arguments: [var{name: c}, char{value: 92}],
+                      function: BEq.beq,
+                      type_arguments: [const{name: Char, arguments: []}]
+                    },
+                    else_branch: if{
+                      condition: call{
                         arguments: [
-                          string{value: "\\u"},
+                          call{arguments: [var{name: c}], function: Char.toNat, type_arguments: []},
+                          nat{value: "32"}
+                        ],
+                        function: Nat.blt,
+                        type_arguments: []
+                      },
+                      else_branch: call{
+                        arguments: [var{name: out}, var{name: c}],
+                        function: String.push,
+                        type_arguments: []
+                      },
+                      then_branch: call{
+                        arguments: [
+                          var{name: out},
                           call{
                             arguments: [
+                              string{value: "\\u"},
                               call{
                                 arguments: [
-                                  nat{value: "1"},
                                   call{
                                     arguments: [
-                                      nat{value: "16"},
+                                      nat{value: "1"},
                                       call{
                                         arguments: [
+                                          nat{value: "16"},
                                           call{
-                                            arguments: [var{name: c}],
-                                            function: Char.toNat,
+                                            arguments: [
+                                              call{
+                                                arguments: [var{name: c}],
+                                                function: Char.toNat,
+                                                type_arguments: []
+                                              },
+                                              nat{value: "65536"}
+                                            ],
+                                            function: Nat.add,
                                             type_arguments: []
-                                          },
-                                          nat{value: "65536"}
+                                          }
                                         ],
-                                        function: Nat.add,
+                                        function: Nat.toDigits,
                                         type_arguments: []
                                       }
                                     ],
-                                    function: Nat.toDigits,
-                                    type_arguments: []
+                                    function: List.drop,
+                                    type_arguments: [const{name: Char, arguments: []}]
                                   }
                                 ],
-                                function: List.drop,
-                                type_arguments: [const{name: Char, arguments: []}]
+                                function: String.ofList,
+                                type_arguments: []
                               }
                             ],
-                            function: String.ofList,
+                            function: String.append,
                             type_arguments: []
                           }
                         ],
                         function: String.append,
                         type_arguments: []
                       }
-                    ],
+                    },
+                    then_branch: call{
+                      arguments: [var{name: out}, string{value: "\\\\"}],
+                      function: String.append,
+                      type_arguments: []
+                    }
+                  },
+                  then_branch: call{
+                    arguments: [var{name: out}, string{value: "\\\""}],
                     function: String.append,
                     type_arguments: []
                   }
                 },
                 then_branch: call{
-                  arguments: [var{name: out}, string{value: "\\\\"}],
+                  arguments: [var{name: out}, string{value: "\\u003a"}],
                   function: String.append,
                   type_arguments: []
                 }
               },
               then_branch: call{
-                arguments: [var{name: out}, string{value: "\\\""}],
+                arguments: [var{name: out}, string{value: "\\u002f"}],
                 function: String.append,
                 type_arguments: []
               }

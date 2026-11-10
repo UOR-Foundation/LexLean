@@ -39,6 +39,18 @@ Outside `vv`:
 
 ## Falsifiability records
 
+### extraction literal transport can fail
+
+`cargo test -p repo-conformance --lib extraction_literal_paths_survive_normalization`
+failed before the serializer correction: process normalization rewrote the literal
+`/research/.r30/candidate-3` to `$PROJECT/.r30/candidate-3`. Escaping only slashes
+then preserved that literal but still tripped the Windows-path scanner on a
+`C:` followed by a JSON Unicode escape. The adapter now escapes slashes and
+colons inside JSON strings. The same regression passes with pinned Lean,
+including Unicode, quotes, backslashes and a newline; genuine unexpected POSIX
+and Windows diagnostic paths remain rejected. NE-01 also runs this regression.
+No process-record path-policy exemption is introduced.
+
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
 
 ### production bundle inventory can fail
