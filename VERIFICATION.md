@@ -11091,6 +11091,47 @@ stops at the stack-bound step, `bootstrap/toml_string is no package of the
 committed exports`, as each bootstrap member did before its regeneration, which
 produces the two packages.
 
+### the canonical project manifest and its digest are source (BS-33)
+
+`BS-33` holds the two production roots of `LexLeanBoot.ProjectText`
+(`bootstrap/src/ProjectText.lex.tex`) to `config::ProjectConfig`:
+`canonicalProject` to `canonical_toml`, the ten header keys in their fixed order
+with the pinned Lean toolchain, the lexicon sources sorted by package with the
+stable merge sort of the standard library's `Order` (or `lexicon_source = []`
+when there is none), the artifact sources and the source packages in their
+order, the eleven limits, and the PDF provider; and `configSha256` to the
+lower-case hex of `config_sha256`, the SHA-256 of that text under the standard
+library's `Sha256`. The module writes through the TOML writers of `BS-31`'s
+`LockText`. Each root admits exactly `allocation` and `overflow`, and neither
+admits `recursion`. The oracle is the existing public code of `config.rs`; no
+Rust outside the case changes. The case holds the roots to the oracle on
+hand-built configurations that reach every kind of lexicon source, the empty
+source list, two sources of one package, every optional table, escapes in the
+name, and the largest limit; on every committed `lexlean.toml` that parses; and
+on seeded configurations. Each planted defect names the one vector that catches
+it, and the case asserts that the site of each plant occurs once. The row's
+statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `ProjectText`: `lexlean check`, `lexlean build`, and `lexlean
+verify` pass, and the eligibility report gives each root exactly `allocation`
+and `overflow`. The register agrees with the §31 table on 480 IDs, by the same
+parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `BS-31` over
+`release/v0.4` at `cf76090d4` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_33`, 224 s). Its corpus is 12 named vectors (10
+texts, 2 digests), the 351 of the 362 committed manifests that parse, each of
+which is already its own canonical text, and 200 and 1,000 seeded runs of each
+root. The evaluator agrees with the oracle on 561 texts and 553 digests, the
+rendered packages under the pinned rustc on 2,714 runs, and each of the 12
+planted defects is detected by its own vector. The first runs found no fault of
+the writer: Lean asked for exactly the axioms the module now declares. The case
+then stops at the stack-bound step, `bootstrap/canonical_project is no package
+of the committed exports`, as each bootstrap member did before its
+regeneration, which produces the two packages. The branch is stacked on `BS-31`
+and lands after it.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

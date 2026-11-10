@@ -23,6 +23,7 @@ use crate::support::{self, P};
 
 mod gnaf_validate;
 mod lock_text;
+mod project_text;
 mod runtime_validate;
 mod rust_assemble;
 mod rust_bodies;
@@ -2459,6 +2460,7 @@ fn case(id: &str) {
         // §17.23, §17.20: the canonical LaTeX of a tooling module.
         "BS-20" => tooling_latex::case(),
         "BS-31" => lock_text::case(),
+        "BS-33" => project_text::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

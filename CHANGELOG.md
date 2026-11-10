@@ -17,11 +17,16 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The canonical text of the project manifest and its digest as language-1.2
+  source (SPEC.md §10.1, §17.23, `BS-33`, #274; no new diagnostic code, no change
+  to the language-1.2 identity). `canonicalProject` and `configSha256` of
+  `ProjectText` return what `ProjectConfig::canonical_toml` and `config_sha256`
+  return; neither admits `recursion`. The register is 480 IDs.
 - The canonical text of the lock file as language-1.2 source (SPEC.md §11.2,
   §17.23, `BS-31`, #274; no new diagnostic code, no change to the language-1.2
   identity). `canonicalLock` and `tomlString` of `LockText` return what
   `Lock::canonical_bytes` and `config::toml_string` return; neither admits
-  `recursion`. The register is 479 IDs.
+  `recursion`.
 - Canonical JSON reading in the standard library, the fourth member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
   `LexLeanStd.JsonRead` holds the production roots `readJson` and
