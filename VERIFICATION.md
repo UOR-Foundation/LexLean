@@ -10999,6 +10999,55 @@ writes them); `cargo clippy -p repo-conformance -p xtask --all-targets
 --all-features -D warnings`, `validate-model` (461 ids), `validate-spec-links`
 (461 rows), `check-test-inventory`, and the five `bdd` meta-gate tests pass.
 
+### the canonical diagnostic is source (BS-29)
+
+`BS-29` holds the three production roots of `LexLeanBoot.Diagnostics`
+(`bootstrap/src/Diagnostics.lex.tex`) to the oracle of the driver's diagnostics:
+`diagnosticText` to `Diagnostic::to_json` written as `to_canonical_string`
+writes it, `sortDiagnostics` to `diagnostic::sort_canonical`, and
+`reportDiagnostics` to `LexLeanError::from_diagnostics` followed by `bounded`,
+which gives the exit code of the failure and the diagnostics it reports under
+`limits.max_diagnostics`. It is the first slice of the driver (#274) as source
+and imports only the standard library's `Json`, `Numeral`, `Order`, and `Text`.
+`diagnosticText` writes the members of the object in the order of their keys;
+`sortDiagnostics` sorts by a byte key whose order is the order of the oracle's
+tuple (the path with each nul byte doubled and ended by two nul bytes, the byte
+start in eight bytes big-endian, the seven bytes of the code, the message) with
+the stable `sortByKey`; `reportDiagnostics` takes the most severe class of the
+codes and, past the cap, keeps the first diagnostics and appends `LLS8002`. None
+of the three admits `recursion`. The case holds the roots to the oracle on
+hand-built diagnostics that reach every class of failure, both sides of the cap,
+equal keys, and paths that are prefixes of each other or hold a nul byte; on the
+306 committed expected diagnostics of the 303 negative fixtures, each first
+checked to be what the oracle writes, written one by one, each fixture's set
+sorted and reported under four caps, and all of them sorted together; and on
+seeded sets. Each planted defect names the one vector that catches it, and the
+case asserts that the site of each plant occurs once. The row's statement
+carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `Diagnostics`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and the eligibility report gives each root exactly
+`allocation` and `overflow`. The register agrees with the §31 table on 479 IDs,
+by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `release/v0.4` at
+`4318b17b8` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_29`, 209 s). Its corpus is 29 named vectors (11 written, 9
+sorted, 9 reported), the 306 committed diagnostics, and 200 and 1,000 seeded
+sets. The evaluator agrees with the oracle on 472 texts, 513 sorts, and 1,422
+reports, the rendered packages under the pinned rustc on 4,641 runs, and each of
+the 23 planted defects is detected by its own vector. The first run found one
+fault of the module: the keyed list was built in reverse before the stable
+sort, so diagnostics with equal keys came out in the reverse of their order (the
+vector `equal keys keep their order` and four sets of the committed corpus); the
+list is now in the input order, and the plant `equal keys are reversed` holds
+it. Lean's audit corrected the axiom policy of 17 definitions. The case then
+stops at the stack-bound step, `bootstrap/diagnostic_text is no package of the
+committed exports`, as each bootstrap member did before its regeneration, which
+produces the three packages. The branch is based on `release/v0.4` and stacks on
+nothing.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

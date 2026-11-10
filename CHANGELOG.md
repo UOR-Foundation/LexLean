@@ -17,6 +17,12 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The canonical diagnostic and the failure it makes as language-1.2 source
+  (SPEC.md §17.23, §20.1, §24.5, `BS-29`, #274; no new diagnostic code, no change
+  to the language-1.2 identity). `diagnosticText`, `sortDiagnostics`, and
+  `reportDiagnostics` of `Diagnostics` return what `Diagnostic::to_json`,
+  `sort_canonical`, and `LexLeanError::from_diagnostics(..).bounded(..)` return;
+  none admits `recursion`. The register is 479 IDs.
 - Canonical JSON reading in the standard library, the fourth member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
   `LexLeanStd.JsonRead` holds the production roots `readJson` and
