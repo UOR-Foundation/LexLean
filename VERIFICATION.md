@@ -43,6 +43,38 @@ Outside `vv`:
 
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
 
+### BS-15 render corpus materialization
+
+Issue #457 changes only the construction of the two render vectors in
+`crates/conformance/src/cases/bootstrap/rust_package.rs`. The previous code
+encoded every full-library render, filtered the evaluator vector, then
+replaced the large native inputs with their existing 4,096-byte prefixes.
+The discarded full runs were inputs to neither differential. The direct
+assembler retains the same order: accepted manifests, shaped inputs, then
+seeded render mutants. At or below 16,384 bytes it uses the unchanged run and
+expected files in both vectors; above that boundary it constructs only the
+same native prefix and recipe outcome. The complete-library recipe assertion
+against `package::package` in `accepted` is unchanged.
+
+No corpus generation, seed, count, negative fixture, planted defect, native
+comparison, certificate limit, export check, host condition, timeout, or
+compiler-semantics input changes. On the base tree's asserted counts, the
+native render vector still contains 735 runs and the evaluator vector 241;
+494 full-library argument encodings that neither vector consumed are no
+longer materialized. This is a work-count deduction, not a measured CI speedup.
+
+The library unit regression `render_corpora_preserve_inputs_and_outcomes`
+compares both vectors with the previous assembler on both profiles, distinct
+supplied package outcomes, recipe outcomes, and libraries of 0, 4,096,
+16,383, 16,384, 16,385 and 32,768 bytes. Local validation in the authoring
+environment passed whitespace checks and an independent assembly model:
+24 evaluator and 36 native results were identical in order and bytes across
+27 empty/mixed collection cases, and changes to the boundary, prefix and
+supplied-outcome routing were detected. That model does not execute Rust or
+the package renderer. Rust formatting, Clippy, the library regression and the
+complete release gate were not run locally because the environment has no
+Rust toolchain; they remain required acceptance evidence on the final tree.
+
 ### Intel host partition custody and complete evidence
 
 The three non-Intel auxiliary host legs keep their existing locked,
@@ -13607,3 +13639,4 @@ Under separate root admission ca0818e03f221445d77bfab595b64e255f1eb5d0f5cb74df61
 The reviewed physical ledger contains 12,551 entries and 10,900 present files, including 8 symlinks. Physical review393 remains detached at c613 with raw index f2a12ce1d4f383096de2ab9913efd25c55a5a3d01913a670429252ea4ee961eb and logical 0328 source tree; the external pre-documentation capture is 6dcf464632e277916cedfacb5656699c89872c47. Current frozen BOTH/probe artifacts, 905 inputs, closed errors, archived selected build metadata, helper ownership and all producer outputs passed entry and terminal preservation guards. The final additive VI is prepared externally, without changing that physical root.
 
 This is source/product readiness evidence, not complete combined-head acceptance. The historical281 draft run 41964177567 ran only plan/honesty/rest with seven required host/Atlas groups skipped; repro 41964177626 passed, and the prior ready run 41964083701 was cancelled. None accepts the new currentbase combination. One complete new-head hosted gate, same-run honesty, reproducibility, final review and eventual actual landing/tree equality remain mandatory. Existing d34/WSL PERFORMANCE rows and timing/host/comparison caveats retain their original scope; no new linearity measurement is claimed. Closure scope remains #373 only after its combined proof/BS02 and final gate requirements pass.
+

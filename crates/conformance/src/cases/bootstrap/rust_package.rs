@@ -311,6 +311,37 @@ fn render_run(render: &Render, expected: Files) -> Run {
     )
 }
 
+/// The ordered render corpora consumed by the evaluator and rustc.
+fn render_corpora(
+    renders: &[(Render, Files)],
+    shaped: &[Render],
+    mutants: &[Render],
+) -> (Vec<Run>, Vec<Run>) {
+    let mut within = Vec::new();
+    let mut compiled = Vec::new();
+    let inputs = renders
+        .iter()
+        .map(|(render, files)| (render, Some(files)))
+        .chain(shaped.iter().chain(mutants).map(|render| (render, None)));
+    for (render, files) in inputs {
+        if render.library.len() <= EVALUATOR_LIBRARY {
+            let expected = files.cloned().unwrap_or_else(|| files_of(render));
+            let run = render_run(render, expected);
+            within.push(run.clone());
+            compiled.push(run);
+        } else {
+            // rustc expands each argument byte into an array element, so
+            // the native corpus uses the existing 4,096-byte prefix. The
+            // full-library run feeds neither consumer; accepted() still
+            // holds its complete library to the package::package recipe.
+            let mut render = render.clone();
+            render.library.truncate(4_096);
+            compiled.push(render_run(&render, files_of(&render)));
+        }
+    }
+    (within, compiled)
+}
+
 /// A manifest the oracle accepts, what `renderPackage` is given for it, and
 /// the two files `package::package` wrote.
 fn accepted(manifest: &Manifest) -> Option<(Render, Files)> {
@@ -866,45 +897,7 @@ pub(super) fn case() {
         }
         render_mutants.push(render);
     }
-    let render_runs: Vec<Run> = renders
-        .iter()
-        .map(|(render, files)| render_run(render, files.clone()))
-        .chain(
-            shaped
-                .iter()
-                .chain(&render_mutants)
-                .map(|render| render_run(render, files_of(render))),
-        )
-        .collect();
-    let within: Vec<Run> = renders
-        .iter()
-        .map(|(render, _)| render)
-        .chain(&shaped)
-        .chain(&render_mutants)
-        .zip(&render_runs)
-        .filter(|(render, _)| render.library.len() <= EVALUATOR_LIBRARY)
-        .map(|(_, run)| run.clone())
-        .collect();
-    // rustc compiles each byte of an argument as one array element, and the
-    // libraries of the committed packages are megabytes together, so a render
-    // whose library is beyond the evaluator's bound runs under rustc on the
-    // first 4,096 bytes of it, held to the recipe, which reads it only as
-    // bytes to digest.
-    let compiled: Vec<Run> = renders
-        .iter()
-        .map(|(render, _)| render)
-        .chain(&shaped)
-        .chain(&render_mutants)
-        .zip(&render_runs)
-        .map(|(render, run)| {
-            if render.library.len() <= EVALUATOR_LIBRARY {
-                return run.clone();
-            }
-            let mut render = render.clone();
-            render.library.truncate(4_096);
-            render_run(&render, files_of(&render))
-        })
-        .collect();
+    let (within, compiled) = render_corpora(&renders, &shaped, &render_mutants);
     eprintln!(
         "BS-15: {} manifests ({} accepted), {} and {} rule inputs, {} and {} mutants, {} renders under the evaluator ({:?})",
         manifests.len(),
@@ -1033,4 +1026,113 @@ pub(super) fn case() {
         );
     }
     eprintln!("BS-15: passed in {:?}", started.elapsed());
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn previous_corpora(
+        renders: &[(Render, Files)],
+        shaped: &[Render],
+        render_mutants: &[Render],
+    ) -> (Vec<Run>, Vec<Run>) {
+        let render_runs: Vec<Run> = renders
+            .iter()
+            .map(|(render, files)| render_run(render, files.clone()))
+            .chain(
+                shaped
+                    .iter()
+                    .chain(render_mutants)
+                    .map(|render| render_run(render, files_of(render))),
+            )
+            .collect();
+        let within: Vec<Run> = renders
+            .iter()
+            .map(|(render, _)| render)
+            .chain(shaped)
+            .chain(render_mutants)
+            .zip(&render_runs)
+            .filter(|(render, _)| render.library.len() <= EVALUATOR_LIBRARY)
+            .map(|(_, run)| run.clone())
+            .collect();
+        // rustc compiles each byte of an argument as one array element, and the
+        // libraries of the committed packages are megabytes together, so a render
+        // whose library is beyond the evaluator's bound runs under rustc on the
+        // first 4,096 bytes of it, held to the recipe, which reads it only as
+        // bytes to digest.
+        let compiled: Vec<Run> = renders
+            .iter()
+            .map(|(render, _)| render)
+            .chain(shaped)
+            .chain(render_mutants)
+            .zip(&render_runs)
+            .map(|(render, run)| {
+                if render.library.len() <= EVALUATOR_LIBRARY {
+                    return run.clone();
+                }
+                let mut render = render.clone();
+                render.library.truncate(4_096);
+                render_run(&render, files_of(&render))
+            })
+            .collect();
+        (within, compiled)
+    }
+
+    #[test]
+    fn render_corpora_preserve_inputs_and_outcomes() {
+        let mut renders = Vec::new();
+        for std in [false, true] {
+            for length in [
+                0,
+                4_096,
+                EVALUATOR_LIBRARY - 1,
+                EVALUATOR_LIBRARY,
+                EVALUATOR_LIBRARY + 1,
+                EVALUATOR_LIBRARY * 2,
+            ] {
+                let render = Render {
+                    scaffold: scaffold::get().expect("the scaffold").clone(),
+                    name: format!("render_{length}"),
+                    version: "1.2.3".to_owned(),
+                    std,
+                    program: "f".repeat(64),
+                    sources: vec!["a".repeat(64)],
+                    effects: vec!["overflow".to_owned()],
+                    exports: vec![("run".to_owned(), 0)],
+                    library: (0u8..=255).cycle().take(length).collect(),
+                };
+                // Distinct supplied files catch replacing the package's
+                // expected outcome with the recipe for a small library.
+                let files = (
+                    format!("package cargo: {std} {length}").into_bytes(),
+                    format!("package provenance: {std} {length}").into_bytes(),
+                );
+                renders.push((render, files));
+            }
+        }
+        let shaped: Vec<Render> = renders
+            .iter()
+            .map(|(render, _)| {
+                let mut render = render.clone();
+                render.name = "a\"b\\c".to_owned();
+                render.scaffold.library = "A.rs".to_owned();
+                render
+            })
+            .collect();
+        let mutants: Vec<Render> = shaped
+            .iter()
+            .map(|render| {
+                let mut render = render.clone();
+                render.exports.reverse();
+                render.sources.clear();
+                render
+            })
+            .collect();
+        let expected = previous_corpora(&renders, &shaped, &mutants);
+        let observed = render_corpora(&renders, &shaped, &mutants);
+        assert_eq!(observed, expected, "both ordered vectors are byte-identical");
+        assert_eq!(observed.0.len(), 24, "both profiles include the boundary");
+        assert_eq!(observed.1.len(), 36, "rustc keeps every render");
+    }
 }
