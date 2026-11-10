@@ -17,6 +17,23 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The generic notation as language-1.2 source, fourth slice of the front end
+  (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
+  the language-1.2 identity). `parseGeneric` and `printGeneric` of
+  `SurfaceGeneric` return what `surface::generic::parse` and `print` return, over
+  the standard library's `Json`; the reader admits no `recursion` and the printer
+  admits it. The register is 482 IDs.
+- The layout algebra of the authoring notation as language-1.2 source, third
+  slice of the front end (SPEC.md §17.23, §17.21, `BS-23`, #269; no new
+  diagnostic code, no change to the language-1.2 identity). `renderDoc` of
+  `SurfaceDoc` returns what `surface::doc::render` returns for a document at a
+  width; it admits no `recursion`. The register is 481 IDs.
+- The lexer of the authoring notation as language-1.2 source, second slice of
+  the front end (SPEC.md §17.23, §17.21, `BS-22`, #269; no new diagnostic code,
+  no change to the language-1.2 identity). `lexText` and `quoteText` of
+  `SurfaceLex` return what `surface::lex::lex` and `surface::lex::quote` return,
+  the tokens with their byte ranges or the first lexical error, and a quoted
+  text; they admit no `recursion`. The register is 480 IDs.
 - The structural grammar as language-1.2 source, first slice of the front end
   (SPEC.md §17.23, §15.1, §15.2, `BS-21`, #269; no new diagnostic code, no change
   to the language-1.2 identity). `parseModule` of `StructuralGrammar` reads the

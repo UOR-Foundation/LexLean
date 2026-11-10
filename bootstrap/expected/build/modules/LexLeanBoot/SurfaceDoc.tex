@@ -1,0 +1,143 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Doc}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{DNil}: \texttt{()}.\par
+\noindent Constructor \texttt{DText}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{DSeq}: \texttt{(Doc, Doc)}.\par
+\noindent Constructor \texttt{DNest}: \texttt{(Nat, Doc)}.\par
+\noindent Constructor \texttt{DLine}: \texttt{()}.\par
+\noindent Constructor \texttt{DSoft}: \texttt{()}.\par
+\noindent Constructor \texttt{DGroup}: \texttt{(Doc)}.\par
+\subsection*{\texttt{Item}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{indent}: \texttt{Nat}.\par
+\noindent Field \texttt{flat}: \texttt{Bool}.\par
+\noindent Field \texttt{node}: \texttt{Doc}.\par
+\subsection*{\texttt{Layout}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{out}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{column}: \texttt{Nat}.\par
+\noindent Field \texttt{stack}: \texttt{List (Item)}.\par
+\subsection*{\texttt{Fit}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{spent}: \texttt{Nat}.\par
+\noindent Field \texttt{limit}: \texttt{Nat}.\par
+\noindent Field \texttt{impossible}: \texttt{Bool}.\par
+\noindent Field \texttt{work}: \texttt{List (Item)}.\par
+\noindent Field \texttt{lower}: \texttt{List (Item)}.\par
+\noindent Field \texttt{verdict}: \texttt{Option (Bool)}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{joined}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pieces : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Buffer.joinAll (LexLeanStd.Text.reverse (pieces))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteNum}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (subject) (position) with | Option.some byte => (toNat (byte) : Nat) | Option.none => 0)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scalarStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (state : (Prod (Nat) (Nat)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (Nat)))}.\par
+\noindent Definition: \texttt{(match LexLeanStd.Text.byteAt (subject) ((state).1) with | Option.some byte => (let value : Nat := (toNat (byte) : Nat); (if (Nat.blt (value) (128)) then Option.some ((((state).1 + 1), ((state).2 + 1))) else (if (Nat.blt (value) (192)) then Option.some ((((state).1 + 1), (state).2)) else Option.some ((((state).1 + 1), ((state).2 + 1)))))) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scalars}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(subject)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (Nat))) => scalarStep (subject) (state))) ((LexLeanRuntime.length (subject) : Nat)) ((0, 0)) : (Prod ((Prod (Nat) (Nat))) (Bool)))).1).2}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{spaceStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(count : Nat) (state : (Prod (Nat) (List (ByteArray))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (List (ByteArray))))}.\par
+\noindent Definition: \texttt{(if (Nat.blt ((state).1) (count)) then Option.some ((((state).1 + 1), (ByteArray.mk \#[32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32] :: (state).2))) else Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{withIndent}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(pieces : List (ByteArray)) (indent : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(count)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(let count : Nat := (LexLeanRuntime.quotient (indent) (256) (0) : Nat); (let filled : List (ByteArray) := (((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (List (ByteArray)))) => spaceStep (count) (state))) ((count + 1)) ((0, ((LexLeanRuntime.utf8Encode ("\textbackslash{}n") : ByteArray) :: pieces))) : (Prod ((Prod (Nat) (List (ByteArray)))) (Bool)))).1).2; (LexLeanStd.Text.sliceOr (ByteArray.mk \#[32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32, 32]) (0) ((LexLeanRuntime.remainder (indent) (256) (0) : Nat)) :: filled)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{fitWith}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(f : Fit) (spent : Nat) (work : List (Item)) (lower : List (Item)) (verdict : Option (Bool))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Fit}.\par
+\noindent Definition: \texttt{(\{ spent := spent, limit := (f).limit, impossible := (f).impossible, work := work, lower := lower, verdict := verdict \} : Fit)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{fitItem}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(f : Fit) (item : Item) (work : List (Item)) (lower : List (Item))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Fit}.\par
+\noindent Definition: \texttt{(let indent : Nat := (item).indent; (let flat : Bool := (item).flat; (let spent : Nat := (f).spent; (match (item).node with | Doc.DNil => fitWith (f) (spent) (work) (lower) (Option.none) | Doc.DText piece => fitWith (f) ((spent + scalars (piece))) (work) (lower) (Option.none) | Doc.DSeq head tail => fitWith (f) (spent) (((\{ indent := indent, flat := flat, node := head \} : Item) :: ((\{ indent := indent, flat := flat, node := tail \} : Item) :: work))) (lower) (Option.none) | Doc.DNest amount inner => fitWith (f) (spent) (((\{ indent := (indent + amount), flat := flat, node := inner \} : Item) :: work)) (lower) (Option.none) | Doc.DLine => (if flat then fitWith (f) ((spent + 1)) (work) (lower) (Option.none) else fitWith (f) (spent) (work) (lower) (Option.some (true))) | Doc.DSoft => (if flat then fitWith (f) (spent) (work) (lower) (Option.none) else fitWith (f) (spent) (work) (lower) (Option.some (true))) | Doc.DGroup inner => fitWith (f) (spent) (((\{ indent := indent, flat := true, node := inner \} : Item) :: work)) (lower) (Option.none)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{fitStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(f : Fit)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Fit)}.\par
+\noindent Definition: \texttt{(match (f).verdict with | Option.some \_ => Option.none | Option.none => (if (if (f).impossible then true else (Nat.blt ((f).limit) ((f).spent))) then Option.some (fitWith (f) ((f).spent) ((f).work) ((f).lower) (Option.some (false))) else (match (f).work with | List.cons item rest => Option.some (fitItem (f) (item) (rest) ((f).lower)) | List.nil => (match (f).lower with | List.cons item rest => Option.some (fitItem (f) (item) (([] : List (Item))) (rest)) | List.nil => Option.some (fitWith (f) ((f).spent) (([] : List (Item))) (([] : List (Item))) (Option.some (true)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{fits}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(nodes : Nat) (width : Nat) (column : Nat) (rest : List (Item)) (first\_item : Item)}.\par
+\noindent Closure 1: binds \texttt{(f)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let final : Fit := ((LexLeanCollections.iterateUntil ((fun (f : Fit) => fitStep (f))) ((nodes + 1)) ((\{ spent := 0, limit := (LexLeanRuntime.subtract (width) (column) : Nat), impossible := (Nat.blt (width) (column)), work := (first\_item :: ([] : List (Item))), lower := rest, verdict := Option.none \} : Fit)) : (Prod (Fit) (Bool)))).1; (match (final).verdict with | Option.some answer => answer | Option.none => false))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{broken}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(l : Layout) (indent : Nat) (rest : List (Item))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Layout}.\par
+\noindent Definition: \texttt{(\{ out := withIndent ((l).out) (indent), column := indent, stack := rest \} : Layout)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{layoutItem}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(width : Nat) (nodes : Nat) (l : Layout) (item : Item) (rest : List (Item))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Layout}.\par
+\noindent Definition: \texttt{(let indent : Nat := (item).indent; (let flat : Bool := (item).flat; (match (item).node with | Doc.DNil => (\{ out := (l).out, column := (l).column, stack := rest \} : Layout) | Doc.DText piece => (\{ out := (piece :: (l).out), column := ((l).column + scalars (piece)), stack := rest \} : Layout) | Doc.DSeq head tail => (\{ out := (l).out, column := (l).column, stack := ((\{ indent := indent, flat := flat, node := head \} : Item) :: ((\{ indent := indent, flat := flat, node := tail \} : Item) :: rest)) \} : Layout) | Doc.DNest amount inner => (\{ out := (l).out, column := (l).column, stack := ((\{ indent := (indent + amount), flat := flat, node := inner \} : Item) :: rest) \} : Layout) | Doc.DLine => (if flat then (\{ out := ((LexLeanRuntime.utf8Encode (" ") : ByteArray) :: (l).out), column := ((l).column + 1), stack := rest \} : Layout) else broken (l) (indent) (rest)) | Doc.DSoft => (if flat then (\{ out := (l).out, column := (l).column, stack := rest \} : Layout) else broken (l) (indent) (rest)) | Doc.DGroup inner => (let one : Bool := fits (nodes) (width) ((l).column) (rest) ((\{ indent := indent, flat := true, node := inner \} : Item)); (\{ out := (l).out, column := (l).column, stack := ((\{ indent := indent, flat := one, node := inner \} : Item) :: rest) \} : Layout)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{layoutStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(width : Nat) (nodes : Nat) (l : Layout)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Layout)}.\par
+\noindent Definition: \texttt{(match (l).stack with | List.nil => Option.none | List.cons item rest => Option.some (layoutItem (width) (nodes) (l) (item) (rest)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{renderDoc}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(doc : Doc) (width : Nat) (nodes : Nat)}.\par
+\noindent Closure 1: binds \texttt{(l)}, captures \texttt{(nodes, width)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let final : Layout := ((LexLeanCollections.iterateUntil ((fun (l : Layout) => layoutStep (width) (nodes) (l))) ((nodes + 1)) ((\{ out := ([] : List (ByteArray)), column := 0, stack := ((\{ indent := 0, flat := false, node := doc \} : Item) :: ([] : List (Item))) \} : Layout)) : (Prod (Layout) (Bool)))).1; joined ((final).out))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

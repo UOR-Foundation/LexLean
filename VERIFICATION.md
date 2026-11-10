@@ -11049,10 +11049,11 @@ PrimitiveScan are linked modules of the project`, on `6283ac8f3`.
 The largest certificate part is 2,879,430 bytes, 91.5% of the row's 3,145,728,
 measured by `lexlean production build` on a copy of the project whose entrypoints
 are `PrimitiveScan` and `StructuralGrammar`, and `lexlean verify` passes on that
-copy, so the declared axioms are exact. The case's own leg cannot run until the
-landing regeneration produces the `bootstrap/parse_module` package:
-`conformance_bs_21` stops at the stack-bound step with `bootstrap/parse_module is
-no package of the committed exports`, after every differential above has agreed.
+copy, so the declared axioms are exact. Before the landing regeneration produced
+the `bootstrap/parse_module` package, `conformance_bs_21` stopped at the
+stack-bound step with `bootstrap/parse_module is no package of the committed
+exports`, after every differential above had agreed; on the regenerated tree it
+passed whole with the stack measured (3,006 s).
 
 `SL-11` holds `LexLeanStd.Json` (#276, member 3) to the compiler's own writer,
 `canonical_json::Json::to_canonical_string` and `to_file_bytes`: the three
@@ -11088,6 +11089,136 @@ check of `stack_bounds::observe` and the Lean export bypassed on this host
 writes them); `cargo clippy -p repo-conformance -p xtask --all-targets
 --all-features -D warnings`, `validate-model` (461 ids), `validate-spec-links`
 (461 rows), `check-test-inventory`, and the five `bdd` meta-gate tests pass.
+
+### the lexer of the authoring notation is source (BS-22)
+
+`BS-22` holds the two production roots of `LexLeanBoot.SurfaceLex`
+(`bootstrap/src/SurfaceLex.lex.tex`), `lexText` and `quoteText`, to
+`surface::lex::lex` and `surface::lex::quote`, on the tokens with their byte
+ranges and on the offset and message of the first lexical error. Neither root
+admits `recursion`: a scan is a loop under `iterate_until`, and a string is a
+loop over its pieces, joined once by `Buffer.joinAll` so that reading one costs
+its length. `AxiomOutput.whiteLength` is the list of white space, which `BS-01`
+holds to `char::is_whitespace`.
+
+The case has the shape of `BS-21`: hand-built vectors that reach each of the
+five lexical errors, windows of the committed sources, and seeded edits, under
+the evaluator on the normative host and under the pinned rustc on every host;
+each planted defect names the one vector that catches it, and the case asserts
+that the site of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceLex`: `lexlean check` and `lexlean build` pass,
+and the eligibility report gives both roots `rust-std` with exactly
+`allocation` and `overflow`. On the project: the lock is current, all 18 modules
+are canonical, and 22 modules check. The register agrees with the §31 table on
+470 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on this member merged
+with `BS-21` and `SL-13` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_22`, 293 s). Its corpus is 234 named vectors (183 lexed, 123 of
+them accepted, and 51 quoted), 1,045 committed sources, and 600 and 2,400 seeded
+runs. The evaluator agrees with the oracle on 1,828 `lexText` and 1,362
+`quoteText` runs, the rendered packages under the pinned rustc (41 harness
+binaries) on 5,738 runs, and each of the 46 planted defects is detected by its
+own vector. The first run found one plant its vector missed, `the space is a
+control character`: a run of plain bytes is read by `rawStep`, which has its own
+bound, so the check the plant changes in `scanStep` meets a space only where a
+piece of the string starts, and `"a b"` never reaches it. Its vector is now
+`a string that starts with a space`, `" a"`, and the lexer is unchanged. The
+case then stopped at the stack-bound step, `bootstrap/lex_text is no package of
+the committed exports`, as `BS-21` did before its regeneration. The landing
+regeneration produced the `bootstrap/lex_text` and `bootstrap/quote_text`
+packages, and on that tree the case passed whole with the stack measured
+(1,847 s).
+
+### the layout algebra of the notation is source (BS-23)
+
+`BS-23` holds the production root `LexLeanBoot.SurfaceDoc.renderDoc`
+(`bootstrap/src/SurfaceDoc.lex.tex`) to `surface::doc::render`: the layout of a
+document of text, concatenation, indentation, lines, soft breaks, and groups at a
+width. The root admits no `recursion`. A concatenation is a chain of `DSeq`
+cells, so that the two stacks of the oracle (the stack of items and the work
+stack of the width test) are lists popped a node at a time, and the host passes
+the number of nodes, which bounds each loop. The case has the shape of `BS-21`
+and `BS-22`: hand-built documents that reach each node, each branch of the width
+test (the text of a scalar beyond ASCII at the exact width, a flat line, a soft
+break, the rest of the stack, a break line that ends the scan, a column past the
+width) and indents of 255 to 700; the documents the printer builds from the
+committed JSON files, at three widths; and seeded documents. Each planted defect
+names the one vector that catches it, and the case asserts that the site of each
+plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceDoc`: `lexlean check` and `lexlean build` pass,
+and the eligibility report gives the root `rust-std` with exactly `allocation`
+and `overflow`. The register agrees with the §31 table on 471 IDs, by the same
+parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on this member merged
+with `BS-22`, `BS-21` and `SL-13` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_23`, 705 s). Its corpus is 65 named vectors, 3,907
+JSON documents (1,242 and 3,990 runs), and 500 and 2,500 seeded runs. The
+evaluator agrees with the oracle on 1,807 runs and the rendered package under the
+pinned rustc (83 harness binaries) on 6,555, and each of the 21 planted defects is
+detected by its own vector. The first run found three plants their vectors did
+not reach, each a vector's fault and none the layout's: `the delete is no
+scalar` was tried at the group's exact width, where one column less still fits
+(now `a group of the delete one column short`, width 2); `a group is tried at no
+column past the width` was tried on a group with visible content, which fails
+to fit past the width either way, so only a group of one soft break tells the
+two apart (now `an empty group past the width`); and `the layout stops one node
+early` was tried on a concatenation, whose parts the node budget counts twice,
+so it had steps to spare (now `a text beyond the width`, one node and one step).
+The case then stopped at the stack-bound step, `bootstrap/render_doc is no
+package of the committed exports`, as `BS-21` and `BS-22` did before their
+regeneration. The landing regeneration produced the `bootstrap/render_doc`
+package, and on that tree the case passed whole with the stack measured
+(2,378 s).
+
+### the generic notation is source and agrees with the oracle (BS-24)
+
+`BS-24` holds the two production roots of `LexLeanBoot.SurfaceGeneric`
+(`bootstrap/src/SurfaceGeneric.lex.tex`), `parseGeneric` and `printGeneric`, to
+`surface::generic::parse` and `surface::generic::print`, over the standard
+library's `Json` (`SL-11`, `SL-13`). It composes the lexer of `BS-22` and the
+layout algebra of `BS-23`. `parseGeneric` reads the tokens with an explicit stack
+of frames and admits no `recursion`; `printGeneric` walks the value by structural
+recursion over the three cases of `Json` and admits `recursion`. The case has the
+shape of its predecessors: hand-built texts that reach each error of the reader
+and the limit on nesting at 256 and 257, hand-built values of every kind and
+every key the printer orders, the committed JSON files printed and their printed
+texts read back, and seeded values and seeded edits. Each planted defect names the
+one vector that catches it, and the case asserts that the site of each plant
+occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceGeneric`: `lexlean check` and `lexlean build`
+pass, and the eligibility report gives `parseGeneric` exactly `allocation` and
+`overflow` and `printGeneric` exactly `allocation`, `overflow`, and `recursion`.
+On the project the lock is current and every module checks. The register agrees
+with the §31 table on 476 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on this member merged
+with `BS-23`, `BS-22`, `BS-21` and `SL-13` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_24`, 259 s). Its corpus is 163 named vectors (118
+read, 45 printed), the 3,906 committed JSON files, and 162 and 1,301 printed
+texts for the evaluator and rustc. The evaluator agrees with the oracle on 1,080
+reads and 607 prints, and each of the 32 planted defects is detected by its own
+vector. The first run found two faults. The printer's rank table spelt the key
+`axioms` as `axoims`, so a seeded object printed `axioms` after an unranked key,
+where the oracle prints it before; the member is now spelt as the oracle spells
+it. The plant `a tag need not be a name` was tried on `a b`, two bare words that
+never reach the test of bareness (now `a word of digits and a letter`, `1a`,
+which the oracle refuses and the planted reader admits). The case then stopped
+at the stack-bound step, `bootstrap/parse_generic is no package of the committed
+exports`, as `BS-21`, `BS-22` and `BS-23` did before their regeneration. The
+landing regeneration produced the `bootstrap/parse_generic` and
+`bootstrap/print_generic` packages and measured the row of `print_generic` in
+`tests/stack-bounds.json` (`PD-08`, 1,376,256 bytes of debug stack), and on
+that tree the case passed whole (1,894 s). `BS-22`, `BS-23`, and `BS-24` land
+together, on `BS-21` and the standard library members `SL-11`, `SL-13`, and
+`SL-14`.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
@@ -13682,3 +13813,36 @@ so each of their vector counts grows by one, and within the 400-expression
 bound of `BS-08`. Every count of `BS-11` and `BS-12` is unchanged, as are the
 `printExpr` vectors of `BS-06` and every mutant draw: the stdlib verify records
 did not move.
+
+
+## The front-end packages of `BS-22` to `BS-24` move the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (#269)
+
+The roots of `SurfaceLex` (`BS-22`), `SurfaceDoc` (`BS-23`), and
+`SurfaceGeneric` (`BS-24`) add five committed packages to those of `BS-21`, and
+these cases assert their corpus. The members were merged with `BS-21` and the
+tree of `release/v0.4` after `SL-13`, and the lock, export, build oracles,
+verify records, and the stack bound of `bootstrap/print_generic` were
+regenerated on the normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1) at
+verify width 1; the `BS-22`, `BS-23`, and `BS-24` cases passed whole on that
+tree with the stack measured (1,847 s, 2,378 s, and 1,894 s). Each row below is
+the number its own count check reported on that tree against the one `BS-21`
+commits, under `LEXLEAN_COUNTS=fast`, and the constants, rows, statements,
+scenarios and prose were rewritten by the writer of #442.
+
+| Count | `BS-21` | members |
+| --- | --- | --- |
+| committed manifests and packages | 300 | 305 |
+| distinct programs | 217 | 222 |
+| distinct lowered crates | 276 | 281 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 512, 377 | 517, 382 |
+| `BS-06` `printCrate` vectors, committed distinct, evaluator crates, refused | 721, 552, 604, 67 | 732, 562, 605, 68 |
+| `BS-07` vectors | 351 | 356 |
+| `BS-08` crates | 410 | 415 |
+| `BS-13` vectors | 120 | 125 |
+| `BS-14` vectors | 355 | 360 |
+| `BS-15` manifests, accepted, render mutants | 319, 300, 300 | 324, 305, 305 |
+
+Every new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`
+and the 400-expression bound of `BS-08`, so each of those vector counts grows
+by five. Every count of `BS-11` and `BS-12` is unchanged, as is every mutant
+draw: the stdlib verify records did not move.

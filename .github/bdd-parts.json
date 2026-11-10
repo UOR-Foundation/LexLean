@@ -19,6 +19,15 @@
     "bootstrap-structural-grammar": [
       "BS-21"
     ],
+    "bootstrap-surface-lex": [
+      "BS-22"
+    ],
+    "bootstrap-surface-doc": [
+      "BS-23"
+    ],
+    "bootstrap-surface-generic": [
+      "BS-24"
+    ],
     "bootstrap-check": [
       "BS-04"
     ],

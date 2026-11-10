@@ -65,7 +65,7 @@ const ROOTS: [&str; 2] = ["functionShells", "assembleItems"];
 
 /// The programs the evaluator is given: those of at most this many nodes.
 const EVALUATOR_NODES: usize = 300;
-const VECTORS: usize = 355;
+const VECTORS: usize = 360;
 const VECTORS_WITHIN: usize = 296;
 const EVALUATOR_MUTANTS: usize = 539;
 
