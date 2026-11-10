@@ -21,7 +21,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `repro` | `cargo xtask check-reproducibility` | AR-13, §28.4: two clean `build`s in distinct absolute directories publish byte-identical trees with no absolute path inside |
 | `deny` | `cargo deny --all-features check` | advisories, bans, licenses, sources |
 
-In CI, the initial `honesty` row owns `fmt-check model spec-links` and the complete `bdd` meta-gate target. The remaining rows, supported hosts and Atlas prefix require its success. The BDD remainder owns the library, doctests and unassigned integration targets; Cargo metadata discovers target names and the inventory lists the same target selectors and filters as execution. The separate honesty workflow is subsumed by this same-run job; local `just vv` retains its complete suite.
+In CI, the initial `honesty` row owns `fmt-check model spec-links` and the complete `bdd` meta-gate target. The remaining rows, supported hosts (including Intel construction) and Atlas prefix require its success. The BDD remainder owns the library, doctests and unassigned integration targets; Cargo metadata discovers target names and the inventory lists the same target selectors and filters as execution. The separate honesty workflow is subsumed by this same-run job; local `just vv` retains its complete suite.
 
 Outside `vv`:
 
@@ -42,6 +42,53 @@ Outside `vv`:
 ## Falsifiability records
 
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
+
+### Intel host partition custody and complete evidence
+
+The three non-Intel auxiliary host legs keep their existing locked,
+all-features workspace test command. Intel macOS uses one construction,
+plan-selected conformance executions and a fail-closed aggregate under the original
+`build and non-Lean tests (x86_64-apple-darwin)` context (SPEC.md §8.3).
+Construction compiles the workspace test targets once, discovers the actual
+executables, runs ordinary/library/meta/other integration targets and all
+workspace doctests, and records independent failures without suppressing the
+conformance executions. Consumers run the same conformance executable; the
+committed lane plan groups existing BDD parts, and actual harness inventories
+prove disjointness and complete coverage. The remainder keeps future tests.
+No corpus, assertion, language identity or host timeout changes.
+
+The construction manifest binds source, repository, run and attempt,
+checkout path, Rust pin/version, target, profile/features, lockfile, plans,
+executable bytes/mode, inventories and filters. Transfer includes the actual
+runtime dynamic-library closure and required dependency data, not a target
+build cache. Receipts bind the execution outcome, full harness results and
+logs to that construction. The aggregate rejects missing, duplicate,
+foreign, failed, changed or incomplete evidence, including a failed local
+construction test. `python3 -m unittest discover -s .github/scripts -p
+'test_intel_host_tests.py'` runs the factory's behavioral plants in honesty;
+`RP-14` checks that the workflow wires the construction, consumers and join
+to those operations and preserves the original host context and honesty
+prerequisite. These source checks do not inspect the helper's implementation
+shape or stand in for real Intel execution.
+
+`RP-14` and `RP-18` give the previous-run and release scripts the four exact
+required host contexts. For each host they plant an absent, duplicate,
+foreign-replaced and suffixed context; matching a count of four is no longer
+evidence. Successful unrelated jobs remain allowed, and every job's
+conclusion is still checked, including a failure after a large jobs listing.
+Linux x86-64 remains the normative gate, not a fifth auxiliary context.
+
+Local validation of this change is recorded separately from acceptance:
+`bash -n` passed for both evidence scripts. Standalone fake-GitHub fixtures
+ran each complete script against 30 listings (60 cases total): complete and
+large complete evidence, a late failed job, and each host absent, duplicated,
+foreign-replaced, suffixed, failed or skipped, plus missing honesty, Atlas join
+and recipe contexts. All matched the required pass/refusal without network
+access or a CI run. The editing environment has no Rust compiler, Cargo or
+Intel macOS runtime. Rust conformance tests, the real
+Intel construction/consumer execution, and complete final-head acceptance
+remain unrun here; the behavioral factory suite alone does not qualify the
+host partition.
 
 ### production bundle inventory can fail
 

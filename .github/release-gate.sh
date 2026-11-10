@@ -11,27 +11,46 @@
 # to a push: a run on the commit itself, or, when the commit is a merge whose
 # tree is the tree of its second parent, a run on that parent. A run counts
 # when every job of it concluded `success` and it holds the join of Atlas,
-# every host of the matrix, and every leg of `.github/vv-rows.json`; a
+# every exact supported-host context, and every leg of `.github/vv-rows.json`; a
 # draft run, which has only honesty and the `rest` leg, never does. A tag on a commit no
 # such run verified is refused, naming what was looked for.
 #
 # Inputs, all from the environment: REPO (owner/name), SHA (the tagged
 # commit), OUT (the evidence file to write), and the lines of the header:
-# REF and RELEASE_RUN. `LEXLEAN_CI_ROWS` and `LEXLEAN_CI_WORKFLOW` name the
-# legs file and the workflow when a test runs the script elsewhere. `gh`
+# REF and RELEASE_RUN. `LEXLEAN_CI_ROWS` names the legs file when a test
+# runs the script elsewhere. `gh`
 # reads the runs, the jobs, and the artifacts (`actions: read`).
 set -euo pipefail
 
 rows_file=${LEXLEAN_CI_ROWS:-.github/vv-rows.json}
-workflow=${LEXLEAN_CI_WORKFLOW:-.github/workflows/ci.yml}
 repo=${REPO:?REPO names owner/name}
 sha=${SHA:?SHA names the tagged commit}
 out=${OUT:?OUT names the evidence file}
 ref=${REF:-}
 release_run=${RELEASE_RUN:-}
 
-hosts=$(grep -c '^          - { os: ' "$workflow")
 parts=$(jq -r '.[].part' "$rows_file")
+
+# These are the four auxiliary §8.3 contexts, not the number of matrix rows.
+# Linux x86-64 is the normative gate; Intel macOS is a static aggregate. Every
+# required context must occur exactly once, so a duplicate or foreign context
+# cannot replace a missing host even when the total count remains four.
+hosts_passed() {
+  awk -F'\t' '
+    BEGIN {
+      expected["build and non-Lean tests (aarch64-unknown-linux-gnu)"] = 1
+      expected["build and non-Lean tests (x86_64-apple-darwin)"] = 1
+      expected["build and non-Lean tests (aarch64-apple-darwin)"] = 1
+      expected["build and non-Lean tests (x86_64-pc-windows-msvc)"] = 1
+    }
+    /^build and non-Lean tests \(/ {
+      if (!($1 in expected) || ++seen[$1] != 1 || $2 != "success") bad = 1
+    }
+    END {
+      for (host in expected) if (seen[host] != 1) bad = 1
+      exit bad
+    }'
+}
 
 # The jobs of a run as `name<TAB>conclusion<TAB>started<TAB>completed`, or
 # nothing when the run cannot be read.
@@ -47,7 +66,7 @@ whole_gate_passed() {
   printf '%s\n' "$jobs" | awk -F'\t' '$2 != "success" { bad = 1 } END { exit bad }' || return 1
   # Quiet grep can close the pipe early and make printf fail under pipefail.
   printf '%s\n' "$jobs" | grep -xP 'atlas \(join\)\tsuccess\t.*' >/dev/null || return 1
-  [ "$(printf '%s\n' "$jobs" | grep -c '^build and non-Lean tests (')" -eq "$hosts" ] || return 1
+  printf '%s\n' "$jobs" | hosts_passed || return 1
   for part in $parts; do
     job="just vv ($part)"
     [ "$part" != honesty ] || job=honesty
