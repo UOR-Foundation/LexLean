@@ -17,6 +17,14 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The structural grammar as language-1.2 source, first slice of the front end
+  (SPEC.md §17.23, §15.1, §15.2, `BS-21`, #269; no new diagnostic code, no change
+  to the language-1.2 identity). `parseModule` of `StructuralGrammar` reads the
+  atoms of `scanSource` and returns what `grammar::structural::parse_module`
+  returns, with its coverage rows, or the same refusal, to the byte on 267
+  hand-built vectors, the committed modules, and 2,000 seeded edits; 44 planted
+  defects are each detected by a vector of their own. It admits no `recursion`.
+  The largest certificate part is 2,879,430 bytes. The register is 479 IDs.
 - Canonical JSON reading in the standard library, the fourth member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
   `LexLeanStd.JsonRead` holds the production roots `readJson` and

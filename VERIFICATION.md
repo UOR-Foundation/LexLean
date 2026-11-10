@@ -11011,6 +11011,49 @@ ended at the start of the rustc stage with the host's 16 GB virtual machine
 reset, and the run with the bound passed that stage in 67 s. A library beyond the evaluator's bound now reaches rustc as
 its first 4,096 bytes, held to the recipe, as the shaped inputs do.
 
+### the structural grammar is source and agrees with the oracle (BS-21)
+
+`BS-21` holds `LexLeanBoot.StructuralGrammar.parseModule`
+(`bootstrap/src/StructuralGrammar.lex.tex`, 1,394 lines, 68,716 bytes) to
+`grammar::structural::parse_module`, on the whole module with its coverage rows
+and on a refusal's code, message, and span. The root reads the atoms the oracle's
+scanner returns, and admits `allocation` and `overflow`: it keeps an explicit
+stack under `iterate_until`, so it owes no row in `tests/stack-bounds.json`.
+
+Command: `cargo test -p repo-conformance --test conformance -- conformance_bs_21
+--nocapture`, on the normative host, on `1f470cda7`, 1,755 seconds, 975 committed
+modules in the tree.
+
+| Leg | Runs | Agreed |
+| --- | --- | --- |
+| named vectors under the evaluator | 267, 146 refused | all |
+| committed modules under the evaluator, whole to 1,500 atoms, else 128 atoms of both ends | 975, 917 accepted | all |
+| seeded edits under the evaluator | 2,000, 377 accepted | all |
+| all of the vectors, the edits, and the committed modules under rustc, whole to 4,096 atoms, else 128 of both ends | 3,242, in 144 harness binaries | all |
+
+The vectors reach every refusal of `parse_module`, which the case asserts by a
+part of each of the 30 messages. The two ends of a data-form module are the
+corpus's point: a prefix of one is a single refusal, while its two ends are a
+module the oracle accepts, whose notation runs to its `\end`.
+
+Each of the 44 planted defects names the vector that catches it and is run on that
+vector alone, and all 44 are detected. `BS-05` and `BS-11` each lost a plant when
+their corpus grew, because a plant caught by some run of a corpus is only as good
+as that corpus; here a seeded corpus can change without costing a plant its
+witness. `sorts` reads the constructors from the module's text, so a constructor
+moved in the module fails the encoders.
+
+Before the module was an entrypoint the case failed with `StructuralGrammar and
+PrimitiveScan are linked modules of the project`, on `6283ac8f3`.
+
+The largest certificate part is 2,879,430 bytes, 91.5% of the row's 3,145,728,
+measured by `lexlean production build` on a copy of the project whose entrypoints
+are `PrimitiveScan` and `StructuralGrammar`, and `lexlean verify` passes on that
+copy, so the declared axioms are exact. The case's own leg cannot run until the
+landing regeneration produces the `bootstrap/parse_module` package:
+`conformance_bs_21` stops at the stack-bound step with `bootstrap/parse_module is
+no package of the committed exports`, after every differential above has agreed.
+
 `SL-11` holds `LexLeanStd.Json` (#276, member 3) to the compiler's own writer,
 `canonical_json::Json::to_canonical_string` and `to_file_bytes`: the three
 roots `writeJson`, `writeJsonFile`, and `escapeString` under the evaluator
@@ -13607,3 +13650,35 @@ Under separate root admission ca0818e03f221445d77bfab595b64e255f1eb5d0f5cb74df61
 The reviewed physical ledger contains 12,551 entries and 10,900 present files, including 8 symlinks. Physical review393 remains detached at c613 with raw index f2a12ce1d4f383096de2ab9913efd25c55a5a3d01913a670429252ea4ee961eb and logical 0328 source tree; the external pre-documentation capture is 6dcf464632e277916cedfacb5656699c89872c47. Current frozen BOTH/probe artifacts, 905 inputs, closed errors, archived selected build metadata, helper ownership and all producer outputs passed entry and terminal preservation guards. The final additive VI is prepared externally, without changing that physical root.
 
 This is source/product readiness evidence, not complete combined-head acceptance. The historical281 draft run 41964177567 ran only plan/honesty/rest with seven required host/Atlas groups skipped; repro 41964177626 passed, and the prior ready run 41964083701 was cancelled. None accepts the new currentbase combination. One complete new-head hosted gate, same-run honesty, reproducibility, final review and eventual actual landing/tree equality remain mandatory. Existing d34/WSL PERFORMANCE rows and timing/host/comparison caveats retain their original scope; no new linearity measurement is claimed. Closure scope remains #373 only after its combined proof/BS02 and final gate requirements pass.
+
+## The `parse_module` package moves the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (`BS-21`, #269)
+
+The root of `LexLeanBoot.StructuralGrammar` (`BS-21`, #395) adds one committed
+package (`parse_module`), and these cases assert their corpus. The member was
+merged with the tree of `release/v0.4` at `4dc5b803c` (after #415 landed), and
+its lock, export, build oracles and verify records were regenerated on the
+normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1) at verify width 1; the
+`BS-21` case passed whole on that tree with the stack measured (3,006 s), and
+the root does not recurse. Each row below is the number its own count check
+reported on that tree against the committed one, under `LEXLEAN_COUNTS=fast`,
+and the constants, rows, statements, scenarios and prose were rewritten by the
+writer of #442.
+
+| Count | `4dc5b803c` | member |
+| --- | --- | --- |
+| committed manifests and packages | 299 | 300 |
+| distinct programs | 216 | 217 |
+| distinct lowered crates | 275 | 276 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 511, 376 | 512, 377 |
+| `BS-06` `printCrate` vectors, committed distinct | 719, 550 | 721, 552 |
+| `BS-07` vectors | 350 | 351 |
+| `BS-08` crates | 409 | 410 |
+| `BS-13` vectors | 119 | 120 |
+| `BS-14` vectors | 354 | 355 |
+| `BS-15` manifests, accepted, render mutants | 318, 299, 299 | 319, 300, 300 |
+
+The new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`,
+so each of their vector counts grows by one, and within the 400-expression
+bound of `BS-08`. Every count of `BS-11` and `BS-12` is unchanged, as are the
+`printExpr` vectors of `BS-06` and every mutant draw: the stdlib verify records
+did not move.
