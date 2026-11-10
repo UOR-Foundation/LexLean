@@ -97,6 +97,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "human_diagnostics",
+      "root": "LexLeanBoot.CliOutput.humanDiagnostics",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "is_closed_lean_name",
       "root": "LexLeanBoot.AxiomOutput.isClosedLeanName",
       "targets": [
@@ -147,6 +155,14 @@
     {
       "name": "lower_value_at",
       "root": "LexLeanBoot.RustTerms.lowerValueAt",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "named_command",
+      "root": "LexLeanBoot.CliOutput.namedCommand",
       "targets": [
         "rust-std"
       ],
@@ -267,6 +283,14 @@
     {
       "name": "validate_runtime",
       "root": "LexLeanBoot.RuntimeValidate.validateRuntime",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "wants_json",
+      "root": "LexLeanBoot.CliOutput.wantsJson",
       "targets": [
         "rust-std"
       ],
