@@ -21,3 +21,7 @@ writes the rejection of a GNAF request through it.
 
 `src/LockText.lex.tex` (SPEC.md §17.23, `BS-31`) imports the standard library's `Numeral`,
 `Order`, and `Text`, and writes the canonical lock text of SPEC.md §11.2.
+
+`src/ProjectText.lex.tex` (SPEC.md §17.23, `BS-33`) imports `LockText` (`BS-31`), whose TOML
+writers it uses, and the standard library's `Numeral`, `Order`, and `Sha256`, and writes the
+canonical project manifest of SPEC.md §10.1 and its digest.
