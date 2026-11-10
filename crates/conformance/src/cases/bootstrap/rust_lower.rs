@@ -912,33 +912,15 @@ pub(super) fn case() {
         .iter()
         .filter(|vector| vector.nodes <= EVALUATOR_NODES)
         .collect();
-    let mut seeded = Seeded(0x00B5_0107);
-    let evaluator_mutants = seeded_mutants(&sources, &mut seeded, EVALUATOR_MUTANTS, BASE_NODES);
-    let mut large = Seeded(0x00B5_0207);
-    let rustc_mutants = seeded_mutants(&sources, &mut large, RUSTC_MUTANTS, BASE_NODES);
     assert_eq!(
-        (
-            rules.len(),
-            all.len(),
-            evaluator.len(),
-            evaluator_mutants.len(),
-            rustc_mutants.len()
-        ),
-        (
-            RULE_PROGRAMS,
-            VECTORS,
-            VECTORS_WITHIN,
-            EVALUATOR_MUTANTS,
-            RUSTC_MUTANTS
-        ),
-        "the programs of the rules, the vectors, those the evaluator is given, and the mutants"
+        (rules.len(), all.len(), evaluator.len()),
+        (RULE_PROGRAMS, VECTORS, VECTORS_WITHIN),
+        "the programs of the rules, the vectors, and those the evaluator is given"
     );
     eprintln!(
-        "BS-07: {} vectors ({} within {EVALUATOR_NODES} nodes), {} + {} mutants ({:?})",
+        "BS-07: {} vectors ({} within {EVALUATOR_NODES} nodes) ({:?})",
         all.len(),
         evaluator.len(),
-        evaluator_mutants.len(),
-        rustc_mutants.len(),
         started.elapsed()
     );
     let checked = support::checked_project(&project);
@@ -963,6 +945,23 @@ pub(super) fn case() {
         eprintln!("BS-07: platform-bound host: the evaluator, the seeded corpora, and the planted defects run on the normative host");
         return;
     }
+    // Other hosts never execute these corpora, but preparing them performs
+    // full oracle lowering for every accepted mutant.
+    let mut seeded = Seeded(0x00B5_0107);
+    let evaluator_mutants = seeded_mutants(&sources, &mut seeded, EVALUATOR_MUTANTS, BASE_NODES);
+    let mut large = Seeded(0x00B5_0207);
+    let rustc_mutants = seeded_mutants(&sources, &mut large, RUSTC_MUTANTS, BASE_NODES);
+    assert_eq!(
+        (evaluator_mutants.len(), rustc_mutants.len()),
+        (EVALUATOR_MUTANTS, RUSTC_MUTANTS),
+        "the mutants"
+    );
+    eprintln!(
+        "BS-07: {} + {} mutants ({:?})",
+        evaluator_mutants.len(),
+        rustc_mutants.len(),
+        started.elapsed()
+    );
     let mutated: Vec<&Vector> = evaluator_mutants.iter().collect();
     // The evaluator on the vectors and on the seeded mutants, for each root:
     // `detection` is what the planted defects are caught on.
