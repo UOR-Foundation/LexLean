@@ -25,6 +25,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "canonical_lock",
+      "root": "LexLeanBoot.LockText.canonicalLock",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "check_arguments",
       "root": "LexLeanBoot.CalculusCheck.checkArguments",
       "targets": [
@@ -211,6 +219,14 @@
     {
       "name": "succeed_bodies",
       "root": "LexLeanBoot.RustSucceed.succeedBodies",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "toml_string",
+      "root": "LexLeanBoot.LockText.tomlString",
       "targets": [
         "rust-std"
       ],

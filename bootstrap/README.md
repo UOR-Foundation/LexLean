@@ -18,3 +18,6 @@ payloads a printer reads); `src/RustPrint.lex.tex` also imports the standard
 library's `Buffer` (`stdlib/src/Buffer.lex.tex`), which it writes through.
 `src/GnafValidate.lex.tex` (SPEC.md §17.15, `BS-16`) imports `Buffer` alone and
 writes the rejection of a GNAF request through it.
+
+`src/LockText.lex.tex` (SPEC.md §17.23, `BS-31`) imports the standard library's `Numeral`,
+`Order`, and `Text`, and writes the canonical lock text of SPEC.md §11.2.
