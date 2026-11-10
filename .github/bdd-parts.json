@@ -25,6 +25,9 @@
     "bootstrap-lower": [
       "BS-07"
     ],
+    "bootstrap-cli-output": [
+      "BS-30"
+    ],
     "bootstrap-diagnostics": [
       "BS-29"
     ],

@@ -21,6 +21,7 @@ use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support::{self, P};
 
+mod cli_output;
 mod diagnostics;
 mod gnaf_validate;
 mod runtime_validate;
@@ -2459,6 +2460,7 @@ fn case(id: &str) {
         // §17.23, §17.20: the canonical LaTeX of a tooling module.
         "BS-20" => tooling_latex::case(),
         "BS-29" => diagnostics::case(),
+        "BS-30" => cli_output::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
