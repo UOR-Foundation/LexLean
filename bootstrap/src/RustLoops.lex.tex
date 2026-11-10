@@ -1,0 +1,328 @@
+\begin{lexlean}{RustLoops}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{CalculusCheck}
+\importmodule{RustAst}
+\importmodule{RustBodies}
+\importmodule{RustValidate}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: LoopOut,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: found, type: Bool},
+    {name: params, type: RustAst::Par},
+    {name: body, type: RustAst::Expr},
+    {name: next, type: Nat}
+  ]
+}
+
+structure{
+  name: Tails,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: ok, type: Bool}, {name: calls, type: RustAst::Expr}]
+}
+
+structure{
+  name: Parts,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: ok, type: Bool},
+    {name: count, type: Nat},
+    {name: ty, type: RustValidate::Ty},
+    {name: tuple, type: RustAst::Pat},
+    {name: start, type: RustAst::Expr},
+    {name: renamed, type: RustAst::Par}
+  ]
+}
+
+structure{
+  name: Retarget,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: me, type: Nat},
+    {name: params, type: RustAst::Par},
+    {name: calls, type: RustAst::Expr},
+    {name: state, type: RustValidate::Ty},
+    {name: done, type: RustValidate::Ty}
+  ]
+}
+
+definition{
+  name: callAt,
+  parameters: [seed : Nat],
+  result: RustValidate::Origin,
+  body: (record RustValidate::Origin {element := (prim utf8_encode "expr:call" : Bytes), width := (ctor Option.none [RustValidate::IntKind])}),
+  executable: true
+}
+
+definition{
+  name: occurs,
+  parameters: [subject : RustAst::Expr, me : Nat],
+  result: Bool,
+  body: (match subject
+    | RustAst::Expr.ELit u2x0 u2x1 => false
+    | RustAst::Expr.ERead u2x0 u2x1 u2x2 => false
+    | RustAst::Expr.EWrap kind inner at => (occurs inner me)
+    | RustAst::Expr.ECall callee args prop at => (match callee
+      | RustAst::Callee.CalFn called => (if (called =? me) then true else (occurs args me))
+      | RustAst::Callee.CalRt u1x0 => (occurs args me)
+      | RustAst::Callee.CalMachine u1x0 u1x1 => (occurs args me))
+    | RustAst::Expr.EApply holder args prop at => (occurs args me)
+    | RustAst::Expr.EConstruct con args at => (occurs args me)
+    | RustAst::Expr.EPair left right at => (if (occurs left me) then true else (occurs right me))
+    | RustAst::Expr.EIf c t e at => (if (occurs c me) then true else (if (occurs t me) then true else (occurs e me)))
+    | RustAst::Expr.EMatch s arms at => (if (occurs s me) then true else (occurs arms me))
+    | RustAst::Expr.EBlockE inner => (occurs inner me)
+    | RustAst::Expr.EProbe u2x0 u2x1 u2x2 => false
+    | RustAst::Expr.EBlock lets tail => (if (occurs lets me) then true else (occurs tail me))
+    | RustAst::Expr.ENil => false
+    | RustAst::Expr.ECons head tail => (if (occurs head me) then true else (occurs tail me))
+    | RustAst::Expr.ELet pat typed ty value at rest => (if (occurs value me) then true else (occurs rest me))
+    | RustAst::Expr.EArm pats block rest => (if (occurs block me) then true else (occurs rest me))
+    | RustAst::Expr.ELoop state body => (occurs body me)),
+  executable: true,
+  recursive_argument: subject
+}
+
+definition{
+  name: appendCalls,
+  parameters: [left : RustAst::Expr, right : RustAst::Expr],
+  result: RustAst::Expr,
+  body: (match left
+    | RustAst::Expr.ELit u3x0 u3x1 => right
+    | RustAst::Expr.ERead u3x0 u3x1 u3x2 => right
+    | RustAst::Expr.EWrap u3x0 u3x1 u3x2 => right
+    | RustAst::Expr.ECall u3x0 u3x1 u3x2 u3x3 => right
+    | RustAst::Expr.EApply u3x0 u3x1 u3x2 u3x3 => right
+    | RustAst::Expr.EConstruct u3x0 u3x1 u3x2 => right
+    | RustAst::Expr.EPair u3x0 u3x1 u3x2 => right
+    | RustAst::Expr.EIf u3x0 u3x1 u3x2 u3x3 => right
+    | RustAst::Expr.EMatch u3x0 u3x1 u3x2 => right
+    | RustAst::Expr.EBlockE u3x0 => right
+    | RustAst::Expr.EProbe u3x0 u3x1 u3x2 => right
+    | RustAst::Expr.EBlock u3x0 u3x1 => right
+    | RustAst::Expr.ENil => right
+    | RustAst::Expr.ECons head tail => (ctor RustAst::Expr.ECons head (appendCalls tail right))
+    | RustAst::Expr.ELet u3x0 u3x1 u3x2 u3x3 u3x4 u3x5 => right
+    | RustAst::Expr.EArm u3x0 u3x1 u3x2 => right
+    | RustAst::Expr.ELoop u3x0 u3x1 => right),
+  executable: true,
+  recursive_argument: left
+}
+
+definition{
+  name: tails,
+  parameters: [subject : RustAst::Expr, whole : RustAst::Expr, me : Nat, mode : Nat],
+  result: Tails,
+  body: (match subject
+    | RustAst::Expr.ELit u5x0 u5x1 => (if (mode =? 0) then (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})) else (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}))
+    | RustAst::Expr.ERead u5x0 u5x1 u5x2 => (if (mode =? 0) then (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})) else (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}))
+    | RustAst::Expr.EWrap u5x0 u5x1 u5x2 => (if (mode =? 0) then (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})) else (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}))
+    | RustAst::Expr.ECall callee args prop at => (match callee
+      | RustAst::Callee.CalFn called => (if (called =? me) then (if (occurs args me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ECons args (ctor RustAst::Expr.ENil))})) else (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})))
+      | RustAst::Callee.CalRt u4x0 => (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)}))
+      | RustAst::Callee.CalMachine u4x0 u4x1 => (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})))
+    | RustAst::Expr.EApply u5x0 u5x1 u5x2 u5x3 => (if (mode =? 0) then (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})) else (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}))
+    | RustAst::Expr.EConstruct u5x0 u5x1 u5x2 => (if (mode =? 0) then (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})) else (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}))
+    | RustAst::Expr.EPair u5x0 u5x1 u5x2 => (if (mode =? 0) then (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})) else (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}))
+    | RustAst::Expr.EIf c t e at => (let one : Tails := (tails t t me 1); (let two : Tails := (tails e e me 1); (record Tails {ok := ((project one ok) && (project two ok)), calls := (appendCalls (project one calls) (project two calls))})))
+    | RustAst::Expr.EMatch s arms at => (let all : Tails := (tails arms arms me 2); (record Tails {ok := (project all ok), calls := (project all calls)}))
+    | RustAst::Expr.EBlockE u5x0 => (if (mode =? 0) then (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})) else (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}))
+    | RustAst::Expr.EProbe u5x0 u5x1 u5x2 => (if (mode =? 0) then (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})) else (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}))
+    | RustAst::Expr.EBlock lets tail => (let last : Tails := (tails tail tail me 0); (record Tails {ok := ((not (occurs lets me)) && (project last ok)), calls := (project last calls)}))
+    | RustAst::Expr.ENil => (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})
+    | RustAst::Expr.ECons u5x0 u5x1 => (if (mode =? 0) then (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})) else (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}))
+    | RustAst::Expr.ELet u5x0 u5x1 u5x2 u5x3 u5x4 u5x5 => (if (mode =? 0) then (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})) else (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}))
+    | RustAst::Expr.EArm pats block rest => (let one : Tails := (tails block block me 1); (let two : Tails := (tails rest rest me 2); (record Tails {ok := ((project one ok) && (project two ok)), calls := (appendCalls (project one calls) (project two calls))})))
+    | RustAst::Expr.ELoop u5x0 u5x1 => (if (mode =? 0) then (if (occurs whole me) then (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}) else (record Tails {ok := true, calls := (ctor RustAst::Expr.ENil)})) else (record Tails {ok := false, calls := (ctor RustAst::Expr.ENil)}))),
+  executable: true,
+  recursive_argument: subject
+}
+
+definition{
+  name: passes,
+  parameters: [argument : RustAst::Expr, name : RustValidate::Id],
+  result: Bool,
+  body: (match argument
+    | RustAst::Expr.ELit u7x0 u7x1 => false
+    | RustAst::Expr.ERead kind read at => (match kind
+      | RustValidate::ReadKind.RkMove => (RustBodies::idEq read name)
+      | RustValidate::ReadKind.RkClone => (RustBodies::idEq read name)
+      | RustValidate::ReadKind.RkCopy => (RustBodies::idEq read name)
+      | RustValidate::ReadKind.RkDeref => (RustBodies::idEq read name)
+      | RustValidate::ReadKind.RkUnbox => false)
+    | RustAst::Expr.EWrap u7x0 u7x1 u7x2 => false
+    | RustAst::Expr.ECall u7x0 u7x1 u7x2 u7x3 => false
+    | RustAst::Expr.EApply u7x0 u7x1 u7x2 u7x3 => false
+    | RustAst::Expr.EConstruct u7x0 u7x1 u7x2 => false
+    | RustAst::Expr.EPair u7x0 u7x1 u7x2 => false
+    | RustAst::Expr.EIf u7x0 u7x1 u7x2 u7x3 => false
+    | RustAst::Expr.EMatch u7x0 u7x1 u7x2 => false
+    | RustAst::Expr.EBlockE u7x0 => false
+    | RustAst::Expr.EProbe u7x0 u7x1 u7x2 => false
+    | RustAst::Expr.EBlock u7x0 u7x1 => false
+    | RustAst::Expr.ENil => false
+    | RustAst::Expr.ECons u7x0 u7x1 => false
+    | RustAst::Expr.ELet u7x0 u7x1 u7x2 u7x3 u7x4 u7x5 => false
+    | RustAst::Expr.EArm u7x0 u7x1 u7x2 => false
+    | RustAst::Expr.ELoop u7x0 u7x1 => false),
+  executable: true
+}
+
+definition{
+  name: passesAll,
+  parameters: [calls : RustAst::Expr, position : Nat, name : RustValidate::Id],
+  result: Bool,
+  body: (match calls
+    | RustAst::Expr.ELit u8x0 u8x1 => true
+    | RustAst::Expr.ERead u8x0 u8x1 u8x2 => true
+    | RustAst::Expr.EWrap u8x0 u8x1 u8x2 => true
+    | RustAst::Expr.ECall u8x0 u8x1 u8x2 u8x3 => true
+    | RustAst::Expr.EApply u8x0 u8x1 u8x2 u8x3 => true
+    | RustAst::Expr.EConstruct u8x0 u8x1 u8x2 => true
+    | RustAst::Expr.EPair u8x0 u8x1 u8x2 => true
+    | RustAst::Expr.EIf u8x0 u8x1 u8x2 u8x3 => true
+    | RustAst::Expr.EMatch u8x0 u8x1 u8x2 => true
+    | RustAst::Expr.EBlockE u8x0 => true
+    | RustAst::Expr.EProbe u8x0 u8x1 u8x2 => true
+    | RustAst::Expr.EBlock u8x0 u8x1 => true
+    | RustAst::Expr.ENil => true
+    | RustAst::Expr.ECons args rest => (if (passes (RustBodies::argAt args position) name) then (passesAll rest position name) else false)
+    | RustAst::Expr.ELet u8x0 u8x1 u8x2 u8x3 u8x4 u8x5 => true
+    | RustAst::Expr.EArm u8x0 u8x1 u8x2 => true
+    | RustAst::Expr.ELoop u8x0 u8x1 => true),
+  executable: true,
+  recursive_argument: calls
+}
+
+definition{
+  name: isChanged,
+  parameters: [subject : RustAst::Pat, calls : RustAst::Expr, position : Nat],
+  result: Bool,
+  body: (match subject
+    | RustAst::Pat.PLeaf u9x0 => false
+    | RustAst::Pat.PBind name => (not (passesAll calls position name))
+    | RustAst::Pat.PTuple u9x0 => false
+    | RustAst::Pat.PWrap u9x0 u9x1 => false
+    | RustAst::Pat.PAdt u9x0 u9x1 u9x2 => false
+    | RustAst::Pat.PNil => false
+    | RustAst::Pat.PCons u9x0 u9x1 => false
+    | RustAst::Pat.POrdering u9x0 => false),
+  executable: true
+}
+
+definition{
+  name: partsCons,
+  parameters: [
+    subject : RustAst::Pat,
+    whole : RustAst::Pat,
+    ty : RustValidate::Ty,
+    more : Parts,
+    changed : Bool,
+    made : Nat
+  ],
+  result: Parts,
+  body: (match subject
+    | RustAst::Pat.PLeaf u10x0 => (record Parts {ok := false, count := 0, ty := (ctor RustValidate::Ty.TyNil), tuple := (ctor RustAst::Pat.PNil), start := (ctor RustAst::Expr.ENil), renamed := (ctor RustAst::Par.ParNil)})
+    | RustAst::Pat.PBind name => (if changed then (record Parts {ok := (project more ok), count := ((project more count) + 1), ty := (if ((project more count) =? 0) then ty else (ctor RustValidate::Ty.TyBinary (ctor RustValidate::BinaryKind.BkPair) ty (project more ty))), tuple := (if ((project more count) =? 0) then whole else (ctor RustAst::Pat.PTuple (ctor RustAst::Pat.PCons whole (ctor RustAst::Pat.PCons (project more tuple) (ctor RustAst::Pat.PNil))))), start := (if ((project more count) =? 0) then (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) (ctor RustValidate::Id.IdParam made) (callAt 0)) else (ctor RustAst::Expr.EPair (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) (ctor RustValidate::Id.IdParam made) (callAt 0)) (project more start) (callAt 0))), renamed := (ctor RustAst::Par.ParCons (ctor RustAst::Pat.PBind (ctor RustValidate::Id.IdParam made)) ty (project more renamed))}) else (record Parts {ok := (project more ok), count := (project more count), ty := (project more ty), tuple := (project more tuple), start := (project more start), renamed := (ctor RustAst::Par.ParCons whole ty (project more renamed))}))
+    | RustAst::Pat.PTuple u10x0 => (record Parts {ok := false, count := 0, ty := (ctor RustValidate::Ty.TyNil), tuple := (ctor RustAst::Pat.PNil), start := (ctor RustAst::Expr.ENil), renamed := (ctor RustAst::Par.ParNil)})
+    | RustAst::Pat.PWrap u10x0 u10x1 => (record Parts {ok := false, count := 0, ty := (ctor RustValidate::Ty.TyNil), tuple := (ctor RustAst::Pat.PNil), start := (ctor RustAst::Expr.ENil), renamed := (ctor RustAst::Par.ParNil)})
+    | RustAst::Pat.PAdt u10x0 u10x1 u10x2 => (record Parts {ok := false, count := 0, ty := (ctor RustValidate::Ty.TyNil), tuple := (ctor RustAst::Pat.PNil), start := (ctor RustAst::Expr.ENil), renamed := (ctor RustAst::Par.ParNil)})
+    | RustAst::Pat.PNil => (record Parts {ok := false, count := 0, ty := (ctor RustValidate::Ty.TyNil), tuple := (ctor RustAst::Pat.PNil), start := (ctor RustAst::Expr.ENil), renamed := (ctor RustAst::Par.ParNil)})
+    | RustAst::Pat.PCons u10x0 u10x1 => (record Parts {ok := false, count := 0, ty := (ctor RustValidate::Ty.TyNil), tuple := (ctor RustAst::Pat.PNil), start := (ctor RustAst::Expr.ENil), renamed := (ctor RustAst::Par.ParNil)})
+    | RustAst::Pat.POrdering u10x0 => (record Parts {ok := false, count := 0, ty := (ctor RustValidate::Ty.TyNil), tuple := (ctor RustAst::Pat.PNil), start := (ctor RustAst::Expr.ENil), renamed := (ctor RustAst::Par.ParNil)})),
+  executable: true
+}
+
+definition{
+  name: parts,
+  parameters: [params : RustAst::Par, calls : RustAst::Expr, position : Nat, start : Nat, j : Nat],
+  result: Parts,
+  body: (match params
+    | RustAst::Par.ParNil => (record Parts {ok := true, count := 0, ty := (ctor RustValidate::Ty.TyNil), tuple := (ctor RustAst::Pat.PNil), start := (ctor RustAst::Expr.ENil), renamed := (ctor RustAst::Par.ParNil)})
+    | RustAst::Par.ParCons pat ty rest => (let changed : Bool := (isChanged pat calls position); (partsCons pat pat ty (parts rest calls (position + 1) start (if changed then (j + 1) else j)) changed (start + (2 + j))))),
+  executable: true,
+  recursive_argument: params
+}
+
+definition{
+  name: nextHere,
+  parameters: [
+    changed : Bool,
+    args : RustAst::Expr,
+    position : Nat,
+    more : RustAst::Expr,
+    at : RustValidate::Origin
+  ],
+  result: RustAst::Expr,
+  body: (if changed then (if (RustBodies::isNilE more) then (RustBodies::argAt args position) else (ctor RustAst::Expr.EPair (RustBodies::argAt args position) more at)) else more),
+  executable: true
+}
+
+definition{
+  name: nextState,
+  parameters: [
+    params : RustAst::Par,
+    calls : RustAst::Expr,
+    args : RustAst::Expr,
+    position : Nat,
+    at : RustValidate::Origin
+  ],
+  result: RustAst::Expr,
+  body: (match params
+    | RustAst::Par.ParNil => (ctor RustAst::Expr.ENil)
+    | RustAst::Par.ParCons pat ty rest => (nextHere (isChanged pat calls position) args position (nextState rest calls args (position + 1) at) at)),
+  executable: true,
+  recursive_argument: params
+}
+
+definition{
+  name: retarget,
+  parameters: [subject : RustAst::Expr, whole : RustAst::Expr, plan : Retarget, mode : Nat],
+  result: RustAst::Expr,
+  body: (match subject
+    | RustAst::Expr.ELit u12x0 u12x1 => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)
+    | RustAst::Expr.ERead u12x0 u12x1 u12x2 => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)
+    | RustAst::Expr.EWrap u12x0 u12x1 u12x2 => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)
+    | RustAst::Expr.ECall callee args prop at => (match callee
+      | RustAst::Callee.CalFn called => (if (called =? (project plan me)) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConOk (project plan state) (project plan done)) (ctor RustAst::Expr.ECons (nextState (project plan params) (project plan calls) args 0 at) (ctor RustAst::Expr.ENil)) at) else (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)))
+      | RustAst::Callee.CalRt u11x0 => (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0))
+      | RustAst::Callee.CalMachine u11x0 u11x1 => (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)))
+    | RustAst::Expr.EApply u12x0 u12x1 u12x2 u12x3 => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)
+    | RustAst::Expr.EConstruct u12x0 u12x1 u12x2 => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)
+    | RustAst::Expr.EPair u12x0 u12x1 u12x2 => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)
+    | RustAst::Expr.EIf c t e at => (ctor RustAst::Expr.EIf c (retarget t t plan 1) (retarget e e plan 1) at)
+    | RustAst::Expr.EMatch s arms at => (ctor RustAst::Expr.EMatch s (retarget arms arms plan 2) at)
+    | RustAst::Expr.EBlockE u12x0 => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)
+    | RustAst::Expr.EProbe u12x0 u12x1 u12x2 => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)
+    | RustAst::Expr.EBlock lets tail => (if (mode =? 1) then (ctor RustAst::Expr.EBlock lets (retarget tail tail plan 0)) else (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)))
+    | RustAst::Expr.ENil => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)
+    | RustAst::Expr.ECons u12x0 u12x1 => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)
+    | RustAst::Expr.ELet u12x0 u12x1 u12x2 u12x3 u12x4 u12x5 => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)
+    | RustAst::Expr.EArm pats block rest => (if (mode =? 2) then (ctor RustAst::Expr.EArm pats (retarget block block plan 1) (retarget rest rest plan 2)) else whole)
+    | RustAst::Expr.ELoop u12x0 u12x1 => (if (mode =? 0) then (ctor RustAst::Expr.EConstruct (ctor RustValidate::Con.ConErr (project plan state) (project plan done)) (ctor RustAst::Expr.ECons whole (ctor RustAst::Expr.ENil)) (callAt 0)) else whole)),
+  executable: true,
+  recursive_argument: subject
+}
+
+definition{
+  name: loopFunction,
+  parameters: [
+    me : Nat,
+    params : RustAst::Par,
+    done : RustValidate::Ty,
+    body : RustAst::Expr,
+    start : Nat
+  ],
+  result: LoopOut,
+  body: (let seen : Tails := (tails body body me 1); (if ((not (project seen ok)) || (RustBodies::isNilE (project seen calls))) then (record LoopOut {found := false, params := params, body := body, next := start}) else (let made : Parts := (parts params (project seen calls) 0 start 0); (if ((not (project made ok)) || ((project made count) =? 0)) then (record LoopOut {found := false, params := params, body := body, next := start}) else (let inner : RustAst::Expr := (retarget body body (record Retarget {me := me, params := params, calls := (project seen calls), state := (project made ty), done := done}) 1); (record LoopOut {found := true, params := (project made renamed), body := (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (ctor RustAst::Pat.PBind (ctor RustValidate::Id.IdHolder (start + 1))) false (RustBodies::unitTy 0) (project made start) (callAt 0) (ctor RustAst::Expr.ENil)) (ctor RustAst::Expr.ELoop (ctor RustValidate::Id.IdHolder (start + 1)) (ctor RustAst::Expr.EBlock (ctor RustAst::Expr.ELet (project made tuple) false (RustBodies::unitTy 0) (ctor RustAst::Expr.ERead (ctor RustValidate::ReadKind.RkMove) (ctor RustValidate::Id.IdHolder (start + 1)) (callAt 0)) (callAt 0) (RustBodies::blockLets inner)) (RustBodies::blockTail inner)))), next := ((start + 1) + (project made count))})))))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -2834,8 +2834,157 @@ impl Lowerer<'_> {
             })
     }
 
-    #[allow(clippy::too_many_lines)]
     fn term(
+        &mut self,
+        term: &SemanticTerm,
+        scope: &mut Scope,
+        site: &Site,
+        owner: u64,
+    ) -> Result<Expr, String> {
+        // Recursive data constructors keep only their own lowering state,
+        // rather than the state of every other semantic term variant.
+        Ok(match term {
+            SemanticTerm::Cons { head, tail } => {
+                let ty = self.source.infer(term, &scope.sources(), site)?;
+                let ty = self.ty(&ty)?;
+                let head = self.term(head, scope, site, owner)?;
+                let tail = self.term(tail, scope, site, owner)?;
+                build(Shape::Cons, ty, vec![head, tail])
+            }
+            SemanticTerm::Record {
+                r#type: _,
+                type_arguments: _,
+                fields,
+            } => {
+                let ty = self.source.infer(term, &scope.sources(), site)?;
+                self.record(&ty, fields, scope, site, owner)?
+            }
+            SemanticTerm::Constructor {
+                constructor,
+                type_arguments,
+                arguments,
+            } => {
+                let closed: Vec<SemanticType> = type_arguments
+                    .iter()
+                    .map(|argument| self.source.close(argument, site))
+                    .collect();
+                let (constructor, ty) = self.source.constructor(constructor, &closed, site)?;
+                let target = self.ty(&ty)?;
+                let operands = self.terms(arguments, scope, site, owner)?;
+                Self::constructed(&constructor, target, operands)
+            }
+            SemanticTerm::Pair { left, right } => {
+                let ty = self.source.infer(term, &scope.sources(), site)?;
+                let ty = self.ty(&ty)?;
+                build(
+                    Shape::Pair,
+                    ty,
+                    vec![
+                        self.term(left, scope, site, owner)?,
+                        self.term(right, scope, site, owner)?,
+                    ],
+                )
+            }
+            SemanticTerm::Var { name: _ }
+            | SemanticTerm::Nat { value: _ }
+            | SemanticTerm::Integer {
+                representation: _,
+                value: _,
+            }
+            | SemanticTerm::String { value: _ }
+            | SemanticTerm::Bytes { hex: _ }
+            | SemanticTerm::Primitive {
+                operation: _,
+                arguments: _,
+                result: _,
+            }
+            | SemanticTerm::Bool { value: _ }
+            | SemanticTerm::Unit
+            | SemanticTerm::Nil { element: _ }
+            | SemanticTerm::InstanceValue {
+                class: _,
+                arguments: _,
+                resolved: _,
+            }
+            | SemanticTerm::Project { value: _, field: _ }
+            | SemanticTerm::Call {
+                function: _,
+                type_arguments: _,
+                arguments: _,
+            }
+            | SemanticTerm::If {
+                condition: _,
+                then_value: _,
+                else_value: _,
+            }
+            | SemanticTerm::Match {
+                scrutinee: _,
+                branches: _,
+            }
+            | SemanticTerm::Add { left: _, right: _ }
+            | SemanticTerm::Beq { left: _, right: _ }
+            | SemanticTerm::Ble { left: _, right: _ }
+            | SemanticTerm::Blt { left: _, right: _ }
+            | SemanticTerm::And { left: _, right: _ }
+            | SemanticTerm::Or { left: _, right: _ }
+            | SemanticTerm::Not { value: _ }
+            | SemanticTerm::Let {
+                binder: _,
+                value: _,
+                body: _,
+            }
+            | SemanticTerm::First { value: _ }
+            | SemanticTerm::Second { value: _ }
+            | SemanticTerm::Lambda {
+                parameters: _,
+                captures: _,
+                body: _,
+            }
+            | SemanticTerm::Apply {
+                function: _,
+                arguments: _,
+            }
+            | SemanticTerm::FunctionRef {
+                function: _,
+                type_arguments: _,
+            }
+            | SemanticTerm::MapLiteral {
+                key: _,
+                value: _,
+                entries: _,
+            }
+            | SemanticTerm::SetLiteral {
+                element: _,
+                elements: _,
+            }
+            | SemanticTerm::CheckedApply {
+                model: _,
+                type_arguments: _,
+                arguments: _,
+                checks: _,
+            }
+            | SemanticTerm::GraphLiteral {
+                node: _,
+                nodes: _,
+                edges: _,
+            }
+            | SemanticTerm::Eq { left: _, right: _ }
+            | SemanticTerm::Le { left: _, right: _ }
+            | SemanticTerm::Lt { left: _, right: _ }
+            | SemanticTerm::PropAnd { left: _, right: _ }
+            | SemanticTerm::Implies {
+                premise: _,
+                conclusion: _,
+            }
+            | SemanticTerm::Iff { left: _, right: _ }
+            | SemanticTerm::Forall { binder: _, body: _ } => {
+                self.term_inner(term, scope, site, owner)?
+            }
+        })
+    }
+
+    #[allow(clippy::too_many_lines)]
+    fn term_inner(
         &mut self,
         term: &SemanticTerm,
         scope: &mut Scope,

@@ -129,6 +129,20 @@ fn spec_table() -> Vec<(String, String, String)> {
     rows
 }
 
+/// The auxiliary §8.3 contexts are evidence identities, not a matrix size.
+/// Linux x86-64 is covered by the normative gate rather than this list.
+fn supported_host_contexts() -> Vec<String> {
+    [
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+    ]
+    .into_iter()
+    .map(|target| format!("build and non-Lean tests ({target})"))
+    .collect()
+}
+
 /// What `.github/ci-plan.sh` decides for planted events (§9.4, RP-14): the
 /// script runs in a scratch repository with a stand-in for the `gh` command,
 /// so that each decision is shown, and each way of being wrong is refused.
@@ -149,35 +163,24 @@ fn plan_decisions() {
     let root = support::repo_root();
     let script = root.join(".github/ci-plan.sh");
     let rows_file = root.join(".github/vv-rows.json");
-    let workflow = root.join(".github/workflows/ci.yml");
     let rows: Vec<serde_json::Value> =
         serde_json::from_str(&root_file(".github/vv-rows.json")).expect("the legs");
     let parts: Vec<String> = rows
         .iter()
         .map(|row| row["part"].as_str().expect("a part").to_owned())
         .collect();
-    let ci = root_file(".github/workflows/ci.yml");
-    let hosts: Vec<String> = ci
-        .lines()
-        .filter(|line| line.starts_with("          - { os: "))
-        .map(|line| {
-            let target = line.split("target: ").nth(1).expect("a target");
-            format!(
-                "build and non-Lean tests ({})",
-                target.trim_end_matches(" }")
-            )
-        })
-        .collect();
-    assert_eq!(hosts.len(), 4, "§8.3: the four hosts of the matrix");
+    let hosts = supported_host_contexts();
     // The jobs of a run of the whole gate that passed: the plan, every leg,
     // the Atlas join, and every host. The shards do not matter to the plan:
     // the join needs them all.
     let mut green: Vec<String> = vec!["plan\tsuccess".to_owned()];
-    green.extend(
-        parts
-            .iter()
-            .map(|part| format!("just vv ({part})\tsuccess")),
-    );
+    green.extend(parts.iter().map(|part| {
+        if part == "honesty" {
+            "honesty\tsuccess".to_owned()
+        } else {
+            format!("just vv ({part})\tsuccess")
+        }
+    }));
     green.push("atlas (prefix)\tsuccess".to_owned());
     green.push("atlas (join)\tsuccess".to_owned());
     green.extend(hosts.iter().map(|host| format!("{host}\tsuccess")));
@@ -301,7 +304,6 @@ fn plan_decisions() {
             .env("BASE", base)
             .env("REPO", "owner/repo")
             .env("LEXLEAN_CI_ROWS", rows_file.as_std_path())
-            .env("LEXLEAN_CI_WORKFLOW", workflow.as_std_path())
             .env("GITHUB_OUTPUT", &out)
             .env("GITHUB_STEP_SUMMARY", dir.join("summary"))
             .env("STUB_RUNS", runs)
@@ -324,6 +326,19 @@ fn plan_decisions() {
         };
         let planned: Vec<serde_json::Value> =
             serde_json::from_str(&value("rows")).expect("rows are JSON");
+        let honesty: Vec<serde_json::Value> =
+            serde_json::from_str(&value("honesty")).expect("honesty is JSON");
+        let fanout: Vec<serde_json::Value> =
+            serde_json::from_str(&value("fanout")).expect("fanout is JSON");
+        assert!(honesty.iter().all(|row| row["part"] == "honesty"));
+        assert!(fanout.iter().all(|row| row["part"] != "honesty"));
+        let mut combined = honesty;
+        combined.extend(fanout);
+        assert_eq!(
+            combined, planned,
+            "honesty and fanout partition the planned rows"
+        );
+
         (
             value("full"),
             planned
@@ -333,9 +348,12 @@ fn plan_decisions() {
         )
     };
     let whole = ("true".to_owned(), parts.clone());
-    let draft = ("false".to_owned(), vec!["rest".to_owned()]);
+    let draft = (
+        "false".to_owned(),
+        vec!["honesty".to_owned(), "rest".to_owned()],
+    );
     let nothing = ("false".to_owned(), Vec::<String>::new());
-    // A draft pull request is the `rest` leg, and so is a ready one stacked on
+    // A draft pull request runs honesty then `rest`, as does a ready one stacked on
     // a feature branch, which cannot land on a line; a ready one into `main`
     // or a release line, a request, and a push are the whole gate when no run
     // is known. A base the event does not name is not known to be stacked.
@@ -396,6 +414,21 @@ fn plan_decisions() {
         decide("push", "", "main", &merge_equal, "4242", &green, false),
         nothing
     );
+    // A complete jobs listing can exceed a pipe buffer. Matching the join
+    // and required rows must consume it without a producer SIGPIPE.
+    let mut large = green.clone();
+    large.extend((0..2500).map(|index| format!("additional successful job {index}\tsuccess")));
+    assert_eq!(
+        decide("push", "", "main", &merge_equal, "4242", &large, false),
+        nothing,
+        "a large successful parent gate still avoids repeating the gate"
+    );
+    large.push("a late failed parent job\tfailure".to_owned());
+    assert_eq!(
+        decide("push", "", "main", &merge_equal, "4242", &large, false),
+        whole,
+        "a late failure never establishes successful parent evidence"
+    );
     // Every way the evidence can fall short runs the whole gate: no run, a
     // run that skipped or failed a job, a run without the Atlas join, one
     // host or one leg missing, the gate unreadable, and a merge that changed
@@ -422,6 +455,33 @@ fn plan_decisions() {
         ("no Atlas join", without("atlas (join)")),
         ("no host", without(&hosts[0])),
         ("no leg", without("just vv (rest)")),
+        ("no honesty", without("honesty")),
+        (
+            "suffixed honesty",
+            green
+                .iter()
+                .map(|job| {
+                    job.replace(
+                        "honesty\tsuccess",
+                        "honesty (honesty, fmt-check model spec-links bdd, honesty)\tsuccess",
+                    )
+                })
+                .collect(),
+        ),
+        (
+            "failed honesty",
+            green
+                .iter()
+                .map(|job| job.replace("honesty\tsuccess", "honesty\tfailure"))
+                .collect(),
+        ),
+        (
+            "skipped honesty",
+            green
+                .iter()
+                .map(|job| job.replace("honesty\tsuccess", "honesty\tskipped"))
+                .collect(),
+        ),
         (
             "a draft run",
             vec![
@@ -435,6 +495,31 @@ fn plan_decisions() {
             whole,
             "§9.4: {what} is not the whole gate passing"
         );
+    }
+    for host in &hosts {
+        let absent = without(host);
+        let mut duplicate = green.clone();
+        duplicate.push(format!("{host}\tsuccess"));
+        let foreign: Vec<String> = green
+            .iter()
+            .map(|job| job.replace(host, "build and non-Lean tests (foreign-target)"))
+            .collect();
+        let suffixed: Vec<String> = green
+            .iter()
+            .map(|job| job.replace(host, &format!("{host} (partition)")))
+            .collect();
+        for (defect, jobs) in [
+            ("absent", absent),
+            ("duplicate", duplicate),
+            ("foreign replacement", foreign),
+            ("suffixed", suffixed),
+        ] {
+            assert_eq!(
+                decide("push", "", "main", &merge_equal, "4242", &jobs, false),
+                whole,
+                "§9.4: {defect} host context `{host}` is not complete evidence"
+            );
+        }
     }
     assert_eq!(
         decide("push", "", "main", &merge_equal, "4242", &green, true),
@@ -1360,6 +1445,38 @@ pub(crate) fn run(id: &str) {
             };
             crate::inventory::compare_parts(&owned, &parts(&first, &remainder), &plants)
                 .expect("parts that partition bdd are accepted");
+            let target_plan = crate::bdd_parts::Plan::parse(
+                r#"{"remainder":"rest","parts":{},"targets":{"honesty":["bdd"]}}"#,
+            )
+            .expect("complete-target ownership");
+            let target_parts = |honesty: crate::inventory::Parsed,
+                                rest: crate::inventory::Parsed| {
+                vec![("honesty".to_owned(), honesty), ("rest".to_owned(), rest)]
+            };
+            crate::inventory::compare_parts(
+                &owned,
+                &target_parts(list(&[bdd_target]), list(&[conformance])),
+                &target_plan,
+            )
+            .expect("the complete target moves to honesty");
+            assert!(
+                crate::inventory::compare_parts(
+                    &owned,
+                    &target_parts(list(&[bdd_target]), owned.clone()),
+                    &target_plan
+                )
+                .is_err(),
+                "the remainder cannot repeat honesty tests"
+            );
+            assert!(
+                crate::inventory::compare_parts(
+                    &owned,
+                    &target_parts(Default::default(), owned.clone()),
+                    &target_plan
+                )
+                .is_err(),
+                "moving tests back to rest cannot silently empty honesty"
+            );
             let twice = crate::inventory::compare_parts(&owned, &parts(&first, &owned), &plants)
                 .expect_err("a test two parts run");
             assert!(twice.contains("parts `first` and `rest`"), "{twice}");
@@ -1379,7 +1496,9 @@ pub(crate) fn run(id: &str) {
                     && task.contains("std::env::var(PART_VARIABLE)")
                     && task.contains("plan.harness_filters(part)")
                     && task.contains("plan.harness_filters(&name)")
-                    && task.contains("inventory::compare_parts("),
+                    && task.contains("inventory::compare_parts(")
+                    && task.contains("plan.cargo_targets(part,")
+                    && task.contains("plan.cargo_targets(&name,"),
                 "the bdd task and the inventory select a part through the plan's filters"
             );
 
@@ -1399,10 +1518,13 @@ pub(crate) fn run(id: &str) {
                     "SPEC.md names `{recipe_command}`"
                 );
             }
-            // The honesty workflow keeps its own signal, and the host matrix
-            // (not part of vv) keeps the whole workspace on every host.
-            assert!(root_file(".github/workflows/honesty.yml")
-                .contains("cargo test --locked -p repo-conformance --test bdd"));
+            // The initial honesty job keeps its own signal. Ordinary hosts run
+            // the whole workspace; Intel's construction and partitions own the
+            // same complete inventory, including library/meta tests and doctests.
+            assert!(root_file(".github/workflows/ci.yml").contains("  honesty:\n"));
+            assert!(!support::repo_root()
+                .join(".github/workflows/honesty.yml")
+                .exists());
             assert!(root_file(".github/workflows/ci.yml")
                 .contains("cargo test --locked --workspace --all-features"));
         }
@@ -1443,10 +1565,13 @@ pub(crate) fn run(id: &str) {
                 .filter(|(key, _)| key.starts_with("atlas-"))
                 .collect();
             assert!(!atlas_jobs.is_empty(), "§9.4: the Atlas jobs");
-            // Every gate job runs on the standard runner (§9.4); only the host
-            // matrix runs elsewhere, on the hosts of §8.3.
+            // Normative gate jobs and the Intel receipt join run on the
+            // standard runner. Only host execution runs elsewhere (§8.3).
             for (key, body) in &jobs {
-                if key == "host-matrix" {
+                if matches!(
+                    key.as_str(),
+                    "host-matrix" | "intel-construction" | "intel-part"
+                ) {
                     continue;
                 }
                 assert!(
@@ -1455,7 +1580,23 @@ pub(crate) fn run(id: &str) {
                 );
                 // The plan decides what the run is and runs no recipe: it has
                 // ten minutes, not the six hours of the proof jobs.
-                let limit = if key == "plan" { 10 } else { 360 };
+                if key == "intel-join" {
+                    let limit = body
+                        .lines()
+                        .find_map(|line| line.trim().strip_prefix("timeout-minutes: "))
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .expect("§8.3: the Intel aggregate has a bounded timeout");
+                    assert!(
+                        (1..=240).contains(&limit),
+                        "the aggregate raises no host timeout"
+                    );
+                    continue;
+                }
+                let limit = match key.as_str() {
+                    "plan" => 10,
+                    "honesty" => 30,
+                    _ => 360,
+                };
                 assert!(
                     body.contains(&format!("\n    timeout-minutes: {limit}\n")),
                     "§9.4: the job `{key}` has its limit of {limit} minutes"
@@ -1545,6 +1686,16 @@ pub(crate) fn run(id: &str) {
                     "§9.4: a leg names exactly its part, recipes, and profile: {row}"
                 );
             }
+            let initial: Vec<_> = rows
+                .iter()
+                .filter(|row| field(row, "part").as_deref() == Some("honesty"))
+                .collect();
+            assert_eq!(initial.len(), 1, "one initial honesty row");
+            assert_eq!(
+                field(initial[0], "recipes").as_deref(),
+                Some("fmt-check model spec-links bdd")
+            );
+            assert_eq!(field(initial[0], "bdd_part").as_deref(), Some("honesty"));
             assert_eq!(
                 rows.iter()
                     .filter(|row| field(row, "part").as_deref() == Some("rest"))
@@ -1694,7 +1845,7 @@ pub(crate) fn run(id: &str) {
                     "just --timestamp --timestamp-format '%s%.3f' ${{ matrix.recipes }} 2>&1 | tee ci-evidence/vv.txt"
                 )
                 .count(),
-                1,
+                2,
                 "every leg runs its recipes through the one gate command"
             );
             assert!(
@@ -1909,7 +2060,7 @@ pub(crate) fn run(id: &str) {
             // §9.4: a release line is held to the same gate as `main`, so the
             // push trigger of every workflow names both; a workflow that named
             // `main` alone would leave a release line's pushes unverified.
-            for workflow in ["ci.yml", "honesty.yml", "reproducibility.yml"] {
+            for workflow in ["ci.yml", "reproducibility.yml"] {
                 let text = root_file(&format!(".github/workflows/{workflow}"));
                 assert!(
                     text.contains("  push: { branches: [main, \"release/**\"] }\n"),
@@ -1938,12 +2089,19 @@ pub(crate) fn run(id: &str) {
             let mut step_conditions = 0;
             let mut full_conditions = 0;
             let mut rows_conditions = 0;
-            for (index, line) in ci.lines().enumerate() {
+            let mut honesty_conditions = 0;
+            for (index, line) in jobs
+                .iter()
+                .filter(|(key, _)| !key.starts_with("intel-"))
+                .flat_map(|(_, body)| body.lines())
+                .enumerate()
+            {
                 if line.trim_start().starts_with("if:") {
                     match line {
                         "        if: ${{ !cancelled() }}" => step_conditions += 1,
                         "    if: ${{ needs.plan.outputs.full == 'true' }}" => full_conditions += 1,
-                        "    if: ${{ needs.plan.outputs.rows != '[]' }}" => rows_conditions += 1,
+                        "    if: ${{ needs.plan.outputs.fanout != '[]' }}" => rows_conditions += 1,
+                        "    if: ${{ needs.plan.outputs.honesty != '[]' }}" => honesty_conditions += 1,
                         other => panic!(
                             "ci.yml:{}: a condition other than a step's `!cancelled()` or a job's condition on the plan: {other}",
                             index + 1
@@ -1953,7 +2111,7 @@ pub(crate) fn run(id: &str) {
             }
             assert_eq!(
                 step_conditions,
-                2 + 2 * atlas_jobs.len(),
+                4 + 2 * atlas_jobs.len(),
                 "the summary step and the evidence upload of every gate job carry it"
             );
             assert_eq!(
@@ -1962,15 +2120,95 @@ pub(crate) fn run(id: &str) {
                 "every Atlas job and the host matrix, and no other job, wait for the plan to name the whole gate"
             );
             assert_eq!(rows_conditions, 1, "the legs run when the plan names a leg");
+            assert_eq!(honesty_conditions, 1, "honesty runs when the plan names it");
+            intel_host_workflow(&ci).expect("§8.3: the host inventory and Intel custody graph");
+            for (from, to) in [
+                (
+                    "name: build and non-Lean tests (x86_64-apple-darwin)",
+                    "name: Intel aggregate",
+                ),
+                ("needs: [plan, intel-construction]", "needs: [plan]"),
+                (
+                    "needs: [plan, intel-construction, intel-part]",
+                    "needs: [plan, intel-construction]",
+                ),
+                (
+                    "if: ${{ always() && needs.plan.outputs.full == 'true' }}",
+                    "if: ${{ needs.plan.outputs.full == 'true' }}",
+                ),
+                ("runs-on: macos-15-intel", "runs-on: macos-15"),
+                (
+                    "run: bash .github/retry.sh rustup toolchain install",
+                    "run: rustup toolchain install",
+                ),
+                (
+                    "run: bash .github/retry.sh rustup toolchain install",
+                    "run: bash .github/retry.sh rustup toolchain install nightly",
+                ),
+                (
+                    "run: bash .github/retry.sh rustup target add aarch64-unknown-linux-gnu wasm32-unknown-unknown thumbv7em-none-eabihf",
+                    "run: bash .github/retry.sh rustup target add aarch64-unknown-linux-gnu wasm32-unknown-unknown",
+                ),
+                (
+                    "run: .github/simd-probe/run.sh",
+                    "run: echo SIMD probe",
+                ),
+
+                (
+                    "lane: ${{ fromJSON(needs.intel-construction.outputs.lanes) }}",
+                    "lane: [lower]",
+                ),
+                (
+                    "intel_host_tests.py execute --construction",
+                    "intel_host_tests.py build --output",
+                ),
+                (
+                    "test \"$PART_RESULT\" = success",
+                    "test \"$PART_RESULT\" != cancelled",
+                ),
+                (
+                    "python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'",
+                    "echo factory checks",
+                ),
+            ] {
+                assert!(
+                    ci.contains(from),
+                    "the plant must change the workflow: {from}"
+                );
+                assert!(
+                    intel_host_workflow(&ci.replacen(from, to, 1)).is_err(),
+                    "the Intel graph must refuse `{from}` replaced by `{to}`"
+                );
+            }
+            honesty_dependencies(&ci).expect("expensive roots require successful same-run honesty");
             assert!(
-                job("host-matrix").contains("    needs: [plan]\n")
+                honesty_dependencies(&ci.replacen("name: ${{ matrix.part }}", "name: honesty", 1))
+                    .is_err(),
+                "a static matrix name acquires a suffix instead of the exact honesty context"
+            );
+            for root in ["vv", "atlas-prefix", "host-matrix", "intel-construction"] {
+                let original = format!("  {root}:\n");
+                let pos = ci.find(&original).expect("the root");
+                let end = ci[pos + original.len()..]
+                    .find("\n  #")
+                    .map_or(ci.len(), |next| pos + original.len() + next);
+                let mut planted = ci.clone();
+                let body = ci[pos..end].replace("needs: [plan, honesty]", "needs: [plan]");
+                planted.replace_range(pos..end, &body);
+                assert!(
+                    honesty_dependencies(&planted).is_err(),
+                    "{root} cannot bypass honesty"
+                );
+            }
+            assert!(
+                job("host-matrix").contains("    needs: [plan, honesty]\n")
                     && job("host-matrix")
                         .contains("    if: ${{ needs.plan.outputs.full == 'true' }}\n"),
                 "§8.3: the hosts are checked when the plan says the run is the whole gate"
             );
             assert!(
-                vv.contains("    needs: [plan]\n")
-                    && vv.contains("        include: ${{ fromJSON(needs.plan.outputs.rows) }}\n"),
+                vv.contains("    needs: [plan, honesty]\n")
+                    && vv.contains("        include: ${{ fromJSON(needs.plan.outputs.fanout) }}\n"),
                 "§9.4: the legs of vv are the rows the plan names"
             );
             // The plan: one job, no recipe, ten minutes, reading the event and
@@ -2040,7 +2278,14 @@ pub(crate) fn run(id: &str) {
                 "the host matrix runs the workspace's tests once, and reports every failing test of the host, not the first binary's"
             );
             // The honesty and reproducibility workflows stay separate.
-            assert!(root_file(".github/workflows/honesty.yml").contains("just model spec-links"));
+            let honesty = job("honesty");
+            assert!(
+                honesty.contains("LEXLEAN_BDD_PART: ${{ matrix.bdd_part }}")
+                    && honesty.contains("fromJSON(needs.plan.outputs.honesty)")
+                    && honesty.contains("just --timestamp")
+                    && !honesty.contains("elan"),
+                "the initial part needs no Lean"
+            );
             assert!(root_file(".github/workflows/reproducibility.yml").contains("run: just repro"));
         }
         // R8: a `match` that names several variants of a closed enum names
@@ -3084,6 +3329,219 @@ fn rp_18() {
     release_gate_decisions();
 }
 
+/// §8.3 custody is a job graph: one construction, inventory-owned
+/// executions, and the original host context only after the complete join.
+/// Behavioral plants live in the Python suite; this checks that CI runs it
+/// and connects the real build, execution and join operations to each other.
+fn intel_host_workflow(ci: &str) -> Result<(), String> {
+    let matrix = workflow_job(ci, "host-matrix")?;
+    let construction = workflow_job(ci, "intel-construction")?;
+    let part = workflow_job(ci, "intel-part")?;
+    let join = workflow_job(ci, "intel-join")?;
+    let honesty = workflow_job(ci, "honesty")?;
+    let require = |body: &str, text: &str, rule: &str| -> Result<(), String> {
+        if body.contains(text) {
+            Ok(())
+        } else {
+            Err(format!("RP-14: {rule}: missing `{text}`"))
+        }
+    };
+    let mut contexts: Vec<String> = matrix
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("- { os: "))
+        .map(|row| {
+            let target = row.split("target: ").nth(1).unwrap_or_default();
+            format!(
+                "build and non-Lean tests ({})",
+                target.trim_end_matches(" }")
+            )
+        })
+        .collect();
+    let aggregate_name = join
+        .lines()
+        .find_map(|line| line.strip_prefix("    name: "))
+        .ok_or("RP-14: the Intel aggregate has no context")?;
+    contexts.push(aggregate_name.to_owned());
+    contexts.sort();
+    let mut expected = supported_host_contexts();
+    expected.sort();
+    if contexts != expected {
+        return Err(
+            "RP-14: the matrix and Intel aggregate must expose each exact host context once"
+                .to_owned(),
+        );
+    }
+    require(
+        &matrix,
+        "name: build and non-Lean tests (${{ matrix.target }})",
+        "the ordinary host contexts resolve their native target",
+    )?;
+    for (key, body, dependencies, condition) in [
+        (
+            "intel-construction",
+            &construction,
+            "needs: [plan, honesty]",
+            "if: ${{ needs.plan.outputs.full == 'true' }}",
+        ),
+        (
+            "intel-part",
+            &part,
+            "needs: [plan, intel-construction]",
+            "if: ${{ needs.plan.outputs.full == 'true' }}",
+        ),
+        (
+            "intel-join",
+            &join,
+            "needs: [plan, intel-construction, intel-part]",
+            "if: ${{ always() && needs.plan.outputs.full == 'true' }}",
+        ),
+    ] {
+        require(body, dependencies, key)?;
+        let conditions: Vec<&str> = body
+            .lines()
+            .filter_map(|line| line.strip_prefix("    if: "))
+            .collect();
+        if conditions != vec![condition.trim_start_matches("if: ")] {
+            return Err(format!(
+                "RP-14: {key} does not follow its full-gate dependency policy"
+            ));
+        }
+        for forbidden in [
+            "run-id:",
+            "github-token:",
+            "continue-on-error",
+            "actions/cache",
+        ] {
+            if body.contains(forbidden) {
+                return Err(format!("RP-14: {key} admits `{forbidden}`"));
+            }
+        }
+        // A job's evidence upload can run after failure, but its actual
+        // operation must not be guarded by a success/skip shortcut.
+        for step in body.split("\n      - ") {
+            if step.contains(".github/scripts/intel_host_tests.py ")
+                && step
+                    .lines()
+                    .any(|line| line.trim_start().starts_with("if:"))
+            {
+                return Err(format!(
+                    "RP-14: {key} conditionally skips its factory operation"
+                ));
+            }
+        }
+    }
+    for body in [&construction, &part] {
+        require(
+            body,
+            "runs-on: macos-15-intel",
+            "Intel execution uses its native host",
+        )?;
+        let timeout = body
+            .lines()
+            .find_map(|line| line.trim().strip_prefix("timeout-minutes: "))
+            .and_then(|value| value.parse::<u32>().ok())
+            .ok_or("RP-14: an Intel execution job has no timeout")?;
+        if timeout == 0 || timeout > 240 {
+            return Err(
+                "RP-14: Intel execution cannot raise the prior 240-minute bound".to_owned(),
+            );
+        }
+    }
+    // The installer takes its version and components from rust-toolchain.toml;
+    // an explicit toolchain argument would replace that pin. Keep the existing
+    // retry wrapper and require the command to end without such an override.
+    for body in [&honesty, &construction, &part] {
+        require(
+            body,
+            "run: bash .github/retry.sh rustup toolchain install\n",
+            "honesty and Intel execution install the Rust pin with bounded retries",
+        )?;
+    }
+    require(
+        &honesty,
+        "run: bash .github/retry.sh rustup target add aarch64-unknown-linux-gnu wasm32-unknown-unknown thumbv7em-none-eabihf\n",
+        "same-run honesty installs every pinned SIMD probe target",
+    )?;
+    require(
+        &honesty,
+        "run: .github/simd-probe/run.sh\n",
+        "same-run honesty retains decision #109's pinned SIMD evidence",
+    )?;
+    for (body, command) in [
+        (&construction, "build --output"),
+        (&part, "execute --construction"),
+        (&join, "join --artifacts"),
+    ] {
+        require(
+            body,
+            &format!("python3 .github/scripts/intel_host_tests.py {command}"),
+            "the job runs its factory operation",
+        )?;
+    }
+    for (body, expected) in [
+        (&construction, "lanes: ${{ steps.construct.outputs.lanes }}"),
+        (&construction, "id: construct"),
+        (&construction, "name: intel-construction"),
+        (&part, "fail-fast: false"),
+        (
+            &part,
+            "lane: ${{ fromJSON(needs.intel-construction.outputs.lanes) }}",
+        ),
+        (&part, "name: intel-construction"),
+        (&part, "name: intel-${{ matrix.lane }}"),
+        (&part, "--lane ${{ matrix.lane }}"),
+        (&join, "pattern: intel-*"),
+        (
+            &join,
+            "CONSTRUCTION_RESULT: ${{ needs.intel-construction.result }}",
+        ),
+        (&join, "PART_RESULT: ${{ needs.intel-part.result }}"),
+        (&join, "test \"$CONSTRUCTION_RESULT\" = success"),
+        (&join, "test \"$PART_RESULT\" = success"),
+    ] {
+        require(body, expected, "same-run construction and receipt custody")?;
+    }
+    let result_step = join
+        .split("\n      - ")
+        .find(|step| step.contains("test \"$PART_RESULT\" = success"))
+        .ok_or("RP-14: the aggregate does not check its prerequisite outcomes")?;
+    require(
+        result_step,
+        "if: ${{ always() }}",
+        "the aggregate cannot hide a failed or cancelled prerequisite",
+    )?;
+    require(
+        &honesty,
+        "python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'",
+        "the factory's behavioral tests run before expensive roots",
+    )?;
+    Ok(())
+}
+
+/// Claim drift must finish successfully before a costly root can start.
+fn honesty_dependencies(ci: &str) -> Result<(), String> {
+    let initial = workflow_job(ci, "honesty")?;
+    if !initial.contains("name: ${{ matrix.part }}\n")
+        || !initial.contains("needs: [plan]\n")
+        || !initial.contains("if: ${{ needs.plan.outputs.honesty != '[]' }}")
+    {
+        return Err(
+            "RP-14: honesty must expose its matrix-resolved context and follow the plan".to_owned(),
+        );
+    }
+    for root in ["vv", "atlas-prefix", "host-matrix", "intel-construction"] {
+        let body = workflow_job(ci, root)?;
+        if !body.contains("needs: [plan, honesty]\n")
+            || body
+                .lines()
+                .any(|line| line.starts_with("    if:") && line.contains("always()"))
+        {
+            return Err(format!("RP-14: {root} must wait for successful honesty"));
+        }
+    }
+    Ok(())
+}
+
 /// What `.github/release-gate.sh` accepts as the release's evidence (§9.4,
 /// §30.3): the script runs in a scratch repository with a stand-in for `gh`
 /// that answers with planted runs and jobs, so that the run it names is shown
@@ -3101,28 +3559,20 @@ fn release_gate_decisions() {
     let root = support::repo_root();
     let script = root.join(".github/release-gate.sh");
     let rows_file = root.join(".github/vv-rows.json");
-    let workflow = root.join(".github/workflows/ci.yml");
     let rows: Vec<serde_json::Value> =
         serde_json::from_str(&root_file(".github/vv-rows.json")).expect("the legs");
-    let ci = root_file(".github/workflows/ci.yml");
-    let hosts: Vec<String> = ci
-        .lines()
-        .filter(|line| line.starts_with("          - { os: "))
-        .map(|line| {
-            let target = line.split("target: ").nth(1).expect("a target");
-            format!(
-                "build and non-Lean tests ({})",
-                target.trim_end_matches(" }")
-            )
-        })
-        .collect();
+    let hosts = supported_host_contexts();
     let stamp = |name: &str, conclusion: &str| {
         format!("{name}\t{conclusion}\t2026-01-01T00:00:00Z\t2026-01-01T01:00:00Z")
     };
     let mut green: Vec<String> = vec![stamp("plan", "success")];
     green.extend(rows.iter().map(|row| {
         stamp(
-            &format!("just vv ({})", row["part"].as_str().expect("a part")),
+            &if row["part"] == "honesty" {
+                "honesty".to_owned()
+            } else {
+                format!("just vv ({})", row["part"].as_str().expect("a part"))
+            },
             "success",
         )
     }));
@@ -3141,13 +3591,35 @@ fn release_gate_decisions() {
             )
         })
         .collect();
+    let without_honesty: Vec<String> = green
+        .iter()
+        .filter(|job| !job.starts_with("honesty"))
+        .cloned()
+        .collect();
+    let failed_honesty: Vec<String> = green
+        .iter()
+        .map(|job| job.replace("honesty\tsuccess", "honesty\tfailure"))
+        .collect();
+    let skipped_honesty: Vec<String> = green
+        .iter()
+        .map(|job| job.replace("honesty\tsuccess", "honesty\tskipped"))
+        .collect();
+    let suffixed_honesty: Vec<String> = green
+        .iter()
+        .map(|job| {
+            job.replace(
+                "honesty\tsuccess",
+                "honesty (honesty, fmt-check model spec-links bdd, honesty)\tsuccess",
+            )
+        })
+        .collect();
     let no_join: Vec<String> = green
         .iter()
         .filter(|job| !job.starts_with("atlas (join)"))
         .cloned()
         .collect();
     let draft: Vec<String> = vec![stamp("plan", "success"), stamp("just vv (rest)", "success")];
-    // Every job but one host: only the count of the hosts refuses it.
+    // Every job but one exact host context is incomplete evidence.
     let missing_host: Vec<String> = green
         .iter()
         .filter(|job| !job.starts_with(hosts[1].as_str()))
@@ -3258,7 +3730,6 @@ fn release_gate_decisions() {
             .env("REF", "refs/tags/v0.0.0")
             .env("RELEASE_RUN", "https://example.test/release")
             .env("LEXLEAN_CI_ROWS", rows_file.as_std_path())
-            .env("LEXLEAN_CI_WORKFLOW", workflow.as_std_path())
             .env("STUB_JOBS", jobs.join("\n"));
         for (commit, lines) in runs {
             command.env(format!("STUB_RUNS_{commit}"), lines);
@@ -3298,6 +3769,18 @@ fn release_gate_decisions() {
         Ok(()),
         "the evidence satisfies the release criterion"
     );
+    // A complete listing can exceed a pipe buffer as the workflow grows.
+    // Matching a required row must still consume the rest of the listing.
+    let mut large = green.clone();
+    large.extend(
+        (0..1500).map(|index| stamp(&format!("additional successful job {index}"), "success")),
+    );
+    let (code, _, stderr) = decide(&head, &[(head.as_str(), run_line("19"))], &large);
+    assert_eq!(code, 0, "a large complete gate is accepted: {stderr}");
+    large.push(stamp("a failed job after every required row", "failure"));
+    let (code, evidence, stderr) = decide(&head, &[(head.as_str(), run_line("20"))], &large);
+    assert_eq!(code, 1, "a late failed job is refused: {stderr}");
+    assert!(evidence.is_empty(), "a late failure writes no evidence");
     // The merge of a head whose tree it lands unchanged: the head's run.
     let (code, evidence, stderr) = decide(&merge_equal, &[(head.as_str(), run_line("12"))], &green);
     assert_eq!(
@@ -3325,6 +3808,26 @@ fn release_gate_decisions() {
     // No run, a run with a failed job, a run without the join, a draft run.
     for (why, runs, jobs) in [
         ("no run", vec![], &green),
+        (
+            "suffixed honesty",
+            vec![(head.as_str(), run_line("24"))],
+            &suffixed_honesty,
+        ),
+        (
+            "missing honesty",
+            vec![(head.as_str(), run_line("21"))],
+            &without_honesty,
+        ),
+        (
+            "failed honesty",
+            vec![(head.as_str(), run_line("22"))],
+            &failed_honesty,
+        ),
+        (
+            "skipped honesty",
+            vec![(head.as_str(), run_line("23"))],
+            &skipped_honesty,
+        ),
         (
             "a failed job",
             vec![(head.as_str(), run_line("14"))],
@@ -3354,5 +3857,32 @@ fn release_gate_decisions() {
             stderr.contains("no run of ci.yml was the whole gate"),
             "{why}: {stderr}"
         );
+    }
+    for host in &hosts {
+        let absent: Vec<String> = green
+            .iter()
+            .filter(|job| !job.starts_with(&format!("{host}\t")))
+            .cloned()
+            .collect();
+        let mut duplicate = green.clone();
+        duplicate.push(stamp(host, "success"));
+        let foreign: Vec<String> = green
+            .iter()
+            .map(|job| job.replace(host, "build and non-Lean tests (foreign-target)"))
+            .collect();
+        let suffixed: Vec<String> = green
+            .iter()
+            .map(|job| job.replace(host, &format!("{host} (partition)")))
+            .collect();
+        for (defect, jobs) in [
+            ("absent", absent),
+            ("duplicate", duplicate),
+            ("foreign replacement", foreign),
+            ("suffixed", suffixed),
+        ] {
+            let (code, evidence, stderr) = decide(&head, &[(head.as_str(), run_line("25"))], &jobs);
+            assert_eq!(code, 1, "{defect} host context `{host}`: {stderr}");
+            assert!(evidence.is_empty(), "{defect} host writes no evidence");
+        }
     }
 }

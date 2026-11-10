@@ -19,6 +19,20 @@ use crate::source::coverage::Origin;
 
 mod reasoning;
 
+/// The document inductive type of each theorem parameter that has one, by the
+/// parameter's name.
+type ScrutineeTypes = std::collections::BTreeMap<String, MemberRef>;
+
+fn scrutinee_types(parameters: &[SemanticParameter]) -> ScrutineeTypes {
+    parameters
+        .iter()
+        .filter_map(|parameter| match &parameter.r#type {
+            SemanticType::Named { member, .. } => Some((parameter.name.clone(), member.clone())),
+            _ => None,
+        })
+        .collect()
+}
+
 struct Render<'a> {
     prefix: &'a str,
     /// The Lean module each imported module's key names; a module not in it
@@ -150,7 +164,44 @@ fn proof_uses(proof: &SemanticProof, local: &str) -> bool {
                     .iter()
                     .any(|member| member.module.is_none() && member.name == local)
         }
+        SemanticProof::NestedInduction {
+            scrutinee,
+            branches,
+            members,
+        } => {
+            scrutinee == local
+                || branch_uses(branches)
+                || members.iter().any(|member| {
+                    member.binder != local
+                        && (term_uses(&member.statement, local) || branch_uses(&member.branches))
+                })
+        }
     }
+}
+
+/// Whether a parameter before the recursive argument is matched in `body`.
+/// With no stated argument, Lean recurses on the first parameter every
+/// recursive call decreases, and a call can decrease only a parameter the body
+/// matches, so this is when Lean's choice can differ from the checked argument.
+fn matches_earlier_parameter(
+    parameters: &[SemanticParameter],
+    recursive_argument: &str,
+    body: &SemanticTerm,
+) -> bool {
+    let earlier: BTreeSet<&str> = parameters
+        .iter()
+        .map(|parameter| parameter.name.as_str())
+        .take_while(|name| *name != recursive_argument)
+        .collect();
+    let mut found = false;
+    crate::ir::semantic::visit_terms(body, &mut |term| {
+        if let SemanticTerm::Match { scrutinee, .. } = term {
+            if let SemanticTerm::Var { name } = scrutinee.as_ref() {
+                found |= earlier.contains(name.as_str());
+            }
+        }
+    });
+    found
 }
 
 pub(crate) fn term_uses(term: &SemanticTerm, local: &str) -> bool {
@@ -1204,7 +1255,12 @@ impl Render<'_> {
         }
     }
 
-    fn proof_branch(&self, branch: &SemanticProofBranch, indent: usize) -> String {
+    fn proof_branch(
+        &self,
+        branch: &SemanticProofBranch,
+        indent: usize,
+        owners: &ScrutineeTypes,
+    ) -> Result<String, Diagnostic> {
         let binders = if branch.binders.is_empty() {
             String::new()
         } else {
@@ -1218,18 +1274,26 @@ impl Render<'_> {
                     .join(" ")
             )
         };
-        format!(
+        Ok(format!(
             "{}| {}{} =>\n{}",
             "  ".repeat(indent),
             identifier(&branch.constructor),
             binders,
-            self.proof(&branch.proof, indent + 1)
-        )
+            self.proof(&branch.proof, indent + 1, owners)?
+        ))
     }
 
-    fn proof(&self, proof: &SemanticProof, indent: usize) -> String {
+    /// `owners` names, for each theorem parameter of a document inductive
+    /// type, that type: `nested_induction` names the recursor Lean generated
+    /// for the scrutinee's type (§16.9, `SM-37`).
+    fn proof(
+        &self,
+        proof: &SemanticProof,
+        indent: usize,
+        owners: &ScrutineeTypes,
+    ) -> Result<String, Diagnostic> {
         let pad = "  ".repeat(indent);
-        match proof {
+        Ok(match proof {
             SemanticProof::Reflexivity => format!("{pad}rfl\n"),
             // The kernel evaluator shares reductions of nested data. The
             // metaprogram evaluator can exhaust memory on ordinary closed
@@ -1254,7 +1318,7 @@ impl Render<'_> {
                 let mut out = format!("{pad}constructor\n");
                 for branch in branches {
                     out.push_str(&format!("{pad}·\n"));
-                    out.push_str(&self.proof(branch, indent + 1));
+                    out.push_str(&self.proof(branch, indent + 1, owners)?);
                 }
                 out
             }
@@ -1264,7 +1328,7 @@ impl Render<'_> {
             } => {
                 let mut out = format!("{pad}cases {} with\n", identifier(scrutinee));
                 for branch in branches {
-                    out.push_str(&self.proof_branch(branch, indent));
+                    out.push_str(&self.proof_branch(branch, indent, owners)?);
                 }
                 out
             }
@@ -1290,7 +1354,56 @@ impl Render<'_> {
                     identifier(scrutinee)
                 );
                 for branch in branches {
-                    out.push_str(&self.proof_branch(branch, indent));
+                    out.push_str(&self.proof_branch(branch, indent, owners)?);
+                }
+                out
+            }
+            SemanticProof::NestedInduction {
+                scrutinee,
+                branches,
+                members,
+            } => {
+                // The recursor Lean generates for a nested inductive takes
+                // one motive for each member of the type's recursive family,
+                // `motive_1` (the goal) first. The proof states the others,
+                // and the goals that remain are the minor premises, in the
+                // order the checker put the branches in: the constructors of
+                // the type, then those of each member. Two members can share
+                // a constructor name, which `induction ... with` refuses, so
+                // the goals are named by position.
+                // The linker admits only a theorem parameter of a document
+                // inductive type, so a scrutinee with no owner is a defect.
+                let owner = owners.get(scrutinee).ok_or_else(|| {
+                    Diagnostic::new(
+                        code!("LLI9001"),
+                        format!(
+                            "phase lean-backend: nested_induction scrutinee `{scrutinee}` is not a theorem parameter of a document inductive type"
+                        ),
+                    )
+                })?;
+                let recursor = format!("{}.rec", self.member(owner));
+                let mut out = format!("{pad}induction {} using {recursor}\n", identifier(scrutinee));
+                for (index, member) in members.iter().enumerate() {
+                    out.push_str(&format!(
+                        "{pad}  (motive_{} := fun {} => {})\n",
+                        index + 2,
+                        identifier(&member.binder),
+                        self.term(&member.statement)
+                    ));
+                }
+                for branch in branches
+                    .iter()
+                    .chain(members.iter().flat_map(|member| &member.branches))
+                {
+                    let binders: String = branch
+                        .binders
+                        .iter()
+                        .map(|name| format!(" {}", identifier(name)))
+                        .collect();
+                    out.push_str(&format!(
+                        "{pad}next{binders} =>\n{}",
+                        self.proof(&branch.proof, indent + 1, owners)?
+                    ));
                 }
                 out
             }
@@ -1408,7 +1521,7 @@ impl Render<'_> {
                     .collect::<String>();
                 format!("{pad}exact {}{arguments}\n", self.member(theorem))
             }
-        }
+        })
     }
 }
 
@@ -2186,6 +2299,7 @@ pub fn render_lean(
                     recursive_argument,
                     mutual,
                     termination,
+                    executable,
                     ..
                 } => {
                     let type_binders = render.scoped_type_parameters(type_parameters, declaration);
@@ -2229,9 +2343,15 @@ pub fn render_lean(
                             )
                         })?;
                         text.push_str(&equations);
-                        if mutual.is_some() {
+                        if mutual.is_some()
+                            || (*executable
+                                && matches_earlier_parameter(parameters, recursive_argument, body))
+                        {
                             // §17.12: a mutual group is structurally recursive by
-                            // construction; Lean must confirm exactly that.
+                            // construction; Lean must confirm exactly that. So
+                            // must an executable definition Lean could recurse
+                            // otherwise, since its certificate A reduces the
+                            // definition on the checked argument.
                             // Only the decreasing parameter is used after `=>`;
                             // naming the others would trip Lean's unused-variable
                             // linter, which fails verification.
@@ -2250,9 +2370,9 @@ pub fn render_lean(
                                 "termination_by structural {binders} => {}\n",
                                 identifier(recursive_argument)
                             ));
-                            if group_of(index + 1) != group_of(index) {
-                                text.push_str("end\n");
-                            }
+                        }
+                        if mutual.is_some() && group_of(index + 1) != group_of(index) {
+                            text.push_str("end\n");
                         }
                     } else {
                         let name = identifier(name);
@@ -2295,7 +2415,7 @@ pub fn render_lean(
                         "public theorem {name}{}{binders} : {} := by\n{}",
                         render.scoped_type_parameters(type_parameters, declaration),
                         render.term(statement),
-                        render.proof(proof, 1)
+                        render.proof(proof, 1, &scrutinee_types(parameters))?
                     ));
                 }
                 SemanticDeclaration::Artifact { .. }

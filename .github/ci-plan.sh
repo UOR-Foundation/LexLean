@@ -2,8 +2,8 @@
 # What a run of ci.yml is (SPEC.md §9.4), decided from the event and the
 # repository alone, before any job that costs a runner starts.
 #
-#   pull request, draft       the `rest` leg only: a development signal
-#   pull request, ready, base the `rest` leg only, the same signal: only a pull
+#   pull request, draft       honesty then the `rest` leg only: a development signal
+#   pull request, ready, base honesty then the `rest` leg only, the same signal: only a pull
 #   not main or release/*     request into a line can land on it
 #   pull request, ready, base the whole gate
 #   main or release/*
@@ -26,12 +26,11 @@
 #
 # Inputs, all from the environment: EVENT, DRAFT, BASE (the base branch of a
 # pull request), REPO. The jobs read `full`
-# and `rows` from GITHUB_OUTPUT. `LEXLEAN_CI_ROWS` and `LEXLEAN_CI_WORKFLOW`
-# name the legs file and the workflow when a test runs the script elsewhere.
+# and `rows` from GITHUB_OUTPUT. `LEXLEAN_CI_ROWS` names the legs file
+# when a test runs the script elsewhere.
 set -euo pipefail
 
 rows_file=${LEXLEAN_CI_ROWS:-.github/vv-rows.json}
-workflow=${LEXLEAN_CI_WORKFLOW:-.github/workflows/ci.yml}
 event=${EVENT:?EVENT names the workflow event}
 draft=${DRAFT:-}
 base=${BASE:-}
@@ -40,7 +39,9 @@ out=${GITHUB_OUTPUT:-/dev/stdout}
 summary=${GITHUB_STEP_SUMMARY:-/dev/null}
 
 emit() {
-  printf 'full=%s\nrows=%s\n' "$1" "$2" >> "$out"
+  printf 'full=%s\nrows=%s\nhonesty=%s\nfanout=%s\n' "$1" "$2" \
+    "$(jq -c '[.[] | select(.part == "honesty")]' <<< "$2")" \
+    "$(jq -c '[.[] | select(.part != "honesty")]' <<< "$2")" >> "$out"
 }
 
 whole_gate() {
@@ -48,27 +49,49 @@ whole_gate() {
   printf '%s\n' "$1" >> "$summary"
 }
 
+# These are the four auxiliary §8.3 contexts, not the number of matrix rows.
+# Linux x86-64 is the normative gate; Intel macOS is a static aggregate. Every
+# required context must occur exactly once, so a duplicate or foreign context
+# cannot replace a missing host even when the total count remains four.
+hosts_passed() {
+  awk -F'\t' '
+    BEGIN {
+      expected["build and non-Lean tests (aarch64-unknown-linux-gnu)"] = 1
+      expected["build and non-Lean tests (x86_64-apple-darwin)"] = 1
+      expected["build and non-Lean tests (aarch64-apple-darwin)"] = 1
+      expected["build and non-Lean tests (x86_64-pc-windows-msvc)"] = 1
+    }
+    /^build and non-Lean tests \(/ {
+      if (!($1 in expected) || ++seen[$1] != 1 || $2 != "success") bad = 1
+    }
+    END {
+      for (host in expected) if (seen[host] != 1) bad = 1
+      exit bad
+    }'
+}
+
 # The id of a pull request run of this workflow on the second parent of HEAD
 # that ran every job of the gate and passed every one, when HEAD is a merge of
-# that parent with the same tree. A draft run has only the `rest` leg, so it is
-# never one: the run must hold the join of Atlas, every host of the matrix, and
+# that parent with the same tree. A draft run has honesty and the `rest` leg, so it is
+# never one: the run must hold the join of Atlas, every exact supported-host context, and
 # every leg of the rows file, and no job that did not conclude `success`.
 verified_parent_run() {
-  local parent head_tree hosts runs id names part
+  local parent head_tree runs id names part job
   parent=$(git rev-parse --verify --quiet 'HEAD^2') || return 1
   head_tree=$(git rev-parse 'HEAD^{tree}')
   [ "$head_tree" = "$(git rev-parse "$parent^{tree}")" ] || return 1
-  hosts=$(grep -c '^          - { os: ' "$workflow")
   runs=$(gh api "repos/$repo/actions/workflows/ci.yml/runs?head_sha=$parent&event=pull_request&status=success&per_page=30" \
     --jq ".workflow_runs[] | select(.head_repository.full_name == \"$repo\") | .id") || return 1
   for id in $runs; do
     names=$(gh api "repos/$repo/actions/runs/$id/jobs?per_page=100" --paginate \
       --jq '.jobs[] | "\(.name)\t\(.conclusion)"') || continue
     if printf '%s\n' "$names" | awk -F'\t' '$2 != "success" { bad = 1 } END { exit bad }' \
-      && printf '%s\n' "$names" | grep -qxF $'atlas (join)\tsuccess' \
-      && [ "$(printf '%s\n' "$names" | grep -c '^build and non-Lean tests (')" -eq "$hosts" ]; then
+      && printf '%s\n' "$names" | grep -xF $'atlas (join)\tsuccess' >/dev/null \
+      && printf '%s\n' "$names" | hosts_passed; then
       for part in $(jq -r '.[].part' "$rows_file"); do
-        printf '%s\n' "$names" | grep -qxF "just vv ($part)"$'\tsuccess' || continue 2
+        job="just vv ($part)"
+        [ "$part" != honesty ] || job=honesty
+        printf '%s\n' "$names" | grep -xF "$job"$'\tsuccess' >/dev/null || continue 2
       done
       printf '%s\n' "$id"
       return 0
@@ -80,8 +103,8 @@ verified_parent_run() {
 case "$event" in
   pull_request)
     if [ "$draft" = true ]; then
-      emit false "$(jq -c '[.[] | select(.part == "rest")]' "$rows_file")"
-      printf '%s\n' 'Draft pull request: the `rest` leg only. This run is not the gate; marking the pull request ready runs the whole gate.' >> "$summary"
+      emit false "$(jq -c '[.[] | select(.part == "honesty" or .part == "rest")]' "$rows_file")"
+      printf '%s\n' 'Draft pull request: honesty then the `rest` leg only. This run is not the gate; marking the pull request ready runs the whole gate.' >> "$summary"
     else
       case "$base" in
         # An unknown base is not known to be stacked: the whole gate.
@@ -89,8 +112,8 @@ case "$event" in
           whole_gate 'Pull request ready for review: the whole gate.'
           ;;
         *)
-          emit false "$(jq -c '[.[] | select(.part == "rest")]' "$rows_file")"
-          printf 'Pull request into `%s`, which is neither `main` nor a release line: the `rest` leg only. A stacked pull request cannot land on a line; the pull request into `main` or a release line runs the whole gate.\n' "$base" >> "$summary"
+          emit false "$(jq -c '[.[] | select(.part == "honesty" or .part == "rest")]' "$rows_file")"
+          printf 'Pull request into `%s`, which is neither `main` nor a release line: honesty then the `rest` leg only. A stacked pull request cannot land on a line; the pull request into `main` or a release line runs the whole gate.\n' "$base" >> "$summary"
           ;;
       esac
     fi

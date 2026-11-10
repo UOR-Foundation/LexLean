@@ -11,6 +11,7 @@ mod boolean;
 mod bytes;
 mod names;
 mod nat_bitwise;
+mod nested;
 mod strings;
 mod widen;
 
@@ -51,6 +52,99 @@ theorem{
             &source.replace("((shared 40) = 0)", "((shared 40) = 1)"),
         );
         project.verify_fails_with("LLV7002");
+    }
+}
+
+fn semantic_json_depth_diagnostic() {
+    let project = P::example();
+    project.edit("lexlean.toml", "language = \"1.0\"", "language = \"1.2\"");
+    // Direct reader assertions use the same configured stack as the pipeline.
+    let stack_bytes = support::limits_of(&project)
+        .compile_stack_plan()
+        .stack_bytes;
+    std::thread::Builder::new()
+        .stack_size(stack_bytes)
+        .spawn(move || semantic_json_depth_diagnostic_on_stack(&project))
+        .expect("reader test thread")
+        .join()
+        .expect("semantic JSON depth assertions");
+}
+
+fn semantic_json_depth_diagnostic_on_stack(project: &P) {
+    let fixture = |name: &str| {
+        std::fs::read_to_string(
+            support::repo_root()
+                .join("tests/semantic-json-depth")
+                .join(name),
+        )
+        .expect("committed semantic JSON depth fixture")
+    };
+    for name in ["list-122.lex.tex", "split-list-200.lex.tex"] {
+        project.write("src/Main.lex.tex", &fixture(name));
+        project.relock();
+        project.check_ok();
+    }
+    let parse_data = |data: &str| {
+        lexlean::ir::semantic::SemanticModule::parse(
+            data,
+            "1.2",
+            "LexLeanExample",
+            &[],
+            &std::collections::BTreeMap::new(),
+            &lexlean::ir::semantic::model::ArtifactStore::new(u64::MAX, u64::MAX),
+        )
+    };
+    for name in [
+        "negative/list-123.lex.tex",
+        "negative/later-list-123.lex.tex",
+    ] {
+        let source = fixture(name);
+        project.write("src/Main.lex.tex", &source);
+        project.relock();
+        let error = project.check_fails_with("LLT4001");
+        let message = &error.diagnostics[0].message;
+        assert!(message.contains("128-level"), "{message}");
+        assert!(message.contains("recursion limit exceeded"), "{message}");
+        assert!(message.contains("smaller definitions"), "{message}");
+        assert!(message.contains("prim append"), "{message}");
+        assert!(
+            !message.contains("column"),
+            "generated JSON coordinates are not source positions: {message}"
+        );
+        let data_form = lexlean::sdk::to_data_form(&source).expect("notation writes to data form");
+        let data = data_form
+            .split_once("\\semanticdata{")
+            .expect("semantic data")
+            .1
+            .split_once("}\n\\end{semanticmodule}")
+            .expect("module end")
+            .0;
+        let failure = parse_data(data).expect_err("same bound on semantic JSON input");
+        assert_eq!(failure.code.as_str(), "LLT4001");
+        assert!(failure.reason.contains("prim append"));
+        for arguments in [vec!["check"], vec!["check", "--diagnostic-format", "json"]] {
+            let (code, stdout, stderr) = project.cli(&arguments);
+            assert_ne!(code, 0);
+            assert!(format!("{stdout}{stderr}").contains("prim append"));
+        }
+    }
+
+    let empty = r#"{"declarations":[],"spec":"lexlean/semantic-module/2"}"#;
+    let invalid = [
+        empty.replace(",\"spec\"", " \"spec\""),
+        empty.replace("{\"declarations\"", "{ \"declarations\""),
+        empty.replace("\"spec\":", "\"spec\":\"lexlean/semantic-module/2\",\"spec\":"),
+        empty.replace("\"declarations\":[]", "\"declarations\":[],\"foreign\":true"),
+        r#"{"declarations":[{"body":{"kind":"nat","prose":"foreign","value":"1"},"kind":"definition","name":"x","parameters":[],"result":{"kind":"nat"}}],"spec":"lexlean/semantic-module/2"}"#.to_owned(),
+    ];
+    for data in invalid {
+        let error =
+            parse_data(&data).expect_err("malformed, noncanonical or foreign data stays refused");
+        assert_eq!(error.code.as_str(), "LLT4001");
+        assert!(
+            !error.reason.contains("prim append"),
+            "depth advice belongs only to nesting failures: {error}"
+        );
     }
 }
 
@@ -736,6 +830,7 @@ pub(crate) fn run(id: &str) {
         }
         // §17.5, I7: no opaque prose inside semantic IR.
         "SM-12" => {
+            semantic_json_depth_diagnostic();
             let project = P::example();
             let json = support::checked_project(&project)
                 .linked_json()
@@ -2646,6 +2741,8 @@ pub(crate) fn run(id: &str) {
         "SM-36" => boolean::run(),
         // §17.11, §17.12: bitwise primitives and shifts on unbounded Nat.
         "SM-38" => nat_bitwise::run(),
+        // §17.10: a theorem proved by induction over a nested inductive type.
+        "SM-37" => nested::run(),
         // §17.10: a theorem proved by a split on the value of a document
         // term.
         "SM-35" => {

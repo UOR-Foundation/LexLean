@@ -1,0 +1,694 @@
+\begin{lexlean}{GnafValidate}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Buffer}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: ActionKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: Observation, fields: []},
+    {name: Preprocessing, fields: []},
+    {name: Advice, fields: []},
+    {name: RetainedState, fields: []},
+    {name: Dispatch, fields: []},
+    {name: Fallback, fields: []},
+    {name: Communication, fields: []},
+    {name: Randomness, fields: []},
+    {name: Scheduling, fields: []},
+    {name: Execution, fields: []}
+  ]
+}
+
+inductive{
+  name: Charge,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: ChSteps, fields: []},
+    {name: ChConstant, fields: [Nat]},
+    {name: ChFree, fields: []},
+    {name: ChUndeclared, fields: []}
+  ]
+}
+
+structure{
+  name: Action,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: kind, type: ActionKind}, {name: charge, type: Charge}]
+}
+
+inductive{
+  name: Boundary,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: BdComplete, fields: []},
+    {name: BdPreparedState, fields: []},
+    {name: BdPreparedPlan, fields: []}
+  ]
+}
+
+inductive{
+  name: OperandSize,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: OsWeighted, fields: []}, {name: OsUnit, fields: []}]
+}
+
+structure{
+  name: Capacity,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: fuel, type: Nat},
+    {name: domain, type: Nat},
+    {name: systems, type: Nat},
+    {name: charge, type: Nat}
+  ]
+}
+
+structure{
+  name: Machine,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: fuel, type: Nat},
+    {name: capacity, type: Capacity},
+    {name: operandSize, type: OperandSize},
+    {name: actions, type: (List Action)},
+    {name: boundary, type: Boundary},
+    {name: prepared, type: (List ActionKind)}
+  ]
+}
+
+inductive{
+  name: Carrier,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: CaGrammar, fields: [Nat, (List ActionKind), Nat]},
+    {name: CaInternalPlans, fields: []},
+    {name: CaOptimizerOutput, fields: []},
+    {name: CaDiscovered, fields: []},
+    {name: CaCached, fields: []}
+  ]
+}
+
+inductive{
+  name: Completeness,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: CoGrammarEquality, fields: []},
+    {name: CoMissing, fields: []},
+    {name: CoCitesUniverseId, fields: []},
+    {name: CoCitesOptimizer, fields: []}
+  ]
+}
+
+inductive{
+  name: Objective,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: ObScalar, fields: []}, {name: ObVector, fields: []}]
+}
+
+inductive{
+  name: ClaimClass,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: ClExact, fields: []},
+    {name: ClNormalForm, fields: []},
+    {name: ClCanonical, fields: []},
+    {name: ClRepresentationMinimal, fields: []},
+    {name: ClComparisonTheorem, fields: []},
+    {name: ClProfileDefinedComparison, fields: []},
+    {name: ClInputTotal, fields: []},
+    {name: ClGlobalOptimal, fields: []},
+    {name: ClArgminComplete, fields: []},
+    {name: ClParetoOptimal, fields: []},
+    {name: ClFrontierComplete, fields: []},
+    {name: ClPointwiseEnvelopeComplete, fields: []},
+    {name: ClQueryFamilyAnswerComplete, fields: []},
+    {name: ClUseCaseGlobalOptimal, fields: []},
+    {name: ClWorkloadArgminComplete, fields: []},
+    {name: ClWorkloadParetoOptimal, fields: []},
+    {name: ClWorkloadFrontierComplete, fields: []},
+    {name: ClFamilyOptimal, fields: []},
+    {name: ClCompetitiveBound, fields: []},
+    {name: ClCompetitiveOptimal, fields: []},
+    {name: ClAsymptoticBound, fields: []},
+    {name: ClAsymptoticOptimal, fields: []},
+    {name: ClUseCaseClassComplete, fields: []},
+    {name: ClUseCaseClassAnswerComplete, fields: []},
+    {name: ClMaintainedUseCaseClass, fields: []},
+    {name: ClRestrictedUniverseOptimal, fields: []},
+    {name: ClRevisionPreserved, fields: []},
+    {name: ClBestKnown, fields: []},
+    {name: ClMeasuredBestAmongTested, fields: []},
+    {name: ClHeuristicSelected, fields: []},
+    {name: ClInstanceOptimal, fields: []}
+  ]
+}
+
+inductive{
+  name: Scope,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: ScGrammarUniverse, fields: []},
+    {name: ScCalculusPrograms, fields: []},
+    {name: ScRustPrograms, fields: []}
+  ]
+}
+
+structure{
+  name: Request,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: domainLength, type: Nat},
+    {name: machine, type: Machine},
+    {name: carrier, type: Carrier},
+    {name: completeness, type: Completeness},
+    {name: objective, type: Objective},
+    {name: claim, type: ClaimClass},
+    {name: scope, type: Scope}
+  ]
+}
+
+inductive{
+  name: Rejection,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: RjEmptyDomain, fields: []},
+    {name: RjInternalPlanUniverse, fields: []},
+    {name: RjOptimizerDefinedUniverse, fields: []},
+    {name: RjDiscoveredUniverse, fields: []},
+    {name: RjCachedUniverse, fields: []},
+    {name: RjMissingCompleteness, fields: []},
+    {name: RjSelfReferentialCompleteness, fields: []},
+    {name: RjOptimizerCompleteness, fields: []},
+    {name: RjBeyondCapacity, fields: []},
+    {name: RjUnitCostOperands, fields: []},
+    {name: RjDuplicateAction, fields: [ActionKind]},
+    {name: RjUnaccountedAction, fields: [ActionKind]},
+    {name: RjHiddenCost, fields: [ActionKind]},
+    {name: RjUnrealizableAction, fields: [ActionKind]},
+    {name: RjUnboundPreparation, fields: [ActionKind]},
+    {name: RjStrayPreparedArtifact, fields: [ActionKind]},
+    {name: RjClaimAlias, fields: []},
+    {name: RjScalarClaimOverPartialOrder, fields: []},
+    {name: RjVectorClaimOverTotalOrder, fields: []},
+    {name: RjUncoveredScope, fields: []},
+    {name: RjUnsupportedClaim, fields: []}
+  ]
+}
+
+definition{
+  name: kindIndex,
+  parameters: [kind : ActionKind],
+  result: Nat,
+  body: (match kind
+    | ActionKind.Observation => 0
+    | ActionKind.Preprocessing => 1
+    | ActionKind.Advice => 2
+    | ActionKind.RetainedState => 3
+    | ActionKind.Dispatch => 4
+    | ActionKind.Fallback => 5
+    | ActionKind.Communication => 6
+    | ActionKind.Randomness => 7
+    | ActionKind.Scheduling => 8
+    | ActionKind.Execution => 9),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: kindName,
+  parameters: [kind : ActionKind],
+  result: Bytes,
+  body: (match kind
+    | ActionKind.Observation => (prim utf8_encode "observation" : Bytes)
+    | ActionKind.Preprocessing => (prim utf8_encode "preprocessing" : Bytes)
+    | ActionKind.Advice => (prim utf8_encode "advice" : Bytes)
+    | ActionKind.RetainedState => (prim utf8_encode "retained_state" : Bytes)
+    | ActionKind.Dispatch => (prim utf8_encode "dispatch" : Bytes)
+    | ActionKind.Fallback => (prim utf8_encode "fallback" : Bytes)
+    | ActionKind.Communication => (prim utf8_encode "communication" : Bytes)
+    | ActionKind.Randomness => (prim utf8_encode "randomness" : Bytes)
+    | ActionKind.Scheduling => (prim utf8_encode "scheduling" : Bytes)
+    | ActionKind.Execution => (prim utf8_encode "execution" : Bytes)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: performed,
+  parameters: [kind : ActionKind],
+  result: Bool,
+  body: (match kind
+    | ActionKind.Observation => true
+    | ActionKind.Preprocessing => false
+    | ActionKind.Advice => false
+    | ActionKind.RetainedState => false
+    | ActionKind.Dispatch => true
+    | ActionKind.Fallback => true
+    | ActionKind.Communication => false
+    | ActionKind.Randomness => false
+    | ActionKind.Scheduling => false
+    | ActionKind.Execution => true),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: preparation,
+  parameters: [kind : ActionKind],
+  result: Bool,
+  body: (match kind
+    | ActionKind.Observation => false
+    | ActionKind.Preprocessing => true
+    | ActionKind.Advice => true
+    | ActionKind.RetainedState => true
+    | ActionKind.Dispatch => false
+    | ActionKind.Fallback => false
+    | ActionKind.Communication => false
+    | ActionKind.Randomness => false
+    | ActionKind.Scheduling => false
+    | ActionKind.Execution => false),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: kindEq,
+  parameters: [left : ActionKind, right : ActionKind],
+  result: Bool,
+  body: ((kindIndex left) =? (kindIndex right)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: render,
+  parameters: [rejection : Rejection],
+  result: (Result Bytes Bytes),
+  body: (match rejection
+    | Rejection.RjEmptyDomain => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"empty_domain\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjInternalPlanUniverse => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"internal_plan_universe\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjOptimizerDefinedUniverse => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"optimizer_defined_universe\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjDiscoveredUniverse => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"discovered_universe\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjCachedUniverse => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"cached_universe\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjMissingCompleteness => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"missing_completeness\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjSelfReferentialCompleteness => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"self_referential_completeness\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjOptimizerCompleteness => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"optimizer_completeness\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjBeyondCapacity => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"beyond_capacity\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjUnitCostOperands => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"unit_cost_operands\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjDuplicateAction kind => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"duplicate_action\"" : Bytes)) (prim utf8_encode ",\"action\":\"" : Bytes)) (kindName kind)) (prim utf8_encode "\"}" : Bytes)))
+    | Rejection.RjUnaccountedAction kind => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"unaccounted_action\"" : Bytes)) (prim utf8_encode ",\"action\":\"" : Bytes)) (kindName kind)) (prim utf8_encode "\"}" : Bytes)))
+    | Rejection.RjHiddenCost kind => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"hidden_cost\"" : Bytes)) (prim utf8_encode ",\"action\":\"" : Bytes)) (kindName kind)) (prim utf8_encode "\"}" : Bytes)))
+    | Rejection.RjUnrealizableAction kind => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"unrealizable_action\"" : Bytes)) (prim utf8_encode ",\"action\":\"" : Bytes)) (kindName kind)) (prim utf8_encode "\"}" : Bytes)))
+    | Rejection.RjUnboundPreparation kind => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"unbound_preparation\"" : Bytes)) (prim utf8_encode ",\"action\":\"" : Bytes)) (kindName kind)) (prim utf8_encode "\"}" : Bytes)))
+    | Rejection.RjStrayPreparedArtifact kind => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"stray_prepared_artifact\"" : Bytes)) (prim utf8_encode ",\"action\":\"" : Bytes)) (kindName kind)) (prim utf8_encode "\"}" : Bytes)))
+    | Rejection.RjClaimAlias => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"claim_alias\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjScalarClaimOverPartialOrder => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"scalar_claim_over_partial_order\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjVectorClaimOverTotalOrder => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"vector_claim_over_total_order\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjUncoveredScope => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"uncovered_scope\"" : Bytes)) (prim utf8_encode "}" : Bytes)))
+    | Rejection.RjUnsupportedClaim => (LexLeanStd.Buffer::finish (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::writeBytes (LexLeanStd.Buffer::new 256) (prim utf8_encode "{\"kind\":\"unsupported_claim\"" : Bytes)) (prim utf8_encode "}" : Bytes)))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: findCharge,
+  parameters: [actions : (List Action), wanted : ActionKind],
+  result: (Option Charge),
+  body: (prim list_fold (fun [wanted] (found : (Option Charge)) (action : Action) => (match found
+    | Option.some held => (ctor Option.some [Charge] held)
+    | Option.none => (if (kindEq (project action kind) wanted) then (ctor Option.some [Charge] (project action charge)) else (ctor Option.none [Charge])))) (ctor Option.none [Charge]) actions : (Option Charge)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: countKind,
+  parameters: [actions : (List Action), wanted : ActionKind],
+  result: Nat,
+  body: (prim list_fold (fun [wanted] (count : Nat) (action : Action) => (if (kindEq (project action kind) wanted) then (count + 1) else count)) 0 actions : Nat),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: hasKind,
+  parameters: [kinds : (List ActionKind), wanted : ActionKind],
+  result: Bool,
+  body: (prim list_fold (fun [wanted] (found : Bool) (kind : ActionKind) => (if found then true else (kindEq kind wanted))) false kinds : Bool),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: checkDistinct,
+  parameters: [actions : (List Action)],
+  result: (Option Rejection),
+  body: (prim list_fold (fun [actions] (found : (Option Rejection)) (action : Action) => (match found
+    | Option.some held => (ctor Option.some [Rejection] held)
+    | Option.none => (if (1 <? (countKind actions (project action kind))) then (ctor Option.some [Rejection] (ctor Rejection.RjDuplicateAction (project action kind))) else (ctor Option.none [Rejection])))) (ctor Option.none [Rejection]) actions : (Option Rejection)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: checkPerformedOne,
+  parameters: [machine : Machine, wanted : ActionKind],
+  result: (Option Rejection),
+  body: (match (findCharge (project machine actions) wanted)
+    | Option.none => (ctor Option.some [Rejection] (ctor Rejection.RjUnaccountedAction wanted))
+    | Option.some charge => (match charge
+      | Charge.ChSteps => (ctor Option.none [Rejection])
+      | Charge.ChConstant cost => (ctor Option.some [Rejection] (ctor Rejection.RjHiddenCost wanted))
+      | Charge.ChFree => (ctor Option.some [Rejection] (ctor Rejection.RjHiddenCost wanted))
+      | Charge.ChUndeclared => (ctor Option.some [Rejection] (ctor Rejection.RjHiddenCost wanted)))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: checkPerformed,
+  parameters: [machine : Machine],
+  result: (Option Rejection),
+  body: (match (checkPerformedOne machine (ctor ActionKind.Observation))
+    | Option.some held => (ctor Option.some [Rejection] held)
+    | Option.none => (match (checkPerformedOne machine (ctor ActionKind.Dispatch))
+      | Option.some held => (ctor Option.some [Rejection] held)
+      | Option.none => (match (checkPerformedOne machine (ctor ActionKind.Fallback))
+        | Option.some held => (ctor Option.some [Rejection] held)
+        | Option.none => (checkPerformedOne machine (ctor ActionKind.Execution))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: checkDeclared,
+  parameters: [machine : Machine, action : Action],
+  result: (Option Rejection),
+  body: (let kind : ActionKind := (project action kind); (if (performed kind) then (ctor Option.none [Rejection]) else (if (preparation kind) then (match (project action charge)
+    | Charge.ChConstant cost => (if (0 <? cost) then (ctor Option.none [Rejection]) else (ctor Option.some [Rejection] (ctor Rejection.RjHiddenCost kind)))
+    | Charge.ChFree => (match (project machine boundary)
+      | Boundary.BdComplete => (ctor Option.some [Rejection] (ctor Rejection.RjUnboundPreparation kind))
+      | Boundary.BdPreparedState => (if (hasKind (project machine prepared) kind) then (ctor Option.none [Rejection]) else (ctor Option.some [Rejection] (ctor Rejection.RjUnboundPreparation kind)))
+      | Boundary.BdPreparedPlan => (if (hasKind (project machine prepared) kind) then (ctor Option.none [Rejection]) else (ctor Option.some [Rejection] (ctor Rejection.RjUnboundPreparation kind))))
+    | Charge.ChSteps => (ctor Option.some [Rejection] (ctor Rejection.RjHiddenCost kind))
+    | Charge.ChUndeclared => (ctor Option.some [Rejection] (ctor Rejection.RjHiddenCost kind))) else (ctor Option.some [Rejection] (ctor Rejection.RjUnrealizableAction kind))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: checkDeclaredAll,
+  parameters: [machine : Machine],
+  result: (Option Rejection),
+  body: (prim list_fold (fun [machine] (found : (Option Rejection)) (action : Action) => (match found
+    | Option.some held => (ctor Option.some [Rejection] held)
+    | Option.none => (checkDeclared machine action))) (ctor Option.none [Rejection]) (project machine actions) : (Option Rejection)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: checkPrepared,
+  parameters: [machine : Machine],
+  result: (Option Rejection),
+  body: (prim list_fold (fun [machine] (found : (Option Rejection)) (kind : ActionKind) => (match found
+    | Option.some held => (ctor Option.some [Rejection] held)
+    | Option.none => (match (findCharge (project machine actions) kind)
+      | Option.none => (ctor Option.some [Rejection] (ctor Rejection.RjStrayPreparedArtifact kind))
+      | Option.some charge => (match charge
+        | Charge.ChFree => (ctor Option.none [Rejection])
+        | Charge.ChSteps => (ctor Option.some [Rejection] (ctor Rejection.RjStrayPreparedArtifact kind))
+        | Charge.ChConstant cost => (ctor Option.some [Rejection] (ctor Rejection.RjStrayPreparedArtifact kind))
+        | Charge.ChUndeclared => (ctor Option.some [Rejection] (ctor Rejection.RjStrayPreparedArtifact kind)))))) (ctor Option.none [Rejection]) (project machine prepared) : (Option Rejection)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: checkPlanPreparation,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (project request carrier)
+    | Carrier.CaGrammar plans preparations thresholds => (prim list_fold (fun [request] (found : (Option Rejection)) (kind : ActionKind) => (match found
+      | Option.some held => (ctor Option.some [Rejection] held)
+      | Option.none => (match (findCharge (project (project request machine) actions) kind)
+        | Option.some charge => (ctor Option.none [Rejection])
+        | Option.none => (ctor Option.some [Rejection] (ctor Rejection.RjUnaccountedAction kind))))) (ctor Option.none [Rejection]) preparations : (Option Rejection))
+    | Carrier.CaInternalPlans => (ctor Option.none [Rejection])
+    | Carrier.CaOptimizerOutput => (ctor Option.none [Rejection])
+    | Carrier.CaDiscovered => (ctor Option.none [Rejection])
+    | Carrier.CaCached => (ctor Option.none [Rejection])),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: universeSize,
+  parameters: [plans : Nat, thresholds : Nat],
+  result: Nat,
+  body: (plans + (prim multiply thresholds (prim multiply plans plans : Nat) : Nat)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: chargeBeyond,
+  parameters: [machine : Machine],
+  result: Bool,
+  body: (prim list_fold (fun [machine] (over : Bool) (action : Action) => (if over then true else (match (project action charge)
+    | Charge.ChConstant cost => ((project (project machine capacity) charge) <? cost)
+    | Charge.ChSteps => false
+    | Charge.ChFree => false
+    | Charge.ChUndeclared => false))) false (project machine actions) : Bool),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: checkCapacity,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (let machine : Machine := (project request machine); (let capacity : Capacity := (project machine capacity); (let systems : Bool := (match (project request carrier)
+    | Carrier.CaGrammar plans preparations thresholds => ((project capacity systems) <? (universeSize plans thresholds))
+    | Carrier.CaInternalPlans => false
+    | Carrier.CaOptimizerOutput => false
+    | Carrier.CaDiscovered => false
+    | Carrier.CaCached => false); (if (if ((project capacity fuel) <? (project machine fuel)) then true else (if ((project capacity domain) <? (project request domainLength)) then true else (if systems then true else (chargeBeyond machine)))) then (ctor Option.some [Rejection] (ctor Rejection.RjBeyondCapacity)) else (ctor Option.none [Rejection]))))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: checkClaim,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (project request claim)
+    | ClaimClass.ClRestrictedUniverseOptimal => (ctor Option.some [Rejection] (ctor Rejection.RjClaimAlias))
+    | ClaimClass.ClGlobalOptimal => (match (project request objective)
+      | Objective.ObVector => (ctor Option.some [Rejection] (ctor Rejection.RjScalarClaimOverPartialOrder))
+      | Objective.ObScalar => (ctor Option.none [Rejection]))
+    | ClaimClass.ClArgminComplete => (match (project request objective)
+      | Objective.ObVector => (ctor Option.some [Rejection] (ctor Rejection.RjScalarClaimOverPartialOrder))
+      | Objective.ObScalar => (ctor Option.none [Rejection]))
+    | ClaimClass.ClParetoOptimal => (match (project request objective)
+      | Objective.ObScalar => (ctor Option.some [Rejection] (ctor Rejection.RjVectorClaimOverTotalOrder))
+      | Objective.ObVector => (ctor Option.none [Rejection]))
+    | ClaimClass.ClFrontierComplete => (match (project request objective)
+      | Objective.ObScalar => (ctor Option.some [Rejection] (ctor Rejection.RjVectorClaimOverTotalOrder))
+      | Objective.ObVector => (ctor Option.none [Rejection]))
+    | ClaimClass.ClExact => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClNormalForm => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClCanonical => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClRepresentationMinimal => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClComparisonTheorem => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClProfileDefinedComparison => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClInputTotal => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClPointwiseEnvelopeComplete => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClQueryFamilyAnswerComplete => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClUseCaseGlobalOptimal => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClWorkloadArgminComplete => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClWorkloadParetoOptimal => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClWorkloadFrontierComplete => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClFamilyOptimal => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClCompetitiveBound => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClCompetitiveOptimal => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClAsymptoticBound => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClAsymptoticOptimal => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClUseCaseClassComplete => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClUseCaseClassAnswerComplete => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClMaintainedUseCaseClass => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClRevisionPreserved => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClBestKnown => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClMeasuredBestAmongTested => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClHeuristicSelected => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))
+    | ClaimClass.ClInstanceOptimal => (ctor Option.some [Rejection] (ctor Rejection.RjUnsupportedClaim))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: checkScope,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (project request scope)
+    | Scope.ScGrammarUniverse => (ctor Option.none [Rejection])
+    | Scope.ScCalculusPrograms => (ctor Option.some [Rejection] (ctor Rejection.RjUncoveredScope))
+    | Scope.ScRustPrograms => (ctor Option.some [Rejection] (ctor Rejection.RjUncoveredScope))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: afterClaim,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (checkClaim request)
+    | Option.some held => (ctor Option.some [Rejection] held)
+    | Option.none => (checkScope request)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: afterPlans,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (checkPlanPreparation request)
+    | Option.some held => (ctor Option.some [Rejection] held)
+    | Option.none => (afterClaim request)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: afterPrepared,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (checkPrepared (project request machine))
+    | Option.some held => (ctor Option.some [Rejection] held)
+    | Option.none => (afterPlans request)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: afterDeclared,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (checkDeclaredAll (project request machine))
+    | Option.some held => (ctor Option.some [Rejection] held)
+    | Option.none => (afterPrepared request)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: afterPerformed,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (checkPerformed (project request machine))
+    | Option.some held => (ctor Option.some [Rejection] held)
+    | Option.none => (afterDeclared request)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: afterDistinct,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (checkDistinct (project (project request machine) actions))
+    | Option.some held => (ctor Option.some [Rejection] held)
+    | Option.none => (afterPerformed request)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: afterOperands,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (project (project request machine) operandSize)
+    | OperandSize.OsUnit => (ctor Option.some [Rejection] (ctor Rejection.RjUnitCostOperands))
+    | OperandSize.OsWeighted => (afterDistinct request)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: afterCapacity,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (checkCapacity request)
+    | Option.some held => (ctor Option.some [Rejection] held)
+    | Option.none => (afterOperands request)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: afterCompleteness,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (project request completeness)
+    | Completeness.CoGrammarEquality => (afterCapacity request)
+    | Completeness.CoMissing => (ctor Option.some [Rejection] (ctor Rejection.RjMissingCompleteness))
+    | Completeness.CoCitesUniverseId => (ctor Option.some [Rejection] (ctor Rejection.RjSelfReferentialCompleteness))
+    | Completeness.CoCitesOptimizer => (ctor Option.some [Rejection] (ctor Rejection.RjOptimizerCompleteness))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: afterDomain,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (match (project request carrier)
+    | Carrier.CaGrammar plans preparations thresholds => (afterCompleteness request)
+    | Carrier.CaInternalPlans => (ctor Option.some [Rejection] (ctor Rejection.RjInternalPlanUniverse))
+    | Carrier.CaOptimizerOutput => (ctor Option.some [Rejection] (ctor Rejection.RjOptimizerDefinedUniverse))
+    | Carrier.CaDiscovered => (ctor Option.some [Rejection] (ctor Rejection.RjDiscoveredUniverse))
+    | Carrier.CaCached => (ctor Option.some [Rejection] (ctor Rejection.RjCachedUniverse))),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: firstViolation,
+  parameters: [request : Request],
+  result: (Option Rejection),
+  body: (if ((project request domainLength) =? 0) then (ctor Option.some [Rejection] (ctor Rejection.RjEmptyDomain)) else (afterDomain request)),
+  axioms: [],
+  executable: true
+}
+
+definition{
+  name: validateRequest,
+  parameters: [request : Request],
+  result: (Result (Option Bytes) Bytes),
+  body: (match (firstViolation request)
+    | Option.none => (ctor Result.ok [(Option Bytes), Bytes] (ctor Option.none [Bytes]))
+    | Option.some rejection => (match (render rejection)
+      | Result.ok text => (ctor Result.ok [(Option Bytes), Bytes] (ctor Option.some [Bytes] text))
+      | Result.error problem => (ctor Result.error [(Option Bytes), Bytes] problem))),
+  axioms: [],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

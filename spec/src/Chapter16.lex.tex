@@ -660,7 +660,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The backend emits pinned Lean `induction` syntax. LexLean does not synthesize an induction principle or infer missing cases." (nil String))
+      (cons "The backend emits pinned Lean `induction` syntax. LexLean does not synthesize an induction principle or infer missing cases. A nested inductive type has a recursor of several motives that `induction` does not use; language 1.2 names it in `nested_induction` (§17.10, `SM-37`)." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []

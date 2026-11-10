@@ -550,6 +550,33 @@ fn effects_agree(
     Ok(())
 }
 
+/// A verified list beyond serde's ordinary nesting limit must also export
+/// and replay: the package adds an object around its lowered program.
+fn deep_list_project() -> P {
+    let project = P::copy_example("production");
+    let body = format!("{}(nil Nat){}", "(cons 1 ".repeat(65), ")".repeat(65));
+    project.write("src/Main.lex.tex", &format!(
+        "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\useglossary{{production.titles@1.0.0}}\n\\title{{Production roots}}\n\\begin{{semanticmodule}}\ndefinition{{name: table, parameters: [], result: (List Nat), body: {body}, executable: true, production: {{effects: [allocation, overflow], targets: [rust-std]}}}}\n\\end{{semanticmodule}}\n\\end{{lexlean}}\n"
+    ));
+    project.relock();
+    project
+}
+
+fn deep_list_export_replays() {
+    let project = deep_list_project();
+    let request = request_for(&[("Production.Main.table", "deep_list", &["rust-std"])]);
+    let output = production::build(&engine(&project), &request).expect("deep list exports");
+    let bundle = project.root.join(&output.bundle);
+    let program_bytes =
+        std::fs::read(bundle.join(&output.result.roots[0].program.path)).expect("exported program");
+    assert!(
+        lexlean::production::lower::json_depth(std::str::from_utf8(&program_bytes).expect("UTF-8"))
+            > 128
+    );
+    let report = production::verify_artifact(&bundle).expect("deep list bundle replays");
+    assert_eq!(report.status, production::ReplayStatus::BindingsVerified);
+}
+
 /// Run the case for one PX ID.
 #[allow(clippy::too_many_lines)]
 pub fn run(id: &str) {
@@ -1077,6 +1104,7 @@ pub fn run(id: &str) {
             if !support::lean_backed("PX-07") {
                 return;
             }
+            deep_list_export_replays();
             let exported = harness::exported("production");
             let report = production::verify_artifact(&exported.bundle()).expect("replays");
             assert_eq!(report, exported.report);
@@ -1870,4 +1898,22 @@ pub fn cli() {
     assert_eq!(exit, 1);
     let value: serde_json::Value = serde_json::from_str(&stdout).expect("one result");
     assert_eq!(value["diagnostics"][0]["code"], "LLV7102");
+}
+
+#[cfg(test)]
+mod depth_tests {
+    #[test]
+    fn deep_list_regression_project_checks_and_lowers() {
+        let project = super::deep_list_project();
+        let program = crate::production_export::lowered_program(&project, "Production.Main.table");
+        let bytes = program.to_file_bytes();
+        assert!(
+            lexlean::production::lower::json_depth(std::str::from_utf8(&bytes).expect("UTF-8"))
+                > 128
+        );
+        assert_eq!(
+            lexlean::calculus::Program::parse(&bytes).expect("program reads back"),
+            program
+        );
+    }
 }

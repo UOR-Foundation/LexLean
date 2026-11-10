@@ -1,0 +1,117 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Json,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: null, fields: []},
+    {name: text, fields: [String]},
+    {name: array, fields: [(List Json)]},
+    {name: object, fields: [(List (String * Json))]}
+  ]
+}
+
+definition{
+  name: size,
+  parameters: [value : Json],
+  result: Nat,
+  body: (match value
+    | Json.null => 1
+    | Json.text content => 1
+    | Json.array items => (1 + (sizeList items))
+    | Json.object entries => (1 + (sizeEntries entries))),
+  mutual: Size,
+  recursive_argument: value
+}
+
+definition{
+  name: sizeList,
+  parameters: [items : (List Json)],
+  result: Nat,
+  body: (match items | List.nil => 0 | List.cons head tail => ((size head) + (sizeList tail))),
+  mutual: Size,
+  recursive_argument: items
+}
+
+definition{
+  name: sizeEntries,
+  parameters: [entries : (List (String * Json))],
+  result: Nat,
+  body: (match entries
+    | List.nil => 0
+    | List.cons head tail => ((sizeEntry head) + (sizeEntries tail))),
+  mutual: Size,
+  recursive_argument: entries
+}
+
+definition{
+  name: sizeEntry,
+  parameters: [entry : (String * Json)],
+  result: Nat,
+  body: (match entry | Prod.mk key value => (size value)),
+  mutual: Size,
+  recursive_argument: entry
+}
+
+definition{
+  name: leaves,
+  parameters: [value : Json],
+  result: Nat,
+  body: (match value
+    | Json.null => 1
+    | Json.text content => 1
+    | Json.array items => (leavesList items)
+    | Json.object entries => (leavesEntries entries)),
+  mutual: Leaves,
+  recursive_argument: value
+}
+
+definition{
+  name: leavesList,
+  parameters: [items : (List Json)],
+  result: Nat,
+  body: (match items | List.nil => 0 | List.cons head tail => ((leaves head) + (leavesList tail))),
+  mutual: Leaves,
+  recursive_argument: items
+}
+
+definition{
+  name: leavesEntries,
+  parameters: [entries : (List (String * Json))],
+  result: Nat,
+  body: (match entries
+    | List.nil => 0
+    | List.cons head tail => ((leavesEntry head) + (leavesEntries tail))),
+  mutual: Leaves,
+  recursive_argument: entries
+}
+
+definition{
+  name: leavesEntry,
+  parameters: [entry : (String * Json)],
+  result: Nat,
+  body: (match entry | Prod.mk key value => (leaves value)),
+  mutual: Leaves,
+  recursive_argument: entry
+}
+
+definition{
+  name: sample,
+  parameters: [],
+  result: Json,
+  body: (ctor Json.object (cons ("a", (ctor Json.array (cons (ctor Json.null) (cons (ctor Json.text "x") (nil Json))))) (cons ("b", (ctor Json.null)) (nil (String * Json)))))
+}
+
+theorem{name: sample_size, parameters: [], statement: ((size (sample)) = 5), proof: reflexivity{}}
+
+theorem{
+  name: sample_leaves,
+  parameters: [],
+  statement: ((leaves (sample)) = 3),
+  proof: reflexivity{}
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -272,6 +272,87 @@ and Unreleased holds what has landed since.
 
 ## Unreleased
 
+- Canonical JSON reading in the standard library, the fourth member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
+  `LexLeanStd.JsonRead` holds the production roots `readJson` and
+  `readJsonFile` for `rust-std`, which read the canonical JSON of §21.7 back
+  into the `Json` value of `LexLeanStd.Json` and refuse any text the writer
+  would not write: whitespace, `null`, a number past `i64` or not in its
+  shortest form, keys out of order or repeated, an escape the writer does not
+  emit, and a byte after the value. They are held to `Json::parse` with the
+  text required to be what `to_canonical_string` writes of it. `stdlib/lexlean.toml`
+  gains the entrypoint, so the locks of `stdlib` and its consumers move. The
+  register is 478 IDs.
+- Maps and sets in the standard library, the fifth member the self-hosted
+  compiler needs, #276 (SPEC.md §17.22, `SL-14`). The module `LexLeanStd.Map`
+  holds ten production roots for `rust-std` over strictly ascending lists of
+  `Bytes` keys: `mapFromEntries`, `mapInsert`, `mapGet`, `mapRemove`, and
+  `mapExtend` for a map of `Bytes` values, and `setContains`, `setRemove`,
+  `setUnion`, `setIntersection`, and `setDifference` for a set, held to
+  `BTreeMap` and `BTreeSet`, whose `String` keys the front end's tables and name
+  sets use. `stdlib/lexlean.toml` gains the entrypoint, so the locks of `stdlib`
+  and its consumers move, and the ten packages move the counts `BS-05` to
+  `BS-08` and `BS-11` to `BS-15` assert. The register is 477 IDs.
+- Canonical JSON writing in the standard library, the third member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-11`). The module
+  `LexLeanStd.Json` holds the recursive value of §21.7 and the production
+  roots `writeJson`, `writeJsonFile`, and `escapeString` for `rust-std`, held
+  to `canonical_json::Json::to_canonical_string` and `to_file_bytes`: keys in
+  UTF-8 byte order with the last of a repeated key kept, shortest integers,
+  the required escapes, no whitespace. `stdlib/lexlean.toml` gains the
+  entrypoint, so the locks of `stdlib` and its consumers move, and the three
+  packages move the counts `BS-05` to `BS-08` and `BS-13` to `BS-15` assert.
+  The register is 476 IDs.
+- Induction over a nested inductive type, #278 (SPEC.md §16.9, §17.10, §17.12,
+  `SM-37`). A new proof step, `nested_induction`, proves a statement about a
+  value of a nested inductive type (a type with a constructor that holds
+  itself under `List`, `Option`, `Result`, or a product) by the type's own
+  recursor: one branch for each constructor of the recursive family, in the
+  recursor's order, each binding its fields and one hypothesis for every field
+  that is a member of the family. The compiler checks the branch set, the
+  binder counts and the members before any backend and lowers the step to
+  `induction x using T.rec (motive_n := ...)` with positional `next` goals.
+  `induction` keeps refusing such a type, and its message now names
+  `nested_induction`. Moves the compiler-semantics identity: `semantic_ir` 15
+  to 16 and `proof_lowering` 3 to 4 in `language/semantics-1.2.toml`, and both
+  schemas gain the step; the locks, records, goldens, fixtures and packages the
+  digest binds are regenerated at landing. The register is 475 IDs.
+- Structural recursion over the recursive family of a nested inductive type,
+  #278 (SPEC.md §17.12, `DF-19`). A mutual definition group may decrease on any
+  member of the family the pinned Lean takes as the motives of the type's
+  recursor (the type, then each `List`, `Option`, `Result`, or product that
+  holds it, in the order of discovery), so a function over a type with a
+  constructor that holds `List (String * Json)` recurses through the list and
+  through the pair. One checker change; no file of the compiler-semantics
+  digest moves, so no identity moves. The register is 470 IDs.
+
+- The Intel macOS host-gate cost correction for #235 keeps SP-02's complete
+  certificate scaling families and TC-03's seeded argument/fuel sweep on the
+  normative Linux host, with fixed certificate vectors and committed fixture
+  assertions on every supported host. TC-03 and TC-05 render and parse their
+  shared fixture modules once for declaration membership checks. No
+  acceptance recipe, normative assertion, or kernel replay is removed.
+
+
+- `PD-10`, the first slice of the effects boundary (#271). The standard library
+  gains `LexLeanStd.Host`, the types a command root is written against, and the
+  production registry of language 1.2 gains the effects `files` and `process`
+  and one `[[request]]` row per constructor of `Request`. A root whose closure
+  builds a request must admit that request's effect, or it fails with `LLT4005`.
+  Nothing performs a request yet. The language-1.2 compiler-semantics ID moves;
+  1.0 and 1.1 do not.
+
+- `SP-33`, certificate B of a match arm that returns a boxed field (#310). `fold`
+  of the Rust lowering and `returnedLet` of `RustBodies` fold a returned clone,
+  which is the arm the library's `mCons` states (`LLV7015`). `lower.rs` is a file
+  of the renderer, so `rust_renderer` and the language-1.2 identity move.
+
+- `SP-32`, certificate A of a recursive function with a matched parameter before
+  its recursive argument (#314). The Lean backend states the declared argument
+  with `termination_by structural` when a definition is executable and matches
+  such a parameter, where Lean's own search took that parameter and left the
+  definition stuck on it (`LLV7013`). `lean_backend` of language 1.2 moves.
+
 - The #34 closure pass (documentation and evidence; no register row, language
   datum, schema, or compiler source moves). Sixteen examples carry a `README.md`
   that names the register rows whose gates run on them, what
@@ -308,6 +389,33 @@ and Unreleased holds what has landed since.
   is the whole gate. The register is unchanged: the statement of `RP-14` is
   extended.
 
+- Hexadecimal and decimal in the standard library, the first member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-09`). The module
+  `LexLeanStd.Numeral` holds `decimal` and `hexNat` (the digits of a natural
+  number), `hex` (the lowercase digits of bytes), and the canonical readers
+  `parseDecimal` and `parseHex`, each a production root for `rust-std`. Their
+  oracles are the compiler's own readings (`u64` formatting and parsing,
+  `canonical_digits`, `canonical_hex`, `Sha256Digest::to_hex`), so a reader
+  refuses exactly the text the front end refuses, and a canonical decimal past
+  the target width is an overflow as it is for `u64`. The case also checks that
+  each reader reads back its printer's output. `stdlib/lexlean.toml` gains the
+  entrypoint, so the locks of `stdlib`, `bootstrap`, and `examples/helpdesk`
+  move, and the `stdlib` records and production export are regenerated. The
+  five new packages move the counts `BS-05` and `BS-06` assert. The register is
+  459 IDs.
+- Sorting and order in the standard library, the second member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-10`). The module
+  `LexLeanStd.Order` holds the byte order of `Ord for [u8]` and one bottom-up
+  merge sort generic over an entry's value, with the production roots
+  `sortBytes`, `sortEntries` (stable on the key), `sortedSet`,
+  `insertSorted`, and `isAscending` for `rust-std`, held to `slice::sort`,
+  `slice::sort_by`, `BTreeSet`, and `windows(2)`. `stdlib/lexlean.toml` gains
+  the entrypoint, so the locks of `stdlib` and its consumers move, and the
+  `stdlib` records and production export are regenerated. The five new packages
+  move the counts `BS-05` to `BS-08` and `BS-11` to `BS-15` assert, and `BS-05`
+  now holds the list match under `rust-core` with a crate by hand, since the
+  mutants reach it too rarely to rely on. The register is 468 IDs.
+
 ## 0.4.0
 
 Release `0.4.0` is cut at the downstream boundary (#92, 2026-10-25): what the
@@ -334,6 +442,20 @@ negative-fixture bullet of #34 is not met for them. The language-model rows are
 `LM-01` to `LM-09` and `LM-13`. Nothing below claims more than the certificates
 of this tree show.
 
+- The LaTeX backend of the tooling modules is language-1.2 source (SPEC.md
+  §17.23, §17.20; `BS-20`, #270). `renderToolingLatex` of `ToolingLatex`, over
+  the closed schema of the tooling module as data (`ToolingAst`, each recursive
+  list a chain of its own `Nil` and `Cons`), the typings the checker infers and
+  the reserved tokens of the toolchain as arguments, writes line by line through
+  the standard library's `Buffer` with an explicit capacity, and is held to
+  `backend::tooling::latex_text` to the byte on the three committed tooling
+  modules, on modules made from them to stress the escaper, the quoting of a
+  name and a character, and the trimming of a line, and on seeded mutants,
+  with seventeen planted defects. `render_latex` now takes its text from
+  `latex_text`, so the oracle the case holds the module to is the text the
+  backend emits. The checker, the decoder of the module, the source map, the
+  Lean backend, and the verification driver stay in the host. The register is
+  469 IDs.
 - The release workflow's evidence is the gate run of the tagged commit (SPEC.md
   §9.4, §30.3; `RP-18`). `release.yml` no longer runs `just vv` on one runner:
   rehearsals 3 and 4 showed the `bdd` recipe alone takes over four hours there
@@ -722,10 +844,130 @@ of this tree show.
   because a chain of `append` is quadratic (the work counter quadruples as n
   doubles). `bootstrap/src/RustPrint.lex.tex` over `RustAst.lex.tex` declares
   `printCrate` and `printExpr` as production roots for `rust-std`. `BS-06`
-  runs 2,559 vectors under the pinned `rustc` on every host, and on the
-  normative host the evaluator on 541 + 1,955 of them and 400 + 399 seeded
+  runs 2,566 vectors under the pinned `rustc` on every host, and on the
+  normative host the evaluator on 545 + 1,955 of them and 400 + 399 seeded
   mutants, 2,984 more under `rustc`, twelve planted defects, and the certified
-  packages against the committed ones. The register is 447 IDs.
+  packages against the committed ones. The register is 445 IDs.
+- The failure typing of the Rust lowering as language-1.2 source, first slice of
+  the lowering (SPEC.md §17.23, §17.16, `BS-07`, #92; no new diagnostic code,
+  no change to the language-1.2 identity). `calculus::rust::fallible_functions`
+  is three production roots for `rust-std` composed by the host: `siteTrees`
+  of `CalculusCheck` (the type of each scrutinee and applied target, computed
+  by the module's own `walk` and `inferTy`), and `deadFunctions` and
+  `fallibleFunctions` of `RustLower`, which read that tree and never call
+  `walk`. One root holding the analysis measured a certificate part of
+  4,465,840 bytes against `max_file_bytes` of 4,194,304; the three measure
+  3,144,673, 1,250,877, and 1,003,841 (three quarters of the limit is
+  3,145,728). `BS-07` runs 927 vectors under the pinned `rustc` on every host,
+  and on the normative host the evaluator on 272 of them and 150 seeded
+  mutants, 4,500 more runs under `rustc`, thirteen planted defects, and the
+  certified packages against the committed ones. The oracle exposes
+  `calculus::sites::trees`; the dead functions are read from the crate
+  `rust::lower` renders (an empty match on the uninhabited parameter). The register
+  is 446 IDs.
+- The types of the Rust lowering as language-1.2 source, second slice of the
+  lowering (SPEC.md §17.23, §17.16, `BS-07`, #92; no new diagnostic code, no
+  change to the language-1.2 identity). `lowerTypes` of `RustLower` returns the
+  enum of each ADT and of each function type and the dispatch of each function
+  type as a `RustAst.Def` chain, given the typing tree and the dead and failing
+  functions of the first slice, and numbers the function types as the oracle
+  does. Its largest certificate part is 1,535,849 bytes (the budget is
+  3,145,728; the typing root is unchanged). `BS-07` runs 1,292 vectors under
+  `rustc` on every host and 6,000 seeded runs, the evaluator on 273 vectors
+  and 150 mutants per root, twenty planted defects. The register is 446 IDs.
+- The last-use moves of the Rust lowering as language-1.2 source, first pass of
+  the function bodies (SPEC.md §17.23, §17.16, `BS-08`, #92; no new diagnostic
+  code, no change to the language-1.2 identity). `applyMoves` of `RustMoves`
+  rewrites the function bodies of a `RustAst` crate as
+  `calculus::rust::moves::apply` does, held to the public oracle to the byte
+  on 382 crates and on seeded mutants of the smaller ones. Its certificate
+  part is 565,927 bytes, 13.5% of `max_file_bytes`. The register is 447 IDs.
+- The literal values of the Rust lowering as language-1.2 source, first pass of
+  the lowering of terms (SPEC.md §17.23, §17.16, `BS-10`, #92; no new diagnostic
+  code, no change to the language-1.2 identity). `lowerValueAt` of `RustTerms`
+  lowers the literal that is the body of a function of a program as
+  `Lowering::value` does, held to the tail of that function in the crate
+  `rust::lower` returns, to the byte, on 358 explicit runs and seeded ones; no
+  file of the renderer changes. Its certificate part is 2,004,962 bytes, 47.8% of
+  `max_file_bytes`. The bootstrap project's roots together passed the default
+  `max_total_source_bytes` at this root (67,815,299 bytes), so the project
+  configures 134217728 (SPEC.md §17.23). The register is
+  456 IDs.
+- The terms of a function body of the Rust lowering as language-1.2 source,
+  second pass of the lowering of terms (SPEC.md §17.23, §17.16, `BS-11`, #92;
+  no new diagnostic code, no change to the language-1.2 identity). `useTrees`
+  of `CalculusCheck` and `lowerFrame`, `lowerBodies`, and `foldBodies` of
+  `RustBodies` lower the function bodies of a program and fold them as
+  `Lowering::expr` and `fold` do, held to the Function items of `rust::lower`
+  by composition with `applyMoves`, to the byte, on 156 vectors and 320 seeded
+  mutants; no file of the renderer changes. The largest certificate part is
+  5,328,431 bytes (`lowerBodies`), 84.7% of `max_file_bytes`. The bootstrap
+  project configures `max_child_output_bytes = 33554432`, the Lean extraction
+  of `RustBodies` writing more than 16,777,216 bytes. Certificate B refuses a
+  match arm that returns a binder of the matched type (#310). The register is
+  458 IDs.
+- The value a function that can overflow returns, as language-1.2 source, third
+  pass of the lowering of terms (SPEC.md §17.23, §17.16, `BS-12`, #92; no new
+  diagnostic code, no change to the language-1.2 identity). `succeedBodies` of
+  `RustSucceed` pushes `Ok` into every tail of the bodies of the functions that
+  can overflow as `succeed` does, held to the Function items of `rust::lower`
+  by composition with the roots of `BS-11` and `applyMoves`, to the byte, on 76
+  vectors and 179 seeded mutants; no file of the renderer changes. Its
+  certificate part is 648,077 bytes, 10.3% of `max_file_bytes`. The register is
+  459 IDs.
+- A function whose self calls are all tail calls, rendered as a loop, as
+  language-1.2 source (SPEC.md §17.23, §17.16, `BS-13`, #92; no new diagnostic
+  code, no change to the language-1.2 identity). `loopFunction` of `RustLoops`
+  ports `tail::looped`, held to the Function items of `rust::lower` by
+  composition with the roots of `BS-11` and `BS-12` and `applyMoves`, function
+  by function with the counter of the fresh names, to the byte, on 92 vectors
+  and 79 seeded mutants; `lowerBodies` takes that counter and returns the one
+  after its bodies. No file of the renderer changes. The certificate part of
+  `loopFunction` is 744,534 bytes, 11.8% of `max_file_bytes`. The register is
+  460 IDs.
+- The crate around the bodies of the Rust lowering as language-1.2 source, last
+  pass of the lowering of terms (SPEC.md §17.23, §17.16, `BS-14`, #92; no new
+  diagnostic code, no change to the language-1.2 identity). `functionShells`
+  and `assembleItems` of `RustAssemble` make the parameters, the result type,
+  and the body of a function with an uninhabited parameter, and put the items
+  of the types, those shells, and what the loop pass returned into one chain,
+  held to the whole chain of items of `rust::lower`'s crate (the types' too) by
+  composition with the earlier roots and `applyMoves`, to the byte, on 326
+  vectors and 564 seeded mutants; what the Rust host still does is thread the
+  counter of the fresh names, and three hosts that do more are planted. The
+  largest certificate part is 1,195,444 bytes (`functionShells`). The register
+  is 461 IDs.
+- The package renderer as language-1.2 source, first slice of the package
+  (SPEC.md §17.23, §17.16, `BS-15`, #272; no new diagnostic code, no change to
+  the language-1.2 identity). `checkManifest` and `renderPackage` of
+  `RustPackage` make the checks `package::lower` runs on a manifest's own
+  fields before it reads the program, with the same refusals, and write the
+  `Cargo.toml` and the `provenance.json` of `package::package`, held to the
+  oracle to the byte on the 296 committed manifests, 182 rule manifests, and
+  2,000 seeded mutants, and on the 277 accepted manifests, 137 hand-built
+  inputs of the escaper and the scaffold, and 277 seeded mutants; twenty-one
+  planted defects are each detected. No file of the renderer changes. The
+  register is 467 IDs.
+Historical original #390 record (`ffb352ac`, before the final Host identity):
+the evidence and regeneration described in the following entry belong to that
+source. The current explicit redelivery is source-only; model projections,
+bootstrap products, combined counts and final acceptance remain pending.
+
+- The validation of a GNAF request as language-1.2 source, first part of the GNAF
+  requests and certification (SPEC.md §17.23, §17.15, §17.18, `BS-16`, #275; no new
+  diagnostic code, no change to the language-1.2 identity). `validateRequest` of
+  `GnafValidate` makes the checks `gnaf::validate` runs on a request, in the oracle's
+  order and with the same twenty-one refusals, and writes the refusal through the
+  standard library's `Buffer`; it is a production root for `rust-std`. It is held to
+  the oracle to the byte on 3,862 requests (60 committed, 802 hand-built, 3,000
+  seeded mutants; 3,522 refused), under the calculus evaluator and under the rendered
+  package compiled by the pinned rustc; twelve planted defects are each detected.
+  `bootstrap/lexlean.lock` and the production export are regenerated with the new
+  package, so the counts `BS-05`, `BS-06`, `BS-07`, `BS-08`, `BS-13`, `BS-14`, and
+  `BS-15` assert move by one manifest. What remains of #275: the answer, the
+  universe, and the certification (`BS-17` to `BS-19`), the premise facts after the
+  evaluator, `calculus::interp`, `realization`, and `Program::id`. The register is
+  470 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or
