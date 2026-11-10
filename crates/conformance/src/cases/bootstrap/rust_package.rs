@@ -1131,7 +1131,10 @@ mod tests {
             .collect();
         let expected = previous_corpora(&renders, &shaped, &mutants);
         let observed = render_corpora(&renders, &shaped, &mutants);
-        assert_eq!(observed, expected, "both ordered vectors are byte-identical");
+        assert_eq!(
+            observed, expected,
+            "both ordered vectors are byte-identical"
+        );
         assert_eq!(observed.0.len(), 24, "both profiles include the boundary");
         assert_eq!(observed.1.len(), 36, "rustc keeps every render");
     }
