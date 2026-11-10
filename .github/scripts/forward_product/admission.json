@@ -1,0 +1,177 @@
+{
+  "ordinary": [
+    {
+      "path": "bootstrap/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "bootstrap/lexlean.lock"
+    },
+    {
+      "path": "compiler/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "compiler/lexlean.lock"
+    },
+    {
+      "path": "examples/collections/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/collections/lexlean.lock"
+    },
+    {
+      "path": "examples/fold-laws/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/fold-laws/lexlean.lock"
+    },
+    {
+      "path": "examples/helpdesk/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/helpdesk/lexlean.lock"
+    },
+    {
+      "path": "examples/higher-order/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/higher-order/lexlean.lock"
+    },
+    {
+      "path": "examples/language-1.2/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/language-1.2/lexlean.lock"
+    },
+    {
+      "path": "examples/list-induction/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.0",
+      "lock": "examples/list-induction/lexlean.lock"
+    },
+    {
+      "path": "examples/models/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/models/lexlean.lock"
+    },
+    {
+      "path": "examples/nat-add-zero/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.0",
+      "lock": "examples/nat-add-zero/lexlean.lock"
+    },
+    {
+      "path": "examples/nested-induction/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/nested-induction/lexlean.lock"
+    },
+    {
+      "path": "examples/peano-arithmetic/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.0",
+      "lock": "examples/peano-arithmetic/lexlean.lock"
+    },
+    {
+      "path": "examples/performance-corpus/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/performance-corpus/lexlean.lock"
+    },
+    {
+      "path": "examples/production/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/production/lexlean.lock"
+    },
+    {
+      "path": "examples/production-coverage/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/production-coverage/lexlean.lock"
+    },
+    {
+      "path": "examples/propositional-logic/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.0",
+      "lock": "examples/propositional-logic/lexlean.lock"
+    },
+    {
+      "path": "examples/reasoning/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/reasoning/lexlean.lock"
+    },
+    {
+      "path": "examples/recursion/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/recursion/lexlean.lock"
+    },
+    {
+      "path": "examples/recursive-data/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "examples/recursive-data/lexlean.lock"
+    },
+    {
+      "path": "examples/semantic-1.1/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.1",
+      "lock": "examples/semantic-1.1/lexlean.lock"
+    },
+    {
+      "path": "examples/uor-atlas/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.0",
+      "lock": "examples/uor-atlas/lexlean.lock"
+    },
+    {
+      "path": "kappa/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "kappa/lexlean.lock"
+    },
+    {
+      "path": "spec/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "spec/lexlean.lock"
+    },
+    {
+      "path": "std-models/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "std-models/lexlean.lock"
+    },
+    {
+      "path": "std-reasoning/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "std-reasoning/lexlean.lock"
+    },
+    {
+      "path": "stdlib/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "stdlib/lexlean.lock"
+    },
+    {
+      "path": "tests/preservation-certificates/lists/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "tests/preservation-certificates/lists/lexlean.lock"
+    },
+    {
+      "path": "tests/rust-backend/loop-ends/lexlean.toml",
+      "mode": "official-lock",
+      "language": "1.2",
+      "lock": "tests/rust-backend/loop-ends/lexlean.lock"
+    }
+  ],
+  "model": {
+    "SPEC.md": "da9ae5994a9523113eb353a9819d9eaf66580427576fd377e2e73d655d9b66e2",
+    "CONFORMANCE.md": "3df7dff3a00949c023e664fd2df88ee0eed981b91d09cfc2d7ff376773593050",
+    "model/ids.toml": "385b7680bebb040489ecc7694be5fd14b054569c6aacb62b4baa4e531e89965f"
+  }
+}
