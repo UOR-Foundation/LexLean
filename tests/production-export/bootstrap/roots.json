@@ -17,8 +17,24 @@
       "version": "1.0.0"
     },
     {
+      "name": "attestation_id",
+      "root": "LexLeanBoot.ContentId.attestationId",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "audit_tokens",
       "root": "LexLeanBoot.TokenAudit.auditTokens",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "build_id",
+      "root": "LexLeanBoot.ContentId.buildId",
       "targets": [
         "rust-std"
       ],
@@ -153,6 +169,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "pdf_recipe_id",
+      "root": "LexLeanBoot.ContentId.pdfRecipeId",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "print_crate",
       "root": "LexLeanBoot.RustPrint.printCrate",
       "targets": [
@@ -201,6 +225,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "semantic_id",
+      "root": "LexLeanBoot.ContentId.semanticId",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "site_trees",
       "root": "LexLeanBoot.CalculusCheck.siteTrees",
       "targets": [
@@ -209,8 +241,24 @@
       "version": "1.0.0"
     },
     {
+      "name": "source_id",
+      "root": "LexLeanBoot.ContentId.sourceId",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "succeed_bodies",
       "root": "LexLeanBoot.RustSucceed.succeedBodies",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "tree_digest",
+      "root": "LexLeanBoot.ContentId.treeDigest",
       "targets": [
         "rust-std"
       ],
