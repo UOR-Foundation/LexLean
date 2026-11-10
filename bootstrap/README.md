@@ -21,3 +21,6 @@ writes the rejection of a GNAF request through it.
 
 `src/StructuralGrammar.lex.tex` imports `PrimitiveScan` for the atoms it reads
 and the refusal it returns, and `Buffer` and `Numeral` from the standard library.
+
+`src/ManifestText.lex.tex` (SPEC.md §17.23, `BS-34`) imports the standard library's `Json`,
+`Numeral`, `Order`, and `Text`, and writes the build manifest of SPEC.md §21.6.
