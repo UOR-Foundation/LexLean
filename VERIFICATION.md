@@ -11046,6 +11046,49 @@ writes them); `cargo clippy -p repo-conformance -p xtask --all-targets
 --all-features -D warnings`, `validate-model` (461 ids), `validate-spec-links`
 (461 rows), `check-test-inventory`, and the five `bdd` meta-gate tests pass.
 
+### the hash recipes of content identity are source (BS-32)
+
+`BS-32` holds the six production roots of `LexLeanBoot.ContentId`
+(`bootstrap/src/ContentId.lex.tex`) to the recipes of `artifact::content_id`:
+`treeDigest` to `tree_digest`, `sourceId` to `source_id`, `semanticId` to
+`semantic_id_for`, `buildId` to `build_id`, `attestationId` to
+`attestation_id`, and `pdfRecipeId` to `pdf_recipe_id`. Each root writes its
+recipe's domain, a NUL, and its frames, each frame the big-endian four-byte
+length of its label, the label, the big-endian eight-byte length of its payload,
+and the payload, and returns the 32 bytes of the message's SHA-256 under the
+standard library's `Sha256`. The semantic ID frames the pinned Lean toolchain.
+Each root admits exactly `allocation` and `overflow`, and none admits
+`recursion`. The oracle is the existing public code of `content_id.rs`; no Rust
+outside the case changes. The case holds the roots to the oracle on hand-built
+inputs that reach every frame of every recipe, an empty tree, an empty path, a
+path of 300 bytes, and a message across blocks; on the trees and source inputs of
+the committed projects, the manifest, the lock, and the sources under `src/`, up
+to 4,096 bytes under the evaluator and 65,536 under rustc; on the source and
+semantic IDs of every committed build manifest, whose recorded build ID the case
+asserts the oracle reproduces; and on seeded inputs. Each planted defect names
+the one vector that catches it, and the case asserts that the site of each plant
+occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `ContentId`: `lexlean check`, `lexlean build`, and `lexlean
+verify` pass, and the eligibility report gives each root exactly `allocation`
+and `overflow`. The register agrees with the §31 table on 479 IDs, by the same
+parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host over
+`release/v0.4` at `cf76090d4` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_32`, 225 s). Its corpus is 17 named vectors, the
+362 committed projects (180 trees under the evaluator, 345 under rustc), the 26
+committed build manifests, each of whose build ID the oracle reproduces, and 100
+and 500 seeded runs of each root. The evaluator agrees with the oracle on 287
+trees, 283 source IDs, 102 semantic IDs, 128 build IDs, 102 attestation IDs, and
+101 PDF recipe IDs, the rendered packages under the pinned rustc on 3,733 runs,
+and each of the 15 planted defects is detected by its own vector. The first runs
+found no fault of the recipes: Lean asked for exactly the axioms the module now
+declares. The case then stops at the stack-bound step, `bootstrap/tree_digest is
+no package of the committed exports`, as each bootstrap member did before its
+regeneration, which produces the six packages.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

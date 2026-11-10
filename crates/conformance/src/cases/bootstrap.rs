@@ -13,6 +13,7 @@ use lexlean::production::lower::{linked_modules, lower_root, roots, Lowered};
 use serde_json::Value as Json;
 
 mod calculus_check;
+mod content_id;
 pub mod perf;
 
 use crate::production_export as harness;
@@ -2457,6 +2458,7 @@ fn case(id: &str) {
         "BS-16" => gnaf_validate::case(),
         // §17.23, §17.20: the canonical LaTeX of a tooling module.
         "BS-20" => tooling_latex::case(),
+        "BS-32" => content_id::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

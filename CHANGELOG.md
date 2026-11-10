@@ -17,6 +17,11 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The labeled hash recipes of content identity as language-1.2 source (SPEC.md
+  §17.23, §21.1 to §21.5, `BS-32`, #274; no new diagnostic code, no change to the
+  language-1.2 identity). `treeDigest`, `sourceId`, `semanticId`, `buildId`,
+  `attestationId`, and `pdfRecipeId` of `ContentId` return what the recipes of
+  `artifact::content_id` return; none admits `recursion`. The register is 479 IDs.
 - Canonical JSON reading in the standard library, the fourth member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
   `LexLeanStd.JsonRead` holds the production roots `readJson` and
