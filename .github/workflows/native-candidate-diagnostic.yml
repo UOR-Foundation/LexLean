@@ -1,0 +1,55 @@
+name: native candidate diagnostic
+on:
+  push:
+    branches: [diagnostic/465-native-candidate]
+permissions:
+  contents: read
+jobs:
+  candidate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      CARGO_TERM_COLOR: always
+      CARGO_INCREMENTAL: "0"
+      LEAN_NUM_THREADS: "2"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: cc5561203de8fa5594d573904147a306b2b8bbbf
+          persist-credentials: false
+      - name: Install exact project toolchains
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup toolchain install
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - name: Build diagnostic compiler and record provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = cc5561203de8fa5594d573904147a306b2b8bbbf
+          cargo build --locked -p lexlean
+          mkdir -p diagnostic
+          cp target/debug/lexlean diagnostic/lexlean
+          git rev-parse HEAD > diagnostic/source-commit.txt
+          git rev-parse HEAD^{tree} > diagnostic/source-tree.txt
+          rustc --version --verbose > diagnostic/rust-version.txt
+          lean --version > diagnostic/lean-version.txt
+          cp rust-toolchain.toml lean-toolchain Cargo.lock diagnostic/
+          sha256sum diagnostic/lexlean > diagnostic/lexlean.sha256
+          printf '%s\n' 'DIAGNOSTIC ONLY. Not a released compiler, qualified SDK, or acceptance substitute. Source is PR466 cc5561203. No product gate has been weakened. RT-03 result and source provenance must accompany any rehearsal.' > diagnostic/README.txt
+      - name: Run the focused native regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo test --locked -p repo-conformance --test conformance --all-features conformance_rt_03 -- --exact --nocapture 2>&1 | tee diagnostic/rt03.log
+          printf '%s\n' 'RT-03 passed on the recorded source and toolchains.' > diagnostic/rt03-success.txt
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: native-candidate-cc5561203-diagnostic-only
+          path: diagnostic/
+          if-no-files-found: error
+          retention-days: 7
