@@ -333,6 +333,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `GL-16` | `build` | Package and entry bytes participate in lock and semantic closure hashes exactly as specified. |
 | `GL-17` | `build` | Language 1.2 resolves the exact 1.2 builtin package closure and enforces 1.2 lexicon semantics. |
 | `GL-18` | `build` | Cross-version package, lexicon, and lock combinations fail closed before backend execution. |
+| `GL-22` | `build` | Document denotations over exported semantic-module inductive and structure types, definitions, and theorems resolve through explicit module imports with their exact canonical signatures and generated Lean names; unavailable declarations and mismatching signatures are refused before verification. |
 
 ## models
 

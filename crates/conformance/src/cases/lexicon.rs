@@ -2,6 +2,8 @@
 
 use lexlean::LockRequest;
 
+mod semantic_document;
+
 use crate::support::{self, P};
 
 /// Lock a mutated project, expecting the given diagnostic code.
@@ -1606,6 +1608,7 @@ math = "(seq (operator-name gsucc) (paren (slot 0)))"
                 }
             }
         }
+        "GL-22" => semantic_document::run(),
         other => panic!("no lexicon case is wired for {other}"),
     }
 }

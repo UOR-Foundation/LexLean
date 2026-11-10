@@ -147,5 +147,12 @@ definition{
   body: (record Rows::IdRow {id := "GL-18", level := "build", suite := "lexicon", statement := "Cross-version package, lexicon, and lock combinations fail closed before backend execution.", sections := "§10.1, §13.11"}),
   executable: true
 }
+definition{
+  name: gl22,
+  parameters: [],
+  result: Rows::IdRow,
+  body: (record Rows::IdRow {id := "GL-22", level := "build", suite := "lexicon", statement := "Document denotations over exported semantic-module inductive and structure types, definitions, and theorems resolve through explicit module imports with their exact canonical signatures and generated Lean names; unavailable declarations and mismatching signatures are refused before verification.", sections := "§13.6, §17.7"}),
+  executable: true
+}
 \end{semanticmodule}
 \end{lexlean}

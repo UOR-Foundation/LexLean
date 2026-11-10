@@ -751,6 +751,16 @@ fn check_project_inline(
             }
         }
 
+        for row in &decls.semantic {
+            if imports.contains(&row.module) {
+                let mut visible_row = row.clone();
+                if let Some(written) = renamed.get(&row.module) {
+                    visible_row.module = written.clone();
+                }
+                module_decls.semantic.push(visible_row);
+            }
+        }
+
         // A package module is named by its Lean name throughout the linked
         // project; the project's own are named under the project's prefix.
         let lean_module = if load.package.is_some() {
@@ -1190,6 +1200,17 @@ fn check_project_inline(
         };
         if let Err(reason) = coverage.check_source_closure(&load.path, &load.atoms) {
             return Err(err(vec![Diagnostic::new(code!("LLL1005"), reason)]));
+        }
+
+        // Publish semantic headers only after this module's own validation,
+        // production checks and complete source closure have succeeded.
+        if let Some(semantic) = &document.semantic {
+            decls.semantic.extend(crate::elaborate::semantic::exports(
+                module_name,
+                &document.lean_module,
+                semantic,
+                &document.import_lean,
+            ));
         }
 
         modules.insert(

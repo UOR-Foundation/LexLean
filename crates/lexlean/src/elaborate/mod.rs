@@ -8,6 +8,7 @@ pub mod delta;
 pub mod expressions;
 pub mod proofs;
 pub mod resolve;
+pub mod semantic;
 
 use std::collections::BTreeSet;
 
@@ -41,9 +42,19 @@ pub struct DeclInfo {
 pub struct DeclTable {
     /// The rows.
     pub rows: Vec<DeclInfo>,
+    /// Successfully linked semantic headers, converted only at prose use.
+    pub semantic: Vec<semantic::SemanticExport>,
 }
 
 impl DeclTable {
+    /// Look up a semantic declaration by its source-visible import key.
+    #[must_use]
+    pub fn semantic_get(&self, module: &str, component: &str) -> Option<&semantic::SemanticExport> {
+        self.semantic
+            .iter()
+            .find(|row| row.module == module && row.component == component)
+    }
+
     /// Look up a declaration.
     #[must_use]
     pub fn get(&self, module: &str, component: &str) -> Option<&DeclInfo> {
@@ -443,17 +454,25 @@ pub fn elab_binder(
     let ty = match &binder.type_phrase {
         TypePhraseAst::Noun { candidates, atoms } => {
             let mut survivors: Vec<(String, Term, SourceRow)> = Vec::new();
+            let mut refusal = None;
             for reference in candidates {
                 let mut elaborator = ExprElab::new(shared, scopes, alloc, budget);
                 let leaf = crate::grammar::math::MathAst::Leaf {
                     kinds: vec![crate::grammar::math::LeafKind::Form(reference.clone())],
                     atoms: *atoms,
                 };
-                if let Ok(result) = elaborator.elaborate(&leaf, None) {
-                    let key = result.term.eq_key();
-                    if !survivors.iter().any(|(existing, ..)| *existing == key) {
-                        let row = result.rows[0].clone();
-                        survivors.push((key, result.term, row));
+                match elaborator.elaborate(&leaf, None) {
+                    Ok(result) => {
+                        let key = result.term.eq_key();
+                        if !survivors.iter().any(|(existing, ..)| *existing == key) {
+                            let row = result.rows[0].clone();
+                            survivors.push((key, result.term, row));
+                        }
+                    }
+                    Err(diagnostic) => {
+                        if refusal.is_none() {
+                            refusal = Some(diagnostic.message);
+                        }
                     }
                 }
             }
@@ -467,7 +486,10 @@ pub fn elab_binder(
                     let a = &shared.atoms[atoms.0];
                     return Err(Diagnostic::new(
                         code!("LLT4001"),
-                        "no type-noun interpretation survives",
+                        format!(
+                            "no type-noun interpretation survives{}",
+                            refusal.map_or_else(String::new, |reason| format!(": {reason}"))
+                        ),
                     )
                     .with_span(a.span(shared.path)));
                 }

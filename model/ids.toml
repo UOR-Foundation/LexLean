@@ -419,6 +419,12 @@ suite = "lexicon"
 statement = "Cross-version package, lexicon, and lock combinations fail closed before backend execution."
 
 [[id]]
+id = "GL-22"
+level = "build"
+suite = "lexicon"
+statement = "Document denotations over exported semantic-module inductive and structure types, definitions, and theorems resolve through explicit module imports with their exact canonical signatures and generated Lean names; unavailable declarations and mismatching signatures are refused before verification."
+
+[[id]]
 id = "GR-01"
 level = "build"
 suite = "grammar"

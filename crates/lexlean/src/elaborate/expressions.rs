@@ -583,6 +583,7 @@ fn unify(a: &Term, b: &Term, metas: &mut Metas) -> bool {
             // introduced them (`the successor of n` and `succ(n)` are both
             // `Nat.succ`).
             let same_constant = match (gx, gy) {
+                (GlobalRef::Document(x), GlobalRef::Document(y)) => x.lean_name == y.lean_name,
                 (GlobalRef::External(x), GlobalRef::External(y)) => {
                     x.lean_module == y.lean_module && x.lean_name == y.lean_name
                 }
@@ -652,6 +653,27 @@ fn unify(a: &Term, b: &Term, metas: &mut Metas) -> bool {
             }
             let vy_renamed = subst(vy, &rename);
             unify(vx, &vy_renamed, metas)
+        }
+        (
+            Term::Let {
+                binder: bx,
+                value: vx,
+                body: body_x,
+            },
+            Term::Let {
+                binder: by,
+                value: vy,
+                body: body_y,
+            },
+        ) => {
+            // A let's binder scopes only its body, never its type or value.
+            // Compare those outside the renaming, then alpha-rename the
+            // body's unique local identity without performing any reduction.
+            if bx.mode != by.mode || !unify(&bx.ty, &by.ty, metas) || !unify(vx, vy, metas) {
+                return false;
+            }
+            let rename = BTreeMap::from([(by.id, Term::Local(bx.id))]);
+            unify(body_x, &subst(body_y, &rename), metas)
         }
         (
             Term::NatLiteral {
@@ -771,12 +793,18 @@ impl LseWalk<'_, '_, '_> {
     /// The signature type of a constant, converted afresh, for typing the
     /// arguments it is applied to; `None` when unavailable or when the
     /// constant's own signature is being converted.
-    fn constant_type(&mut self, id: &QualifiedId) -> Option<Term> {
+    fn constant_type(&mut self, id: &QualifiedId) -> Result<Option<Term>, LseError> {
         if self.visiting.contains(id) {
-            return None;
+            return Ok(None);
         }
-        let entry = self.shared.closure.entry(id)?;
-        let signature = entry.signature.as_ref()?.clone();
+        let entry = self
+            .shared
+            .closure
+            .entry(id)
+            .ok_or_else(|| LseError::Unavailable(format!("`{id}` is absent")))?;
+        let Some(signature) = entry.signature.as_ref().cloned() else {
+            return Ok(None);
+        };
         let universe_map = universe_map(&entry.universes, |_, name| {
             match self.metas.as_deref_mut() {
                 Some(metas) => Universe::Var(metas.fresh_universe(self.alloc)),
@@ -786,11 +814,25 @@ impl LseWalk<'_, '_, '_> {
         self.visiting.push(id.clone());
         let saved_scope = std::mem::take(&mut self.scope);
         let saved_map = std::mem::replace(self.map_slot(), universe_map);
-        let converted = self.walk(&signature, None).ok().map(|(term, _)| term);
+        let converted = self.walk(&signature, None).map(|(term, _)| term);
         *self.map_slot() = saved_map;
         self.scope = saved_scope;
         self.visiting.pop();
-        converted
+        let converted = match converted {
+            Ok(converted) => converted,
+            Err(failure) => {
+                if matches!(&entry.denotation, Denotation::Document { module, component } if self.shared.decls.semantic_get(module, component).is_some())
+                {
+                    return Err(failure);
+                }
+                // Preserve the previous conservative inference boundary for
+                // non-semantic constants: unavailable inferred type is not
+                // an invented actual type and does not add a new rejection.
+                return Ok(None);
+            }
+        };
+        validate_semantic_signature(self.shared, self.alloc, entry, &converted)?;
+        Ok(Some(converted))
     }
 
     fn map_slot(&mut self) -> &mut BTreeMap<String, Universe> {
@@ -816,8 +858,13 @@ impl LseWalk<'_, '_, '_> {
                 (Term::Sort(level), Some(Term::Sort(ty)))
             }
             Lse::Const(id, universes) => {
-                let global = global_for_entry(self.shared, id).map_err(LseError::Unavailable)?;
-                let ty = self.constant_type(id);
+                let entry = self
+                    .shared
+                    .closure
+                    .entry(id)
+                    .ok_or_else(|| LseError::Unavailable(format!("`{id}` is absent")))?;
+                let global = global_for(self.shared, id, entry).map_err(LseError::Unavailable)?;
+                let ty = self.constant_type(id)?;
                 (
                     Term::Global(
                         global,
@@ -1064,6 +1111,13 @@ pub fn global_for_entry(shared: &Shared<'_>, id: &QualifiedId) -> Result<GlobalR
         .closure
         .entry(id)
         .ok_or_else(|| format!("`{id}` is not in the glossary closure"))?;
+    if matches!(&entry.denotation, Denotation::Document { module, component } if shared.decls.semantic_get(module, component).is_some())
+    {
+        // This public name-only entrypoint is also used by calculation
+        // descriptors. Its closed validation locals never escape the call.
+        let mut alloc = LocalAlloc::default();
+        return entry_signature_term(shared, &mut alloc, id).map(|(global, _)| global);
+    }
     global_for(shared, id, entry)
 }
 
@@ -1095,14 +1149,20 @@ fn global_for(shared: &Shared<'_>, id: &QualifiedId, entry: &Entry) -> Result<Gl
                 .ok_or_else(|| format!("`{id}` has no signature"))?,
         }),
         Denotation::Document { module, component } => {
-            let info = shared.decls.get(module, component).ok_or_else(|| {
-                format!("document declaration `{module}::{component}` is not available here")
-            })?;
-            GlobalRef::Document(DocumentDeclRef {
-                module: module.clone(),
-                component: component.clone(),
-                lean_name: info.lean_name.clone(),
-            })
+            if let Some(info) = shared.decls.get(module, component) {
+                GlobalRef::Document(DocumentDeclRef {
+                    module: module.clone(),
+                    component: component.clone(),
+                    lean_name: info.lean_name.clone(),
+                })
+            } else if let Some(info) = shared.decls.semantic_get(module, component) {
+                info.check_category(entry.category)?;
+                GlobalRef::Document(info.reference())
+            } else {
+                return Err(format!(
+                    "document declaration `{module}::{component}` is not available here"
+                ));
+            }
         }
         Denotation::Defined { .. } => GlobalRef::DefinedLexicon(DefinedLexiconRef {
             package: id.package.clone(),
@@ -1112,6 +1172,94 @@ fn global_for(shared: &Shared<'_>, id: &QualifiedId, entry: &Entry) -> Result<Gl
                 .ok_or_else(|| format!("`{id}` has no signature"))?,
         }),
     })
+}
+
+// A telescope's grouping is not a signature difference. Keep every binder,
+// mode and scoped occurrence; only flatten adjacent Pi nodes recursively.
+fn canonical_signature(term: &Term) -> Term {
+    match term {
+        Term::Pi { .. } => {
+            let (binders, body) = flatten_pi(term);
+            Term::Pi {
+                binders: binders
+                    .into_iter()
+                    .map(|mut binder| {
+                        binder.ty = canonical_signature(&binder.ty);
+                        binder
+                    })
+                    .collect(),
+                body: Box::new(canonical_signature(&body)),
+            }
+        }
+        Term::Lambda { binders, body } => Term::Lambda {
+            binders: binders
+                .iter()
+                .cloned()
+                .map(|mut binder| {
+                    binder.ty = canonical_signature(&binder.ty);
+                    binder
+                })
+                .collect(),
+            body: Box::new(canonical_signature(body)),
+        },
+        Term::App {
+            function,
+            explicit_args,
+            omitted_implicit_binders,
+        } => Term::App {
+            function: Box::new(canonical_signature(function)),
+            explicit_args: explicit_args.iter().map(canonical_signature).collect(),
+            omitted_implicit_binders: omitted_implicit_binders.clone(),
+        },
+        Term::Let {
+            binder,
+            value,
+            body,
+        } => {
+            let mut binder = (**binder).clone();
+            binder.ty = canonical_signature(&binder.ty);
+            Term::Let {
+                binder: Box::new(binder),
+                value: Box::new(canonical_signature(value)),
+                body: Box::new(canonical_signature(body)),
+            }
+        }
+        Term::NatLiteral {
+            decimal,
+            expected_type,
+        } => Term::NatLiteral {
+            decimal: decimal.clone(),
+            expected_type: Box::new(canonical_signature(expected_type)),
+        },
+        other => other.clone(),
+    }
+}
+
+/// Semantic entries never derive their type from the claimed glossary
+/// signature. Compare the independently constructed entire telescope before
+/// returning any accepted glossary reference (including nested LSE constants).
+fn validate_semantic_signature(
+    shared: &Shared<'_>,
+    alloc: &mut LocalAlloc,
+    entry: &Entry,
+    claimed: &Term,
+) -> Result<(), LseError> {
+    let Denotation::Document { module, component } = &entry.denotation else {
+        return Ok(());
+    };
+    let Some(info) = shared.decls.semantic_get(module, component) else {
+        return Ok(());
+    };
+    info.check_category(entry.category)
+        .map_err(LseError::IllTyped)?;
+    if !entry.universes.is_empty() {
+        return Err(LseError::IllTyped(format!("semantic declaration `{module}::{component}` has no universe parameters; glossary universes do not match its actual header")));
+    }
+    let actual = info.ty(shared.closure, alloc).map_err(LseError::IllTyped)?;
+    if !unify_closed(&canonical_signature(&actual), &canonical_signature(claimed)) {
+        return Err(LseError::IllTyped(format!("glossary signature does not match the actual scoped semantic declaration `{module}::{component}`")));
+    }
+    Ok(())
 }
 
 impl<'a, 'b> ExprElab<'a, 'b> {
@@ -1174,6 +1322,7 @@ impl<'a, 'b> ExprElab<'a, 'b> {
             &universe_map,
             Some(metas),
         )?;
+        validate_semantic_signature(self.shared, self.alloc, entry, &ty)?;
         let global = global_for(self.shared, &qualified, entry).map_err(LseError::Unavailable)?;
         Ok((Term::Global(global, universe_args), ty))
     }
@@ -1570,13 +1719,29 @@ impl<'a, 'b> ExprElab<'a, 'b> {
                 component,
                 atoms,
             } => {
-                let info = self.shared.decls.get(module, component).ok_or_else(|| {
-                    Diagnostic::new(
+                let (reference, actual_ty) = if let Some(info) =
+                    self.shared.decls.get(module, component)
+                {
+                    (
+                        DocumentDeclRef {
+                            module: module.clone(),
+                            component: component.clone(),
+                            lean_name: info.lean_name.clone(),
+                        },
+                        info.ty.clone(),
+                    )
+                } else if let Some(info) = self.shared.decls.semantic_get(module, component) {
+                    let ty = info.ty(self.shared.closure, self.alloc).map_err(|reason| {
+                        Diagnostic::new(code!("LLT4001"), reason).with_span(self.span_of(*atoms))
+                    })?;
+                    (info.reference(), ty)
+                } else {
+                    return Err(Diagnostic::new(
                         code!("LLR3005"),
                         format!("`{module}::{component}` is not an available document declaration"),
                     )
-                    .with_span(self.span_of(*atoms))
-                })?;
+                    .with_span(self.span_of(*atoms)));
+                };
                 let mut rows = vec![self.atom_row(
                     atoms.0,
                     Origin::Structural {
@@ -1612,15 +1777,8 @@ impl<'a, 'b> ExprElab<'a, 'b> {
                     }
                 }
                 out.push(Cand {
-                    term: Term::Global(
-                        GlobalRef::Document(DocumentDeclRef {
-                            module: module.clone(),
-                            component: component.clone(),
-                            lean_name: info.lean_name.clone(),
-                        }),
-                        Vec::new(),
-                    ),
-                    ty: info.ty.clone(),
+                    term: Term::Global(GlobalRef::Document(reference), Vec::new()),
+                    ty: actual_ty,
                     metas: Metas::default(),
                     rows,
                 });
@@ -2273,6 +2431,8 @@ pub fn entry_signature_term(
         .ok_or_else(|| format!("`{entry_id}` has no signature"))?;
     let universe_map = universe_map(&entry.universes, |_, name| Universe::Var(name.to_owned()));
     let ty = lse_to_term(signature, shared, alloc, &universe_map, None)
+        .map_err(|failure| failure.to_string())?;
+    validate_semantic_signature(shared, alloc, entry, &ty)
         .map_err(|failure| failure.to_string())?;
     let global = global_for(shared, entry_id, entry)?;
     Ok((global, ty))

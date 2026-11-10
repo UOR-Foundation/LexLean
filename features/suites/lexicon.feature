@@ -129,3 +129,9 @@ Feature: lexicon
     Then each package mismatch fails lock with LLC0103 naming both languages
     And the tampered lock fails check and `lock --check` with LLC0102
     And build refuses every project and no build or verification root exists
+
+  @GL-22 @build
+  Scenario: Document denotations over exported semantic-module inductive and structure types, definitions, and theorems resolve through explicit module imports with their exact canonical signatures and generated Lean names; unavailable declarations and mismatching signatures are refused before verification.
+    Given a language 1.2 project with an imported semantic Color inductive and a document type-noun
+    When the importing prose theorem quantifies over color and checks
+    Then the exact empty-policy reflexivity theorem checks successfully
