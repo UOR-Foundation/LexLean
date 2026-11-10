@@ -180,3 +180,10 @@ Feature: cli-api
     Given the language-1.1 data-form example with a path lexicon package, the language-1.2 example, and a language-1.1 project whose module the notation cannot express
     When the example is migrated with --check and then without it, and each of the others is migrated
     Then --check writes nothing, the migration leaves a language-1.2 project that checks, locks, and formats canonically with the same modules, and the refused projects are refused with LLC0103 and LLP2003 and left unchanged
+
+  @CL-25 @build
+  Scenario: lexlean snapshot emits the public Engine snapshot as one canonical JSON document in either diagnostic mode, with the normal project discovery and selection rules, without writing artifacts or invoking a backend; its linked module values and lexicon closure reconstruct the exact semantic identity inputs, and failures use the registered command-result diagnostics without emitting a partial snapshot.
+    Given language-1.0, language-1.1, and language-1.2 projects and their public Engine snapshots
+    When snapshot runs in both diagnostic modes with default, all, and explicit selections
+    Then stdout equals the canonical public snapshot and its identity inputs equal the checked project's inputs
+    And project discovery and --project agree, files are unchanged, and malformed selections and sources emit only registered failures

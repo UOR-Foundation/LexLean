@@ -299,6 +299,18 @@ fn text_functions() -> Vec<Json> {
             ),
         ),
     );
+    // Process normalization must not rewrite source literals or mistake them
+    // for diagnostic paths. Escape drive colons too: the path scanner must not
+    // read a JSON Unicode escape after a colon as a Windows root separator.
+    let chain = if_then(
+        eq(t_char(), c(), chr('/')),
+        escaped(out(), "\\u002f"),
+        if_then(
+            eq(t_char(), c(), chr(':')),
+            escaped(out(), "\\u003a"),
+            chain,
+        ),
+    );
     vec![
         function(
             &own("escape"),

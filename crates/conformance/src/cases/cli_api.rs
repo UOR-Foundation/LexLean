@@ -1,4 +1,4 @@
-//! The `cli-api` suite: CL-01..CL-24.
+//! The `cli-api` suite: CL-01..CL-25.
 
 use std::panic::{catch_unwind, AssertUnwindSafe};
 
@@ -1276,6 +1276,127 @@ pub(crate) fn run(id: &str) {
         }
         "CL-23" => super::production_export::cli(),
         "CL-24" => super::migration::cli(),
+        "CL-25" => snapshot_cli(),
         other => panic!("no cli-api case is wired for {other}"),
     }
+}
+
+fn snapshot_cli() {
+    for project in [
+        P::example(),
+        P::semantic_example(),
+        P::copy_example("collections"),
+    ] {
+        let before = support::file_set(&project.root);
+        let engine = Engine::load(&project.root.join("lexlean.toml")).expect("loads");
+        for all in [false, true] {
+            let expected = engine
+                .snapshot(CheckRequest {
+                    selection: if all {
+                        Selection::All
+                    } else {
+                        Selection::Entrypoints
+                    },
+                })
+                .expect("snapshot");
+            for mode in ["human", "json"] {
+                let mut args = vec!["--diagnostic-format", mode, "snapshot"];
+                if all {
+                    args.push("--all");
+                }
+                let (exit, stdout, stderr) = project.cli(&args);
+                assert_eq!(exit, 0, "snapshot succeeds: {stderr} {stdout}");
+                assert!(stderr.is_empty(), "{stderr}");
+                assert_eq!(stdout.as_bytes(), expected.canonical_bytes());
+                let value: serde_json::Value =
+                    serde_json::from_str(&stdout).expect("snapshot JSON");
+                snapshot_inputs_equal(&expected, &support::checked_project(&project), &value);
+            }
+        }
+        let config =
+            lexlean::project::Project::load(&project.root.join("lexlean.toml")).expect("project");
+        let input = config.config.entrypoints.first().expect("entrypoint");
+        let expected = engine
+            .snapshot(CheckRequest {
+                selection: Selection::Files(
+                    [camino::Utf8PathBuf::from(input)].into_iter().collect(),
+                ),
+            })
+            .expect("explicit snapshot");
+        let (exit, stdout, stderr) = project.cli(&["snapshot", input.as_str()]);
+        assert_eq!(exit, 0, "{stderr}");
+        assert_eq!(stdout.as_bytes(), expected.canonical_bytes());
+        let outside = tempfile::tempdir().expect("tempdir");
+        let root = camino::Utf8Path::from_path(outside.path()).expect("utf8");
+        let config = project.root.join("lexlean.toml");
+        let (exit, stdout, stderr) = support::cli_in(
+            root,
+            &["--project", config.as_str(), "snapshot", input.as_str()],
+        );
+        assert_eq!(exit, 0, "{stderr}");
+        assert_eq!(stdout.as_bytes(), expected.canonical_bytes());
+        for args in [
+            vec!["snapshot", "--all", input.as_str()],
+            vec!["snapshot", input.as_str(), input.as_str()],
+            vec!["snapshot", "--unknown"],
+        ] {
+            let mut json_args = vec!["--diagnostic-format", "json"];
+            json_args.extend(args);
+            let (exit, stdout, stderr) = project.cli(&json_args);
+            assert_eq!(exit, 2);
+            assert!(stderr.is_empty());
+            let value: serde_json::Value =
+                serde_json::from_str(&stdout).expect("one failure document");
+            assert_eq!(value["command"], "snapshot");
+            assert_eq!(value["success"], false);
+            assert!(value.get("lexicon_closure").is_none());
+        }
+        assert_eq!(
+            support::file_set(&project.root),
+            before,
+            "snapshot writes no files"
+        );
+        project.write(input.as_str(), "not a LexLean source\n");
+        let (exit, stdout, stderr) = project.cli(&["--diagnostic-format", "json", "snapshot"]);
+        assert_ne!(exit, 0);
+        assert!(stderr.is_empty());
+        let value: serde_json::Value = serde_json::from_str(&stdout).expect("one failure document");
+        assert_eq!(value["command"], "snapshot");
+        assert_eq!(value["success"], false);
+        assert!(value.get("lexicon_closure").is_none());
+    }
+}
+
+fn snapshot_inputs_equal(
+    expected: &lexlean::SemanticSnapshot,
+    checked: &lexlean::link::CheckedProject,
+    value: &serde_json::Value,
+) {
+    use lexlean::artifact::canonical_json::Json;
+    let linked = serde_json::json!({"spec":"lexlean/linked-ir/1", "modules": value["modules"].as_array().expect("modules").iter().map(|m|m["linked_ir"].clone()).collect::<Vec<_>>()});
+    let canonical = |v: &serde_json::Value| {
+        Json::parse(&serde_json::to_vec(v).expect("JSON"))
+            .expect("canonical domain")
+            .to_canonical_string()
+    };
+    assert_eq!(
+        canonical(&linked),
+        checked.linked_json().to_canonical_string()
+    );
+    assert_eq!(
+        canonical(&value["lexicon_closure"]),
+        checked
+            .closure
+            .closure_json("", &checked.visible_union)
+            .to_canonical_string()
+    );
+    assert_eq!(
+        lexlean::artifact::content_id::semantic_id_for(
+            expected.compiler_semantics_id(),
+            expected.language(),
+            &canonical(&linked),
+            &canonical(&value["lexicon_closure"])
+        ),
+        expected.semantic_id()
+    );
 }

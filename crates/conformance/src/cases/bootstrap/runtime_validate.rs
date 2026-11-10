@@ -411,6 +411,7 @@ fn enc_item(item: &Item) -> Value {
             vec![text(name), list(members.iter().map(enc_item).collect())],
         ),
         Item::InnerAttr(name, args) => i("IAttr", vec![text(name), texts(args)]),
+        Item::Cfg(condition, inner) => i("ICfg", vec![text(condition), enc_item(inner)]),
         Item::Enum(name, generics, derives, variants) => i(
             "IEnum",
             vec![
@@ -424,9 +425,15 @@ fn enc_item(item: &Item) -> Value {
 }
 
 fn enc_crate(krate: &Crate) -> Value {
+    enc_crate_in(krate, rt_validate::Host::default())
+}
+
+fn enc_crate_in(krate: &Crate, host: rt_validate::Host<'_>) -> Value {
     record(vec![
         boolean(krate.profile == Profile::Core),
         list(krate.items.iter().map(enc_item).collect()),
+        list(host.roots.iter().map(|name| text(name)).collect()),
+        list(host.effects.iter().map(|name| text(name)).collect()),
     ])
 }
 
@@ -437,6 +444,144 @@ fn run_of(krate: &Crate) -> Run {
         vec![enc_crate(krate)],
         verdict(rt_validate::validate(krate)),
     )
+}
+
+/// Host compositions and small boundary cases share the same encoded context
+/// with both validators; no host case is excluded from the twin comparison.
+fn host_runs() -> Vec<Run> {
+    let mut out = Vec::new();
+    let mut add = |krate: Crate, roots: &[&str], effects: &[&str]| {
+        let host = rt_validate::Host { roots, effects };
+        out.push((
+            vec![enc_crate_in(&krate, host)],
+            verdict(rt_validate::validate_in(&krate, host)),
+        ));
+    };
+    for fallible in [false, true] {
+        for files in [false, true] {
+            for process in [false, true] {
+                let effects = [files.then_some("files"), process.then_some("process")]
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<_>>();
+                let krate = crate::cases::rust_driver::composition(fallible, files, process);
+                add(krate.clone(), &["host"], &effects);
+                for omitted in &effects {
+                    let fewer = effects
+                        .iter()
+                        .copied()
+                        .filter(|e| e != omitted)
+                        .collect::<Vec<_>>();
+                    add(krate.clone(), &["host"], &fewer);
+                }
+            }
+        }
+    }
+    let krate = |items| Crate {
+        profile: Profile::Std,
+        items,
+    };
+    let use_name = |name: &str| Item::Use(vec!["std".into(), "fs".into(), name.into()], None);
+    for effects in [
+        vec![],
+        vec!["files"],
+        vec!["process"],
+        vec!["files", "process"],
+    ] {
+        add(krate(vec![use_name("File")]), &[], &effects);
+    }
+    add(
+        krate(vec![Item::Use(vec!["std".into(), "fs".into()], None)]),
+        &[],
+        &["process"],
+    );
+    let function = |name: &str, body| {
+        Item::Fn(Function {
+            sig: Sig {
+                name: name.into(),
+                receiver: false,
+                exclusive: false,
+                params: vec![],
+                result: Type::Unit,
+            },
+            generics: vec![],
+            public: true,
+            body: Block {
+                statements: body,
+                tail: Expr::Lit(Lit::Unit),
+            },
+        })
+    };
+    let cfg = |condition: &str, item| Item::Cfg(condition.into(), Box::new(item));
+    let twin = function("probe", vec![]);
+    add(krate(vec![cfg("maybe", use_name("File"))]), &[], &["files"]);
+    add(
+        krate(vec![cfg("unix", Item::UnitStruct("Marker".into(), vec![]))]),
+        &[],
+        &[],
+    );
+    add(krate(vec![cfg("unix", twin.clone())]), &[], &[]);
+    let mut changed = twin.clone();
+    if let Item::Fn(f) = &mut changed {
+        f.sig.params.push(Param {
+            name: "arg".into(),
+            mutable: false,
+            ty: Type::Unit,
+        });
+    }
+    add(
+        krate(vec![cfg("unix", twin.clone()), cfg("not_unix", changed)]),
+        &[],
+        &[],
+    );
+    add(
+        krate(vec![
+            cfg("unix", twin.clone()),
+            cfg("unix", twin.clone()),
+            cfg("not_unix", twin.clone()),
+        ]),
+        &[],
+        &[],
+    );
+    add(
+        krate(vec![
+            twin.clone(),
+            cfg("unix", twin.clone()),
+            cfg("not_unix", twin.clone()),
+        ]),
+        &[],
+        &[],
+    );
+    // A Unix import cannot make the other platform's function well scoped.
+    let body = vec![Expr::Path(vec!["env".into(), "args_os".into()])];
+    add(
+        krate(vec![
+            cfg("unix", Item::Use(vec!["std".into(), "env".into()], None)),
+            cfg("unix", function("probe", body.clone())),
+            cfg("not_unix", function("probe", body)),
+        ]),
+        &[],
+        &[],
+    );
+    // Same names in different branches are valid, in either source order.
+    add(
+        krate(vec![cfg("not_unix", twin.clone()), cfg("unix", twin)]),
+        &[],
+        &[],
+    );
+    // Imported program constructors and aliases retain the package context.
+    add(
+        krate(vec![
+            Item::Use(vec!["host".into(), "Adt0".into()], Some("Session".into())),
+            function(
+                "probe",
+                vec![Expr::Call(vec!["Session".into(), "C0".into()], vec![])],
+            ),
+        ]),
+        &["host"],
+        &[],
+    );
+    out
 }
 
 // ------------------------------------------------------------------- corpus
@@ -712,12 +857,14 @@ pub(super) fn case() {
     );
 
     let named = named();
+    let hosts = host_runs();
     let mut seeded = Seeded(0x0B55_0009);
     let drawn = mutants(MUTANTS, &mut seeded);
     let vectors: Vec<Run> = named
         .iter()
         .map(|(_, krate)| run_of(krate))
         .chain(drawn.iter().map(run_of))
+        .chain(hosts.iter().cloned())
         .collect();
     let refused = vectors
         .iter()
@@ -731,8 +878,14 @@ pub(super) fn case() {
         started.elapsed()
     );
     assert_eq!(
-        (named.len(), drawn.len(), vectors.len(), refused),
-        (NAMED, MUTANTS, NAMED + MUTANTS, REFUSED),
+        (
+            named.len(),
+            hosts.len(),
+            drawn.len(),
+            vectors.len(),
+            refused
+        ),
+        (NAMED, HOSTS, MUTANTS, NAMED + HOSTS + MUTANTS, REFUSED),
         "the named crates, the seeded mutants, the vectors, and the refused among them"
     );
     let rules: std::collections::BTreeSet<String> = vectors
@@ -769,6 +922,7 @@ pub(super) fn case() {
             .filter(|run| run.0.iter().map(value_nodes).sum::<usize>() <= EVALUATOR_NODES)
             .cloned()
             .collect();
+        eprintln!("BS-09 evaluator vectors: {}", within.len());
         assert_eq!(within.len(), WITHIN, "the vectors the evaluator is given");
         let disagreements = super::evaluate(&root, &within, 5);
         assert!(
@@ -870,5 +1024,6 @@ pub(super) fn case() {
 // §17.23, the register statement of BS-09, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
 const NAMED: usize = 117;
-const REFUSED: usize = 576;
-const WITHIN: usize = 717;
+const HOSTS: usize = 30;
+const REFUSED: usize = 590;
+const WITHIN: usize = 741;

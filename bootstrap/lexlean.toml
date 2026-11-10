@@ -20,7 +20,7 @@ kind = "path"
 path = "stdlib"
 
 [limits]
-max_file_bytes = 6291456
+max_file_bytes = 10485760
 max_total_source_bytes = 67108864
 max_primitive_atoms = 2000000
 max_token_lattice_edges = 4000000
@@ -30,4 +30,4 @@ max_scope_depth = 1024
 max_import_depth = 128
 max_diagnostics = 256
 max_child_output_bytes = 16777216
-child_timeout_ms = 300000
+child_timeout_ms = 600000

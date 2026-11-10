@@ -125,6 +125,35 @@ fn run_lean(text: &str) -> (i32, String) {
     )
 }
 
+/// JSON transport must protect source literals from diagnostic path normalization.
+fn literal_paths_survive_normalization() {
+    use lexlean::verify::child::Normalizer;
+    let driver = lcnf::driver(&"0".repeat(32), &[], &[]).expect("adapter driver");
+    let literal = "/research/.r30/candidate-3 /outside/source C:/data λ \"quoted\" \\ backslash\n";
+    let mut source = driver.text;
+    source.push_str(&format!(
+        "\n#eval IO.println (LexLeanExtract.str {})\n",
+        serde_json::to_string(literal).expect("Lean string")
+    ));
+    let (status, output) = run_lean(&source);
+    assert_eq!(status, 0, "{output}");
+    let encoded = output.lines().last().expect("encoded string");
+    let normalizer = Normalizer::new(
+        camino::Utf8Path::new("/staging"),
+        camino::Utf8Path::new("/research"),
+        camino::Utf8Path::new("/lake"),
+        camino::Utf8Path::new("/toolchain"),
+    );
+    let normalized = normalizer.normalize(encoded.as_bytes());
+    assert_eq!(
+        serde_json::from_str::<String>(&normalized).expect("JSON literal"),
+        literal
+    );
+    assert!(!normalizer.has_unexpected_absolute_path(&normalized));
+    assert!(normalizer.has_unexpected_absolute_path("/outside/source.lean:1:1: error"));
+    assert!(normalizer.has_unexpected_absolute_path("C:/outside/source.lean:1:1: error"));
+}
+
 /// A hand-written module reaching every kind of constant the extraction
 /// classifies, and every LCNF form base-phase translation produces. Lean's
 /// own translation of a function with two join points orders them by the
@@ -369,6 +398,7 @@ pub fn run(id: &str) {
                 bytes
             );
             if support::lean_backed("NE-01") {
+                literal_paths_survive_normalization();
                 let first = P::copy_example("production");
                 let second = P::copy_example("production");
                 assert_ne!(first.root, second.root);
@@ -1453,4 +1483,14 @@ fn ne_04_under_lean(adapter: &lexlean::ir::tooling::ToolingModule, driver: &lcnf
         &warned,
         "the pinned extraction adapter no longer elaborates cleanly",
     );
+}
+
+#[cfg(test)]
+mod literal_transport_tests {
+    #[test]
+    fn extraction_literal_paths_survive_normalization() {
+        if super::support::lean_backed("NE-01") {
+            super::literal_paths_survive_normalization();
+        }
+    }
 }

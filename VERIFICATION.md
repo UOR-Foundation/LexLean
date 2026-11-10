@@ -39,6 +39,18 @@ Outside `vv`:
 
 ## Falsifiability records
 
+### extraction literal transport can fail
+
+`cargo test -p repo-conformance --lib extraction_literal_paths_survive_normalization`
+failed before the serializer correction: process normalization rewrote the literal
+`/research/.r30/candidate-3` to `$PROJECT/.r30/candidate-3`. Escaping only slashes
+then preserved that literal but still tripped the Windows-path scanner on a
+`C:` followed by a JSON Unicode escape. The adapter now escapes slashes and
+colons inside JSON strings. The same regression passes with pinned Lean,
+including Unicode, quotes, backslashes and a newline; genuine unexpected POSIX
+and Windows diagnostic paths remain rejected. NE-01 also runs this regression.
+No process-record path-policy exemption is introduced.
+
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
 
 ### production bundle inventory can fail
@@ -18571,3 +18583,73 @@ head's CI. It is not a complete `just vv` run or changed-head CI result. The
 final committed head still requires its full acceptance gate before merge;
 #409 remains open until that accepted change lands. This evidence makes no
 closure claim for #382, #271, #376 or #301.
+
+### Native command execution can fail
+
+The v0.5 port of the command driver from PR #419 first failed before export:
+its interdependent fragments were validated separately, private free functions
+were rejected, its fixture appended strings with the bytes/list primitive,
+and its session was a pair where the command signature requires an owned
+program type. Composed validation and a session record address these failures.
+Process output redirection admits the shared `File` type through `process`;
+ordinary `fs` operations still require `files`. Conditional declarations are
+checked in separate platform scopes, including collisions with unconditional
+names. The LexLean validator carries the same package roots and effect context.
+
+`conformance_pd_10` and `conformance_rb_24` passed together in 236.91 seconds.
+The latter exports the fixture through the production consumer, builds and
+runs the resulting binary, and detects the four original driver defects. It
+also waits for a child to acknowledge ownership of an OS file lock, destroys
+the owning session, and requires the lock to be available immediately. A plant
+that drops the child handle without terminating the child compiles but fails
+that probe. This covers ordinary session destruction, not an externally
+forced termination of the driver.
+
+During the validator port, all 747 compiled vectors and the 741 vectors within
+the evaluator's 4,000-node bound agreed with the Rust oracle, and each of the
+eight existing defects was detected. Certification then refused a 7,875,696-byte
+certificate part under the bootstrap project's 6 MiB file limit. The project
+now states a 10 MiB limit; the size check remains active.
+
+The expanded `validateRuntime` preservation certificate also exceeded the
+bootstrap project's 300,000 ms Lean-child limit. The project now bounds each
+child at 600,000 ms. A subsequent attempt was killed under the development
+workspace's 16 GiB memory limit while another artifact build was running; that
+run is not acceptance evidence. Large preservation checks run without a
+competing artifact build.
+
+The source review of PR #439 found that the new `host.rs` renderer was absent
+from `RENDERER_FILES` and the corresponding canonical unit's embedded sources.
+Both ordered lists now include it. The unchanged unit then failed against the
+old renderer pin and reported `a24f0546f398576cd7bf755dd5953be17db6f418cae95ae4bf40e7c1b5a53be8`;
+after recording that computed identity, the unit passed. The earlier artifact
+writer was stopped because its compiler identity was superseded. Its completed
+examples are development observations, not final acceptance of this revision.
+
+The bootstrap validator groups imported names, package roots, effects and
+package arities in one context record. Its source check and build pass. The
+official certificate generator measures 7,815,262 bytes of certificate source
+and 27,384,099 bytes of rendered Lean, a small reduction from the previous
+7,875,696-byte certificate. This measurement does not replace kernel checking.
+
+The native command contribution ports RB-24 from humuhumu33's PR #419 through
+`b70b5463ff6fb163a11033824307e9f1547e50c0`, on the Host interface delivered by
+PR #396. PR #439 carries the v0.5 integration and its corrections; it does not
+close #419, #426 or the broader #271. Delivery still requires the final
+regeneration and complete acceptance gate on this branch.
+
+### Native consumer snapshot access (CL-25)
+
+Rule30's native verifier needs the exact linked IR and lexicon closure to bind
+an audited candidate type to the verified semantic identity. The public
+snapshot already carries both; the CLI now exposes that existing read-only
+API. The snapshot envelope is not substituted for linked IR.
+
+R3 sequence: registered CL-25, projected the model, added its scenario and named
+conformance case, and ran it before implementation. The test failed with
+LLC0001, unrecognized subcommand `snapshot`. After implementation the same case
+passed in 7.51 seconds for language 1.0, 1.1 and 1.2, both diagnostic modes,
+default/all/explicit selection, external project selection, unchanged file
+sets, exact reconstructed identity inputs, and refused selections and sources.
+The source case is also part of the complete normative gate; this targeted
+result does not establish the remaining driver/bootstrap/product acceptance.

@@ -7,6 +7,7 @@ Feature: extraction
     Given the committed `production` example and its committed extraction record
     When the record is read into the canonical compiler input and the example is verified from two project roots under pinned Lean
     Then the input validates against `schemas/compiler-input.schema.json`, equals the committed input byte for byte, and survives renumbering of every LCNF variable
+    And extracted path literals survive process normalization unchanged while unexpected diagnostic paths remain rejected
     And both roots publish the same `production/compiler-input.json`, the attestation records its SHA-256, and the `recursion` example publishes no input
 
   @NE-02 @build
