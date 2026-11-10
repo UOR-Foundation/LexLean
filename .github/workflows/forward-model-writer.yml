@@ -1,0 +1,51 @@
+# Preparation only. No corpus counts, renderer identity or release acceptance.
+name: forward model writer (unqualified)
+on:
+  push:
+    branches: [integration/v05-accepted-source-prep-405-20261110]
+    paths:
+      - .github/workflows/forward-model-writer.yml
+      - .github/scripts/forward_model_writer.py
+      - .github/scripts/test_forward_model_writer.py
+permissions:
+  contents: read
+concurrency:
+  group: forward-model-writer-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  model:
+    if: github.repository == 'UOR-Foundation/LexLean'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Test custody driver
+        run: python3 -B -m unittest discover -s .github/scripts -p 'test_forward_model_writer.py'
+      - name: Install repository-pinned Rust
+        shell: bash
+        run: |
+          set -o pipefail
+          bash .github/retry.sh rustup toolchain install 2>&1 | tee "$RUNNER_TEMP/forward-rust-install.log"
+      - name: Run bounded official producer
+        run: >-
+          python3 .github/scripts/forward_model_writer.py
+          --expected-head "$GITHUB_SHA"
+          --out "$RUNNER_TEMP/forward-model-evidence"
+      - name: Return same-run evidence even on failure
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: forward-model-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/forward-model-evidence/*.json
+            ${{ runner.temp }}/forward-model-evidence/*.log
+            ${{ runner.temp }}/forward-model-evidence/*.tar
+            ${{ runner.temp }}/forward-model-evidence/*.patch
+            ${{ runner.temp }}/forward-model-evidence/*.txt
+            ${{ runner.temp }}/forward-model-evidence/SHA256SUMS
+            ${{ runner.temp }}/forward-rust-install.log
+          if-no-files-found: error
+          retention-days: 14
