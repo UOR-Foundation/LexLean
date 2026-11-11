@@ -21,6 +21,9 @@ workspace carried at those versions without a tag.
   the calling thread and helpers from one budget the process shares, each taking the next run.
   The verdict and the disagreements it reports are the sequential ones; each `bdd-bootstrap-*`
   part of the gate is a single case, so three of a runner's four processors were idle.
+- `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
+  initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
+  `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
 - The generic notation as language-1.2 source, fourth slice of the front end
   (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
   the language-1.2 identity). `parseGeneric` and `printGeneric` of
