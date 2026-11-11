@@ -13902,6 +13902,47 @@ by five. Every count of `BS-11` and `BS-12` is unchanged, as is every mutant
 draw: the stdlib verify records did not move.
 
 
+## The tooling packages of `BS-27` move the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (#269)
+
+The roots of `SurfaceTooling` (`BS-27`) add three committed packages
+(`parse_tooling_module`, `print_tooling_module`, `render_tooling_latex`) to
+those of `BS-21` to `BS-24`, and these cases assert their corpus. The branch was
+merged with the tree of `release/v0.4` after `BS-22` to `BS-24` landed, the
+bootstrap project's source limit was raised to 536,870,912 bytes, and the lock,
+export, build oracles, and verify records were regenerated on GitHub-hosted
+runners by `regenerate.yml` (run 43050104167: the export, the records, and the
+other oracles as three jobs from clean checkouts, at verify width 2, which moves
+no byte of what is written, §22.11). Each row below is the number its own count
+check reported on that tree against the one `BS-22` to `BS-24` commit, under
+`LEXLEAN_COUNTS=fast` on WSL Ubuntu (Rust 1.97.1, Lean 4.32.1), and the
+constants, rows, statements, scenarios and prose were rewritten by the writer
+of #442.
+
+| Count | `BS-22` to `BS-24` | `BS-27` |
+| --- | --- | --- |
+| committed manifests and packages | 305 | 308 |
+| distinct programs | 222 | 225 |
+| distinct lowered crates | 281 | 284 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 517, 382 | 520, 385 |
+| `BS-06` `printCrate` vectors, committed distinct, evaluator crates, refused | 732, 562, 605, 68 | 738, 568, 602, 68 |
+| `BS-07` vectors | 356 | 359 |
+| `BS-08` crates | 415 | 418 |
+| `BS-13` vectors | 125 | 128 |
+| `BS-14` vectors | 360 | 363 |
+| `BS-15` manifests, accepted, render mutants | 324, 305, 305 | 327, 308, 308 |
+
+Every new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`
+and the 400-expression bound of `BS-08`, so each of those vector counts grows
+by three. The crates `BS-06` gives the evaluator fall from 605 to 602, as its
+check reported. Every count of `BS-11` and `BS-12` is unchanged, as is every
+mutant draw: the stdlib verify records did not move.
+
+On that tree `conformance_bs_27` passed whole with `LEXLEAN_MEASURE_STACK=all`
+(3,039 s at verify width 1), which recorded the row of
+`bootstrap/print_tooling_module` in `tests/stack-bounds.json` (`PD-08`): 1,179,648
+bytes in the debug profile.
+
+
 ## Native core reconstruction regression (#465, 2026-11-10)
 
 The existing RT-03 runtime verification owner now also builds a fresh Lake

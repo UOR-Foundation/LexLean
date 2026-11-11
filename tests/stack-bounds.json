@@ -84,6 +84,9 @@
     "bootstrap/print_generic": {
       "debug": 1376256
     },
+    "bootstrap/print_tooling_module": {
+      "debug": 1179648
+    },
     "bootstrap/render_tooling_latex": {
       "debug": 3342336
     },
