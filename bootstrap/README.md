@@ -32,3 +32,6 @@ white space the oracle's `char::is_whitespace` has, and the standard library's `
 
 `src/SurfaceTooling.lex.tex` (SPEC.md §17.23, `BS-27`) imports `SurfaceGeneric` and `SurfaceLex`,
 `AxiomOutput` for the white space of a scalar, and the standard library's `Json`, `Order`, and `Text`.
+`src/LexiconLse.lex.tex` (SPEC.md §17.23, `BS-25`) imports the standard library's `Numeral`,
+`Order`, and `Text`, and nothing of the bootstrap project: its expressions, universes, and
+S-expression trees are sorts of its own, each list of a sort's values a chain in the sort.

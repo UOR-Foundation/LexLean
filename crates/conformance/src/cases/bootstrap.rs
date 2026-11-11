@@ -22,6 +22,7 @@ use crate::rust_packages;
 use crate::support::{self, P};
 
 mod gnaf_validate;
+mod lexicon_lse;
 mod runtime_validate;
 mod rust_assemble;
 mod rust_bodies;
@@ -2467,6 +2468,7 @@ fn case(id: &str) {
         "BS-23" => surface_doc::case(),
         "BS-24" => surface_generic::case(),
         "BS-27" => surface_tooling::case(),
+        "BS-25" => lexicon_lse::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

@@ -2343,6 +2343,8 @@ fn conformance_bs_24() {
 #[test]
 fn conformance_bs_27() {
     repo_conformance::cases::run("BS-27");
+fn conformance_bs_25() {
+    repo_conformance::cases::run("BS-25");
 }
 
 #[test]

@@ -65,6 +65,12 @@ workspace carried at those versions without a tag.
   hand-built vectors, the committed modules, and 2,000 seeded edits; 44 planted
   defects are each detected by a vector of their own. It admits no `recursion`.
   The largest certificate part is 2,879,430 bytes. The register is 479 IDs.
+- The reader and the canonical printer of LexLean Semantic Expressions as
+  language-1.2 source, the first slice of the lexicon (SPEC.md §17.23, §13.8,
+  `BS-25`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `parseLse` and `printLse` of `LexiconLse` return what
+  `lexicon::lse::parse` and `Lse::print` return; the reader admits no
+  `recursion` and the printer admits it. The register is 479 IDs.
 - Canonical JSON reading in the standard library, the fourth member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
   `LexLeanStd.JsonRead` holds the production roots `readJson` and

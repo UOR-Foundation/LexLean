@@ -319,6 +319,22 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "parse_lse",
+      "root": "LexLeanBoot.LexiconLse.parseLse",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "print_lse",
+      "root": "LexLeanBoot.LexiconLse.printLse",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }
