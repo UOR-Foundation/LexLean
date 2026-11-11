@@ -350,9 +350,15 @@ mod tests {
                 super::COLLECTIONS,
                 super::MODELS,
                 super::REASONING,
-                super::LAWS
+                super::LAWS,
+                super::REGIONS
             ]
         );
+        let regions = modules
+            .iter()
+            .find(|module| module.name == super::REGIONS)
+            .expect("the regions module");
+        assert!(regions.imports.is_empty(), "{:?}", regions.imports);
         for imported_by_both in [super::REASONING, super::LAWS] {
             let module = modules
                 .iter()
