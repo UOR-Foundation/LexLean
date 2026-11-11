@@ -1321,6 +1321,27 @@
 'LexLeanBoot.SurfaceLex.wordAt' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.SurfaceLex.wordEnd' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.SurfaceLex.wordStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.Sp' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.declarationSpans' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.failure' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.firstNonWhite' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.hasSpec' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.lastEnd' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.lit' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.memberStep' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.membersOf' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.parseToolingModule' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.printToolingModule' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.spAt' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.spEnd' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.spFail' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.spMember' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.spPhase' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.spRead' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.spStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.specOffset' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.whiteStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.withoutSpec' does not depend on any axioms
 'LexLeanBoot.TokenAudit.AuditState' does not depend on any axioms
 'LexLeanBoot.TokenAudit.CommentState' does not depend on any axioms
 'LexLeanBoot.TokenAudit.LexState' does not depend on any axioms
