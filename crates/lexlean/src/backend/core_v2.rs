@@ -15,7 +15,13 @@
 //! declaration, submitted with its first member. The code generator runs
 //! over the rows the source environment compiled in this order: the inductive
 //! types, then the compiler's partial implementation records, then the
-//! remaining definitions by group. The extension state of a row is installed
+//! remaining definitions by group. Reserved-name reconstruction can already
+//! finish native code for a row. The final declaration-order set, not an
+//! imported signature or an intermediate compiler phase, witnesses that work.
+//! A group is either compiled intact or already complete; a mixed state is
+//! refused rather than splitting mutual recursion or duplicating native order.
+//! Lean's own code-generation predicate excludes proof/type-only members.
+//! The extension state of a row is installed
 //! after the whole module is in the environment, except that a sparse
 //! `casesOn` is marked after its own code is generated, as the elaborator that
 //! made it did (the mark makes the code generator treat the constant as a
@@ -59,7 +65,7 @@
 //! Lean module, which the decoder therefore imports in full.
 
 /// The imports the decoder of core module 2 adds after `import Lean`.
-pub const LEAN_CORE_V2_IMPORTS: &str = "import all Lean.Meta.Constructions.SparseCasesOn\n";
+pub const LEAN_CORE_V2_IMPORTS: &str = "import all Lean.Meta.Constructions.SparseCasesOn\nimport Lean.Compiler.LCNF.Main\nimport Lean.Compiler.LCNF.PhaseExt\n";
 
 /// The decoder's entry of a remade sparse `casesOn` in the elaborator's
 /// cache, which [`legacy_decoder`] leaves out.
@@ -566,6 +572,15 @@ private def installMetadata (nodes : Array Expr) (declaration : Json) : CoreM Un
     unless (Lean.Elab.Structural.eqnInfoExt.find? (← getEnv) name).isSome do
       installEqnInfo nodes name info
 
+private def compileGroup (group : Array Name) : CoreM Unit := do
+  let relevant ← group.filterM Lean.Compiler.LCNF.shouldGenerateCode
+  let (_, compiled) := Lean.Compiler.LCNF.declOrderExt.getState (← getEnv)
+  let present := relevant.filter compiled.contains
+  if present.isEmpty then
+    Lean.compileDecls group
+  else unless present.size == relevant.size do
+    throwError s!"native core group '{group.toList}' has partially compiled members"
+
 private def compileRows (declarations : Array Json) : CoreM Unit := do
   let mut compiledRows : Array (Json × Name) := #[]
   for declaration in declarations do
@@ -575,24 +590,27 @@ private def compileRows (declarations : Array Json) : CoreM Unit := do
   for (declaration, name) in compiledRows do
     if (← liftString (stringField declaration "kind")) == "inductive" then
       Lean.compileDecls #[name]
-  for (declaration, name) in compiledRows do
-    if (← liftString (stringField declaration "kind")) != "inductive" && (optionalField declaration "safety").isSome then
-      Lean.compileDecls #[name]
   let mut done : NameSet := {}
-  for declaration in declarations do
-    let name := nameOf (← liftString (stringField declaration "name"))
-    if (← liftString (stringField declaration "kind")) != "inductive" && (optionalField declaration "safety").isNone
-        && compiledRows.any (·.2 == name) && !done.contains name then
-      let all ← match optionalField declaration "all" with
-        | some v => liftString (namesOf v)
-        | none => pure [name]
-      let group := all.filter fun n => compiledRows.any (·.2 == n)
-      for n in group do done := done.insert n
-      Lean.compileDecls group.toArray
-    if let some tags := optionalField declaration "tags" then
-      for tag in ← liftString tags.getArr? do
-        if (← liftString tag.getStr?) == "sparse_cases_on" then
-          modifyEnv (Lean.markSparseCasesOn · name)
+  for withSafety in [true, false] do
+    for declaration in declarations do
+      let name := nameOf (← liftString (stringField declaration "name"))
+      if (← liftString (stringField declaration "kind")) != "inductive"
+          && (optionalField declaration "safety").isSome == withSafety
+          && compiledRows.any (·.2 == name) && !done.contains name then
+        let all ← match optionalField declaration "all" with
+          | some v => liftString (namesOf v)
+          | none => pure [name]
+        let mut group : Array Name := #[]
+        for member in all do
+          if compiledRows.any (·.2 == member) && !group.contains member then
+            group := group.push member
+        compileGroup group
+        for member in group do done := done.insert member
+      if !withSafety then
+        if let some tags := optionalField declaration "tags" then
+          for tag in ← liftString tags.getArr? do
+            if (← liftString tag.getStr?) == "sparse_cases_on" then
+              modifyEnv (Lean.markSparseCasesOn · name)
 
 def decodeAndAdd (nodeBatches : Array String) (data : String) : CoreM Unit := do
   modifyEnv fun env => Lean.Meta.sparseCasesOnCacheExt.modifyState env fun s =>

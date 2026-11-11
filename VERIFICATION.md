@@ -13846,3 +13846,44 @@ Every new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`
 and the 400-expression bound of `BS-08`, so each of those vector counts grows
 by five. Every count of `BS-11` and `BS-12` is unchanged, as is every mutant
 draw: the stdlib verify records did not move.
+
+
+## Native core reconstruction regression (#465, 2026-11-10)
+
+The existing RT-03 runtime verification owner now also builds a fresh Lake
+native executable from the compiler's generated runtime modules. A test-only
+check rejects duplicate native declaration-order entries before Lean's C emitter
+can repeat assertion failures. The executable checks `sumNat` and both directions
+of fixed-width `lessThan`; ordinary RT-03 kernel replay and exact-policy positive
+and negative checks remain unchanged.
+
+At release/v0.4 base `700196ceadd9695abd47bee29b94a6b8bec6f915`, the
+retained Stitch Laws output fails the added order invariant under pinned Lean
+4.32.1. Substituting only the candidate decoder source into the three retained
+runtime modules makes the invariant pass. A cold Lake build then passed all ten
+jobs, including the three runtime C objects and a linked executable; that
+executable printed `native runtime passed`. A separate cold build of the unchanged
+20 Stitch project modules passed all 25 original Lake jobs with that candidate
+runtime. These source-extracted probes are diagnostic execution evidence, not a
+fresh LexLean writer run, a released SDK, or acceptance of Stitch's pinned gate.
+The legacy, non-module decoder also elaborated under the same pinned Lean.
+An independently executed extracted-decoder C-emission regression passed actual
+partial/unsafe mutual groups, replay idempotence, mixed-state refusal without
+mutation, proof/type-only members, and the requirement that a signature alone
+cannot suppress local compilation. Its six group success observations are retained
+in the RT-03 group regression; the executable's success is recorded separately. Independent source review found no blocker for
+the generated synchronous, default-eager compilation mode; explicitly overridden
+postponed compilation is outside this evidence.
+
+The correction uses completed native declaration-order membership, excludes
+members for which Lean generates no code, and compiles each remaining mutual
+group intact. A partially compiled relevant group is refused rather than split.
+Safety-bearing groups retain their earlier scheduling phase. No declaration,
+proof, axiom policy or native acceptance requirement is removed.
+
+The execution environment has no Rust toolchain. The Rust RT-03 harness itself,
+formatting, Clippy, official identity/product regeneration, and the full final-head
+repository gate have not run here. This branch is source preparation for a draft
+PR, with existing generated records untouched; its source changes are not
+qualified by those preceding records. Coordinate the single identity/writer wave
+with the release owner before readiness, merge or downstream SDK adoption.
