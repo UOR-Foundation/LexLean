@@ -11359,6 +11359,43 @@ The case then stops at the stack-bound step, `bootstrap/parse_lre is no package
 of the committed exports`, as `BS-21` to `BS-25` did before their regeneration,
 which produces the `bootstrap/parse_lre` and `bootstrap/render_facts` packages.
 The branch is stacked on `BS-25` and lands after it.
+### where the module of a source is, as source (BS-28)
+
+`BS-28` holds the production root `LexLeanBoot.SurfaceModule.locateModule`
+(`bootstrap/src/SurfaceModule.lex.tex`) to `surface::module::locate`: the kind
+of a source's module, the byte range of its body, and the byte range of its data
+when it is written in the data form. The module imports `AxiomOutput`, whose
+scanners of white space (`skipWhite`, `dropWhiteEnd`, and `lastStep`) trim and
+search as Rust's `char::is_whitespace` and `rfind` do, and the standard
+library's `Text`; it admits no `recursion`. The case holds the root to the
+oracle on hand-built texts that reach no module, a module of each kind in each
+form, the order of the search, a kind whose closing marker is missing or found
+only before its opening, and every shape of the data form with white space of
+one, two, and three bytes; on every committed `.lex.tex` source; and on seeded
+texts and seeded edits of the sources. Each planted defect names the one vector
+that catches it, and the case asserts that the site of each plant occurs once.
+The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `SurfaceModule`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and the eligibility report gives the root exactly
+`allocation` and `overflow`. The register agrees with the §31 table on 479 IDs,
+by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `release/v0.4` at
+`4318b17b8` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_28`, 223 s). Its corpus is 38 named vectors, the 1,045 committed
+sources (342 of at most 4,000 bytes under the evaluator, 895 of at most 200,000
+bytes under rustc), and 300 and 1,500 seeded texts. The evaluator agrees with the
+oracle on 680 runs and the rendered package under the pinned rustc on 2,433, and
+each of the 14 planted defects is detected by its own vector. The first run found
+no fault of the module and one plant its vector did not reach: `an end before the
+begin is taken` was tried on a text whose last closing marker follows the
+opening, so the test of the order never decided it (now `the end before the
+begin`). The case then stops at the stack-bound step, `bootstrap/locate_module
+is no package of the committed exports`, as each bootstrap member did before its
+regeneration, which produces the `bootstrap/locate_module` package. The branch is
+based on `release/v0.4` and stacks on nothing.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 

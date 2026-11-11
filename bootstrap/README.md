@@ -38,3 +38,5 @@ S-expression trees are sorts of its own, each list of a sort's values a chain in
 
 `src/LexiconLre.lex.tex` (SPEC.md §17.23, `BS-26`) imports `LexiconLse`, whose tokenizer and
 tree reader it reads with, and the standard library's `Order`.
+`src/SurfaceModule.lex.tex` (SPEC.md §17.23, `BS-28`) imports `AxiomOutput`, whose scanners of
+white space it trims with, and the standard library's `Text`.

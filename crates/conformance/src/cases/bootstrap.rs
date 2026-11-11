@@ -41,6 +41,7 @@ mod surface_doc;
 mod surface_generic;
 mod surface_lex;
 mod surface_tooling;
+mod surface_module;
 mod tooling_latex;
 
 /// The module the first component lives in.
@@ -2471,6 +2472,7 @@ fn case(id: &str) {
         "BS-27" => surface_tooling::case(),
         "BS-25" => lexicon_lse::case(),
         "BS-26" => lexicon_lre::case(),
+        "BS-28" => surface_module::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

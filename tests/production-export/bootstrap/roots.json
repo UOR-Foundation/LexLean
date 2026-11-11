@@ -351,6 +351,14 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "locate_module",
+      "root": "LexLeanBoot.SurfaceModule.locateModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

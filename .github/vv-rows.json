@@ -295,5 +295,14 @@
     "width": "",
     "memory_kib": "",
     "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-surface-module",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-surface-module",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
   }
 ]
