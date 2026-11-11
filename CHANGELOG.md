@@ -17,6 +17,11 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Canonical JSON refuses duplicate keys that differ only in their escapes (SPEC.md §21.7,
+  `AR-11`, #475). The duplicate check compared each key as written, so `{"a":1,"\u0061":2}`
+  passed it and `Json::parse` returned `{"a":2}`, dropping the first member; keys are now
+  compared after escape decoding. Equal keys in distinct objects stay admitted, and no valid
+  canonical document is affected.
 - `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
   initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
   `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
