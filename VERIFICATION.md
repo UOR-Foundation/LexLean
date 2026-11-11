@@ -21,7 +21,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `repro` | `cargo xtask check-reproducibility` | AR-13, §28.4: two clean `build`s in distinct absolute directories publish byte-identical trees with no absolute path inside |
 | `deny` | `cargo deny --all-features check` | advisories, bans, licenses, sources |
 
-In CI, the initial `honesty` row owns `fmt-check model spec-links` and the complete `bdd` meta-gate target. The remaining rows, supported hosts and Atlas prefix require its success. The BDD remainder owns the library, doctests and unassigned integration targets; Cargo metadata discovers target names and the inventory lists the same target selectors and filters as execution. The separate honesty workflow is subsumed by this same-run job; local `just vv` retains its complete suite.
+In CI, the initial `honesty` row owns `fmt-check model spec-links` and the complete `bdd` meta-gate target. The remaining rows, supported hosts (including Intel construction) and Atlas prefix require its success. The BDD remainder owns the library, doctests and unassigned integration targets; Cargo metadata discovers target names and the inventory lists the same target selectors and filters as execution. The separate honesty workflow is subsumed by this same-run job; local `just vv` retains its complete suite.
 
 Outside `vv`:
 
@@ -42,6 +42,53 @@ Outside `vv`:
 ## Falsifiability records
 
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
+
+### Intel host partition custody and complete evidence
+
+The three non-Intel auxiliary host legs keep their existing locked,
+all-features workspace test command. Intel macOS uses one construction,
+plan-selected conformance executions and a fail-closed aggregate under the original
+`build and non-Lean tests (x86_64-apple-darwin)` context (SPEC.md §8.3).
+Construction compiles the workspace test targets once, discovers the actual
+executables, runs ordinary/library/meta/other integration targets and all
+workspace doctests, and records independent failures without suppressing the
+conformance executions. Consumers run the same conformance executable; the
+committed lane plan groups existing BDD parts, and actual harness inventories
+prove disjointness and complete coverage. The remainder keeps future tests.
+No corpus, assertion, language identity or host timeout changes.
+
+The construction manifest binds source, repository, run and attempt,
+checkout path, Rust pin/version, target, profile/features, lockfile, plans,
+executable bytes/mode, inventories and filters. Transfer includes the actual
+runtime dynamic-library closure and required dependency data, not a target
+build cache. Receipts bind the execution outcome, full harness results and
+logs to that construction. The aggregate rejects missing, duplicate,
+foreign, failed, changed or incomplete evidence, including a failed local
+construction test. `python3 -m unittest discover -s .github/scripts -p
+'test_intel_host_tests.py'` runs the factory's behavioral plants in honesty;
+`RP-14` checks that the workflow wires the construction, consumers and join
+to those operations and preserves the original host context and honesty
+prerequisite. These source checks do not inspect the helper's implementation
+shape or stand in for real Intel execution.
+
+`RP-14` and `RP-18` give the previous-run and release scripts the four exact
+required host contexts. For each host they plant an absent, duplicate,
+foreign-replaced and suffixed context; matching a count of four is no longer
+evidence. Successful unrelated jobs remain allowed, and every job's
+conclusion is still checked, including a failure after a large jobs listing.
+Linux x86-64 remains the normative gate, not a fifth auxiliary context.
+
+Local validation of this change is recorded separately from acceptance:
+`bash -n` passed for both evidence scripts. Standalone fake-GitHub fixtures
+ran each complete script against 30 listings (60 cases total): complete and
+large complete evidence, a late failed job, and each host absent, duplicated,
+foreign-replaced, suffixed, failed or skipped, plus missing honesty, Atlas join
+and recipe contexts. All matched the required pass/refusal without network
+access or a CI run. The editing environment has no Rust compiler, Cargo or
+Intel macOS runtime. Rust conformance tests, the real
+Intel construction/consumer execution, and complete final-head acceptance
+remain unrun here; the behavioral factory suite alone does not qualify the
+host partition.
 
 ### production bundle inventory can fail
 
@@ -13758,6 +13805,29 @@ the crates and vectors those evaluators are given is unchanged, as are the
 verify records move the mutant draws of `BS-12` (-4), `BS-13` (+2) and
 `BS-14` (+5).
 
+## PR394 after actual393 landing: observed producer results (2026-11-05)
+
+The integration retains contributor d80997cf050ac70319a9517fff6a93f98e227712 (including d34/1170/0a36 history) and actual accepted393 landing55be5514cf4fe377c186059260d7666c7c9c2304, whose tested/reviewed/landed tree is3065516167862533e0594427c28be8fe74406aae. Only the exact admitted TokenAudit/PERFORMANCE source was adopted; source-compatible original frozen CLI/xtask and archived selected905 inputs/errors were reused. Physical review393 remained detached atc613 with its original raw index/logical0328 tree. No new identity, model, blanket-lock, fixture or calculus wave was run.
+
+One official frozen `check-production-export --write` passed in3015.363s. Independent actual reviewca6b56f7143dfece08bd891812da07ec1f417d158c767eb51aa24829903e30a1 binds resultse8bffd094615cf4c4144b851d86b482a8e44a6968059f0043943ab692358918e and finalinventoryfb58b26d6650fb365cc364089d365796d3f3277e1ac6f8770d908211db0b738e. Only official bootstrap package outputs changed; the other export families remained exact. Genuine lex/audit_tokens program changes were reviewed as semantic program changes, not dismissed as source-ID renaming.
+
+One official frozen `check-golden --write` passed in59.073s. Independent actual review8f1e24a69ce9bef27966aa30eec94c0878a118bf9433f6a2375e4703e5f938eb binds results364187b964e5ecf3419c0d16fe797818a173d2cec911f5a488262113c2572262 and finalinventory88802e0e70eec32063061ebd9aabad6635bce4fb8de0c3acdced7d1ca0b38a8c. Only bootstrap goldens changed. The compiler manifest and four compiler-golden/shipped calculus pairs remained byte-exact; no calculus rewrite or immediate comparison was performed.
+
+One official frozen `verify-examples --write`, supported selector `without:uor-atlas`, passed all22 selected projects in3879.170s. Independent actual review3db1314850f8c6a9b6a45cd951bbe4021d3c2135c91efe50f1e2573748b09700 binds results0a4f79f9d11fe94a83165b2c183b8045320fd4afc4e935d70464db9768bbeaed and finalinventorycb0b60d777b4ba0e55a8f300187040da595b9bc454f897738e8382990f1a1088. The668 changed paths are exclusively bootstrap verification outputs:329 additions,329 removals and10 modifications. Bootstrap has463 normalized records and278 normalized process records with exit_code0;278 is the bootstrap count, not the total over22 projects. Other21 projects, Atlas, source, locks, pins, negative inputs and unrelated products remained exact. All24 source-module axiom audit outputs retained the exact prior [Quot.sound,propext] policy; pre-existing preservation/library Classical.choice remained unchanged. The LCNF extraction retains3104 constants; only scanSegmentsStep,stepLexAt,stepLexIdent,stepLexToken changed, with genuine preservation program28 lex/program29 auditTokens changes and their certificates explicitly reviewed. Official normalized executable placeholders are not a new physical-executable measurement.
+
+Entry and terminal guards retained exact905 selected input bytes, closed errors, original frozen artifacts, helpers, source/index/root and compiler/calculus dependencies. These producer outcomes do not establish the complete combined-head hosted gate, new Atlas run or final merge acceptance. No additional BS02 or performance run was executed. The prior named/full compiler partition BS02 pass atd809, receipt84ad2eb22c420a1d777208ce44ba6bb8b0ff8d57205f385d294f5c36fd89828c, and old-c61344-job gate remain prior-tree evidence. PERFORMANCE retains the author's d34 harness/WSL and host/comparison/timing caveats; no final-tree timing or speedup is inferred here. One complete changed-head hosted gate, same-run honesty, reproducibility, independent final tree/history review and actual landing/tree equality remain required. The closure scope is #373 only.
+
+## PR394 after actual 4dc release: observed golden reconciliation (2026-11-09)
+
+This continuation preserves actual PR head 281de5b5d41adda58e152ab49227c99f0f1fa24a and actual release/v0.4 4dc5b803c5b0771f9f19563373515d0a2c2f313a as the ordered future merge parents. Thus contributor d809/d34/1170/0a36 and accepted55be/363/414/415 history remain ancestors. The complete current 4dc VERIFICATION history and exact prior 281 appendix precede this additive entry. No #444 source is adopted: its run42647185072 ended cancelled (44 successful jobs and one cancelled Intel job), and it was not merged.
+
+Independent static reuse review 195005d179987435fd506bf9a355209473fae586ef7611681da91fbda73f38d8 established the exact selected 22-module source/import closure, unchanged compiler implementation and 905 selected semantic inputs. The 64 bootstrap production-export and 668 normalized-verification changes already produced and reviewed on 281 remain exact. New Map/Json/JsonRead modules are outside this selected closure. No export or 22-project verification phase was repeated. Those Nov5 durations and process/axiom/program evidence above retain their actual 55be+281 scope; they are not new currentbase executions or measurements.
+
+Under separate root admission ca0818e03f221445d77bfab595b64e255f1eb5d0f5cb74df61274a92aa6e208a, the exact ac7e9bb3278c0fed576c7441b264d3ba5094ead3 seed was adopted and ONE official frozen xtask `check-golden --write` completed with exit0 in 77.579s. Results ac776f08e6b9d8c892aff8cabcc19c7ec76918e9fc907c90cf5683713fbea8b5, final inventory 767440ccc3cc84eade3024e2168405ade9d6a65a30480784483714cacdc32c68, and independent actual artifact review 1b9bd71727fef0136451e5054648b552db2e784fbbd5ea61baef489e877e2026 bind this observed outcome. Exactly 23 bootstrap build files changed: 22 maps changed only source_id, and the manifest reconciled source_id/build_id, the lock input SHA and those 22 map output hashes. Semantic ID remained unchanged; source/build envelopes now follow the actual combined lock/source inputs. All other golden/runtime/tooling/export/verification products remained exact. No additional comparison, calculus writer, identity/model/lock/fixture wave, BS02 run or performance measurement was introduced.
+
+The reviewed physical ledger contains 12,551 entries and 10,900 present files, including 8 symlinks. Physical review393 remains detached at c613 with raw index f2a12ce1d4f383096de2ab9913efd25c55a5a3d01913a670429252ea4ee961eb and logical 0328 source tree; the external pre-documentation capture is 6dcf464632e277916cedfacb5656699c89872c47. Current frozen BOTH/probe artifacts, 905 inputs, closed errors, archived selected build metadata, helper ownership and all producer outputs passed entry and terminal preservation guards. The final additive VI is prepared externally, without changing that physical root.
+
+This is source/product readiness evidence, not complete combined-head acceptance. The historical281 draft run 41964177567 ran only plan/honesty/rest with seven required host/Atlas groups skipped; repro 41964177626 passed, and the prior ready run 41964083701 was cancelled. None accepts the new currentbase combination. One complete new-head hosted gate, same-run honesty, reproducibility, final review and eventual actual landing/tree equality remain mandatory. Existing d34/WSL PERFORMANCE rows and timing/host/comparison caveats retain their original scope; no new linearity measurement is claimed. Closure scope remains #373 only after its combined proof/BS02 and final gate requirements pass.
 
 ## The `parse_module` package moves the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (`BS-21`, #269)
 
@@ -13823,3 +13893,44 @@ Every new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`
 and the 400-expression bound of `BS-08`, so each of those vector counts grows
 by five. Every count of `BS-11` and `BS-12` is unchanged, as is every mutant
 draw: the stdlib verify records did not move.
+
+
+## Native core reconstruction regression (#465, 2026-11-10)
+
+The existing RT-03 runtime verification owner now also builds a fresh Lake
+native executable from the compiler's generated runtime modules. A test-only
+check rejects duplicate native declaration-order entries before Lean's C emitter
+can repeat assertion failures. The executable checks `sumNat` and both directions
+of fixed-width `lessThan`; ordinary RT-03 kernel replay and exact-policy positive
+and negative checks remain unchanged.
+
+At release/v0.4 base `700196ceadd9695abd47bee29b94a6b8bec6f915`, the
+retained Stitch Laws output fails the added order invariant under pinned Lean
+4.32.1. Substituting only the candidate decoder source into the three retained
+runtime modules makes the invariant pass. A cold Lake build then passed all ten
+jobs, including the three runtime C objects and a linked executable; that
+executable printed `native runtime passed`. A separate cold build of the unchanged
+20 Stitch project modules passed all 25 original Lake jobs with that candidate
+runtime. These source-extracted probes are diagnostic execution evidence, not a
+fresh LexLean writer run, a released SDK, or acceptance of Stitch's pinned gate.
+The legacy, non-module decoder also elaborated under the same pinned Lean.
+An independently executed extracted-decoder C-emission regression passed actual
+partial/unsafe mutual groups, replay idempotence, mixed-state refusal without
+mutation, proof/type-only members, and the requirement that a signature alone
+cannot suppress local compilation. Its six group success observations are retained
+in the RT-03 group regression; the executable's success is recorded separately. Independent source review found no blocker for
+the generated synchronous, default-eager compilation mode; explicitly overridden
+postponed compilation is outside this evidence.
+
+The correction uses completed native declaration-order membership, excludes
+members for which Lean generates no code, and compiles each remaining mutual
+group intact. A partially compiled relevant group is refused rather than split.
+Safety-bearing groups retain their earlier scheduling phase. No declaration,
+proof, axiom policy or native acceptance requirement is removed.
+
+The execution environment has no Rust toolchain. The Rust RT-03 harness itself,
+formatting, Clippy, official identity/product regeneration, and the full final-head
+repository gate have not run here. This branch is source preparation for a draft
+PR, with existing generated records untouched; its source changes are not
+qualified by those preceding records. Coordinate the single identity/writer wave
+with the release owner before readiness, merge or downstream SDK adoption.
