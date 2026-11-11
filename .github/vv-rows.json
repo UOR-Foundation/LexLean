@@ -322,5 +322,14 @@
     "width": "",
     "memory_kib": "",
     "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-lock-text",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lock-text",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
   }
 ]

@@ -11257,6 +11257,28 @@ predecessors: hand-built texts that reach each error of the reader and the limit
 on nesting, hand-built expressions of every form printed as read and renamed,
 every `signature` and `value` of the committed lexicon entries read, printed
 both ways, and read back, and seeded expressions and seeded edits. Each planted
+### the canonical text of the lock file is source (BS-31)
+
+`BS-31` holds the two production roots of `LexLeanBoot.LockText`
+(`bootstrap/src/LockText.lex.tex`) to the lock writer: `tomlString` to
+`config::toml_string`, the TOML basic string of a text with the quote, the
+backslash, each control below 0x20, and 0x7F escaped, the controls as `\u` and
+four upper-case hex digits; and `canonicalLock` to `lock::Lock::canonical_bytes`,
+the five header keys with the lock spec of the language and the pinned Lean
+toolchain, then the workspace pins sorted by path, the packages sorted by
+identifier and version, the source packages sorted by identifier, and the PDF
+record with its resources sorted by path, each digest in lower-case hex. The rows
+are sorted with the stable merge sort of the standard library's `Order`; a
+package's key is its identifier and version, each with its NUL bytes escaped and
+a two-byte end, so that the byte order of the key is the order of the pair. Each
+root admits exactly `allocation` and `overflow`, and neither admits
+`recursion`. The oracle is the existing public code of `lock.rs` and
+`config.rs`; no Rust outside the case changes. The case holds the roots to the
+oracle on hand-built locks that reach every table, both lock specs, a path and
+an identifier that are prefixes of others, two versions of one package, an
+identifier with a NUL, and escapes in every table; on texts that reach every
+class of escape and two- and four-byte UTF-8; on every committed `lexlean.lock`
+that parses and every text in them; and on seeded locks and texts. Each planted
 defect names the one vector that catches it, and the case asserts that the site
 of each plant occurs once. The row's statement carries no counts.
 
@@ -11484,6 +11506,24 @@ planted source parses and stays within the root's effects. The case then stops a
 the stack-bound step, `bootstrap/human_diagnostics is no package of the
 committed exports`, as each bootstrap member did before its regeneration, which
 produces the three packages. The branch is stacked on `BS-29` and lands after it.
+only entrypoint is `LockText`: `lexlean check`, `lexlean build`, and `lexlean
+verify` pass, and the eligibility report gives each root exactly `allocation`
+and `overflow`. The register agrees with the §31 table on 479 IDs, by the same
+parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host over
+`release/v0.4` at `4318b17b8` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_31`, 187 s). Its corpus is 28 named vectors (14
+texts, 14 locks), the 328 of the 330 committed locks that parse, each of which
+is already its own canonical text, the 93 texts in them, and 200 and 1,000
+seeded runs of each root. The evaluator agrees with the oracle on 307 texts and
+542 locks, the rendered packages under the pinned rustc on 2,449 runs, and each
+of the 18 planted defects is detected by its own vector. The first runs found no
+fault of the writer: Lean asked for exactly the axioms the module now declares,
+and the case first listed the roots out of their source order. The case then
+stops at the stack-bound step, `bootstrap/toml_string is no package of the
+committed exports`, as each bootstrap member did before its regeneration, which
+produces the two packages.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 

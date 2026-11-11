@@ -94,6 +94,11 @@ workspace carried at those versions without a tag.
   `reportDiagnostics` of `Diagnostics` return what `Diagnostic::to_json`,
   `sort_canonical`, and `LexLeanError::from_diagnostics(..).bounded(..)` return;
   none admits `recursion`. The register is 479 IDs.
+- The canonical text of the lock file as language-1.2 source (SPEC.md §11.2,
+  §17.23, `BS-31`, #274; no new diagnostic code, no change to the language-1.2
+  identity). `canonicalLock` and `tomlString` of `LockText` return what
+  `Lock::canonical_bytes` and `config::toml_string` return; neither admits
+  `recursion`. The register is 479 IDs.
 - Canonical JSON reading in the standard library, the fourth member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
   `LexLeanStd.JsonRead` holds the production roots `readJson` and

@@ -1,0 +1,265 @@
+\begin{lexlean}{LockText}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: LockPackage,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: ident, type: Bytes},
+    {name: version, type: Bytes},
+    {name: kind, type: Bytes},
+    {name: origin, type: Bytes},
+    {name: revision, type: Bytes},
+    {name: treeSha256, type: Bytes},
+    {name: manifestSha256, type: Bytes},
+    {name: imports, type: (List Bytes)}
+  ]
+}
+
+structure{
+  name: LockSourcePackage,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: ident, type: Bytes},
+    {name: version, type: Bytes},
+    {name: kind, type: Bytes},
+    {name: origin, type: Bytes},
+    {name: modulePrefix, type: Bytes},
+    {name: treeSha256, type: Bytes},
+    {name: manifestSha256, type: Bytes},
+    {name: imports, type: (List Bytes)}
+  ]
+}
+
+structure{
+  name: LockPdf,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: program, type: Bytes},
+    {name: programSha256, type: Bytes},
+    {name: versionArgv, type: (List Bytes)},
+    {name: versionStdoutSha256, type: Bytes},
+    {name: compileArgv, type: (List Bytes)},
+    {name: output, type: Bytes},
+    {name: resources, type: (List (Bytes * Bytes))}
+  ]
+}
+
+structure{
+  name: Lock,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: language, type: Bytes},
+    {name: compilerSemantics, type: Bytes},
+    {name: projectConfigSha256, type: Bytes},
+    {name: workspaceFiles, type: (List (Bytes * Bytes))},
+    {name: packages, type: (List LockPackage)},
+    {name: sourcePackages, type: (List LockSourcePackage)},
+    {name: pdf, type: (Option LockPdf)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: leanToolchain,
+  parameters: [],
+  result: Bytes,
+  body: (lit "leanprover/lean4:v4.32.1"),
+  executable: true
+}
+
+definition{
+  name: upperHex,
+  parameters: [value : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Numeral::pick 0x30313233343536373839414243444546 value),
+  executable: true
+}
+
+definition{
+  name: escapeByte,
+  parameters: [value : Nat],
+  result: Bytes,
+  body: (if (value =? 34) then 0x5c22 else (if (value =? 92) then 0x5c5c else (if (if (value <? 32) then true else (value =? 127)) then (cat (cat 0x5c753030 (upperHex (prim quotient value 16 0 : Nat))) (upperHex (prim remainder value 16 0 : Nat))) else (LexLeanStd.Numeral::pick (LexLeanStd.Numeral::byteValues) value)))),
+  executable: true
+}
+
+definition{
+  name: escapeStep,
+  parameters: [subject : Bytes, state : (Nat * Bytes)],
+  result: (Option (Nat * Bytes)),
+  body: (match (LexLeanStd.Text::byteAt subject (first state))
+    | Option.some byte => (ctor Option.some [(Nat * Bytes)] (((first state) + 1), (cat (second state) (escapeByte (prim to_nat byte : Nat)))))
+    | Option.none => (ctor Option.none [(Nat * Bytes)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tomlString,
+  parameters: [value : Bytes],
+  result: Bytes,
+  body: (cat (cat 0x22 (second (first (prim iterate_until (fun [value] (state : (Nat * Bytes)) => (escapeStep value state)) ((prim length value : Nat) + 1) (0, 0x) : ((Nat * Bytes) * Bool))))) 0x22),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: tomlArray,
+  parameters: [values : (List Bytes)],
+  result: Bytes,
+  body: (cat (cat (lit "[") (LexLeanStd.Text::joinWith (LexLeanStd.Order::reverseList [Bytes] (prim list_fold (fun (acc : (List Bytes)) (item : Bytes) => (cons (tomlString item) acc)) (nil Bytes) values : (List Bytes))) (lit ", "))) (lit "]")),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: line,
+  parameters: [key : Bytes, shown : Bytes],
+  result: Bytes,
+  body: (cat (cat (cat key (lit " = ")) shown) 0x0a),
+  executable: true
+}
+
+definition{
+  name: stringLine,
+  parameters: [key : Bytes, value : Bytes],
+  result: Bytes,
+  body: (line key (tomlString value)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: digestLine,
+  parameters: [key : Bytes, digest : Bytes],
+  result: Bytes,
+  body: (line key (tomlString (LexLeanStd.Numeral::hex digest))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: header,
+  parameters: [name : Bytes],
+  result: Bytes,
+  body: (cat (cat 0x0a name) 0x0a),
+  executable: true
+}
+
+definition{
+  name: escapedKey,
+  parameters: [text : Bytes],
+  result: Bytes,
+  body: (cat (LexLeanStd.Text::joinWith (LexLeanStd.Text::splitOn text (0 : UInt8)) 0x0001) 0x0000),
+  executable: true
+}
+
+definition{
+  name: pairsByPath,
+  parameters: [rows : (List (Bytes * Bytes))],
+  result: (List (Bytes * Bytes)),
+  body: (prim list_fold (fun (acc : (List (Bytes * Bytes))) (entry : (Bytes * (Bytes * Bytes))) => (cons (second entry) acc)) (nil (Bytes * Bytes)) (LexLeanStd.Order::reverseList [(Bytes * (Bytes * Bytes))] (LexLeanStd.Order::sortByKey [(Bytes * Bytes)] (LexLeanStd.Order::reverseList [(Bytes * (Bytes * Bytes))] (prim list_fold (fun (acc : (List (Bytes * (Bytes * Bytes)))) (row : (Bytes * Bytes)) => (cons ((first row), row) acc)) (nil (Bytes * (Bytes * Bytes))) rows : (List (Bytes * (Bytes * Bytes))))))) : (List (Bytes * Bytes))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: packageKey,
+  parameters: [row : LockPackage],
+  result: Bytes,
+  body: (cat (escapedKey (project row ident)) (escapedKey (project row version))),
+  executable: true
+}
+
+definition{
+  name: packagesSorted,
+  parameters: [rows : (List LockPackage)],
+  result: (List LockPackage),
+  body: (prim list_fold (fun (acc : (List LockPackage)) (entry : (Bytes * LockPackage)) => (cons (second entry) acc)) (nil LockPackage) (LexLeanStd.Order::reverseList [(Bytes * LockPackage)] (LexLeanStd.Order::sortByKey [LockPackage] (LexLeanStd.Order::reverseList [(Bytes * LockPackage)] (prim list_fold (fun (acc : (List (Bytes * LockPackage))) (row : LockPackage) => (cons ((packageKey row), row) acc)) (nil (Bytes * LockPackage)) rows : (List (Bytes * LockPackage)))))) : (List LockPackage)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: sourcesSorted,
+  parameters: [rows : (List LockSourcePackage)],
+  result: (List LockSourcePackage),
+  body: (prim list_fold (fun (acc : (List LockSourcePackage)) (entry : (Bytes * LockSourcePackage)) => (cons (second entry) acc)) (nil LockSourcePackage) (LexLeanStd.Order::reverseList [(Bytes * LockSourcePackage)] (LexLeanStd.Order::sortByKey [LockSourcePackage] (LexLeanStd.Order::reverseList [(Bytes * LockSourcePackage)] (prim list_fold (fun (acc : (List (Bytes * LockSourcePackage))) (row : LockSourcePackage) => (cons ((project row ident), row) acc)) (nil (Bytes * LockSourcePackage)) rows : (List (Bytes * LockSourcePackage)))))) : (List LockSourcePackage)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: pinText,
+  parameters: [table : Bytes, rows : (List (Bytes * Bytes))],
+  result: Bytes,
+  body: (prim list_fold (fun [table] (acc : Bytes) (row : (Bytes * Bytes)) => (cat acc (cat (cat (header table) (stringLine (lit "path") (first row))) (digestLine (lit "sha256") (second row))))) 0x (pairsByPath rows) : Bytes),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: packageText,
+  parameters: [row : LockPackage],
+  result: Bytes,
+  body: (cat (cat (cat (cat (cat (cat (cat (cat (header (lit "[[package]]")) (stringLine (lit "id") (project row ident))) (stringLine (lit "version") (project row version))) (stringLine (lit "kind") (project row kind))) (stringLine (lit "source") (project row origin))) (stringLine (lit "revision") (project row revision))) (digestLine (lit "tree_sha256") (project row treeSha256))) (digestLine (lit "manifest_sha256") (project row manifestSha256))) (line (lit "imports") (tomlArray (project row imports)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: sourceText,
+  parameters: [row : LockSourcePackage],
+  result: Bytes,
+  body: (cat (cat (cat (cat (cat (cat (cat (cat (header (lit "[[source_package]]")) (stringLine (lit "id") (project row ident))) (stringLine (lit "version") (project row version))) (stringLine (lit "kind") (project row kind))) (stringLine (lit "source") (project row origin))) (stringLine (lit "module_prefix") (project row modulePrefix))) (digestLine (lit "tree_sha256") (project row treeSha256))) (digestLine (lit "manifest_sha256") (project row manifestSha256))) (line (lit "imports") (tomlArray (project row imports)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: pdfText,
+  parameters: [entry : LockPdf],
+  result: Bytes,
+  body: (cat (cat (cat (cat (cat (cat (cat (header (lit "[pdf]")) (stringLine (lit "program") (project entry program))) (digestLine (lit "program_sha256") (project entry programSha256))) (line (lit "version_argv") (tomlArray (project entry versionArgv)))) (digestLine (lit "version_stdout_sha256") (project entry versionStdoutSha256))) (line (lit "compile_argv") (tomlArray (project entry compileArgv)))) (stringLine (lit "output") (project entry output))) (pinText (lit "[[pdf.resource]]") (project entry resources))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: canonicalLock,
+  parameters: [given : Lock],
+  result: Bytes,
+  body: (let spec : Bytes := (if (prim equal (project given language) (lit "1.2") : Bool) then (lit "lexlean/lock/2") else (lit "lexlean/lock/1")); (let head : Bytes := (cat (cat (cat (cat (stringLine (lit "spec") spec) (stringLine (lit "language") (project given language))) (digestLine (lit "compiler_semantics") (project given compilerSemantics))) (digestLine (lit "project_config_sha256") (project given projectConfigSha256))) (stringLine (lit "lean_toolchain") (leanToolchain))); (let pins : Bytes := (pinText (lit "[[workspace_file]]") (project given workspaceFiles)); (let rows : Bytes := (prim list_fold (fun (acc : Bytes) (row : LockPackage) => (cat acc (packageText row))) 0x (packagesSorted (project given packages)) : Bytes); (let sources : Bytes := (prim list_fold (fun (acc : Bytes) (row : LockSourcePackage) => (cat acc (sourceText row))) 0x (sourcesSorted (project given sourcePackages)) : Bytes); (let tail : Bytes := (match (project given pdf)
+    | Option.some entry => (pdfText entry)
+    | Option.none => 0x); (cat (cat (cat (cat head pins) rows) sources) tail))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

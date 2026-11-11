@@ -26,6 +26,7 @@ mod diagnostics;
 mod gnaf_validate;
 mod lexicon_lre;
 mod lexicon_lse;
+mod lock_text;
 mod runtime_validate;
 mod rust_assemble;
 mod rust_bodies;
@@ -2477,6 +2478,7 @@ fn case(id: &str) {
         "BS-28" => surface_module::case(),
         "BS-29" => diagnostics::case(),
         "BS-30" => cli_output::case(),
+        "BS-31" => lock_text::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
