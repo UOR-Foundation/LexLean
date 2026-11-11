@@ -17,6 +17,15 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Declaration IDs (SPEC.md §21.9, `SM-38`; no new diagnostic code, no change to
+  any compiler-semantics ID). A language-1.2 build publishes
+  `declarations/<module>.json` (`lexlean/declarations/1`, schema
+  `api/schemas/declarations.schema.json`) with a declaration ID for every
+  declaration of a semantic module, a framed SHA-256 over its canonical JSON
+  and the IDs of the project declarations it references, with each group of
+  declarations that reference one another hashed as one, and a statement ID
+  for every theorem that omits its proof. Builds of languages 1.0 and 1.1 are
+  unchanged. The register is 483 IDs.
 - The generic notation as language-1.2 source, fourth slice of the front end
   (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
   the language-1.2 identity). `parseGeneric` and `printGeneric` of

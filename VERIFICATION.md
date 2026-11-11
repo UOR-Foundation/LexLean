@@ -904,6 +904,25 @@ Planted: `mentions_family_group` ignored the arguments again (the comparison
 test ir::semantic::family_order_tests::a_group_instantiated_at_its_own_type_has_two_motives ... FAILED
 ```
 
+### a declaration ID can miss a reference or keep a proof (SM-38)
+
+`SM-38` holds the declaration and statement IDs of §21.9. `conformance_sm_38`
+builds a language-1.2 project whose `twice` references `base`, whose theorem
+`twice_one` states a fact about `twice`, whose `spare` nothing references, and
+whose `Tree` and `Forest` are one mutual group. It recomputes the IDs of `spare`
+and `twice` by hand from the framed inputs, validates the published file
+against its schema and its manifest row, and builds four edits: one literal of
+`base`, which changes exactly `base`, `twice`, and `twice_one`; the theorem's
+proof alone, which changes its declaration ID and keeps its statement ID; a
+field of `Tree`, which changes exactly the group; and an added declaration with
+`spare` moved first, which changes no ID. A language-1.0 build publishes no
+declarations file.
+
+Two planted defects were run and each was refused by the named assertion: a
+group digest that omits the framed references (refused at "a declaration's ID
+covers the IDs of its references"), and a statement ID that keeps the proof
+(refused at "a change of proof keeps the statement ID").
+
 ### a nested induction can be refused or mis-ordered (SM-37)
 
 A theorem over a nested inductive type is proved by `nested_induction`
