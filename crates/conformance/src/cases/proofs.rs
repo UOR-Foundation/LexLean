@@ -1234,7 +1234,10 @@ pub(crate) fn run(id: &str) {
             let project = P::copy_example("decision-regions");
             project.check_ok();
             let main = support::lean_text(&support::rendered(&project), "Main");
-            assert!(main.contains("public import LexLeanRuntime.Regions\n"), "{main}");
+            assert!(
+                main.contains("public import LexLeanRuntime.Regions\n"),
+                "{main}"
+            );
             assert!(
                 main.contains(
                     "public theorem noHeatWhenEmpty (request : Request) : (breaksNoHeatWhenEmpty (request) = false) := by\n  exact LexLeanRegions.holds [(LexLeanRegions.Rule.mk [(LexLeanRegions.Cond.mk 2 4 1), (LexLeanRegions.Cond.mk 0 2 29)] 2), (LexLeanRegions.Rule.mk [(LexLeanRegions.Cond.mk 2 4 1), (LexLeanRegions.Cond.mk 0 1 15)] 1), (LexLeanRegions.Rule.mk [(LexLeanRegions.Cond.mk 1 2 70)] 3)] 0 (LexLeanRegions.Property.mk false [(LexLeanRegions.Cond.mk 0 1 50), (LexLeanRegions.Cond.mk 1 1 100), (LexLeanRegions.Cond.mk 2 4 0)] 1) [(0, 50), (0, 100), (0, 0)] (by decide +kernel) [(request).temperature, (request).humidity, (request).occupied] rfl\n"
@@ -1245,7 +1248,10 @@ pub(crate) fn run(id: &str) {
             let rejected = |from: &str, to: &str, message: &str| {
                 let copy = P::copy_example("decision-regions");
                 let mut text = copy.read_raw(file);
-                assert!(text.contains(from), "decision-regions/{file} lacks {from:?}");
+                assert!(
+                    text.contains(from),
+                    "decision-regions/{file} lacks {from:?}"
+                );
                 text = text.replacen(from, to, 1);
                 copy.write(file, &text);
                 let error = copy.check_fails_with("LLT4001");
@@ -1287,11 +1293,7 @@ pub(crate) fn run(id: &str) {
                 assert!(text.contains(from));
                 wrong.write(
                     file,
-                    &text.replacen(
-                        from,
-                        "body: ((project request temperature) <=? 15)",
-                        1,
-                    ),
+                    &text.replacen(from, "body: ((project request temperature) <=? 15)", 1),
                 );
                 wrong.check_ok();
                 let _guard = support::env_shared();

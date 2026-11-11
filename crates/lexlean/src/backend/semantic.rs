@@ -2067,9 +2067,7 @@ pub fn render_lean(
     let regions = elaborated.contains("\"kind\":\"region_check\"");
     let mut text = String::from("module\npublic import Init\n");
     if language_1_2 {
-        use crate::backend::runtime::{
-            COLLECTIONS, LAWS, MODELS, PORTABLE, REASONING, REGIONS,
-        };
+        use crate::backend::runtime::{COLLECTIONS, LAWS, MODELS, PORTABLE, REASONING, REGIONS};
         for (used, runtime_module) in [
             (runtime, PORTABLE),
             (collections, COLLECTIONS),

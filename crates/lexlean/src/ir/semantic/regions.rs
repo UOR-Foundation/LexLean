@@ -18,7 +18,9 @@
 
 use std::collections::BTreeMap;
 
-use super::{MemberRef, SemanticDeclaration, SemanticParameter, SemanticProof, SemanticTerm, SemanticType};
+use super::{
+    MemberRef, SemanticDeclaration, SemanticParameter, SemanticProof, SemanticTerm, SemanticType,
+};
 
 /// One comparison of a field with a constant, in the runtime's operator
 /// codes: 0 `x < c`, 1 `x ≤ c`, 2 `c < x`, 3 `c ≤ x`, 4 `x = c`, 5 `c = x`,
@@ -159,12 +161,12 @@ impl Request<'_, '_> {
 
     /// One comparison of a field with a constant, either way round.
     fn comparison(&self, term: &SemanticTerm) -> Result<Cond, String> {
-        let (left, right, codes, negated) = match term {
-            SemanticTerm::Blt { left, right } => (left, right, (0, 2), false),
-            SemanticTerm::Ble { left, right } => (left, right, (1, 3), false),
-            SemanticTerm::Beq { left, right } => (left, right, (4, 5), false),
+        let (left, right, codes) = match term {
+            SemanticTerm::Blt { left, right } => (left, right, (0, 2)),
+            SemanticTerm::Ble { left, right } => (left, right, (1, 3)),
+            SemanticTerm::Beq { left, right } => (left, right, (4, 5)),
             SemanticTerm::Not { value } => match value.as_ref() {
-                SemanticTerm::Beq { left, right } => (left, right, (6, 7), true),
+                SemanticTerm::Beq { left, right } => (left, right, (6, 7)),
                 _ => return Err("a negation other than `!(a =? b)`".to_owned()),
             },
             _ => {
@@ -174,7 +176,6 @@ impl Request<'_, '_> {
                 )
             }
         };
-        let _ = negated;
         if let (Some(field), Some(value)) = (self.field(left), self.scope.constant(right, 0)) {
             return Ok(Cond {
                 field,
@@ -193,8 +194,8 @@ impl Request<'_, '_> {
     }
 
     /// A conjunction folded from the left, `((c1 && c2) && c3)`, read into its
-    /// conjuncts in order. `last` receives the rightmost conjunct when the
-    /// caller reads it itself.
+    /// conjuncts in order. A right operand that is itself a conjunction is one
+    /// conjunct, which `comparison` then refuses.
     fn conjuncts<'t>(&self, term: &'t SemanticTerm, out: &mut Vec<&'t SemanticTerm>) {
         match term {
             SemanticTerm::And { left, right } => {
@@ -208,7 +209,10 @@ impl Request<'_, '_> {
     fn conditions(&self, term: &SemanticTerm) -> Result<Vec<Cond>, String> {
         let mut terms = Vec::new();
         self.conjuncts(term, &mut terms);
-        terms.into_iter().map(|term| self.comparison(term)).collect()
+        terms
+            .into_iter()
+            .map(|term| self.comparison(term))
+            .collect()
     }
 
     /// `judge request`, the one call the property's test may make.
@@ -237,7 +241,10 @@ impl Request<'_, '_> {
                 .definition(function)
                 .ok_or_else(|| format!("rule `{}` is not a local definition", function.name))?;
             let [parameter] = parameters else {
-                return Err(format!("rule `{}` does not take only the request", function.name));
+                return Err(format!(
+                    "rule `{}` does not take only the request",
+                    function.name
+                ));
             };
             if *result != SemanticType::Bool {
                 return Err(format!("rule `{}` is not Boolean", function.name));
@@ -280,15 +287,22 @@ pub fn lower(
         ..
     } = theorem
     else {
-        return Err("internal: region_check lowering of a declaration that is not a region_check theorem".to_owned());
+        return Err(
+            "internal: region_check lowering of a declaration that is not a region_check theorem"
+                .to_owned(),
+        );
     };
     let fail = |reason: String| format!("region_check theorem `{name}`: {reason}");
     let scope = Scope::new(declarations);
     if !type_parameters.is_empty() {
-        return Err(fail("a decision property has no type parameters".to_owned()));
+        return Err(fail(
+            "a decision property has no type parameters".to_owned(),
+        ));
     }
     let [parameter] = parameters.as_slice() else {
-        return Err(fail("a decision property takes exactly one request".to_owned()));
+        return Err(fail(
+            "a decision property takes exactly one request".to_owned(),
+        ));
     };
     let SemanticType::Named { member, arguments } = &parameter.r#type else {
         return Err(fail("the request is not a structure".to_owned()));
@@ -298,9 +312,15 @@ pub fn lower(
         .flatten()
         .ok_or_else(|| fail(format!("`{}` is not a local structure", member.name)))?;
     if structure.iter().any(|(_, ty)| **ty != SemanticType::Nat) {
-        return Err(fail(format!("every field of `{}` must be Nat", member.name)));
+        return Err(fail(format!(
+            "every field of `{}` must be Nat",
+            member.name
+        )));
     }
-    let fields: Vec<String> = structure.iter().map(|(field, _)| (*field).to_owned()).collect();
+    let fields: Vec<String> = structure
+        .iter()
+        .map(|(field, _)| (*field).to_owned())
+        .collect();
     let request = Request {
         scope: &scope,
         name: &parameter.name,
@@ -320,7 +340,10 @@ pub fn lower(
         .definition(breaks)
         .ok_or_else(|| fail(format!("`{}` is not a local definition", breaks.name)))?;
     let [breaks_parameter] = breaks_parameters else {
-        return Err(fail(format!("`{}` does not take only the request", breaks.name)));
+        return Err(fail(format!(
+            "`{}` does not take only the request",
+            breaks.name
+        )));
     };
     if *breaks_result != SemanticType::Bool || breaks_parameter.r#type != parameter.r#type {
         return Err(fail(format!(
@@ -366,7 +389,10 @@ pub fn lower(
         .definition(judge)
         .ok_or_else(|| fail(format!("`{}` is not a local definition", judge.name)))?;
     let [judge_parameter] = judge_parameters else {
-        return Err(fail(format!("`{}` does not take only the request", judge.name)));
+        return Err(fail(format!(
+            "`{}` does not take only the request",
+            judge.name
+        )));
     };
     if *judge_result != SemanticType::Nat || judge_parameter.r#type != parameter.r#type {
         return Err(fail(format!(
@@ -391,8 +417,11 @@ pub fn lower(
                 let when = judging
                     .rule_conditions(condition)
                     .map_err(|reason| fail(format!("`{}`: {reason}", judge.name)))?;
-                exact(&when, &format!("rule {} of `{}`", rules.len() + 1, judge.name))
-                    .map_err(fail)?;
+                exact(
+                    &when,
+                    &format!("rule {} of `{}`", rules.len() + 1, judge.name),
+                )
+                .map_err(fail)?;
                 let outcome = scope.constant(then_value, 0).ok_or_else(|| {
                     fail(format!(
                         "rule {} of `{}` does not answer a constant",
