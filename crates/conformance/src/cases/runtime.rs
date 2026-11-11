@@ -71,9 +71,10 @@ fn rt_01() {
             runtime::COLLECTIONS,
             runtime::MODELS,
             runtime::REASONING,
-            runtime::LAWS
+            runtime::LAWS,
+            runtime::REGIONS
         ],
-        "the registry lists the five runtime modules in dependency order"
+        "the registry lists the six runtime modules in dependency order"
     );
     // The registry lists the modules and nothing else.
     let registry: toml::Table = disk(runtime::REGISTRY_PATH)
@@ -174,6 +175,7 @@ fn rt_01() {
     for input in [
         "tests/runtime-library/oracle",
         "tests/runtime-library/laws-oracle",
+        "tests/runtime-library/regions-oracle",
     ] {
         assert!(
             !repo_root().join(input).exists(),

@@ -55,6 +55,10 @@ pub const REASONING: &str = "LexLeanRuntime.Reasoning";
 /// rewrites with and a `law` proof applies.
 pub const LAWS: &str = "LexLeanRuntime.Laws";
 
+/// The decision regions (`LexLeanRegions`): the checker data, the local box
+/// obligations, and the soundness theorem a `region_check` proof applies.
+pub const REGIONS: &str = "LexLeanRuntime.Regions";
+
 /// The released bytes of the language-1.1 portable runtime, which a
 /// language-1.1 semantic module splices inside its namespace.
 pub const FROZEN_PORTABLE_PATH: &str = "language/runtime-1.2/frozen/portable-runtime-1.1.txt";
