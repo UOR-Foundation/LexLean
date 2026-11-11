@@ -359,6 +359,30 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "diagnostic_text",
+      "root": "LexLeanBoot.Diagnostics.diagnosticText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "report_diagnostics",
+      "root": "LexLeanBoot.Diagnostics.reportDiagnostics",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sort_diagnostics",
+      "root": "LexLeanBoot.Diagnostics.sortDiagnostics",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

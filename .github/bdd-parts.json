@@ -274,6 +274,9 @@
       "SP-29",
       "SP-32",
       "SP-33"
+    ],
+    "bootstrap-diagnostics": [
+      "BS-29"
     ]
   },
   "targets": {

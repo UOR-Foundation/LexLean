@@ -40,3 +40,5 @@ S-expression trees are sorts of its own, each list of a sort's values a chain in
 tree reader it reads with, and the standard library's `Order`.
 `src/SurfaceModule.lex.tex` (SPEC.md §17.23, `BS-28`) imports `AxiomOutput`, whose scanners of
 white space it trims with, and the standard library's `Text`.
+`src/Diagnostics.lex.tex` (SPEC.md §17.23, `BS-29`) imports the standard library's `Json`,
+`Numeral`, `Order`, and `Text`: it writes, sorts, and caps the canonical diagnostic.

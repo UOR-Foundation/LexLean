@@ -21,6 +21,7 @@ use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support::{self, P};
 
+mod diagnostics;
 mod gnaf_validate;
 mod lexicon_lre;
 mod lexicon_lse;
@@ -2473,6 +2474,7 @@ fn case(id: &str) {
         "BS-25" => lexicon_lse::case(),
         "BS-26" => lexicon_lre::case(),
         "BS-28" => surface_module::case(),
+        "BS-29" => diagnostics::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

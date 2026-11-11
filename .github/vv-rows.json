@@ -304,5 +304,14 @@
     "width": "",
     "memory_kib": "",
     "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-diagnostics",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-diagnostics",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
   }
 ]
