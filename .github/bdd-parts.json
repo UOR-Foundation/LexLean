@@ -283,6 +283,9 @@
     ],
     "bootstrap-cli-output": [
       "BS-30"
+    ],
+    "bootstrap-content-id": [
+      "BS-32"
     ]
   },
   "targets": {

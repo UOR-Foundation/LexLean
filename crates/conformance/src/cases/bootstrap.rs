@@ -13,6 +13,7 @@ use lexlean::production::lower::{linked_modules, lower_root, roots, Lowered};
 use serde_json::Value as Json;
 
 mod calculus_check;
+mod content_id;
 pub mod perf;
 
 use crate::production_export as harness;
@@ -2479,6 +2480,7 @@ fn case(id: &str) {
         "BS-29" => diagnostics::case(),
         "BS-30" => cli_output::case(),
         "BS-31" => lock_text::case(),
+        "BS-32" => content_id::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

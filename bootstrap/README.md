@@ -47,3 +47,5 @@ white space it trims with, and the standard library's `Text`.
 diagnostic it writes for a terminal, and the standard library's `Numeral` and `Order`.
 `src/LockText.lex.tex` (SPEC.md §17.23, `BS-31`) imports the standard library's `Numeral`,
 `Order`, and `Text`, and writes the canonical lock text of SPEC.md §11.2.
+`src/ContentId.lex.tex` (SPEC.md §17.23, `BS-32`) imports the standard library's `Numeral` and
+`Sha256`, and computes the labeled hash recipes of content identity of SPEC.md §21.
