@@ -349,5 +349,14 @@
     "width": "",
     "memory_kib": "",
     "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-manifest-text",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-manifest-text",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
   }
 ]

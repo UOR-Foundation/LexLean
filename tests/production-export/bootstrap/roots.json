@@ -487,6 +487,14 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "build_manifest",
+      "root": "LexLeanBoot.ManifestText.buildManifest",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

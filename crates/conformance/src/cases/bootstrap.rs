@@ -29,6 +29,7 @@ mod lexicon_lre;
 mod lexicon_lse;
 mod lock_text;
 mod project_text;
+mod manifest_text;
 mod runtime_validate;
 mod rust_assemble;
 mod rust_bodies;
@@ -2483,6 +2484,7 @@ fn case(id: &str) {
         "BS-31" => lock_text::case(),
         "BS-32" => content_id::case(),
         "BS-33" => project_text::case(),
+        "BS-34" => manifest_text::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
