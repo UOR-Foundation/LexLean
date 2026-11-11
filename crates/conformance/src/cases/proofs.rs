@@ -1193,6 +1193,116 @@ pub(crate) fn run(id: &str) {
                 );
             }
         }
+        // §17.12: decision regions, the region_check proof form.
+        "PF-24" => {
+            use lexlean::backend::runtime;
+            let modules = runtime::modules().expect("the shipped runtime");
+            let regions = modules
+                .iter()
+                .find(|module| module.name == runtime::REGIONS)
+                .expect("the regions module is a runtime module");
+            assert!(
+                regions.imports.is_empty(),
+                "the regions module imports only Init, found {:?}",
+                regions.imports
+            );
+            let path = runtime::native_source_path(runtime::REGIONS).expect("a native path");
+            let source = std::fs::read_to_string(support::repo_root().join(&path).as_std_path())
+                .expect("the native regions source");
+            assert!(
+                source.contains("\\begin{coremodule}") && !source.contains("\\coredata{"),
+                "the regions are a native core module in the notation"
+            );
+            for name in [
+                "LexLeanRegions.breaks",
+                "LexLeanRegions.obligation",
+                "LexLeanRegions.holds",
+            ] {
+                let (_, axioms) = regions
+                    .declarations
+                    .iter()
+                    .find(|(declared, _)| declared == name)
+                    .unwrap_or_else(|| panic!("the regions module declares {name}"));
+                assert!(
+                    axioms
+                        .iter()
+                        .all(|axiom| axiom == "propext" || axiom == "Quot.sound"),
+                    "{name} depends on {axioms:?}"
+                );
+            }
+            let file = "src/Main.lex.tex";
+            let project = P::copy_example("decision-regions");
+            project.check_ok();
+            let main = support::lean_text(&support::rendered(&project), "Main");
+            assert!(main.contains("public import LexLeanRuntime.Regions\n"), "{main}");
+            assert!(
+                main.contains(
+                    "public theorem noHeatWhenEmpty (request : Request) : (breaksNoHeatWhenEmpty (request) = false) := by\n  exact LexLeanRegions.holds [(LexLeanRegions.Rule.mk [(LexLeanRegions.Cond.mk 2 4 1), (LexLeanRegions.Cond.mk 0 2 29)] 2), (LexLeanRegions.Rule.mk [(LexLeanRegions.Cond.mk 2 4 1), (LexLeanRegions.Cond.mk 0 1 15)] 1), (LexLeanRegions.Rule.mk [(LexLeanRegions.Cond.mk 1 2 70)] 3)] 0 (LexLeanRegions.Property.mk false [(LexLeanRegions.Cond.mk 0 1 50), (LexLeanRegions.Cond.mk 1 1 100), (LexLeanRegions.Cond.mk 2 4 0)] 1) [(0, 50), (0, 100), (0, 0)] (by decide +kernel) [(request).temperature, (request).humidity, (request).occupied] rfl\n"
+                ),
+                "{main}"
+            );
+            // Outside the fragment, linking refuses with the reason.
+            let rejected = |from: &str, to: &str, message: &str| {
+                let copy = P::copy_example("decision-regions");
+                let mut text = copy.read_raw(file);
+                assert!(text.contains(from), "decision-regions/{file} lacks {from:?}");
+                text = text.replacen(from, to, 1);
+                copy.write(file, &text);
+                let error = copy.check_fails_with("LLT4001");
+                assert!(
+                    error.to_string().contains(message),
+                    "expected {message:?}, got {error}"
+                );
+            };
+            rejected(
+                "body: (70 <? (project request humidity))",
+                "body: (not ((project request humidity) =? 70))",
+                "rule 3 of `judge` uses `!=`, whose region is not a box",
+            );
+            rejected(
+                "body: (((((project request temperature) <=? 50) && ((project request humidity) <=? 100)) && ((project request occupied) =? 0)) && ((judge request) =? (answerHeat)))",
+                "body: ((((project request temperature) <=? 50) && ((project request occupied) =? 0)) && ((judge request) =? (answerHeat)))",
+                "`breaksNoHeatWhenEmpty` does not bound field `humidity` above",
+            );
+            rejected(
+                "body: (70 <? (project request humidity))",
+                "body: (70 <? ((project request humidity) + 1))",
+                "rule `drying` has a comparison that is not of a request field with a constant",
+            );
+            rejected(
+                "  statement: ((breaksCoolWhenHot request) = false),\n  proof: region_check{},",
+                "  statement: ((breaksCoolWhenHot request) = false),\n  proof: constructor{branches: [region_check{}]},",
+                "region_check is a whole proof, never a branch",
+            );
+            semantic_1_1_rejects(
+                r#"{"axioms":[],"kind":"theorem","name":"region_use","parameters":[],"proof":{"kind":"region_check"},"statement":{"kind":"eq","left":{"kind":"nat","value":"0"},"right":{"kind":"nat","value":"0"}}}"#,
+                "`region_check proof` is a language-1.2 construct",
+            );
+            let _ = support::verify_ok_backed("PF-24", &project);
+            if support::lean_backed("PF-24") {
+                // A planted defect: heating no longer requires an occupant.
+                let wrong = P::copy_example("decision-regions");
+                let text = wrong.read_raw(file);
+                let from = "body: (((project request occupied) =? 1) && ((project request temperature) <=? 15))";
+                assert!(text.contains(from));
+                wrong.write(
+                    file,
+                    &text.replacen(
+                        from,
+                        "body: ((project request temperature) <=? 15)",
+                        1,
+                    ),
+                );
+                wrong.check_ok();
+                let _guard = support::env_shared();
+                let error = wrong.verify_fails_with("LLV7002");
+                assert_eq!(
+                    refused_theorems(&wrong, file, &error),
+                    ["idleWhenEmptyAndDry", "noHeatWhenEmpty"],
+                    "{error}"
+                );
+            }
+        }
         other => panic!("no proofs case is wired for {other}"),
     }
 }

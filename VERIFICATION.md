@@ -1642,6 +1642,40 @@ and a count, the reverse's sum equated to a count, and a map's entries summed
 as its keys twice. `conformance_pf_23` refuses the pair law applied to a
 swapped statement. Each assertion names exactly the refused theorems.
 
+### decision regions can fail
+
+The decision-regions module and the `region_check` form (PrismPM#605,
+`PF-24`). Each defect was planted in the working tree, the case named was run
+with `cargo test -p repo-conformance --test conformance -- <case>` (Windows
+x86-64, GNU toolchain 1.97.1, pinned Lean 4.32.1 under `ELAN_HOME`, so the
+Lean-backed branch ran), and the plant was reverted. The case passes on the
+reverted tree.
+
+Planted (a): the lowering reads `c < x` with the code of `x < c` (the `Blt`
+arm's codes `(0, 2)` made `(0, 0)`). `conformance_pf_24` refuses the rendered
+proof of `noHeatWhenEmpty`. The same compiler run by `lexlean verify` on a copy
+of `examples/decision-regions` shows that the lowering is not trusted: the
+lowered `breaks` is no longer the module's, and Lean refuses.
+
+```text
+error[LLV7002]: Lean rejected `DecisionRegions.Main` (error): Type mismatch
+  --> src/Main.lex.tex:57:1
+error[LLV7002]: Lean rejected `DecisionRegions.Main` (error): Type mismatch
+  --> src/Main.lex.tex:72:1
+error[LLV7002]: Lean rejected `DecisionRegions.Main` (error): Type mismatch
+  --> src/Main.lex.tex:87:1
+error[LLV7002]: Lean rejected `DecisionRegions.Main` (error): Tactic `decide` proved that the proposition
+```
+
+Planted (b): the check that a rule uses no `!=` removed. `conformance_pf_24`:
+the copy whose `drying` rule tests `humidity != 70` links.
+
+```text
+thread 'conformance_pf_24' panicked at crates\conformance\src\support.rs:874:14:
+check fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 482 filtered out
+```
+
 ### a derived row is made by the pinned Lean and never stored (SM-34)
 
 A version 2 row may be derived: it states no universe parameters, type, or value,

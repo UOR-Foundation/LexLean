@@ -980,6 +980,12 @@ suite = "proofs"
 statement = "The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove."
 
 [[id]]
+id = "PF-24"
+level = "build"
+suite = "proofs"
+statement = "The runtime module LexLeanRuntime.Regions states the decision-region checker and its soundness theorem as LexLean source with every row's axioms within propext and Quot.sound, and the language-1.2 region_check proof form lowers a property of a first-match decision fragment to that checker's data, closes it with one kernel-decided obligation, is refused in linking outside the fragment or as a branch, and by Lean for a defective rule."
+
+[[id]]
 id = "LN-01"
 level = "build"
 suite = "lean-backend"
