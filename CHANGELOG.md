@@ -61,7 +61,7 @@ workspace carried at those versions without a tag.
   #274; no new diagnostic code, no change to the language-1.2 identity).
   `buildManifest` of `ManifestText` returns the file bytes of
   `BuildManifest::to_json` through the standard library's `Json` writer, and
-  admits `recursion` through it. The register is 480 IDs.
+  admits `recursion` through it. The register is 492 IDs.
 - The structural grammar as language-1.2 source, first slice of the front end
   (SPEC.md §17.23, §15.1, §15.2, `BS-21`, #269; no new diagnostic code, no change
   to the language-1.2 identity). `parseModule` of `StructuralGrammar` reads the
@@ -75,13 +75,13 @@ workspace carried at those versions without a tag.
   `BS-26`, #269; no new diagnostic code, no change to the language-1.2
   identity). `parseLre` and `renderFacts` of `LexiconLre` return what
   `lexicon::lre::parse` and the walkers of `Render` return; neither admits
-  `recursion`. The register is 480 IDs.
+  `recursion`. The register is 485 IDs.
 - The reader and the canonical printer of LexLean Semantic Expressions as
   language-1.2 source, the first slice of the lexicon (SPEC.md §17.23, §13.8,
   `BS-25`, #269; no new diagnostic code, no change to the language-1.2
   identity). `parseLse` and `printLse` of `LexiconLse` return what
   `lexicon::lse::parse` and `Lse::print` return; the reader admits no
-  `recursion` and the printer admits it. The register is 479 IDs.
+  `recursion` and the printer admits it. The register is 484 IDs.
 - Where the module of a source is, as language-1.2 source (SPEC.md §17.23,
   §17.21, `BS-28`, #269; no new diagnostic code, no change to the language-1.2
   identity). `locateModule` of `SurfaceModule` returns what
@@ -92,28 +92,28 @@ workspace carried at those versions without a tag.
   diagnostic code, no change to the language-1.2 identity). `humanDiagnostics`,
   `wantsJson`, and `namedCommand` of `CliOutput` return what
   `cli::human_diagnostics_text`, `wants_json`, and `named_command` return; none
-  admits `recursion`. The register is 480 IDs.
+  admits `recursion`. The register is 488 IDs.
 - The canonical diagnostic and the failure it makes as language-1.2 source
   (SPEC.md §17.23, §20.1, §24.5, `BS-29`, #274; no new diagnostic code, no change
   to the language-1.2 identity). `diagnosticText`, `sortDiagnostics`, and
   `reportDiagnostics` of `Diagnostics` return what `Diagnostic::to_json`,
   `sort_canonical`, and `LexLeanError::from_diagnostics(..).bounded(..)` return;
-  none admits `recursion`. The register is 479 IDs.
+  none admits `recursion`. The register is 487 IDs.
 - The canonical text of the project manifest and its digest as language-1.2
   source (SPEC.md §10.1, §17.23, `BS-33`, #274; no new diagnostic code, no change
   to the language-1.2 identity). `canonicalProject` and `configSha256` of
   `ProjectText` return what `ProjectConfig::canonical_toml` and `config_sha256`
-  return; neither admits `recursion`. The register is 480 IDs.
+  return; neither admits `recursion`. The register is 491 IDs.
 - The canonical text of the lock file as language-1.2 source (SPEC.md §11.2,
   §17.23, `BS-31`, #274; no new diagnostic code, no change to the language-1.2
   identity). `canonicalLock` and `tomlString` of `LockText` return what
   `Lock::canonical_bytes` and `config::toml_string` return; neither admits
-  `recursion`. The register is 479 IDs.
+  `recursion`. The register is 489 IDs.
 - The labeled hash recipes of content identity as language-1.2 source (SPEC.md
   §17.23, §21.1 to §21.5, `BS-32`, #274; no new diagnostic code, no change to the
   language-1.2 identity). `treeDigest`, `sourceId`, `semanticId`, `buildId`,
   `attestationId`, and `pdfRecipeId` of `ContentId` return what the recipes of
-  `artifact::content_id` return; none admits `recursion`. The register is 479 IDs.
+  `artifact::content_id` return; none admits `recursion`. The register is 490 IDs.
   `recursion`.
 - Canonical JSON reading in the standard library, the fourth member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
