@@ -26,12 +26,13 @@ pub fn run(id: &str) {
 }
 
 /// The runtime namespaces a generated module once carried a copy of.
-const NAMESPACES: [&str; 5] = [
+const NAMESPACES: [&str; 6] = [
     "LexLeanRuntime",
     "LexLeanCollections",
     "LexLeanModels",
     "LexLeanReasoning",
     "LexLeanLaws",
+    "LexLeanRegions",
 ];
 
 fn disk(path: &str) -> Result<String, String> {

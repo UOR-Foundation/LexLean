@@ -261,7 +261,10 @@ fn term(value: &SnapshotTerm) -> usize {
 
 fn prove(value: &SnapshotProof) -> usize {
     match value {
-        SnapshotProof::Reflexivity | SnapshotProof::Decide | SnapshotProof::Congruence => 1,
+        SnapshotProof::Reflexivity
+        | SnapshotProof::Decide
+        | SnapshotProof::RegionCheck
+        | SnapshotProof::Congruence => 1,
         SnapshotProof::LinearArithmetic { definitions } => 1 + definitions.len(),
         SnapshotProof::TermCases { definitions, .. } => 2 + definitions.len(),
         SnapshotProof::Simplify { definitions } => definitions.len(),

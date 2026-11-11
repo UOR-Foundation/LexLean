@@ -1,4 +1,4 @@
-//! The `proofs` suite: PF-01..PF-23.
+//! The `proofs` suite: PF-01..PF-24.
 //!
 //! Positive forms are asserted against the shared Lean-verified proof
 //! corpus (`support::verified_corpus`): every case first asserts the
