@@ -29,3 +29,6 @@ white space the oracle's `char::is_whitespace` has, and the standard library's `
 
 `src/SurfaceGeneric.lex.tex` imports `SurfaceLex` and `SurfaceDoc`, and the standard library's
 `Json`, `Numeral`, `Order`, and `Text`: its values are the standard library's `Json`.
+
+`src/SurfaceTooling.lex.tex` (SPEC.md §17.23, `BS-27`) imports `SurfaceGeneric` and `SurfaceLex`,
+`AxiomOutput` for the white space of a scalar, and the standard library's `Json`, `Order`, and `Text`.

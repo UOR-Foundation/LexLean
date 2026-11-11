@@ -11220,6 +11220,53 @@ that tree the case passed whole (1,894 s). `BS-22`, `BS-23`, and `BS-24` land
 together, on `BS-21` and the standard library members `SL-11`, `SL-13`, and
 `SL-14`.
 
+### the notation of a tooling module is source (BS-27)
+
+`BS-27` holds the three production roots of `LexLeanBoot.SurfaceTooling`
+(`bootstrap/src/SurfaceTooling.lex.tex`), `printToolingModule`,
+`parseToolingModule`, and `declarationSpans`, to `surface::tooling::print_module`,
+`parse_module`, and `declaration_spans`. It composes the generic notation of
+`BS-24`: the printer, the reader, and the value reader `readFrom` started at a
+depth, which is the oracle's `generic::value` at that depth. `printToolingModule`
+removes the `spec` by structural recursion over the members and admits
+`recursion`; `parseToolingModule` reads one object and adds the implied `spec`
+in order of key; `declarationSpans` walks the members of the module with a
+state machine over the tokens, reading a member at depth 1 and an element of
+`declarations` at depth 2, and admits no `recursion`. The case holds the roots
+to the oracle on hand-built modules, texts, and values that reach every error of
+the three and the limit on nesting at both depths, on the committed JSON files
+printed as modules and read and spanned back, on the committed tooling modules
+written in the notation, and on seeded edits of printed modules. Each planted
+defect names the one vector that catches it, and the case asserts that the site
+of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `SurfaceTooling`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and the eligibility report gives `printToolingModule`
+exactly `allocation`, `overflow`, and `recursion` and the other two exactly
+`allocation` and `overflow`. The register agrees with the §31 table on 483
+IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `BS-24` over
+`BS-23`, `BS-22`, `BS-21`, and `SL-13` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_27`, 178 s). Its corpus is 55 named vectors (12
+printed, 16 read, 27 spanned), the 3,906 committed JSON files (642 printed
+under the evaluator and 1,885 under rustc, each printed module read and spanned
+back), the 4 committed tooling modules of at most 64,000 bytes, and 200 and
+1,000 seeded edits. The evaluator agrees with the oracle on 654 prints, 218
+reads, and 229 spans, the rendered packages under the pinned rustc on 5,098
+runs, and each of the 20 planted defects is detected by its own vector. The
+first runs found no fault of the module: Lean's preservation pass refused a
+recursive definition that returned its own matched parameter from an arm (each
+arm now rebuilds its value), Lean's audit corrected the axiom policy of six
+definitions, and the vectors of the limit on nesting were one level short of
+it (now 256 levels in a declaration and 257 in a member). The case then stops
+at the stack-bound step, `bootstrap/print_tooling_module is no package of the
+committed exports`, as `BS-21` to `BS-26` did before their regeneration, which
+produces the three packages and measures the row of `print_tooling_module` in
+`tests/stack-bounds.json` (`PD-08`). The branch is stacked on `BS-24` and lands
+after it.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
@@ -11298,6 +11345,13 @@ the comparison's refusals.
 What does not change: `just vv`, which runs `bdd` whole; `release.yml`; the
 suite and every case in it; the host matrix, which runs the whole workspace on
 every host.
+
+At the landing on `release/v0.4` with `BS-21` to `BS-24`, the production export of the
+bootstrap project with this module stopped at `LLS8002`: the programs, crates, and
+certificates of its roots came to 135,273,215 bytes, beyond the 134,217,728 the
+project configured. The project now configures 536,870,912 (the maintainer's
+decision; a semantic input, so the lock and every package move at the landing),
+which leaves room for the further components of the driver.
 
 ### the bdd partition can fail
 
@@ -13846,6 +13900,47 @@ Every new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`
 and the 400-expression bound of `BS-08`, so each of those vector counts grows
 by five. Every count of `BS-11` and `BS-12` is unchanged, as is every mutant
 draw: the stdlib verify records did not move.
+
+
+## The tooling packages of `BS-27` move the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (#269)
+
+The roots of `SurfaceTooling` (`BS-27`) add three committed packages
+(`parse_tooling_module`, `print_tooling_module`, `render_tooling_latex`) to
+those of `BS-21` to `BS-24`, and these cases assert their corpus. The branch was
+merged with the tree of `release/v0.4` after `BS-22` to `BS-24` landed, the
+bootstrap project's source limit was raised to 536,870,912 bytes, and the lock,
+export, build oracles, and verify records were regenerated on GitHub-hosted
+runners by `regenerate.yml` (run 43050104167: the export, the records, and the
+other oracles as three jobs from clean checkouts, at verify width 2, which moves
+no byte of what is written, §22.11). Each row below is the number its own count
+check reported on that tree against the one `BS-22` to `BS-24` commit, under
+`LEXLEAN_COUNTS=fast` on WSL Ubuntu (Rust 1.97.1, Lean 4.32.1), and the
+constants, rows, statements, scenarios and prose were rewritten by the writer
+of #442.
+
+| Count | `BS-22` to `BS-24` | `BS-27` |
+| --- | --- | --- |
+| committed manifests and packages | 305 | 308 |
+| distinct programs | 222 | 225 |
+| distinct lowered crates | 281 | 284 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 517, 382 | 520, 385 |
+| `BS-06` `printCrate` vectors, committed distinct, evaluator crates, refused | 732, 562, 605, 68 | 738, 568, 602, 68 |
+| `BS-07` vectors | 356 | 359 |
+| `BS-08` crates | 415 | 418 |
+| `BS-13` vectors | 125 | 128 |
+| `BS-14` vectors | 360 | 363 |
+| `BS-15` manifests, accepted, render mutants | 324, 305, 305 | 327, 308, 308 |
+
+Every new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`
+and the 400-expression bound of `BS-08`, so each of those vector counts grows
+by three. The crates `BS-06` gives the evaluator fall from 605 to 602, as its
+check reported. Every count of `BS-11` and `BS-12` is unchanged, as is every
+mutant draw: the stdlib verify records did not move.
+
+On that tree `conformance_bs_27` passed whole with `LEXLEAN_MEASURE_STACK=all`
+(3,039 s at verify width 1), which recorded the row of
+`bootstrap/print_tooling_module` in `tests/stack-bounds.json` (`PD-08`): 1,179,648
+bytes in the debug profile.
 
 
 ## Native core reconstruction regression (#465, 2026-11-10)

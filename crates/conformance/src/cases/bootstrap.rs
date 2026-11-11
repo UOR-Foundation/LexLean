@@ -38,6 +38,7 @@ mod structural_grammar;
 mod surface_doc;
 mod surface_generic;
 mod surface_lex;
+mod surface_tooling;
 mod tooling_latex;
 
 /// The module the first component lives in.
@@ -2465,6 +2466,7 @@ fn case(id: &str) {
         "BS-22" => surface_lex::case(),
         "BS-23" => surface_doc::case(),
         "BS-24" => surface_generic::case(),
+        "BS-27" => surface_tooling::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

@@ -65,6 +65,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "declaration_spans",
+      "root": "LexLeanBoot.SurfaceTooling.declarationSpans",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "fallible_functions",
       "root": "LexLeanBoot.RustLower.fallibleFunctions",
       "targets": [
@@ -177,6 +185,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "parse_tooling_module",
+      "root": "LexLeanBoot.SurfaceTooling.parseToolingModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "print_crate",
       "root": "LexLeanBoot.RustPrint.printCrate",
       "targets": [
@@ -195,6 +211,14 @@
     {
       "name": "print_generic",
       "root": "LexLeanBoot.SurfaceGeneric.printGeneric",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "print_tooling_module",
+      "root": "LexLeanBoot.SurfaceTooling.printToolingModule",
       "targets": [
         "rust-std"
       ],
