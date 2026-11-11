@@ -18,3 +18,14 @@ payloads a printer reads); `src/RustPrint.lex.tex` also imports the standard
 library's `Buffer` (`stdlib/src/Buffer.lex.tex`), which it writes through.
 `src/GnafValidate.lex.tex` (SPEC.md §17.15, `BS-16`) imports `Buffer` alone and
 writes the rejection of a GNAF request through it.
+
+`src/StructuralGrammar.lex.tex` imports `PrimitiveScan` for the atoms it reads
+and the refusal it returns, and `Buffer` and `Numeral` from the standard library.
+
+`src/SurfaceLex.lex.tex` imports `AxiomOutput`, whose `whiteLength` holds the list of
+white space the oracle's `char::is_whitespace` has, and the standard library's `Buffer` and `Text`.
+
+`src/SurfaceDoc.lex.tex` imports only the standard library's `Buffer` and `Text`.
+
+`src/SurfaceGeneric.lex.tex` imports `SurfaceLex` and `SurfaceDoc`, and the standard library's
+`Json`, `Numeral`, `Order`, and `Text`: its values are the standard library's `Json`.

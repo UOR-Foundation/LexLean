@@ -27,6 +27,34 @@ workspace carried at those versions without a tag.
   lists every number it cannot place unambiguously. A landing that moved
   the counts took a run and a hand mirror per stage of the cases; it takes
   one pass. Unset, the cases assert as before. The register is unchanged.
+- `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
+  initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
+  `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
+- The generic notation as language-1.2 source, fourth slice of the front end
+  (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
+  the language-1.2 identity). `parseGeneric` and `printGeneric` of
+  `SurfaceGeneric` return what `surface::generic::parse` and `print` return, over
+  the standard library's `Json`; the reader admits no `recursion` and the printer
+  admits it. The register is 482 IDs.
+- The layout algebra of the authoring notation as language-1.2 source, third
+  slice of the front end (SPEC.md §17.23, §17.21, `BS-23`, #269; no new
+  diagnostic code, no change to the language-1.2 identity). `renderDoc` of
+  `SurfaceDoc` returns what `surface::doc::render` returns for a document at a
+  width; it admits no `recursion`. The register is 481 IDs.
+- The lexer of the authoring notation as language-1.2 source, second slice of
+  the front end (SPEC.md §17.23, §17.21, `BS-22`, #269; no new diagnostic code,
+  no change to the language-1.2 identity). `lexText` and `quoteText` of
+  `SurfaceLex` return what `surface::lex::lex` and `surface::lex::quote` return,
+  the tokens with their byte ranges or the first lexical error, and a quoted
+  text; they admit no `recursion`. The register is 480 IDs.
+- The structural grammar as language-1.2 source, first slice of the front end
+  (SPEC.md §17.23, §15.1, §15.2, `BS-21`, #269; no new diagnostic code, no change
+  to the language-1.2 identity). `parseModule` of `StructuralGrammar` reads the
+  atoms of `scanSource` and returns what `grammar::structural::parse_module`
+  returns, with its coverage rows, or the same refusal, to the byte on 267
+  hand-built vectors, the committed modules, and 2,000 seeded edits; 44 planted
+  defects are each detected by a vector of their own. It admits no `recursion`.
+  The largest certificate part is 2,879,430 bytes. The register is 479 IDs.
 - Canonical JSON reading in the standard library, the fourth member the
   self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
   `LexLeanStd.JsonRead` holds the production roots `readJson` and

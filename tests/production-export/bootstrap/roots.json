@@ -105,6 +105,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "lex_text",
+      "root": "LexLeanBoot.SurfaceLex.lexText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "loop_function",
       "root": "LexLeanBoot.RustLoops.loopFunction",
       "targets": [
@@ -153,6 +161,22 @@
       "version": "1.0.0"
     },
     {
+      "name": "parse_generic",
+      "root": "LexLeanBoot.SurfaceGeneric.parseGeneric",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parse_module",
+      "root": "LexLeanBoot.StructuralGrammar.parseModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "print_crate",
       "root": "LexLeanBoot.RustPrint.printCrate",
       "targets": [
@@ -169,8 +193,32 @@
       "version": "1.0.0"
     },
     {
+      "name": "print_generic",
+      "root": "LexLeanBoot.SurfaceGeneric.printGeneric",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "quote_text",
+      "root": "LexLeanBoot.SurfaceLex.quoteText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "reject_atoms",
       "root": "LexLeanBoot.PrimitiveScan.rejectAtoms",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "render_doc",
+      "root": "LexLeanBoot.SurfaceDoc.renderDoc",
       "targets": [
         "rust-std"
       ],

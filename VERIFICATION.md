@@ -21,7 +21,7 @@ How this repository's claims are checked, which recipe enforces which rule, and 
 | `repro` | `cargo xtask check-reproducibility` | AR-13, §28.4: two clean `build`s in distinct absolute directories publish byte-identical trees with no absolute path inside |
 | `deny` | `cargo deny --all-features check` | advisories, bans, licenses, sources |
 
-In CI, the initial `honesty` row owns `fmt-check model spec-links` and the complete `bdd` meta-gate target. The remaining rows, supported hosts and Atlas prefix require its success. The BDD remainder owns the library, doctests and unassigned integration targets; Cargo metadata discovers target names and the inventory lists the same target selectors and filters as execution. The separate honesty workflow is subsumed by this same-run job; local `just vv` retains its complete suite.
+In CI, the initial `honesty` row owns `fmt-check model spec-links` and the complete `bdd` meta-gate target. The remaining rows, supported hosts (including Intel construction) and Atlas prefix require its success. The BDD remainder owns the library, doctests and unassigned integration targets; Cargo metadata discovers target names and the inventory lists the same target selectors and filters as execution. The separate honesty workflow is subsumed by this same-run job; local `just vv` retains its complete suite.
 
 Outside `vv`:
 
@@ -42,6 +42,53 @@ Outside `vv`:
 ## Falsifiability records
 
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
+
+### Intel host partition custody and complete evidence
+
+The three non-Intel auxiliary host legs keep their existing locked,
+all-features workspace test command. Intel macOS uses one construction,
+plan-selected conformance executions and a fail-closed aggregate under the original
+`build and non-Lean tests (x86_64-apple-darwin)` context (SPEC.md §8.3).
+Construction compiles the workspace test targets once, discovers the actual
+executables, runs ordinary/library/meta/other integration targets and all
+workspace doctests, and records independent failures without suppressing the
+conformance executions. Consumers run the same conformance executable; the
+committed lane plan groups existing BDD parts, and actual harness inventories
+prove disjointness and complete coverage. The remainder keeps future tests.
+No corpus, assertion, language identity or host timeout changes.
+
+The construction manifest binds source, repository, run and attempt,
+checkout path, Rust pin/version, target, profile/features, lockfile, plans,
+executable bytes/mode, inventories and filters. Transfer includes the actual
+runtime dynamic-library closure and required dependency data, not a target
+build cache. Receipts bind the execution outcome, full harness results and
+logs to that construction. The aggregate rejects missing, duplicate,
+foreign, failed, changed or incomplete evidence, including a failed local
+construction test. `python3 -m unittest discover -s .github/scripts -p
+'test_intel_host_tests.py'` runs the factory's behavioral plants in honesty;
+`RP-14` checks that the workflow wires the construction, consumers and join
+to those operations and preserves the original host context and honesty
+prerequisite. These source checks do not inspect the helper's implementation
+shape or stand in for real Intel execution.
+
+`RP-14` and `RP-18` give the previous-run and release scripts the four exact
+required host contexts. For each host they plant an absent, duplicate,
+foreign-replaced and suffixed context; matching a count of four is no longer
+evidence. Successful unrelated jobs remain allowed, and every job's
+conclusion is still checked, including a failure after a large jobs listing.
+Linux x86-64 remains the normative gate, not a fifth auxiliary context.
+
+Local validation of this change is recorded separately from acceptance:
+`bash -n` passed for both evidence scripts. Standalone fake-GitHub fixtures
+ran each complete script against 30 listings (60 cases total): complete and
+large complete evidence, a late failed job, and each host absent, duplicated,
+foreign-replaced, suffixed, failed or skipped, plus missing honesty, Atlas join
+and recipe contexts. All matched the required pass/refusal without network
+access or a CI run. The editing environment has no Rust compiler, Cargo or
+Intel macOS runtime. Rust conformance tests, the real
+Intel construction/consumer execution, and complete final-head acceptance
+remain unrun here; the behavioral factory suite alone does not qualify the
+host partition.
 
 ### production bundle inventory can fail
 
@@ -10964,6 +11011,50 @@ ended at the start of the rustc stage with the host's 16 GB virtual machine
 reset, and the run with the bound passed that stage in 67 s. A library beyond the evaluator's bound now reaches rustc as
 its first 4,096 bytes, held to the recipe, as the shaped inputs do.
 
+### the structural grammar is source and agrees with the oracle (BS-21)
+
+`BS-21` holds `LexLeanBoot.StructuralGrammar.parseModule`
+(`bootstrap/src/StructuralGrammar.lex.tex`, 1,394 lines, 68,716 bytes) to
+`grammar::structural::parse_module`, on the whole module with its coverage rows
+and on a refusal's code, message, and span. The root reads the atoms the oracle's
+scanner returns, and admits `allocation` and `overflow`: it keeps an explicit
+stack under `iterate_until`, so it owes no row in `tests/stack-bounds.json`.
+
+Command: `cargo test -p repo-conformance --test conformance -- conformance_bs_21
+--nocapture`, on the normative host, on `1f470cda7`, 1,755 seconds, 975 committed
+modules in the tree.
+
+| Leg | Runs | Agreed |
+| --- | --- | --- |
+| named vectors under the evaluator | 267, 146 refused | all |
+| committed modules under the evaluator, whole to 1,500 atoms, else 128 atoms of both ends | 975, 917 accepted | all |
+| seeded edits under the evaluator | 2,000, 377 accepted | all |
+| all of the vectors, the edits, and the committed modules under rustc, whole to 4,096 atoms, else 128 of both ends | 3,242, in 144 harness binaries | all |
+
+The vectors reach every refusal of `parse_module`, which the case asserts by a
+part of each of the 30 messages. The two ends of a data-form module are the
+corpus's point: a prefix of one is a single refusal, while its two ends are a
+module the oracle accepts, whose notation runs to its `\end`.
+
+Each of the 44 planted defects names the vector that catches it and is run on that
+vector alone, and all 44 are detected. `BS-05` and `BS-11` each lost a plant when
+their corpus grew, because a plant caught by some run of a corpus is only as good
+as that corpus; here a seeded corpus can change without costing a plant its
+witness. `sorts` reads the constructors from the module's text, so a constructor
+moved in the module fails the encoders.
+
+Before the module was an entrypoint the case failed with `StructuralGrammar and
+PrimitiveScan are linked modules of the project`, on `6283ac8f3`.
+
+The largest certificate part is 2,879,430 bytes, 91.5% of the row's 3,145,728,
+measured by `lexlean production build` on a copy of the project whose entrypoints
+are `PrimitiveScan` and `StructuralGrammar`, and `lexlean verify` passes on that
+copy, so the declared axioms are exact. Before the landing regeneration produced
+the `bootstrap/parse_module` package, `conformance_bs_21` stopped at the
+stack-bound step with `bootstrap/parse_module is no package of the committed
+exports`, after every differential above had agreed; on the regenerated tree it
+passed whole with the stack measured (3,006 s).
+
 `SL-11` holds `LexLeanStd.Json` (#276, member 3) to the compiler's own writer,
 `canonical_json::Json::to_canonical_string` and `to_file_bytes`: the three
 roots `writeJson`, `writeJsonFile`, and `escapeString` under the evaluator
@@ -10998,6 +11089,136 @@ check of `stack_bounds::observe` and the Lean export bypassed on this host
 writes them); `cargo clippy -p repo-conformance -p xtask --all-targets
 --all-features -D warnings`, `validate-model` (461 ids), `validate-spec-links`
 (461 rows), `check-test-inventory`, and the five `bdd` meta-gate tests pass.
+
+### the lexer of the authoring notation is source (BS-22)
+
+`BS-22` holds the two production roots of `LexLeanBoot.SurfaceLex`
+(`bootstrap/src/SurfaceLex.lex.tex`), `lexText` and `quoteText`, to
+`surface::lex::lex` and `surface::lex::quote`, on the tokens with their byte
+ranges and on the offset and message of the first lexical error. Neither root
+admits `recursion`: a scan is a loop under `iterate_until`, and a string is a
+loop over its pieces, joined once by `Buffer.joinAll` so that reading one costs
+its length. `AxiomOutput.whiteLength` is the list of white space, which `BS-01`
+holds to `char::is_whitespace`.
+
+The case has the shape of `BS-21`: hand-built vectors that reach each of the
+five lexical errors, windows of the committed sources, and seeded edits, under
+the evaluator on the normative host and under the pinned rustc on every host;
+each planted defect names the one vector that catches it, and the case asserts
+that the site of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceLex`: `lexlean check` and `lexlean build` pass,
+and the eligibility report gives both roots `rust-std` with exactly
+`allocation` and `overflow`. On the project: the lock is current, all 18 modules
+are canonical, and 22 modules check. The register agrees with the §31 table on
+470 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on this member merged
+with `BS-21` and `SL-13` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_22`, 293 s). Its corpus is 234 named vectors (183 lexed, 123 of
+them accepted, and 51 quoted), 1,045 committed sources, and 600 and 2,400 seeded
+runs. The evaluator agrees with the oracle on 1,828 `lexText` and 1,362
+`quoteText` runs, the rendered packages under the pinned rustc (41 harness
+binaries) on 5,738 runs, and each of the 46 planted defects is detected by its
+own vector. The first run found one plant its vector missed, `the space is a
+control character`: a run of plain bytes is read by `rawStep`, which has its own
+bound, so the check the plant changes in `scanStep` meets a space only where a
+piece of the string starts, and `"a b"` never reaches it. Its vector is now
+`a string that starts with a space`, `" a"`, and the lexer is unchanged. The
+case then stopped at the stack-bound step, `bootstrap/lex_text is no package of
+the committed exports`, as `BS-21` did before its regeneration. The landing
+regeneration produced the `bootstrap/lex_text` and `bootstrap/quote_text`
+packages, and on that tree the case passed whole with the stack measured
+(1,847 s).
+
+### the layout algebra of the notation is source (BS-23)
+
+`BS-23` holds the production root `LexLeanBoot.SurfaceDoc.renderDoc`
+(`bootstrap/src/SurfaceDoc.lex.tex`) to `surface::doc::render`: the layout of a
+document of text, concatenation, indentation, lines, soft breaks, and groups at a
+width. The root admits no `recursion`. A concatenation is a chain of `DSeq`
+cells, so that the two stacks of the oracle (the stack of items and the work
+stack of the width test) are lists popped a node at a time, and the host passes
+the number of nodes, which bounds each loop. The case has the shape of `BS-21`
+and `BS-22`: hand-built documents that reach each node, each branch of the width
+test (the text of a scalar beyond ASCII at the exact width, a flat line, a soft
+break, the rest of the stack, a break line that ends the scan, a column past the
+width) and indents of 255 to 700; the documents the printer builds from the
+committed JSON files, at three widths; and seeded documents. Each planted defect
+names the one vector that catches it, and the case asserts that the site of each
+plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceDoc`: `lexlean check` and `lexlean build` pass,
+and the eligibility report gives the root `rust-std` with exactly `allocation`
+and `overflow`. The register agrees with the §31 table on 471 IDs, by the same
+parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on this member merged
+with `BS-22`, `BS-21` and `SL-13` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_23`, 705 s). Its corpus is 65 named vectors, 3,907
+JSON documents (1,242 and 3,990 runs), and 500 and 2,500 seeded runs. The
+evaluator agrees with the oracle on 1,807 runs and the rendered package under the
+pinned rustc (83 harness binaries) on 6,555, and each of the 21 planted defects is
+detected by its own vector. The first run found three plants their vectors did
+not reach, each a vector's fault and none the layout's: `the delete is no
+scalar` was tried at the group's exact width, where one column less still fits
+(now `a group of the delete one column short`, width 2); `a group is tried at no
+column past the width` was tried on a group with visible content, which fails
+to fit past the width either way, so only a group of one soft break tells the
+two apart (now `an empty group past the width`); and `the layout stops one node
+early` was tried on a concatenation, whose parts the node budget counts twice,
+so it had steps to spare (now `a text beyond the width`, one node and one step).
+The case then stopped at the stack-bound step, `bootstrap/render_doc is no
+package of the committed exports`, as `BS-21` and `BS-22` did before their
+regeneration. The landing regeneration produced the `bootstrap/render_doc`
+package, and on that tree the case passed whole with the stack measured
+(2,378 s).
+
+### the generic notation is source and agrees with the oracle (BS-24)
+
+`BS-24` holds the two production roots of `LexLeanBoot.SurfaceGeneric`
+(`bootstrap/src/SurfaceGeneric.lex.tex`), `parseGeneric` and `printGeneric`, to
+`surface::generic::parse` and `surface::generic::print`, over the standard
+library's `Json` (`SL-11`, `SL-13`). It composes the lexer of `BS-22` and the
+layout algebra of `BS-23`. `parseGeneric` reads the tokens with an explicit stack
+of frames and admits no `recursion`; `printGeneric` walks the value by structural
+recursion over the three cases of `Json` and admits `recursion`. The case has the
+shape of its predecessors: hand-built texts that reach each error of the reader
+and the limit on nesting at 256 and 257, hand-built values of every kind and
+every key the printer orders, the committed JSON files printed and their printed
+texts read back, and seeded values and seeded edits. Each planted defect names the
+one vector that catches it, and the case asserts that the site of each plant
+occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceGeneric`: `lexlean check` and `lexlean build`
+pass, and the eligibility report gives `parseGeneric` exactly `allocation` and
+`overflow` and `printGeneric` exactly `allocation`, `overflow`, and `recursion`.
+On the project the lock is current and every module checks. The register agrees
+with the §31 table on 476 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on this member merged
+with `BS-23`, `BS-22`, `BS-21` and `SL-13` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_24`, 259 s). Its corpus is 163 named vectors (118
+read, 45 printed), the 3,906 committed JSON files, and 162 and 1,301 printed
+texts for the evaluator and rustc. The evaluator agrees with the oracle on 1,080
+reads and 607 prints, and each of the 32 planted defects is detected by its own
+vector. The first run found two faults. The printer's rank table spelt the key
+`axioms` as `axoims`, so a seeded object printed `axioms` after an unranked key,
+where the oracle prints it before; the member is now spelt as the oracle spells
+it. The plant `a tag need not be a name` was tried on `a b`, two bare words that
+never reach the test of bareness (now `a word of digits and a letter`, `1a`,
+which the oracle refuses and the planted reader admits). The case then stopped
+at the stack-bound step, `bootstrap/parse_generic is no package of the committed
+exports`, as `BS-21`, `BS-22` and `BS-23` did before their regeneration. The
+landing regeneration produced the `bootstrap/parse_generic` and
+`bootstrap/print_generic` packages and measured the row of `print_generic` in
+`tests/stack-bounds.json` (`PD-08`, 1,376,256 bytes of debug stack), and on
+that tree the case passed whole (1,894 s). `BS-22`, `BS-23`, and `BS-24` land
+together, on `BS-21` and the standard library members `SL-11`, `SL-13`, and
+`SL-14`.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
@@ -13536,3 +13757,133 @@ the crates and vectors those evaluators are given is unchanged, as are the
 `printExpr` vectors of `BS-06` and every count of `BS-11`. The new stdlib
 verify records move the mutant draws of `BS-12` (-4), `BS-13` (+2) and
 `BS-14` (+5).
+
+## PR394 after actual393 landing: observed producer results (2026-11-05)
+
+The integration retains contributor d80997cf050ac70319a9517fff6a93f98e227712 (including d34/1170/0a36 history) and actual accepted393 landing55be5514cf4fe377c186059260d7666c7c9c2304, whose tested/reviewed/landed tree is3065516167862533e0594427c28be8fe74406aae. Only the exact admitted TokenAudit/PERFORMANCE source was adopted; source-compatible original frozen CLI/xtask and archived selected905 inputs/errors were reused. Physical review393 remained detached atc613 with its original raw index/logical0328 tree. No new identity, model, blanket-lock, fixture or calculus wave was run.
+
+One official frozen `check-production-export --write` passed in3015.363s. Independent actual reviewca6b56f7143dfece08bd891812da07ec1f417d158c767eb51aa24829903e30a1 binds resultse8bffd094615cf4c4144b851d86b482a8e44a6968059f0043943ab692358918e and finalinventoryfb58b26d6650fb365cc364089d365796d3f3277e1ac6f8770d908211db0b738e. Only official bootstrap package outputs changed; the other export families remained exact. Genuine lex/audit_tokens program changes were reviewed as semantic program changes, not dismissed as source-ID renaming.
+
+One official frozen `check-golden --write` passed in59.073s. Independent actual review8f1e24a69ce9bef27966aa30eec94c0878a118bf9433f6a2375e4703e5f938eb binds results364187b964e5ecf3419c0d16fe797818a173d2cec911f5a488262113c2572262 and finalinventory88802e0e70eec32063061ebd9aabad6635bce4fb8de0c3acdced7d1ca0b38a8c. Only bootstrap goldens changed. The compiler manifest and four compiler-golden/shipped calculus pairs remained byte-exact; no calculus rewrite or immediate comparison was performed.
+
+One official frozen `verify-examples --write`, supported selector `without:uor-atlas`, passed all22 selected projects in3879.170s. Independent actual review3db1314850f8c6a9b6a45cd951bbe4021d3c2135c91efe50f1e2573748b09700 binds results0a4f79f9d11fe94a83165b2c183b8045320fd4afc4e935d70464db9768bbeaed and finalinventorycb0b60d777b4ba0e55a8f300187040da595b9bc454f897738e8382990f1a1088. The668 changed paths are exclusively bootstrap verification outputs:329 additions,329 removals and10 modifications. Bootstrap has463 normalized records and278 normalized process records with exit_code0;278 is the bootstrap count, not the total over22 projects. Other21 projects, Atlas, source, locks, pins, negative inputs and unrelated products remained exact. All24 source-module axiom audit outputs retained the exact prior [Quot.sound,propext] policy; pre-existing preservation/library Classical.choice remained unchanged. The LCNF extraction retains3104 constants; only scanSegmentsStep,stepLexAt,stepLexIdent,stepLexToken changed, with genuine preservation program28 lex/program29 auditTokens changes and their certificates explicitly reviewed. Official normalized executable placeholders are not a new physical-executable measurement.
+
+Entry and terminal guards retained exact905 selected input bytes, closed errors, original frozen artifacts, helpers, source/index/root and compiler/calculus dependencies. These producer outcomes do not establish the complete combined-head hosted gate, new Atlas run or final merge acceptance. No additional BS02 or performance run was executed. The prior named/full compiler partition BS02 pass atd809, receipt84ad2eb22c420a1d777208ce44ba6bb8b0ff8d57205f385d294f5c36fd89828c, and old-c61344-job gate remain prior-tree evidence. PERFORMANCE retains the author's d34 harness/WSL and host/comparison/timing caveats; no final-tree timing or speedup is inferred here. One complete changed-head hosted gate, same-run honesty, reproducibility, independent final tree/history review and actual landing/tree equality remain required. The closure scope is #373 only.
+
+## PR394 after actual 4dc release: observed golden reconciliation (2026-11-09)
+
+This continuation preserves actual PR head 281de5b5d41adda58e152ab49227c99f0f1fa24a and actual release/v0.4 4dc5b803c5b0771f9f19563373515d0a2c2f313a as the ordered future merge parents. Thus contributor d809/d34/1170/0a36 and accepted55be/363/414/415 history remain ancestors. The complete current 4dc VERIFICATION history and exact prior 281 appendix precede this additive entry. No #444 source is adopted: its run42647185072 ended cancelled (44 successful jobs and one cancelled Intel job), and it was not merged.
+
+Independent static reuse review 195005d179987435fd506bf9a355209473fae586ef7611681da91fbda73f38d8 established the exact selected 22-module source/import closure, unchanged compiler implementation and 905 selected semantic inputs. The 64 bootstrap production-export and 668 normalized-verification changes already produced and reviewed on 281 remain exact. New Map/Json/JsonRead modules are outside this selected closure. No export or 22-project verification phase was repeated. Those Nov5 durations and process/axiom/program evidence above retain their actual 55be+281 scope; they are not new currentbase executions or measurements.
+
+Under separate root admission ca0818e03f221445d77bfab595b64e255f1eb5d0f5cb74df61274a92aa6e208a, the exact ac7e9bb3278c0fed576c7441b264d3ba5094ead3 seed was adopted and ONE official frozen xtask `check-golden --write` completed with exit0 in 77.579s. Results ac776f08e6b9d8c892aff8cabcc19c7ec76918e9fc907c90cf5683713fbea8b5, final inventory 767440ccc3cc84eade3024e2168405ade9d6a65a30480784483714cacdc32c68, and independent actual artifact review 1b9bd71727fef0136451e5054648b552db2e784fbbd5ea61baef489e877e2026 bind this observed outcome. Exactly 23 bootstrap build files changed: 22 maps changed only source_id, and the manifest reconciled source_id/build_id, the lock input SHA and those 22 map output hashes. Semantic ID remained unchanged; source/build envelopes now follow the actual combined lock/source inputs. All other golden/runtime/tooling/export/verification products remained exact. No additional comparison, calculus writer, identity/model/lock/fixture wave, BS02 run or performance measurement was introduced.
+
+The reviewed physical ledger contains 12,551 entries and 10,900 present files, including 8 symlinks. Physical review393 remains detached at c613 with raw index f2a12ce1d4f383096de2ab9913efd25c55a5a3d01913a670429252ea4ee961eb and logical 0328 source tree; the external pre-documentation capture is 6dcf464632e277916cedfacb5656699c89872c47. Current frozen BOTH/probe artifacts, 905 inputs, closed errors, archived selected build metadata, helper ownership and all producer outputs passed entry and terminal preservation guards. The final additive VI is prepared externally, without changing that physical root.
+
+This is source/product readiness evidence, not complete combined-head acceptance. The historical281 draft run 41964177567 ran only plan/honesty/rest with seven required host/Atlas groups skipped; repro 41964177626 passed, and the prior ready run 41964083701 was cancelled. None accepts the new currentbase combination. One complete new-head hosted gate, same-run honesty, reproducibility, final review and eventual actual landing/tree equality remain mandatory. Existing d34/WSL PERFORMANCE rows and timing/host/comparison caveats retain their original scope; no new linearity measurement is claimed. Closure scope remains #373 only after its combined proof/BS02 and final gate requirements pass.
+
+## The `parse_module` package moves the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (`BS-21`, #269)
+
+The root of `LexLeanBoot.StructuralGrammar` (`BS-21`, #395) adds one committed
+package (`parse_module`), and these cases assert their corpus. The member was
+merged with the tree of `release/v0.4` at `4dc5b803c` (after #415 landed), and
+its lock, export, build oracles and verify records were regenerated on the
+normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1) at verify width 1; the
+`BS-21` case passed whole on that tree with the stack measured (3,006 s), and
+the root does not recurse. Each row below is the number its own count check
+reported on that tree against the committed one, under `LEXLEAN_COUNTS=fast`,
+and the constants, rows, statements, scenarios and prose were rewritten by the
+writer of #442.
+
+| Count | `4dc5b803c` | member |
+| --- | --- | --- |
+| committed manifests and packages | 299 | 300 |
+| distinct programs | 216 | 217 |
+| distinct lowered crates | 275 | 276 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 511, 376 | 512, 377 |
+| `BS-06` `printCrate` vectors, committed distinct | 719, 550 | 721, 552 |
+| `BS-07` vectors | 350 | 351 |
+| `BS-08` crates | 409 | 410 |
+| `BS-13` vectors | 119 | 120 |
+| `BS-14` vectors | 354 | 355 |
+| `BS-15` manifests, accepted, render mutants | 318, 299, 299 | 319, 300, 300 |
+
+The new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`,
+so each of their vector counts grows by one, and within the 400-expression
+bound of `BS-08`. Every count of `BS-11` and `BS-12` is unchanged, as are the
+`printExpr` vectors of `BS-06` and every mutant draw: the stdlib verify records
+did not move.
+
+
+## The front-end packages of `BS-22` to `BS-24` move the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (#269)
+
+The roots of `SurfaceLex` (`BS-22`), `SurfaceDoc` (`BS-23`), and
+`SurfaceGeneric` (`BS-24`) add five committed packages to those of `BS-21`, and
+these cases assert their corpus. The members were merged with `BS-21` and the
+tree of `release/v0.4` after `SL-13`, and the lock, export, build oracles,
+verify records, and the stack bound of `bootstrap/print_generic` were
+regenerated on the normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1) at
+verify width 1; the `BS-22`, `BS-23`, and `BS-24` cases passed whole on that
+tree with the stack measured (1,847 s, 2,378 s, and 1,894 s). Each row below is
+the number its own count check reported on that tree against the one `BS-21`
+commits, under `LEXLEAN_COUNTS=fast`, and the constants, rows, statements,
+scenarios and prose were rewritten by the writer of #442.
+
+| Count | `BS-21` | members |
+| --- | --- | --- |
+| committed manifests and packages | 300 | 305 |
+| distinct programs | 217 | 222 |
+| distinct lowered crates | 276 | 281 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 512, 377 | 517, 382 |
+| `BS-06` `printCrate` vectors, committed distinct, evaluator crates, refused | 721, 552, 604, 67 | 732, 562, 605, 68 |
+| `BS-07` vectors | 351 | 356 |
+| `BS-08` crates | 410 | 415 |
+| `BS-13` vectors | 120 | 125 |
+| `BS-14` vectors | 355 | 360 |
+| `BS-15` manifests, accepted, render mutants | 319, 300, 300 | 324, 305, 305 |
+
+Every new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`
+and the 400-expression bound of `BS-08`, so each of those vector counts grows
+by five. Every count of `BS-11` and `BS-12` is unchanged, as is every mutant
+draw: the stdlib verify records did not move.
+
+
+## Native core reconstruction regression (#465, 2026-11-10)
+
+The existing RT-03 runtime verification owner now also builds a fresh Lake
+native executable from the compiler's generated runtime modules. A test-only
+check rejects duplicate native declaration-order entries before Lean's C emitter
+can repeat assertion failures. The executable checks `sumNat` and both directions
+of fixed-width `lessThan`; ordinary RT-03 kernel replay and exact-policy positive
+and negative checks remain unchanged.
+
+At release/v0.4 base `700196ceadd9695abd47bee29b94a6b8bec6f915`, the
+retained Stitch Laws output fails the added order invariant under pinned Lean
+4.32.1. Substituting only the candidate decoder source into the three retained
+runtime modules makes the invariant pass. A cold Lake build then passed all ten
+jobs, including the three runtime C objects and a linked executable; that
+executable printed `native runtime passed`. A separate cold build of the unchanged
+20 Stitch project modules passed all 25 original Lake jobs with that candidate
+runtime. These source-extracted probes are diagnostic execution evidence, not a
+fresh LexLean writer run, a released SDK, or acceptance of Stitch's pinned gate.
+The legacy, non-module decoder also elaborated under the same pinned Lean.
+An independently executed extracted-decoder C-emission regression passed actual
+partial/unsafe mutual groups, replay idempotence, mixed-state refusal without
+mutation, proof/type-only members, and the requirement that a signature alone
+cannot suppress local compilation. Its six group success observations are retained
+in the RT-03 group regression; the executable's success is recorded separately. Independent source review found no blocker for
+the generated synchronous, default-eager compilation mode; explicitly overridden
+postponed compilation is outside this evidence.
+
+The correction uses completed native declaration-order membership, excludes
+members for which Lean generates no code, and compiles each remaining mutual
+group intact. A partially compiled relevant group is refused rather than split.
+Safety-bearing groups retain their earlier scheduling phase. No declaration,
+proof, axiom policy or native acceptance requirement is removed.
+
+The execution environment has no Rust toolchain. The Rust RT-03 harness itself,
+formatting, Clippy, official identity/product regeneration, and the full final-head
+repository gate have not run here. This branch is source preparation for a draft
+PR, with existing generated records untouched; its source changes are not
+qualified by those preceding records. Coordinate the single identity/writer wave
+with the release owner before readiness, merge or downstream SDK adoption.

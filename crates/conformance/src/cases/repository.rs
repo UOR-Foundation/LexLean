@@ -129,6 +129,20 @@ fn spec_table() -> Vec<(String, String, String)> {
     rows
 }
 
+/// The auxiliary §8.3 contexts are evidence identities, not a matrix size.
+/// Linux x86-64 is covered by the normative gate rather than this list.
+fn supported_host_contexts() -> Vec<String> {
+    [
+        "aarch64-unknown-linux-gnu",
+        "x86_64-apple-darwin",
+        "aarch64-apple-darwin",
+        "x86_64-pc-windows-msvc",
+    ]
+    .into_iter()
+    .map(|target| format!("build and non-Lean tests ({target})"))
+    .collect()
+}
+
 /// What `.github/ci-plan.sh` decides for planted events (§9.4, RP-14): the
 /// script runs in a scratch repository with a stand-in for the `gh` command,
 /// so that each decision is shown, and each way of being wrong is refused.
@@ -145,26 +159,13 @@ fn plan_decisions() {
     let root = support::repo_root();
     let script = root.join(".github/ci-plan.sh");
     let rows_file = root.join(".github/vv-rows.json");
-    let workflow = root.join(".github/workflows/ci.yml");
     let rows: Vec<serde_json::Value> =
         serde_json::from_str(&root_file(".github/vv-rows.json")).expect("the legs");
     let parts: Vec<String> = rows
         .iter()
         .map(|row| row["part"].as_str().expect("a part").to_owned())
         .collect();
-    let ci = root_file(".github/workflows/ci.yml");
-    let hosts: Vec<String> = ci
-        .lines()
-        .filter(|line| line.starts_with("          - { os: "))
-        .map(|line| {
-            let target = line.split("target: ").nth(1).expect("a target");
-            format!(
-                "build and non-Lean tests ({})",
-                target.trim_end_matches(" }")
-            )
-        })
-        .collect();
-    assert_eq!(hosts.len(), 4, "§8.3: the four hosts of the matrix");
+    let hosts = supported_host_contexts();
     // The jobs of a run of the whole gate that passed: the plan, every leg,
     // the Atlas join, and every host. The shards do not matter to the plan:
     // the join needs them all.
@@ -299,7 +300,6 @@ fn plan_decisions() {
             .env("BASE", base)
             .env("REPO", "owner/repo")
             .env("LEXLEAN_CI_ROWS", rows_file.as_std_path())
-            .env("LEXLEAN_CI_WORKFLOW", workflow.as_std_path())
             .env("GITHUB_OUTPUT", &out)
             .env("GITHUB_STEP_SUMMARY", dir.join("summary"))
             .env("STUB_RUNS", runs)
@@ -491,6 +491,31 @@ fn plan_decisions() {
             whole,
             "§9.4: {what} is not the whole gate passing"
         );
+    }
+    for host in &hosts {
+        let absent = without(host);
+        let mut duplicate = green.clone();
+        duplicate.push(format!("{host}\tsuccess"));
+        let foreign: Vec<String> = green
+            .iter()
+            .map(|job| job.replace(host, "build and non-Lean tests (foreign-target)"))
+            .collect();
+        let suffixed: Vec<String> = green
+            .iter()
+            .map(|job| job.replace(host, &format!("{host} (partition)")))
+            .collect();
+        for (defect, jobs) in [
+            ("absent", absent),
+            ("duplicate", duplicate),
+            ("foreign replacement", foreign),
+            ("suffixed", suffixed),
+        ] {
+            assert_eq!(
+                decide("push", "", "main", &merge_equal, "4242", &jobs, false),
+                whole,
+                "§9.4: {defect} host context `{host}` is not complete evidence"
+            );
+        }
     }
     assert_eq!(
         decide("push", "", "main", &merge_equal, "4242", &green, true),
@@ -873,7 +898,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 478, "§31 has 478 rows");
+            assert_eq!(table.len(), 482, "§31 has 482 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -1475,8 +1500,9 @@ pub(crate) fn run(id: &str) {
                     "SPEC.md names `{recipe_command}`"
                 );
             }
-            // The initial honesty job keeps its own signal, and the host matrix
-            // (not part of vv) keeps the whole workspace on every host.
+            // The initial honesty job keeps its own signal. Ordinary hosts run
+            // the whole workspace; Intel's construction and partitions own the
+            // same complete inventory, including library/meta tests and doctests.
             assert!(root_file(".github/workflows/ci.yml").contains("  honesty:\n"));
             assert!(!support::repo_root()
                 .join(".github/workflows/honesty.yml")
@@ -1521,10 +1547,13 @@ pub(crate) fn run(id: &str) {
                 .filter(|(key, _)| key.starts_with("atlas-"))
                 .collect();
             assert!(!atlas_jobs.is_empty(), "§9.4: the Atlas jobs");
-            // Every gate job runs on the standard runner (§9.4); only the host
-            // matrix runs elsewhere, on the hosts of §8.3.
+            // Normative gate jobs and the Intel receipt join run on the
+            // standard runner. Only host execution runs elsewhere (§8.3).
             for (key, body) in &jobs {
-                if key == "host-matrix" {
+                if matches!(
+                    key.as_str(),
+                    "host-matrix" | "intel-construction" | "intel-part"
+                ) {
                     continue;
                 }
                 assert!(
@@ -1533,6 +1562,18 @@ pub(crate) fn run(id: &str) {
                 );
                 // The plan decides what the run is and runs no recipe: it has
                 // ten minutes, not the six hours of the proof jobs.
+                if key == "intel-join" {
+                    let limit = body
+                        .lines()
+                        .find_map(|line| line.trim().strip_prefix("timeout-minutes: "))
+                        .and_then(|value| value.parse::<u32>().ok())
+                        .expect("§8.3: the Intel aggregate has a bounded timeout");
+                    assert!(
+                        (1..=240).contains(&limit),
+                        "the aggregate raises no host timeout"
+                    );
+                    continue;
+                }
                 let limit = match key.as_str() {
                     "plan" => 10,
                     "honesty" => 30,
@@ -2031,7 +2072,12 @@ pub(crate) fn run(id: &str) {
             let mut full_conditions = 0;
             let mut rows_conditions = 0;
             let mut honesty_conditions = 0;
-            for (index, line) in ci.lines().enumerate() {
+            for (index, line) in jobs
+                .iter()
+                .filter(|(key, _)| !key.starts_with("intel-"))
+                .flat_map(|(_, body)| body.lines())
+                .enumerate()
+            {
                 if line.trim_start().starts_with("if:") {
                     match line {
                         "        if: ${{ !cancelled() }}" => step_conditions += 1,
@@ -2057,13 +2103,55 @@ pub(crate) fn run(id: &str) {
             );
             assert_eq!(rows_conditions, 1, "the legs run when the plan names a leg");
             assert_eq!(honesty_conditions, 1, "honesty runs when the plan names it");
+            intel_host_workflow(&ci).expect("§8.3: the host inventory and Intel custody graph");
+            for (from, to) in [
+                (
+                    "name: build and non-Lean tests (x86_64-apple-darwin)",
+                    "name: Intel aggregate",
+                ),
+                ("needs: [plan, intel-construction]", "needs: [plan]"),
+                (
+                    "needs: [plan, intel-construction, intel-part]",
+                    "needs: [plan, intel-construction]",
+                ),
+                (
+                    "if: ${{ always() && needs.plan.outputs.full == 'true' }}",
+                    "if: ${{ needs.plan.outputs.full == 'true' }}",
+                ),
+                ("runs-on: macos-15-intel", "runs-on: macos-15"),
+                (
+                    "lane: ${{ fromJSON(needs.intel-construction.outputs.lanes) }}",
+                    "lane: [lower]",
+                ),
+                (
+                    "intel_host_tests.py execute --construction",
+                    "intel_host_tests.py build --output",
+                ),
+                (
+                    "test \"$PART_RESULT\" = success",
+                    "test \"$PART_RESULT\" != cancelled",
+                ),
+                (
+                    "python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'",
+                    "echo factory checks",
+                ),
+            ] {
+                assert!(
+                    ci.contains(from),
+                    "the plant must change the workflow: {from}"
+                );
+                assert!(
+                    intel_host_workflow(&ci.replacen(from, to, 1)).is_err(),
+                    "the Intel graph must refuse `{from}` replaced by `{to}`"
+                );
+            }
             honesty_dependencies(&ci).expect("expensive roots require successful same-run honesty");
             assert!(
                 honesty_dependencies(&ci.replacen("name: ${{ matrix.part }}", "name: honesty", 1))
                     .is_err(),
                 "a static matrix name acquires a suffix instead of the exact honesty context"
             );
-            for root in ["vv", "atlas-prefix", "host-matrix"] {
+            for root in ["vv", "atlas-prefix", "host-matrix", "intel-construction"] {
                 let original = format!("  {root}:\n");
                 let pos = ci.find(&original).expect("the root");
                 let end = ci[pos + original.len()..]
@@ -2994,6 +3082,180 @@ fn rp_18() {
     release_gate_decisions();
 }
 
+/// §8.3 custody is a job graph: one construction, inventory-owned
+/// executions, and the original host context only after the complete join.
+/// Behavioral plants live in the Python suite; this checks that CI runs it
+/// and connects the real build, execution and join operations to each other.
+fn intel_host_workflow(ci: &str) -> Result<(), String> {
+    let matrix = workflow_job(ci, "host-matrix")?;
+    let construction = workflow_job(ci, "intel-construction")?;
+    let part = workflow_job(ci, "intel-part")?;
+    let join = workflow_job(ci, "intel-join")?;
+    let honesty = workflow_job(ci, "honesty")?;
+    let require = |body: &str, text: &str, rule: &str| -> Result<(), String> {
+        if body.contains(text) {
+            Ok(())
+        } else {
+            Err(format!("RP-14: {rule}: missing `{text}`"))
+        }
+    };
+    let mut contexts: Vec<String> = matrix
+        .lines()
+        .filter_map(|line| line.trim().strip_prefix("- { os: "))
+        .map(|row| {
+            let target = row.split("target: ").nth(1).unwrap_or_default();
+            format!(
+                "build and non-Lean tests ({})",
+                target.trim_end_matches(" }")
+            )
+        })
+        .collect();
+    let aggregate_name = join
+        .lines()
+        .find_map(|line| line.strip_prefix("    name: "))
+        .ok_or("RP-14: the Intel aggregate has no context")?;
+    contexts.push(aggregate_name.to_owned());
+    contexts.sort();
+    let mut expected = supported_host_contexts();
+    expected.sort();
+    if contexts != expected {
+        return Err(
+            "RP-14: the matrix and Intel aggregate must expose each exact host context once"
+                .to_owned(),
+        );
+    }
+    require(
+        &matrix,
+        "name: build and non-Lean tests (${{ matrix.target }})",
+        "the ordinary host contexts resolve their native target",
+    )?;
+    for (key, body, dependencies, condition) in [
+        (
+            "intel-construction",
+            &construction,
+            "needs: [plan, honesty]",
+            "if: ${{ needs.plan.outputs.full == 'true' }}",
+        ),
+        (
+            "intel-part",
+            &part,
+            "needs: [plan, intel-construction]",
+            "if: ${{ needs.plan.outputs.full == 'true' }}",
+        ),
+        (
+            "intel-join",
+            &join,
+            "needs: [plan, intel-construction, intel-part]",
+            "if: ${{ always() && needs.plan.outputs.full == 'true' }}",
+        ),
+    ] {
+        require(body, dependencies, key)?;
+        let conditions: Vec<&str> = body
+            .lines()
+            .filter_map(|line| line.strip_prefix("    if: "))
+            .collect();
+        if conditions != vec![condition.trim_start_matches("if: ")] {
+            return Err(format!(
+                "RP-14: {key} does not follow its full-gate dependency policy"
+            ));
+        }
+        for forbidden in [
+            "run-id:",
+            "github-token:",
+            "continue-on-error",
+            "actions/cache",
+        ] {
+            if body.contains(forbidden) {
+                return Err(format!("RP-14: {key} admits `{forbidden}`"));
+            }
+        }
+        // A job's evidence upload can run after failure, but its actual
+        // operation must not be guarded by a success/skip shortcut.
+        for step in body.split("\n      - ") {
+            if step.contains(".github/scripts/intel_host_tests.py ")
+                && step
+                    .lines()
+                    .any(|line| line.trim_start().starts_with("if:"))
+            {
+                return Err(format!(
+                    "RP-14: {key} conditionally skips its factory operation"
+                ));
+            }
+        }
+    }
+    for body in [&construction, &part] {
+        require(
+            body,
+            "runs-on: macos-15-intel",
+            "Intel execution uses its native host",
+        )?;
+        require(
+            body,
+            "run: rustup toolchain install",
+            "Intel execution uses the Rust pin",
+        )?;
+        let timeout = body
+            .lines()
+            .find_map(|line| line.trim().strip_prefix("timeout-minutes: "))
+            .and_then(|value| value.parse::<u32>().ok())
+            .ok_or("RP-14: an Intel execution job has no timeout")?;
+        if timeout == 0 || timeout > 240 {
+            return Err(
+                "RP-14: Intel execution cannot raise the prior 240-minute bound".to_owned(),
+            );
+        }
+    }
+    for (body, command) in [
+        (&construction, "build --output"),
+        (&part, "execute --construction"),
+        (&join, "join --artifacts"),
+    ] {
+        require(
+            body,
+            &format!("python3 .github/scripts/intel_host_tests.py {command}"),
+            "the job runs its factory operation",
+        )?;
+    }
+    for (body, expected) in [
+        (&construction, "lanes: ${{ steps.construct.outputs.lanes }}"),
+        (&construction, "id: construct"),
+        (&construction, "name: intel-construction"),
+        (&part, "fail-fast: false"),
+        (
+            &part,
+            "lane: ${{ fromJSON(needs.intel-construction.outputs.lanes) }}",
+        ),
+        (&part, "name: intel-construction"),
+        (&part, "name: intel-${{ matrix.lane }}"),
+        (&part, "--lane ${{ matrix.lane }}"),
+        (&join, "pattern: intel-*"),
+        (
+            &join,
+            "CONSTRUCTION_RESULT: ${{ needs.intel-construction.result }}",
+        ),
+        (&join, "PART_RESULT: ${{ needs.intel-part.result }}"),
+        (&join, "test \"$CONSTRUCTION_RESULT\" = success"),
+        (&join, "test \"$PART_RESULT\" = success"),
+    ] {
+        require(body, expected, "same-run construction and receipt custody")?;
+    }
+    let result_step = join
+        .split("\n      - ")
+        .find(|step| step.contains("test \"$PART_RESULT\" = success"))
+        .ok_or("RP-14: the aggregate does not check its prerequisite outcomes")?;
+    require(
+        result_step,
+        "if: ${{ always() }}",
+        "the aggregate cannot hide a failed or cancelled prerequisite",
+    )?;
+    require(
+        &honesty,
+        "python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'",
+        "the factory's behavioral tests run before expensive roots",
+    )?;
+    Ok(())
+}
+
 /// Claim drift must finish successfully before a costly root can start.
 fn honesty_dependencies(ci: &str) -> Result<(), String> {
     let initial = workflow_job(ci, "honesty")?;
@@ -3005,9 +3267,13 @@ fn honesty_dependencies(ci: &str) -> Result<(), String> {
             "RP-14: honesty must expose its matrix-resolved context and follow the plan".to_owned(),
         );
     }
-    for root in ["vv", "atlas-prefix", "host-matrix"] {
+    for root in ["vv", "atlas-prefix", "host-matrix", "intel-construction"] {
         let body = workflow_job(ci, root)?;
-        if !body.contains("needs: [plan, honesty]\n") || body.contains("always()") {
+        if !body.contains("needs: [plan, honesty]\n")
+            || body
+                .lines()
+                .any(|line| line.starts_with("    if:") && line.contains("always()"))
+        {
             return Err(format!("RP-14: {root} must wait for successful honesty"));
         }
     }
@@ -3029,21 +3295,9 @@ fn release_gate_decisions() {
     let root = support::repo_root();
     let script = root.join(".github/release-gate.sh");
     let rows_file = root.join(".github/vv-rows.json");
-    let workflow = root.join(".github/workflows/ci.yml");
     let rows: Vec<serde_json::Value> =
         serde_json::from_str(&root_file(".github/vv-rows.json")).expect("the legs");
-    let ci = root_file(".github/workflows/ci.yml");
-    let hosts: Vec<String> = ci
-        .lines()
-        .filter(|line| line.starts_with("          - { os: "))
-        .map(|line| {
-            let target = line.split("target: ").nth(1).expect("a target");
-            format!(
-                "build and non-Lean tests ({})",
-                target.trim_end_matches(" }")
-            )
-        })
-        .collect();
+    let hosts = supported_host_contexts();
     let stamp = |name: &str, conclusion: &str| {
         format!("{name}\t{conclusion}\t2026-01-01T00:00:00Z\t2026-01-01T01:00:00Z")
     };
@@ -3101,7 +3355,7 @@ fn release_gate_decisions() {
         .cloned()
         .collect();
     let draft: Vec<String> = vec![stamp("plan", "success"), stamp("just vv (rest)", "success")];
-    // Every job but one host: only the count of the hosts refuses it.
+    // Every job but one exact host context is incomplete evidence.
     let missing_host: Vec<String> = green
         .iter()
         .filter(|job| !job.starts_with(hosts[1].as_str()))
@@ -3212,7 +3466,6 @@ fn release_gate_decisions() {
             .env("REF", "refs/tags/v0.0.0")
             .env("RELEASE_RUN", "https://example.test/release")
             .env("LEXLEAN_CI_ROWS", rows_file.as_std_path())
-            .env("LEXLEAN_CI_WORKFLOW", workflow.as_std_path())
             .env("STUB_JOBS", jobs.join("\n"));
         for (commit, lines) in runs {
             command.env(format!("STUB_RUNS_{commit}"), lines);
@@ -3340,5 +3593,32 @@ fn release_gate_decisions() {
             stderr.contains("no run of ci.yml was the whole gate"),
             "{why}: {stderr}"
         );
+    }
+    for host in &hosts {
+        let absent: Vec<String> = green
+            .iter()
+            .filter(|job| !job.starts_with(&format!("{host}\t")))
+            .cloned()
+            .collect();
+        let mut duplicate = green.clone();
+        duplicate.push(stamp(host, "success"));
+        let foreign: Vec<String> = green
+            .iter()
+            .map(|job| job.replace(host, "build and non-Lean tests (foreign-target)"))
+            .collect();
+        let suffixed: Vec<String> = green
+            .iter()
+            .map(|job| job.replace(host, &format!("{host} (partition)")))
+            .collect();
+        for (defect, jobs) in [
+            ("absent", absent),
+            ("duplicate", duplicate),
+            ("foreign replacement", foreign),
+            ("suffixed", suffixed),
+        ] {
+            let (code, evidence, stderr) = decide(&head, &[(head.as_str(), run_line("25"))], &jobs);
+            assert_eq!(code, 1, "{defect} host context `{host}`: {stderr}");
+            assert!(evidence.is_empty(), "{defect} host writes no evidence");
+        }
     }
 }

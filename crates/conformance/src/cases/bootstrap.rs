@@ -34,6 +34,10 @@ mod rust_succeed;
 mod rust_terms;
 mod rust_validate;
 mod scan;
+mod structural_grammar;
+mod surface_doc;
+mod surface_generic;
+mod surface_lex;
 mod tooling_latex;
 
 /// The module the first component lives in.
@@ -2457,6 +2461,10 @@ fn case(id: &str) {
         "BS-16" => gnaf_validate::case(),
         // §17.23, §17.20: the canonical LaTeX of a tooling module.
         "BS-20" => tooling_latex::case(),
+        "BS-21" => structural_grammar::case(),
+        "BS-22" => surface_lex::case(),
+        "BS-23" => surface_doc::case(),
+        "BS-24" => surface_generic::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
