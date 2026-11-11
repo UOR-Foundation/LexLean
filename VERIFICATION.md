@@ -13870,8 +13870,8 @@ The legacy, non-module decoder also elaborated under the same pinned Lean.
 An independently executed extracted-decoder C-emission regression passed actual
 partial/unsafe mutual groups, replay idempotence, mixed-state refusal without
 mutation, proof/type-only members, and the requirement that a signature alone
-cannot suppress local compilation. Its seven success observations are retained
-in the RT-03 group regression. Independent source review found no blocker for
+cannot suppress local compilation. Its six group success observations are retained
+in the RT-03 group regression; the executable's success is recorded separately. Independent source review found no blocker for
 the generated synchronous, default-eager compilation mode; explicitly overridden
 postponed compilation is outside this evidence.
 
