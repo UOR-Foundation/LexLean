@@ -49,3 +49,7 @@ diagnostic it writes for a terminal, and the standard library's `Numeral` and `O
 `Order`, and `Text`, and writes the canonical lock text of SPEC.md §11.2.
 `src/ContentId.lex.tex` (SPEC.md §17.23, `BS-32`) imports the standard library's `Numeral` and
 `Sha256`, and computes the labeled hash recipes of content identity of SPEC.md §21.
+
+`src/ProjectText.lex.tex` (SPEC.md §17.23, `BS-33`) imports `LockText` (`BS-31`), whose TOML
+writers it uses, and the standard library's `Numeral`, `Order`, and `Sha256`, and writes the
+canonical project manifest of SPEC.md §10.1 and its digest.

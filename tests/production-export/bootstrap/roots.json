@@ -33,6 +33,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "canonical_project",
+      "root": "LexLeanBoot.ProjectText.canonicalProject",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "check_arguments",
       "root": "LexLeanBoot.CalculusCheck.checkArguments",
       "targets": [
@@ -51,6 +59,14 @@
     {
       "name": "check_program",
       "root": "LexLeanBoot.CalculusCheck.checkProgram",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "config_sha256",
+      "root": "LexLeanBoot.ProjectText.configSha256",
       "targets": [
         "rust-std"
       ],
