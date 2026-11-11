@@ -17,7 +17,7 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
-- `regenerate.yml` (SPEC.md §9.4): a dispatch on a ref runs the write recipes on runners, the production
+- `regenerate.yml` (SPEC.md §9.4): a push to `regenerate/<name>`, or a dispatch, runs the write recipes on runners, the production
   export, the verification records and the other oracles as three parallel jobs, and returns one
   reviewed patch, so that a change which moves committed output is no longer regenerated on a
   workstation.

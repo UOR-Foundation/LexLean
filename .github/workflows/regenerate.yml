@@ -4,12 +4,18 @@
 # reads the repository and writes nothing to it; the patch is reviewed and
 # committed like any other written output (§28.3).
 #
-#   gh workflow run regenerate.yml --ref <branch> [-f atlas=true]
+#   git push origin <commit>:refs/heads/regenerate/<name>          # or regenerate/atlas/<name>
+#   gh workflow run regenerate.yml --ref <branch> [-f atlas=true]  # once on the default branch
 #   gh run download <run> --name regenerated-<commit>
 #   git apply --index regenerated.patch
+#
+# A push to `regenerate/**` starts it from any commit, because GitHub
+# dispatches only a workflow its default branch carries.
 name: regenerate
 
 on:
+  push:
+    branches: ['regenerate/**']
   workflow_dispatch:
     inputs:
       atlas:
@@ -68,7 +74,7 @@ jobs:
       - name: Run the write recipes
         shell: bash
         env:
-          ATLAS: ${{ inputs.atlas }}
+          ATLAS: ${{ inputs.atlas || startsWith(github.ref_name, 'regenerate/atlas/') }}
         run: |
           set -euo pipefail
           case "${{ matrix.writer }}" in
