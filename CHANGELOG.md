@@ -21,6 +21,8 @@ workspace carried at those versions without a tag.
   export, the verification records and the other oracles as three parallel jobs, and returns one
   reviewed patch, so that a change which moves committed output is no longer regenerated on a
   workstation.
+  A fourth job then writes the moved counts of the bootstrap count cases, the model documents,
+  and the stack bound of each recursive package that lacks one, so the patch is the whole landing.
 - `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
   initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
   `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.

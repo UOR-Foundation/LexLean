@@ -124,14 +124,154 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          out="$RUNNER_TEMP/regenerated"
-          mkdir -p "$out"
           for part in production-export records oracles; do
             # A writer that changed nothing returns an empty patch.
             if [ -s "$RUNNER_TEMP/parts/$part.patch" ]; then
               git apply --index "$RUNNER_TEMP/parts/$part.patch"
             fi
           done
+          mkdir -p "$RUNNER_TEMP/combined"
+          git diff --cached --binary > "$RUNNER_TEMP/combined/combined.patch"
+          echo "combined: $(git diff --cached --name-only | wc -l) paths" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: regenerate-combined
+          path: ${{ runner.temp }}/combined
+          if-no-files-found: error
+          retention-days: 7
+
+  # What follows from the regenerated tree: the counts the bootstrap count
+  # cases assert (`cargo xtask counts`, from runs of their parts under
+  # `LEXLEAN_COUNTS=fast`), the model documents, and the stack bound of each
+  # recursive package the record lacks (PD-08), measured by the cases that run
+  # it. A measuring run is a whole run of its case, so it also checks the
+  # counts just written.
+  finish:
+    name: counts and stack bounds
+    needs: [combine]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Install elan and the pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - name: Reserve bounded overflow memory for the proofs
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-regenerate.swap"
+          sudo chmod 600 "$RUNNER_TEMP/lexlean-regenerate.swap"
+          sudo mkswap "$RUNNER_TEMP/lexlean-regenerate.swap"
+          sudo swapon "$RUNNER_TEMP/lexlean-regenerate.swap"
+          sudo sysctl vm.swappiness=10
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: regenerate-combined
+          path: ${{ runner.temp }}/combined
+      - name: Apply the regenerated tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -s "$RUNNER_TEMP/combined/combined.patch" ]; then
+            git apply --index "$RUNNER_TEMP/combined/combined.patch"
+          fi
+      - name: Write the moved counts
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p "$RUNNER_TEMP/regenerated"
+          # The parts of `.github/bdd-parts.json` that hold a case with a
+          # `crate::counts!` check; each runs only up to its counts.
+          parts=$(python3 - <<'PY'
+          import json, pathlib, re
+          ids = set()
+          for path in pathlib.Path("crates/conformance/src").rglob("*.rs"):
+              ids |= set(re.findall(r'counts!\(\s*"([A-Z]+-[0-9]+)"', path.read_text()))
+          plan = json.loads(pathlib.Path(".github/bdd-parts.json").read_text())
+          parts = plan["parts"] if "parts" in plan else plan
+          print(" ".join(sorted(name for name, members in parts.items()
+                                if isinstance(members, list) and ids & set(members))))
+          PY
+          )
+          if [ -z "$parts" ]; then
+            echo "no case of this tree has a \`crate::counts!\` check: no counts written" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "parts with counts: $parts"
+          for part in $parts; do
+            LEXLEAN_COUNTS=fast LEXLEAN_BDD_PART="$part" cargo xtask bdd > "$RUNNER_TEMP/fast-$part.log" 2>&1
+            echo "$part: exit $?"
+          done
+          cargo xtask counts --write 2>&1 | grep -v -E '^\s*(Finished|Running|Compiling)' | tee "$RUNNER_TEMP/regenerated/counts.txt"
+          test "${PIPESTATUS[0]}" -eq 0
+      - name: Write the model documents
+        run: cargo xtask validate-model --write
+      - name: Measure the stack bound of each recursive package the record lacks
+        shell: bash
+        env:
+          LEXLEAN_VERIFY_WIDTH: "2"
+          LEXLEAN_VERIFY_MEMORY_KIB: "12582912"
+        run: |
+          set -euo pipefail
+          # Rows for packages no longer in the exports are dropped; for each
+          # recursive package without a row, the case whose source names its
+          # root runs whole and measures it (`LEXLEAN_MEASURE_STACK=all`).
+          cases=$(python3 - <<'PY'
+          import json, pathlib, re
+          record_path = pathlib.Path("tests/stack-bounds.json")
+          record = json.loads(record_path.read_text())
+          recursive = set()
+          for corpus in ("bootstrap", "stdlib"):
+              for provenance in pathlib.Path("tests/production-export", corpus, "packages").rglob("provenance.json"):
+                  if "recursion" in json.loads(provenance.read_text()).get("effects", []):
+                      recursive.add(f"{corpus}/{provenance.parent.name}")
+          rows = {key for key in record["rows"] if key != "bootstrap/evaluator"}
+          for stale in sorted(rows - recursive):
+              print(f"dropping the row of {stale}", file=__import__("sys").stderr)
+              del record["rows"][stale]
+          if rows - recursive:
+              record_path.write_text(json.dumps(record, indent=2) + "\n")
+          sources = list(pathlib.Path("crates/conformance/src/cases").rglob("*.rs"))
+          cases = set()
+          for package in sorted(recursive - rows):
+              name = package.split("/", 1)[1]
+              root = name.split("_")[0] + "".join(part.title() for part in name.split("_")[1:])
+              owners = set()
+              for source in sources:
+                  text = source.read_text()
+                  # The file's first line names its own case.
+                  own = re.match(r'//! `([A-Z]+-[0-9]+)`', text)
+                  if f'"{root}"' in text and own:
+                      owners.add(own.group(1))
+              if not owners:
+                  raise SystemExit(f"{package}: no case names the root `{root}`; measure it by hand")
+              print(f"{package}: measured by {', '.join(sorted(owners))}", file=__import__("sys").stderr)
+              cases |= owners
+          print(" ".join("conformance_" + case.lower().replace("-", "_") for case in sorted(cases)))
+          PY
+          )
+          if [ -z "$cases" ]; then
+            echo "every recursive package has its row" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "measuring: $cases" | tee -a "$GITHUB_STEP_SUMMARY"
+          LEXLEAN_MEASURE_STACK=all cargo test -p repo-conformance --all-features --test conformance -- $cases --nocapture 2>&1 \
+            | grep -E --line-buffered 'debug [0-9]+ bytes|test result|panicked|^test '
+      - name: Return the regenerated tree
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/regenerated"
+          mkdir -p "$out"
+          git add --all
           git diff --cached --binary > "$out/regenerated.patch"
           git diff --cached --name-only > "$out/regenerated-files.txt"
           echo "$GITHUB_SHA" > "$out/base-commit.txt"
@@ -139,12 +279,19 @@ jobs:
           {
             echo "### Regenerated $(wc -l < "$out/regenerated-files.txt") paths on $GITHUB_SHA"
             echo
+            if [ -s "$out/counts.txt" ]; then
+              echo '#### Counts (the writer lists here anything it could not place)'
+              echo '```text'
+              cat "$out/counts.txt"
+              echo '```'
+            fi
             echo '```bash'
             echo "gh run download $GITHUB_RUN_ID --repo $GITHUB_REPOSITORY --name regenerated-$GITHUB_SHA"
             echo "git apply --index regenerated.patch"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
         with:
           name: regenerated-${{ github.sha }}
           path: ${{ runner.temp }}/regenerated
