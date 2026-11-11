@@ -13,6 +13,23 @@ use crate::support::P;
 /// fact about `twice`, `spare` is referenced by nothing, and `Tree` and
 /// `Forest` are one mutual group.
 fn module(base_literal: &str, expected: &str, proof: &str, leaf: &str) -> String {
+    module_with(
+        base_literal,
+        expected,
+        proof,
+        leaf,
+        "{name: empty, fields: []}",
+    )
+}
+
+/// The module, with the constructors of `Shape` given.
+fn module_with(
+    base_literal: &str,
+    expected: &str,
+    proof: &str,
+    leaf: &str,
+    shapes: &str,
+) -> String {
     format!(
         "\\begin{{lexlean}}{{Main}}\n\\useglossary{{lexlean.std.nat@1.2.0}}\n\\title{{Natural number addition}}\n\\begin{{semanticmodule}}\n\
 definition{{\n  name: base,\n  parameters: [n : Nat],\n  result: Nat,\n  body: (n + {base_literal})\n}}\n\n\
@@ -20,7 +37,9 @@ definition{{\n  name: twice,\n  parameters: [n : Nat],\n  result: Nat,\n  body: 
 theorem{{\n  name: twice_one,\n  parameters: [],\n  statement: ((twice 1) = {expected}),\n  proof: {proof}\n}}\n\n\
 definition{{\n  name: spare,\n  parameters: [n : Nat],\n  result: Nat,\n  body: (n + 1)\n}}\n\n\
 inductive{{\n  name: Tree,\n  type_parameters: [],\n  parameters: [],\n  constructors: [{{name: leaf, fields: [{leaf}]}}, {{name: node, fields: [Forest]}}],\n  mutual: Woods\n}}\n\n\
-inductive{{\n  name: Forest,\n  type_parameters: [],\n  parameters: [],\n  constructors: [{{name: nil, fields: []}}, {{name: cons, fields: [Tree, Forest]}}],\n  mutual: Woods\n}}\n\
+inductive{{\n  name: Forest,\n  type_parameters: [],\n  parameters: [],\n  constructors: [{{name: nil, fields: []}}, {{name: cons, fields: [Tree, Forest]}}],\n  mutual: Woods\n}}\n\n\
+inductive{{\n  name: Shape,\n  type_parameters: [],\n  parameters: [],\n  constructors: [{shapes}]\n}}\n\n\
+theorem{{\n  name: shape_refl,\n  parameters: [],\n  statement: ((ctor Shape.empty) = (ctor Shape.empty)),\n  proof: reflexivity{{}}\n}}\n\
 \\end{{semanticmodule}}\n\\end{{lexlean}}\n"
     )
 }
@@ -192,7 +211,16 @@ pub fn run() {
         .collect();
     assert_eq!(
         names,
-        ["base", "twice", "twice_one", "spare", "Tree", "Forest"],
+        [
+            "base",
+            "twice",
+            "twice_one",
+            "spare",
+            "Tree",
+            "Forest",
+            "Shape",
+            "shape_refl"
+        ],
         "§21.9: rows are in source order"
     );
     let before = ids(&file);
@@ -258,6 +286,27 @@ pub fn run() {
     let group = project_of(&module("10", "22", "reflexivity{}", "Nat, Nat"));
     let after = ids(&declarations(&group));
     assert_eq!(changed(&before, &after), ["Forest", "Tree"]);
+
+    // A generated member depends on its owner: `shape_refl` names only the
+    // constructor `Shape.empty`, and a new constructor of `Shape` changes it.
+    assert_eq!(
+        row("shape_refl")["references"],
+        serde_json::json!([{"name": "Shape"}]),
+        "§21.9: a constructor reference is a reference to its type"
+    );
+    let shapes = project_of(&module_with(
+        "10",
+        "22",
+        "reflexivity{}",
+        "Nat",
+        "{name: empty, fields: []}, {name: full, fields: []}",
+    ));
+    let after = ids(&declarations(&shapes));
+    assert_eq!(changed(&before, &after), ["Shape", "shape_refl"]);
+    assert_ne!(
+        before["shape_refl"].1, after["shape_refl"].1,
+        "§21.9: the statement ID covers the owner of a constructor it names"
+    );
 
     // An added declaration and a new order change no ID.
     let spare = "definition{\n  name: spare,\n  parameters: [n : Nat],\n  result: Nat,\n  body: (n + 1)\n}\n\n";

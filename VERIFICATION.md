@@ -923,6 +923,15 @@ group digest that omits the framed references (refused at "a declaration's ID
 covers the IDs of its references"), and a statement ID that keeps the proof
 (refused at "a change of proof keeps the statement ID").
 
+A review found that a generated member, such as the constructor `Shape.empty`,
+names no top-level declaration, so a theorem that mentions only the
+constructor lost its dependency on `Shape`. A generated member `Owner.member`
+is now a reference to its owner. The case adds `Shape` and a theorem
+`shape_refl` over `Shape.empty`; a new constructor of `Shape` changes exactly
+`Shape` and `shape_refl`, statement ID included. The previous exact-name
+resolution, planted back, is refused at "a constructor reference is a
+reference to its type".
+
 ### a nested induction can be refused or mis-ordered (SM-37)
 
 A theorem over a nested inductive type is proved by `nested_induction`

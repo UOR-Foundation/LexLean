@@ -9532,7 +9532,10 @@ depends on.
 
 The *references* of a declaration are the member references in its canonical
 JSON, an object whose keys are exactly `name`, or `module` and `name`, that
-name a declaration of a semantic module of the linked project. A reference
+name a declaration of a semantic module of the linked project, or a member the
+compiler generates for one, such as the constructor `Shape.empty` of `Shape`
+or a field of a structure: a generated member `Owner.member` is a reference to
+its owner, whose declaration it takes its meaning from. A reference
 into the declaration's own module is written without `module` before it is
 hashed, so a declaration ID does not depend on the name of the module that
 holds it. A reference that names no declaration of the linked project, such as

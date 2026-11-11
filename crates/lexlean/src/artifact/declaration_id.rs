@@ -212,6 +212,21 @@ fn member_reference(fields: &BTreeMap<String, Json>) -> Option<(Option<&str>, &s
     }
 }
 
+/// The project declaration a member reference depends on: the declaration it
+/// names, or, for a member the compiler generates for a declaration (a
+/// constructor or a field, named `Owner.member`), its owner.
+fn resolve(module: &str, target: Option<&str>, name: &str, known: &BTreeSet<Key>) -> Option<Key> {
+    let target = target.unwrap_or(module);
+    let mut candidate = name;
+    loop {
+        let key = (target.to_owned(), candidate.to_owned());
+        if known.contains(&key) {
+            return Some(key);
+        }
+        candidate = &candidate[..candidate.rfind('.')?];
+    }
+}
+
 /// Write references to the own module without `module`, and record every
 /// reference that names a project declaration.
 fn normalize(
@@ -223,9 +238,7 @@ fn normalize(
     match value {
         Json::Obj(fields) => {
             if let Some((target, name)) = member_reference(&fields) {
-                let target = target.unwrap_or(module).to_owned();
-                let key = (target, name.to_owned());
-                if known.contains(&key) {
+                if let Some(key) = resolve(module, target, name, known) {
                     let own = key.0 == module;
                     references.insert(key);
                     if own {
@@ -258,8 +271,7 @@ fn collect(module: &str, value: &Json, known: &BTreeSet<Key>, references: &mut B
     match value {
         Json::Obj(fields) => {
             if let Some((target, name)) = member_reference(fields) {
-                let key = (target.unwrap_or(module).to_owned(), name.to_owned());
-                if known.contains(&key) {
+                if let Some(key) = resolve(module, target, name, known) {
                     references.insert(key);
                 }
                 return;
