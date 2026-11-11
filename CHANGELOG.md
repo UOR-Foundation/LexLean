@@ -82,6 +82,12 @@ workspace carried at those versions without a tag.
   identity). `locateModule` of `SurfaceModule` returns what
   `surface::module::locate` returns and admits no `recursion`. The register is
   479 IDs.
+- The human diagnostic output and the argument pre-scans of the command line as
+  language-1.2 source (SPEC.md §17.23, §20.6, §23, `BS-30`, #274; no new
+  diagnostic code, no change to the language-1.2 identity). `humanDiagnostics`,
+  `wantsJson`, and `namedCommand` of `CliOutput` return what
+  `cli::human_diagnostics_text`, `wants_json`, and `named_command` return; none
+  admits `recursion`. The register is 480 IDs.
 - The canonical diagnostic and the failure it makes as language-1.2 source
   (SPEC.md §17.23, §20.1, §24.5, `BS-29`, #274; no new diagnostic code, no change
   to the language-1.2 identity). `diagnosticText`, `sortDiagnostics`, and

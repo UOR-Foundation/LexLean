@@ -42,3 +42,6 @@ tree reader it reads with, and the standard library's `Order`.
 white space it trims with, and the standard library's `Text`.
 `src/Diagnostics.lex.tex` (SPEC.md §17.23, `BS-29`) imports the standard library's `Json`,
 `Numeral`, `Order`, and `Text`: it writes, sorts, and caps the canonical diagnostic.
+
+`src/CliOutput.lex.tex` (SPEC.md §17.23, `BS-30`) imports `Diagnostics` (`BS-29`), whose
+diagnostic it writes for a terminal, and the standard library's `Numeral` and `Order`.

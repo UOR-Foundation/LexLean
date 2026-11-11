@@ -277,6 +277,9 @@
     ],
     "bootstrap-diagnostics": [
       "BS-29"
+    ],
+    "bootstrap-cli-output": [
+      "BS-30"
     ]
   },
   "targets": {

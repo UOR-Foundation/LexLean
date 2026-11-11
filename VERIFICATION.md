@@ -11440,6 +11440,51 @@ committed exports`, as each bootstrap member did before its regeneration, which
 produces the three packages. The branch is based on `release/v0.4` and stacks on
 nothing.
 
+### the terminal output of diagnostics and the argument pre-scans are source (BS-30)
+
+`BS-30` holds the three production roots of `LexLeanBoot.CliOutput`
+(`bootstrap/src/CliOutput.lex.tex`) to the code of `cli.rs`:
+`humanDiagnostics` to `cli::human_diagnostics_text`, the text the command line
+writes to stderr for a failure in the human mode, with the four SGR sequences of
+the palette or none; `wantsJson` to `cli::wants_json`, the scan for
+`--diagnostic-format json` in either spelling before the arguments are parsed;
+and `namedCommand` to `cli::named_command`, the first argument after the program
+that names one of the ten commands. The module reads the diagnostic of `BS-29`
+and each root admits exactly `allocation`. The oracle is `cli.rs`'s own code:
+`print_human_diagnostics` behind the doc-hidden public `human_diagnostics_text`,
+and `wants_json` and `named_command` made public and doc-hidden; `cli.rs` is
+outside the compiler-semantics identity, so no identity moves. The case holds
+the roots to the oracle on hand-built diagnostics with every part in both modes
+of color, a span over two lines, and two diagnostics in their order; on argument
+lists that reach both outcomes of the scan, the program named like the flag and
+like a command, and the last command of the table; on the 303 negative fixtures'
+committed diagnostics, in both modes, and their commands' arguments; and on
+seeded diagnostics and arguments. Each planted defect names the one vector that
+catches it, and the case asserts that the site of each plant occurs once. The
+row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `CliOutput`: `lexlean check`, `lexlean build`, and `lexlean
+verify` pass, and the eligibility report gives each root exactly `allocation`.
+The register agrees with the §31 table on 480 IDs, by the same parse
+`validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `BS-29` over
+`release/v0.4` at `4318b17b8` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_30`, 105 s). Its corpus is 32 named vectors (11
+human, 12 scanned, 9 named), the 303 fixtures, and 200 and 1,000 seeded runs of
+each root. The evaluator agrees with the oracle on 817 human texts, 515 scans,
+and 512 named commands, the rendered packages under the pinned rustc on 4,244
+runs, and each of the 15 planted defects is detected by its own vector. The
+first runs found no fault of the module: the roots were first declared with
+`overflow`, which the eligibility report showed none of them realizes (now
+`allocation` alone); the plant of the end line was tried on spans whose lines
+agree (now `a span over two lines`); and two plants were rewritten so that the
+planted source parses and stays within the root's effects. The case then stops at
+the stack-bound step, `bootstrap/human_diagnostics is no package of the
+committed exports`, as each bootstrap member did before its regeneration, which
+produces the three packages. The branch is stacked on `BS-29` and lands after it.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
