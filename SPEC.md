@@ -9755,6 +9755,7 @@ modules/*.tex
 maps/*.map.json
 coverage/*.coverage.json
 lexicons/*.closure.json
+declarations/*.json                       # language 1.2 (§21.9)
 oleans/*.olean
 probe/<probe-module>.lean
 probe/process.json
