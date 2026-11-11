@@ -11346,6 +11346,13 @@ What does not change: `just vv`, which runs `bdd` whole; `release.yml`; the
 suite and every case in it; the host matrix, which runs the whole workspace on
 every host.
 
+At the landing on `release/v0.4` with `BS-21` to `BS-24`, the production export of the
+bootstrap project with this module stopped at `LLS8002`: the programs, crates, and
+certificates of its roots came to 135,273,215 bytes, beyond the 134,217,728 the
+project configured. The project now configures 536,870,912 (the maintainer's
+decision; a semantic input, so the lock and every package move at the landing),
+which leaves room for the further components of the driver.
+
 ### the bdd partition can fail
 
 Each record is a defect planted on this branch, the command that ran, and its

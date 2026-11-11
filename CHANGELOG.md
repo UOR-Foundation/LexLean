@@ -17,6 +17,9 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The bootstrap project configures `max_total_source_bytes = 536870912` (SPEC.md
+  §17.23): with `BS-27` its production export is 135,273,215 bytes, beyond the
+  134,217,728 it configured. A semantic input, so its lock and every package move.
 - The authoring notation of a tooling module as language-1.2 source, the fifth
   slice of the front end (SPEC.md §17.23, §17.20, §17.21, `BS-27`, #269; no new
   diagnostic code, no change to the language-1.2 identity).

@@ -8767,8 +8767,11 @@ The bootstrap project's production export is the first project whose roots
 together approach `max_total_source_bytes` (§10.2): the limit counts the
 programs, the crates, and the certificates of every production root of the
 project, 67,815,299 bytes with this root against 67,108,864, so the bootstrap
-project configures `max_total_source_bytes = 134217728` (twice the default), the
-term-lowering passes needing about 100 MB in all.
+project configured `max_total_source_bytes = 134217728` (twice the default), the
+term-lowering passes needing about 100 MB in all. The surface tooling of `BS-27`
+took the export past that, to 135,273,215 bytes, so the project now configures
+`max_total_source_bytes = 536870912` (eight times the default), with room for the
+further components of the driver.
 
 `BS-16` holds `validateRequest` of `GnafValidate` to `gnaf::validate` (§17.15). The root takes the projection
 of a request that validation reads, as first-order data: the length of the domain, the machine (its capacity,
