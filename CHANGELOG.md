@@ -21,6 +21,9 @@ workspace carried at those versions without a tag.
   export, the verification records and the other oracles as three parallel jobs, and returns one
   reviewed patch, so that a change which moves committed output is no longer regenerated on a
   workstation.
+- `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
+  initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
+  `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
 - The generic notation as language-1.2 source, fourth slice of the front end
   (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
   the language-1.2 identity). `parseGeneric` and `printGeneric` of
