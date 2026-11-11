@@ -912,11 +912,18 @@ pub(super) fn case() {
         .iter()
         .filter(|vector| vector.nodes <= EVALUATOR_NODES)
         .collect();
-    assert_eq!(
-        (rules.len(), all.len(), evaluator.len()),
-        (RULE_PROGRAMS, VECTORS, VECTORS_WITHIN),
-        "the programs of the rules, the vectors, and those the evaluator is given"
+    crate::counts!(
+        "BS-07",
+        "the programs of the rules, the vectors, and those the evaluator is given",
+        {
+            RULE_PROGRAMS: rules.len(),
+            VECTORS: all.len(),
+            VECTORS_WITHIN: evaluator.len(),
+        }
     );
+    if crate::counts::stop_before_runs("BS-07") {
+        return;
+    }
     eprintln!(
         "BS-07: {} vectors ({} within {EVALUATOR_NODES} nodes) ({:?})",
         all.len(),

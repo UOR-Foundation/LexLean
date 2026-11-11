@@ -1318,16 +1318,16 @@ pub(super) fn case() {
             "the committed library ends with the printed items"
         );
     }
-    assert_eq!(
-        (manifests, fixtures, distinct, all.len(), packages.len()),
-        (
-            COMMITTED_MANIFESTS,
-            COMMITTED_FIXTURES,
-            COMMITTED_PROGRAMS,
-            COMMITTED_CRATES,
-            COMMITTED_PACKAGES
-        ),
-        "the committed manifests, fixtures, distinct programs, distinct crates, and packages"
+    crate::counts!(
+        "BS-06",
+        "the committed manifests, fixtures, distinct programs, distinct crates, and packages",
+        {
+            COMMITTED_MANIFESTS: manifests,
+            COMMITTED_FIXTURES: fixtures,
+            COMMITTED_PROGRAMS: distinct,
+            COMMITTED_CRATES: all.len(),
+            COMMITTED_PACKAGES: packages.len(),
+        }
     );
     eprintln!(
         "BS-06: {manifests} manifests, {fixtures} fixtures, {distinct} programs, {} crates, {} packages ({:?})",
@@ -1386,25 +1386,18 @@ pub(super) fn case() {
         started.elapsed()
     );
 
-    assert_eq!(
-        (
-            crate_runs.len(),
-            committed_count,
-            refused(&crate_runs),
-            expr_runs.len(),
-            hand_exprs,
-            refused(&expr_runs)
-        ),
-        (
-            VECTORS_CRATE,
-            COMMITTED_DISTINCT,
-            REFUSED_CRATE,
-            VECTORS_EXPR,
-            HAND_EXPR,
-            0
-        ),
-        "the vectors of printCrate and printExpr, the committed crates among them, and the refused"
+    crate::counts!(
+        "BS-06",
+        "the vectors of printCrate and printExpr, the committed crates among them, and the refused",
+        {
+            VECTORS_CRATE: crate_runs.len(),
+            COMMITTED_DISTINCT: committed_count,
+            REFUSED_CRATE: refused(&crate_runs),
+            VECTORS_EXPR: expr_runs.len(),
+            HAND_EXPR: hand_exprs,
+        }
     );
+    assert_eq!(refused(&expr_runs), 0, "no printExpr vector is refused");
     // The corpora of the normative host are made here, so that every count
     // the row states is asserted before the first leg runs.
     let evaluator_crates: Vec<Run> = crate_runs
@@ -1422,23 +1415,20 @@ pub(super) fn case() {
     let (seeded_crates, seeded_exprs) = mutants(&bases, &mut seeded, EVALUATOR_MUTANTS);
     let mut large = super::Seeded(0x0B55_0066);
     let (large_crates, large_exprs) = mutants(&bases, &mut large, RUSTC_MUTANTS);
-    assert_eq!(
-        (
-            evaluator_crates.len(),
-            evaluator_exprs.len(),
-            seeded_crates.len(),
-            seeded_exprs.len(),
-            large_crates.len() + large_exprs.len()
-        ),
-        (
-            EVALUATOR_CRATE,
-            VECTORS_EXPR,
-            SEEDED_CRATE,
-            SEEDED_EXPR,
-            RUSTC_SEEDED_RUNS
-        ),
-        "the vectors and the seeded mutants of the evaluator, and the further mutants of rustc"
+    crate::counts!(
+        "BS-06",
+        "the vectors and the seeded mutants of the evaluator, and the further mutants of rustc",
+        {
+            EVALUATOR_CRATE: evaluator_crates.len(),
+            VECTORS_EXPR: evaluator_exprs.len(),
+            SEEDED_CRATE: seeded_crates.len(),
+            SEEDED_EXPR: seeded_exprs.len(),
+            RUSTC_SEEDED_RUNS: large_crates.len() + large_exprs.len(),
+        }
     );
+    if crate::counts::stop_before_runs("BS-06") {
+        return;
+    }
     let checked = support::checked_project(&project);
     let crate_root = super::lower(&checked, &project, MODULE, "printCrate");
     let expr_root = super::lower(&checked, &project, MODULE, "printExpr");
@@ -1496,7 +1486,13 @@ pub(super) fn case() {
         ],
         "seeded",
     );
-    assert_eq!(large_runs, RUSTC_SEEDED_RUNS);
+    crate::counts!(
+        "BS-06",
+        "the further mutants rustc ran",
+        {
+            RUSTC_SEEDED_RUNS: large_runs,
+        }
+    );
     // The gate is armed: each defect planted in a copy of the source is a
     // disagreement with the oracle.
     let mut detection: BTreeMap<&str, Vec<Run>> = BTreeMap::new();

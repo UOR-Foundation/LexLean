@@ -519,15 +519,21 @@ pub(super) fn case() {
         .map(run)
         .collect();
     assert_eq!(
-        (
-            base.len(),
-            small_runs.len(),
-            evaluator_mutants.len(),
-            rustc_mutants.len()
-        ),
-        (CRATES, WITHIN, EVALUATOR_MUTANTS, RUSTC_MUTANTS),
-        "the crates the moves are run on, those within the evaluator's bound, and the mutants"
+        (evaluator_mutants.len(), rustc_mutants.len()),
+        (EVALUATOR_MUTANTS, RUSTC_MUTANTS),
+        "the mutants"
     );
+    crate::counts!(
+        "BS-08",
+        "the crates the moves are run on, and those within the evaluator's bound",
+        {
+            CRATES: base.len(),
+            WITHIN: small_runs.len(),
+        }
+    );
+    if crate::counts::stop_before_runs("BS-08") {
+        return;
+    }
     eprintln!(
         "BS-08: {} crates ({} within {EVALUATOR_NODES} expressions), {} + {} mutants ({:?})",
         base.len(),

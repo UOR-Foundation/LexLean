@@ -17,6 +17,16 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- A one-pass writer for the counts of the bootstrap count cases, #92.
+  Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
+  `BS-15` records every count it checks in `target/count-report/` instead of
+  failing at the first that moved, and stops before its evaluator and rustc
+  runs (`LEXLEAN_COUNTS=report` runs it whole); `cargo xtask counts --write`
+  carries the moved counts into the case's constants, its §31 row, register
+  statement and scenario, and the prose of §17.23 that repeats them, and
+  lists every number it cannot place unambiguously. A landing that moved
+  the counts took a run and a hand mirror per stage of the cases; it takes
+  one pass. Unset, the cases assert as before. The register is unchanged.
 - `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
   initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
   `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
