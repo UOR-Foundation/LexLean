@@ -114,4 +114,4 @@ changes lies in the language-1.2 partition of the compiler-semantics ID
 production package, and the verified records of every example but
 `examples/uor-atlas`. That example's verification was stopped by the host's
 out-of-memory guard in `CensusCert11` (its hinted peak is about 12.1 GB), so
-its records are not yet regenerated at this identity.
+its committed records still carry the previous identity.
