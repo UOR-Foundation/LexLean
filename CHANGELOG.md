@@ -65,6 +65,12 @@ workspace carried at those versions without a tag.
   hand-built vectors, the committed modules, and 2,000 seeded edits; 44 planted
   defects are each detected by a vector of their own. It admits no `recursion`.
   The largest certificate part is 2,879,430 bytes. The register is 479 IDs.
+- The reader of LexLean Rendering Expressions and the facts of a render as
+  language-1.2 source, the second slice of the lexicon (SPEC.md §17.23, §13.9,
+  `BS-26`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `parseLre` and `renderFacts` of `LexiconLre` return what
+  `lexicon::lre::parse` and the walkers of `Render` return; neither admits
+  `recursion`. The register is 480 IDs.
 - The reader and the canonical printer of LexLean Semantic Expressions as
   language-1.2 source, the first slice of the lexicon (SPEC.md §17.23, §13.8,
   `BS-25`, #269; no new diagnostic code, no change to the language-1.2
