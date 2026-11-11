@@ -1,0 +1,146 @@
+# The write recipes of SPEC.md §9.2 on a runner (§9.4): every file the gate
+# compares with a committed oracle, regenerated from a clean checkout of the
+# dispatched ref and returned as one binary patch. Not part of the gate. It
+# reads the repository and writes nothing to it; the patch is reviewed and
+# committed like any other written output (§28.3).
+#
+#   gh workflow run regenerate.yml --ref <branch> [-f atlas=true]
+#   gh run download <run> --name regenerated-<commit>
+#   git apply --index regenerated.patch
+name: regenerate
+
+on:
+  workflow_dispatch:
+    inputs:
+      atlas:
+        description: Rewrite UOR Atlas's verification records too (its whole proof, in the records job)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regenerate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Each writer runs from its own clean checkout, so the three run at once;
+  # the paths they write are disjoint, which `combine` checks.
+  writer:
+    name: write (${{ matrix.writer }})
+    if: github.repository == 'UOR-Foundation/LexLean'
+    strategy:
+      fail-fast: false
+      matrix:
+        writer: [production-export, records, oracles]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      # The profile of the `examples` leg (§22.11): a schedule, never a byte
+      # of what is written, which is that of width 1.
+      LEXLEAN_VERIFY_WIDTH: "2"
+      LEXLEAN_VERIFY_MEMORY_KIB: "12582912"
+      LEXLEAN_VERIFY_HINTS: ${{ github.workspace }}/.github/verify-hints.json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - uses: taiki-e/install-action@b6b84cf49ebfe0176417bdce007c624f0db37f20 # v2.86.2
+        with:
+          tool: just
+      - name: Install elan and the pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - name: Reserve bounded overflow memory for the proofs
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-regenerate.swap"
+          sudo chmod 600 "$RUNNER_TEMP/lexlean-regenerate.swap"
+          sudo mkswap "$RUNNER_TEMP/lexlean-regenerate.swap"
+          sudo swapon "$RUNNER_TEMP/lexlean-regenerate.swap"
+          sudo sysctl vm.swappiness=10
+      - name: Run the write recipes
+        shell: bash
+        env:
+          ATLAS: ${{ inputs.atlas }}
+        run: |
+          set -euo pipefail
+          case "${{ matrix.writer }}" in
+            production-export) recipes="production-export-write" ;;
+            records)
+              recipes="verify-write"
+              if [ "$ATLAS" != "true" ]; then
+                export LEXLEAN_EXAMPLES_PART=without:uor-atlas
+              fi
+              ;;
+            oracles) recipes="golden-write fixtures-write calculus-write model-write" ;;
+          esac
+          just --timestamp --timestamp-format '%s%.3f' $recipes
+      - name: Capture what the recipes wrote
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/part"
+          git add --all
+          git diff --cached --binary > "$RUNNER_TEMP/part/${{ matrix.writer }}.patch"
+          git diff --cached --name-only | tee "$RUNNER_TEMP/part/${{ matrix.writer }}.files"
+          echo "${{ matrix.writer }}: $(wc -l < "$RUNNER_TEMP/part/${{ matrix.writer }}.files") paths" >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: regenerate-part-${{ matrix.writer }}
+          path: ${{ runner.temp }}/part
+          if-no-files-found: error
+          retention-days: 7
+
+  # The parts applied in turn to a clean checkout of the same commit: two parts
+  # that write one path fail here, rather than one silently replacing the other.
+  combine:
+    name: combine
+    needs: [writer]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: regenerate-part-*
+          path: ${{ runner.temp }}/parts
+          merge-multiple: true
+      - name: Apply every part
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$RUNNER_TEMP/regenerated"
+          mkdir -p "$out"
+          for part in production-export records oracles; do
+            # A writer that changed nothing returns an empty patch.
+            if [ -s "$RUNNER_TEMP/parts/$part.patch" ]; then
+              git apply --index "$RUNNER_TEMP/parts/$part.patch"
+            fi
+          done
+          git diff --cached --binary > "$out/regenerated.patch"
+          git diff --cached --name-only > "$out/regenerated-files.txt"
+          echo "$GITHUB_SHA" > "$out/base-commit.txt"
+          (cd "$out" && sha256sum regenerated.patch regenerated-files.txt base-commit.txt > SHA256SUMS)
+          {
+            echo "### Regenerated $(wc -l < "$out/regenerated-files.txt") paths on $GITHUB_SHA"
+            echo
+            echo '```bash'
+            echo "gh run download $GITHUB_RUN_ID --repo $GITHUB_REPOSITORY --name regenerated-$GITHUB_SHA"
+            echo "git apply --index regenerated.patch"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: regenerated-${{ github.sha }}
+          path: ${{ runner.temp }}/regenerated
+          if-no-files-found: error
+          retention-days: 7

@@ -17,6 +17,10 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- `regenerate.yml` (SPEC.md §9.4): a dispatch on a ref runs the write recipes on runners, the production
+  export, the verification records and the other oracles as three parallel jobs, and returns one
+  reviewed patch, so that a change which moves committed output is no longer regenerated on a
+  workstation.
 - The generic notation as language-1.2 source, fourth slice of the front end
   (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
   the language-1.2 identity). `parseGeneric` and `printGeneric` of
