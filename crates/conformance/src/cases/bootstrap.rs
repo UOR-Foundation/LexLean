@@ -28,8 +28,8 @@ mod gnaf_validate;
 mod lexicon_lre;
 mod lexicon_lse;
 mod lock_text;
-mod project_text;
 mod manifest_text;
+mod project_text;
 mod runtime_validate;
 mod rust_assemble;
 mod rust_bodies;
@@ -46,8 +46,8 @@ mod structural_grammar;
 mod surface_doc;
 mod surface_generic;
 mod surface_lex;
-mod surface_tooling;
 mod surface_module;
+mod surface_tooling;
 mod tooling_latex;
 
 /// The module the first component lives in.
