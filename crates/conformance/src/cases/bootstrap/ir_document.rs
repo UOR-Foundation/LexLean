@@ -452,6 +452,41 @@ fn smallest(identities: &[Identity], pick: fn(&DocumentModule) -> bool) -> Docum
         .clone()
 }
 
+/// The smallest closed-core module of UOR Atlas, read from its source alone:
+/// no other committed project embeds one, and Atlas is beyond a linked run.
+fn atlas_core() -> lexlean::ir::core::CoreModule {
+    fn sources(dir: &std::path::Path, out: &mut Vec<std::path::PathBuf>) {
+        let Ok(entries) = std::fs::read_dir(dir) else {
+            return;
+        };
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.is_dir() {
+                sources(&path, out);
+            } else if path.extension().is_some_and(|extension| extension == "tex") {
+                out.push(path);
+            }
+        }
+    }
+    let atlas = repo_root().join("examples/uor-atlas");
+    let language = lexlean::project::Project::load(&atlas.join("lexlean.toml"))
+        .expect("UOR Atlas loads")
+        .config
+        .language;
+    let mut paths = Vec::new();
+    sources(atlas.as_std_path(), &mut paths);
+    let mut texts: Vec<String> = paths
+        .iter()
+        .filter_map(|path| std::fs::read_to_string(path).ok())
+        .filter(|source| source.contains("coremodule"))
+        .collect();
+    texts.sort_by_key(|source| (source.len(), source.clone()));
+    texts
+        .iter()
+        .find_map(|source| lexlean::ir::core::CoreModule::from_source(source, &language).ok())
+        .expect("a closed-core module of UOR Atlas")
+}
+
 #[allow(clippy::too_many_lines)]
 fn named(identities: &[Identity]) -> Vec<Vector> {
     let mut out = Vec::new();
@@ -546,9 +581,10 @@ fn named(identities: &[Identity]) -> Vec<Vector> {
     );
     add(
         "a core module",
-        Input::Module(Box::new(smallest(identities, |module| {
-            module.core.is_some()
-        }))),
+        Input::Module(Box::new(DocumentModule {
+            core: Some(atlas_core()),
+            ..module("Core", "UorAtlas.Core")
+        })),
     );
     add(
         "a semantic module",
