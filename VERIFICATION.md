@@ -11695,6 +11695,48 @@ produces the three packages and measures the row of `print_tooling_module` in
 `tests/stack-bounds.json` (`PD-08`). The branch is stacked on `BS-24` and lands
 after it.
 
+### the text channel and the simple proof sentences are source (BS-35)
+
+`BS-35` holds the production roots `LexLeanBoot.GrammarProof.textTokens` and
+`parseProofSentence` (`bootstrap/src/GrammarProof.lex.tex`) to
+`grammar::chart::text_tokens` and `grammar::proof::parse_proof_sentence`: the
+tokens of an atom range with each mathematical island folded, and one of the
+seven registered simple proof sentences with the keywords that cover it, or the
+refusal. The module imports `PrimitiveScan`, whose atoms, places, and
+`Rejection` it reads and returns, and the standard library's `Text`; neither
+root admits `recursion`. The case holds the roots to the oracle on hand-built
+sentences and ranges that reach every refusal of the two (the dollar delimiter,
+a nested, unclosed, or stray island, a forbidden word, and an unregistered
+sentence), every registered sentence, and each of the 31 forbidden words; on
+ranges that start inside the atoms and on atoms without their white space, which
+hold the composition of a tactic word to bytes; on seeded atom ranges of every
+committed `.lex.tex` source, each scanned once and dropped; and on seeded
+sentences and seeded edits of the registered ones. Each planted defect names the
+one vector that catches it, and the case asserts that the site of each plant
+occurs once. The oracle's tests for the `<;>` combinator and the focusing dot
+`·` are kept in the module as written but no plant can reach them: a semicolon
+ends a composed word, and `·` is a Unicode symbol, so no scanned sentence
+decides them. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `GrammarProof`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and Lean's audit reports no axiom.
+
+The case was first compiled and run on the normative host on `release/v0.4` at
+`aaf845507` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_35`, 278 s). Its corpus is 110 named vectors (99 of them read as
+sentences), 1,002 committed sources, 600 and 4,000 seeded ranges, and 400 and
+3,000 seeded sentences. The evaluator agrees with the oracle on 1,110 runs of
+`textTokens` and 1,008 of `parseProofSentence`, the rendered packages under the
+pinned rustc on 13,518, and each of the 25 planted defects is detected by its
+own vector. The first run found no fault of the module; it found the case's own:
+holding the scanned atoms of every committed source at once took 9.4 GB, so the
+ranges are drawn one source at a time. The case then stops at the stack-bound
+step, `bootstrap/text_tokens is no package of the committed exports`, as each
+bootstrap member did before its regeneration, which produces the
+`bootstrap/text_tokens` and `bootstrap/parse_proof_sentence` packages. The
+branch is based on `release/v0.4` and stacks on nothing.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
