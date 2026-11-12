@@ -205,7 +205,6 @@ definition{
     | SemanticType.SSet inner => (kinded "set" (member "element" (typeJson inner) (ctor LexLeanStd.Json::Json.JNil)))
     | SemanticType.SNil => (ctor LexLeanStd.Json::Json.JNil)
     | SemanticType.SItem head tail => (ctor LexLeanStd.Json::Json.JItem (typeJson head) (typeJson tail))),
-  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: semantic
 }
