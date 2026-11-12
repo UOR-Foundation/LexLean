@@ -898,7 +898,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 493, "§31 has 493 rows");
+            assert_eq!(table.len(), 494, "§31 has 494 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -1037,6 +1037,15 @@ pub(crate) fn run(id: &str) {
             let (only_1_2, only_1_1) = support::introduced_later();
             let (ten, eleven, twelve) = support::semantics_ids(&borrowed);
             assert_eq!(twelve, recomputed, "RP-10: the 1.2 ID");
+            // §8.4: a build without production-data reports this constant in
+            // place of the ID it cannot compute. Nothing else would notice a
+            // stale one: that build locks and checks with it consistently.
+            assert_eq!(
+                lexlean::LANGUAGE_1_2_SEMANTICS_ID,
+                twelve.to_hex(),
+                "RP-10: lexlean::LANGUAGE_1_2_SEMANTICS_ID is stale; the tree's language-1.2 ID is {}",
+                twelve.to_hex()
+            );
             assert_eq!(
                 eleven,
                 lexlean::compiler_semantics_id_for("1.1"),
@@ -2419,8 +2428,202 @@ pub(crate) fn run(id: &str) {
         // §30.3: the crate that goes to crates.io is the crate the release
         // attaches, proved on every run, and uploaded only with a credential.
         "RP-18" => rp_18(),
+        // §8.4: a build without the production data checks and locks as the
+        // default build does, and refuses the work that needs that data.
+        "RP-19" => rp_19(),
         other => panic!("no repository case is wired for {other}"),
     }
+}
+
+/// RP-19: the binary built without `production-data`, held to the default
+/// build this harness links. The language-1.2 ID it reports is a constant,
+/// which RP-10 holds to the tree; here it must also land in the lock bytes,
+/// which is what a wrong constant would change while every verdict agreed.
+fn rp_19() {
+    use lexlean::api::production::{
+        self, Expectation, PackageName, ProductionRequest, RootRequest, TargetRef, REQUEST_SPEC,
+    };
+    let root = support::repo_root();
+    let binary =
+        support::check_only_binary(&root).expect("the crate builds without its default features");
+
+    // The library is left out and the rest of the tree is not: the binary
+    // holds no library source and does hold the library's module list, which
+    // is outside `library/`.
+    let image = std::fs::read(binary.as_std_path()).expect("the binary is readable");
+    let holds = |needle: &[u8]| image.windows(needle.len()).any(|window| window == needle);
+    let rows = support::normative_rows();
+    let library: Vec<&(String, Vec<u8>)> = rows
+        .iter()
+        .filter(|(path, _)| path.starts_with("language/preservation-1.2/library/"))
+        .collect();
+    assert!(
+        library.len() > 10,
+        "RP-19: the library has its sources on disk"
+    );
+    let largest = library
+        .iter()
+        .max_by_key(|(_, bytes)| bytes.len())
+        .expect("a library file");
+    assert!(
+        !holds(&largest.1),
+        "RP-19: the build without production-data embeds `{}`",
+        largest.0
+    );
+    let kept = rows
+        .iter()
+        .find(|(path, _)| path == "language/preservation-1.2/library.toml")
+        .expect("the library's module list");
+    assert!(holds(&kept.1), "RP-19: `{}` is embedded", kept.0);
+
+    let normalized =
+        |text: &str, project: &camino::Utf8Path| text.replace(project.as_str(), "<project>");
+    let same = |what: &str, linked: &support::P, built: &support::P, arguments: &[&str]| {
+        let (exit_a, out_a, err_a) = linked.cli(arguments);
+        let (exit_b, out_b, err_b) = support::cli_binary_in(&binary, &built.root, arguments);
+        assert_eq!(
+            exit_a,
+            exit_b,
+            "RP-19: {what}: `{}` exit code",
+            arguments.join(" ")
+        );
+        assert_eq!(
+            normalized(&out_a, &linked.root),
+            normalized(&out_b, &built.root),
+            "RP-19: {what}: `{}` stdout",
+            arguments.join(" ")
+        );
+        assert_eq!(
+            normalized(&err_a, &linked.root),
+            normalized(&err_b, &built.root),
+            "RP-19: {what}: `{}` stderr",
+            arguments.join(" ")
+        );
+    };
+
+    let (_, version, _) = support::cli_in(&root, &["--version"]);
+    let (exit, built_version, _) = support::cli_binary_in(&binary, &root, &["--version"]);
+    assert_eq!(exit, 0, "RP-19: --version");
+    // The same four lines, and a fifth that keeps it from passing for a
+    // release binary, which it cannot replace (§30.3).
+    assert_eq!(
+        format!(
+            "{version}variant check-only
+"
+        ),
+        built_version,
+        "RP-19: --version"
+    );
+
+    // A lock records its language's compiler-semantics ID, so equal lock
+    // bytes for a 1.0, 1.1, and 1.2 project are equal IDs.
+    for example in ["nat-add-zero", "semantic-1.1", "language-1.2", "production"] {
+        let linked = support::P::copy_example(example);
+        let built = support::P::copy_example(example);
+        for project in [&linked, &built] {
+            std::fs::remove_file(project.root.join("lexlean.lock").as_std_path())
+                .expect("the example has a lock");
+        }
+        same(example, &linked, &built, &["lock"]);
+        let lock = |project: &support::P| {
+            std::fs::read_to_string(project.root.join("lexlean.lock").as_std_path())
+                .expect("a lock was written")
+        };
+        assert_eq!(
+            lock(&linked),
+            lock(&built),
+            "RP-19: {example}: lexlean.lock bytes"
+        );
+        same(
+            example,
+            &linked,
+            &built,
+            &["--diagnostic-format", "json", "check"],
+        );
+    }
+    for negative in [
+        "type-parameter-capture",
+        "term-cases-scrutinee-not-inductive",
+        "induction-nested-type",
+    ] {
+        let linked = support::P::negative(negative);
+        let built = support::P::negative(negative);
+        same(
+            negative,
+            &linked,
+            &built,
+            &["--diagnostic-format", "json", "check"],
+        );
+    }
+
+    // The two commands that generate certificates are refused with LLC0205
+    // before any work is published: no build, verification, or export.
+    let refused = |project: &support::P, arguments: &[&str]| {
+        let (exit, out, err) = support::cli_binary_in(&binary, &project.root, arguments);
+        assert_eq!(
+            exit,
+            2,
+            "RP-19: `{}` exits 2: {out}{err}",
+            arguments.join(" ")
+        );
+        assert!(
+            out.contains("LLC0205") || err.contains("LLC0205"),
+            "RP-19: `{}` reports LLC0205: {out}{err}",
+            arguments.join(" ")
+        );
+        for area in ["build", "verified", "production"] {
+            assert!(
+                !project
+                    .root
+                    .join(".lexlean")
+                    .join(area)
+                    .as_std_path()
+                    .exists(),
+                "RP-19: `{}` published `.lexlean/{area}`",
+                arguments.join(" ")
+            );
+        }
+    };
+    let project = support::P::copy_example("production");
+    refused(&project, &["--diagnostic-format", "json", "verify"]);
+    let digests: std::collections::BTreeMap<String, lexlean::Sha256Digest> = production::targets()
+        .expect("targets")
+        .into_iter()
+        .map(|descriptor| (descriptor.id, descriptor.digest))
+        .collect();
+    let request = ProductionRequest {
+        spec: REQUEST_SPEC.to_owned(),
+        roots: vec![RootRequest {
+            root: "Production.Main.checkedSum".to_owned(),
+            package: PackageName {
+                name: "pkg".to_owned(),
+                version: "1.0.0".to_owned(),
+            },
+            targets: vec![TargetRef {
+                id: "rust-std".to_owned(),
+                digest: digests["rust-std"],
+            }],
+        }],
+        expect: Expectation::default(),
+        evidence: Vec::new(),
+    };
+    let project = support::P::copy_example("production");
+    std::fs::write(
+        project.root.join("request.json").as_std_path(),
+        serde_json::to_vec(&request).expect("the request serializes"),
+    )
+    .expect("write the request");
+    refused(
+        &project,
+        &[
+            "--diagnostic-format",
+            "json",
+            "production",
+            "build",
+            "--request",
+            "request.json",
+        ],
+    );
 }
 
 /// RP-16: every toolchain the Dockerfile installs is the pinned one. A Rust
