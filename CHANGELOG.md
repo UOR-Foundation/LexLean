@@ -17,6 +17,12 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The declarations of artifacts, contracts, realizations, evidence, and models as
+  language-1.2 source, seventh slice of the typed IR (SPEC.md §17.23, §17.12, `BS-71`,
+  #269; no new diagnostic code, no change to the language-1.2 identity).
+  `modelDeclarationText` of `SemanticModels` returns the canonical JSON of the serde
+  form of those declarations; the module and its case's encoders and examples are
+  generated from one description of the oracle's types. The register is 500 IDs.
 - The ordinary declarations of the semantic module language and its modules as
   language-1.2 source, sixth slice of the typed IR (SPEC.md §17.23, §17.11, §17.12,
   `BS-70`, #269; no new diagnostic code, no change to the language-1.2 identity).

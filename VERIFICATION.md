@@ -11916,6 +11916,39 @@ check` and `lexlean build` of the `bootstrap/` project pass, with each of the tw
 roots eligible for `rust-std` with exactly its declared effects, and `lexlean fmt
 --check` passes.
 
+### the model declarations are source (BS-71)
+
+`BS-71` holds the production root `modelDeclarationText` of
+`LexLeanBoot.SemanticModels` (`bootstrap/src/SemanticModels.lex.tex`) to the
+canonical JSON of the serde form of the artifact, contract, realization,
+evidence, and model variants of `lexlean::ir::semantic::SemanticDeclaration`, as
+`DocumentModule::to_json` embeds a semantic module. The module declares the
+twenty types those declarations hold (artifact roles and schemas, tensor
+elements, binders, states, predicates, validators, uses, rules, the statistical
+scheme and neural architecture, layers, decoders, junctions, composite forms,
+realization descriptors, and evidence claims) and the declarations themselves,
+each as one inductive with one writer, over the terms of `SemanticTerms`
+(`BS-69`) and the types of `SemanticTypes` (`BS-68`). No such type refers to
+itself, so a list of them is a list. An object is written from its entries, an
+optional member entering exactly where the oracle's serde attributes keep it.
+The module, the case's encoders, and the case's example builders are generated
+from one description of the oracle's types, so that a type the description and
+the oracle disagree on fails to encode or to compare. The root admits exactly
+`allocation`, `overflow`, and `recursion`. The oracle is the existing public code
+of `semantic.rs` and its serde derivations; no Rust outside the case changes.
+
+The case holds the root to the oracle on 150 examples whose step's digits choose
+every variant at every depth, each optional member present and absent and each
+list empty and not; on every distinct such declaration of every committed
+semantic module that links; and on seeded examples. Each planted defect
+misspells one serialized kind or closed name, and the first example that holds
+it detects it; the case asserts that the site of each plant occurs once. The
+row's statement carries no counts.
+
+Measured with the compiler binary of this tree's compiler sources: `lexlean
+check` of the `bootstrap/` project passes, with the root eligible for `rust-std`
+with exactly its declared effects, and `lexlean fmt --check` passes.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

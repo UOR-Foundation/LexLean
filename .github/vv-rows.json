@@ -412,5 +412,14 @@
     "width": "",
     "memory_kib": "",
     "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-semantic-models",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-semantic-models",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
   }
 ]
