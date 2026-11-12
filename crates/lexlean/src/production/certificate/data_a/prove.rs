@@ -726,6 +726,7 @@ impl<'a> Writer<'_, 'a> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
+                    | SemanticType::Array { .. }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -1080,6 +1081,7 @@ impl<'a> Writer<'_, 'a> {
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
+            | SemanticType::Array { .. }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8

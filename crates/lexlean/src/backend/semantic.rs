@@ -407,6 +407,8 @@ enum Spelling {
     },
     /// A function of `LexLeanCollections`.
     Collection(&'static str),
+    /// A function of `LexLeanArrays` (§17.12, *Arrays*).
+    Array(&'static str),
 }
 
 /// The spelling of every primitive, named one by one so that a primitive
@@ -556,6 +558,9 @@ fn spelling(operation: SemanticPrimitive) -> Spelling {
         SemanticPrimitive::GraphReachable => Spelling::Collection("graphReachable"),
         SemanticPrimitive::GraphTopological => Spelling::Collection("graphTopological"),
         SemanticPrimitive::LessThan => Spelling::Collection("lessThan"),
+        SemanticPrimitive::ArrayFromList => Spelling::Array("fromList"),
+        SemanticPrimitive::ArrayToList => Spelling::Array("toList"),
+        SemanticPrimitive::ArraySet => Spelling::Array("set"),
     }
 }
 
@@ -654,6 +659,14 @@ impl Render<'_> {
             // §17.12 (reasoning): likewise for a reasoning failure.
             SemanticType::ReasoningFailure if self.document => "ReasoningFailure".to_owned(),
             SemanticType::ReasoningFailure => "(Prod Bool Bool)".to_owned(),
+            // §17.12 (arrays): Lean's own array, whose value is the list of
+            // its elements and whose runtime indexes in constant time. The
+            // document names it plainly; Lean names it from the root, so that
+            // a document type called `Array` stays legal and captures nothing.
+            SemanticType::Array { element } if self.document => {
+                format!("Array ({})", self.ty(element))
+            }
+            SemanticType::Array { element } => format!("_root_.Array ({})", self.ty(element)),
         }
     }
 
@@ -919,6 +932,12 @@ impl Render<'_> {
             Spelling::Runtime { name, .. } => (format!("LexLeanRuntime.{name}"), self.ty(result)),
             Spelling::Widening(name) => (name.to_owned(), self.ty(result)),
             Spelling::Collection(name) => (format!("LexLeanCollections.{name}"), self.ty(result)),
+            // Rooted, so that no declaration of the document can capture the
+            // namespace and no document name had to be reserved for it.
+            Spelling::Array(name) if self.document => {
+                (format!("LexLeanArrays.{name}"), self.ty(result))
+            }
+            Spelling::Array(name) => (format!("_root_.LexLeanArrays.{name}"), self.ty(result)),
         };
         let mut out = format!("({head}");
         for argument in arguments {
@@ -1463,8 +1482,16 @@ impl Render<'_> {
             } => {
                 // Linking resolved the law; a law it did not resolve never
                 // reaches the backend.
-                let lean = crate::ir::semantic::laws::law(name)
-                    .map_or_else(|_| identifier(name), |law| law.lean.clone());
+                // A law of a module other than the laws module is named
+                // from the root: its namespace is not a reserved document
+                // name, so only the rooted name is safe from capture.
+                let lean = crate::ir::semantic::laws::law(name).map_or_else(
+                    |_| identifier(name),
+                    |law| match law.module {
+                        Some(_) => format!("_root_.{}", law.lean),
+                        None => law.lean.clone(),
+                    },
+                );
                 let arguments = type_arguments
                     .iter()
                     .map(|argument| format!(" ({})", self.ty(argument)))
@@ -1684,10 +1711,72 @@ fn uses_collections(module: &serde_json::Value) -> bool {
                         .and_then(|operation| {
                             serde_json::from_value::<SemanticPrimitive>(operation.clone()).ok()
                         })
-                        .is_some_and(SemanticPrimitive::language_1_2),
+                        .is_some_and(|operation| operation.language_1_2() && !operation.array()),
                     _ => false,
                 };
                 collection || object.values().any(walk)
+            }
+            serde_json::Value::Null
+            | serde_json::Value::Bool(_)
+            | serde_json::Value::Number(_)
+            | serde_json::Value::String(_) => false,
+        }
+    }
+    walk(module)
+}
+
+/// The runtime modules that state the laws a module's `law` proofs apply
+/// (§17.12, *Fold laws*): the laws module, unless the law's registry row names
+/// another. A law linking did not resolve never reaches the backend.
+fn law_modules(module: &serde_json::Value) -> std::collections::BTreeSet<String> {
+    fn walk(value: &serde_json::Value, found: &mut std::collections::BTreeSet<String>) {
+        match value {
+            serde_json::Value::Array(items) => items.iter().for_each(|item| walk(item, found)),
+            serde_json::Value::Object(object) => {
+                if object.get("kind").and_then(serde_json::Value::as_str) == Some("law") {
+                    let declared = object
+                        .get("name")
+                        .and_then(serde_json::Value::as_str)
+                        .and_then(|name| crate::ir::semantic::laws::law(name).ok())
+                        .and_then(|law| law.module.clone());
+                    found.insert(
+                        declared.unwrap_or_else(|| crate::backend::runtime::LAWS.to_owned()),
+                    );
+                }
+                object.values().for_each(|inner| walk(inner, found));
+            }
+            serde_json::Value::Null
+            | serde_json::Value::Bool(_)
+            | serde_json::Value::Number(_)
+            | serde_json::Value::String(_) => {}
+        }
+    }
+    let mut found = std::collections::BTreeSet::new();
+    walk(module, &mut found);
+    found
+}
+
+/// Whether a module needs the arrays runtime (§17.12, *Arrays*): it writes
+/// the array type or applies an array primitive. A module that only measures
+/// or indexes an array another module made names no array construct, and
+/// reaches the instances through that module's public import.
+fn uses_arrays(module: &serde_json::Value) -> bool {
+    fn walk(value: &serde_json::Value) -> bool {
+        match value {
+            serde_json::Value::Array(items) => items.iter().any(walk),
+            serde_json::Value::Object(object) => {
+                let kind = object.get("kind").and_then(serde_json::Value::as_str);
+                let array = match kind {
+                    Some("array") => true,
+                    Some("primitive") => object
+                        .get("operation")
+                        .and_then(|operation| {
+                            serde_json::from_value::<SemanticPrimitive>(operation.clone()).ok()
+                        })
+                        .is_some_and(SemanticPrimitive::array),
+                    _ => false,
+                };
+                array || object.values().any(walk)
             }
             serde_json::Value::Null
             | serde_json::Value::Bool(_)
@@ -2052,17 +2141,36 @@ pub fn render_lean(
     });
     // §17.12 (fold laws): `linear_arithmetic` rewrites with the laws
     // module and `law` applies it, so a module with either proof uses it.
+    // A `law` proof imports the module that states its law: the laws module
+    // for a fold law, and the module its registry row names otherwise.
+    let law_modules = law_modules(
+        &serde_json::to_value((&lowered, module.elaboration.all_theorems()))
+            .expect("elaborated declarations serialize"),
+    );
     let laws = elaborated.contains("\"kind\":\"linear_arithmetic\"")
-        || elaborated.contains("\"kind\":\"law\"");
+        || law_modules.contains(crate::backend::runtime::LAWS);
+    // §17.12 (arrays): a module that writes the array type or applies an
+    // array primitive uses the arrays module, which also holds the instances
+    // `length` and `index` resolve on an array.
+    let arrays = law_modules.contains(crate::backend::runtime::ARRAYS)
+        || uses_arrays(
+            &serde_json::to_value((
+                &lowered,
+                module.elaboration.all_checks(),
+                module.elaboration.all_theorems(),
+            ))
+            .expect("elaborated declarations serialize"),
+        );
     let mut text = String::from("module\npublic import Init\n");
     if language_1_2 {
-        use crate::backend::runtime::{COLLECTIONS, LAWS, MODELS, PORTABLE, REASONING};
+        use crate::backend::runtime::{ARRAYS, COLLECTIONS, LAWS, MODELS, PORTABLE, REASONING};
         for (used, runtime_module) in [
-            (runtime, PORTABLE),
+            (runtime || arrays, PORTABLE),
             (collections, COLLECTIONS),
             (models, MODELS),
             (reasoning, REASONING),
             (laws, LAWS),
+            (arrays, ARRAYS),
         ] {
             if used {
                 text.push_str(&format!("public import {runtime_module}\n"));

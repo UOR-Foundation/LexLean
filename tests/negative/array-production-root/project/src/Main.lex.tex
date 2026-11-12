@@ -1,0 +1,14 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: size,
+  parameters: [values : array{element: Int8}],
+  result: Nat,
+  body: (prim length values : Nat),
+  executable: true,
+  production: {effects: [], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

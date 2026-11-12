@@ -34,6 +34,7 @@ fn function_parts(ty: &SemanticType) -> Option<(Vec<SemanticType>, SemanticType)
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { .. }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8

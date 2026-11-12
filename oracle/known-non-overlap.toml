@@ -12,7 +12,7 @@
 # version disagree.
 
 spec = "lexlean/oracle-overlap/1"
-version = 4
+version = 5
 
 [[construct]]
 key = "type.type"
@@ -57,6 +57,12 @@ probe = "Reasoning.Main.gradeLevel"
 refusal = "unresolved-external-call"
 scope = "closure"
 reason = "Only reasoner closures realize it, and the oracle refuses the reasoners as unresolved external calls: they iterate with definitions of the runtime module a generated module imports (§17.12), which the oracle's exporter does not follow; the probe is the smallest reasoner root of examples/reasoning, whose closure holds it among others."
+
+[[construct]]
+key = "type.array"
+kind = "not-runtime"
+disposition = "formal-only"
+reason = "Formal only: LexLean refuses a root whose closure reaches it (registry disposition formal-only: an array is realized by the generated Lean alone, and no production target has a realization of it), and the oracle is given no root that holds one, so neither compiler realizes it."
 
 [[construct]]
 key = "term.eq"
@@ -347,6 +353,24 @@ probe = "Models.Main.classify"
 refusal = "escaping-local-function"
 scope = "closure"
 reason = "Realized only by the model elaborations of the neural classifiers, whose closures the oracle refuses (an escaping local function in the model's layer pipeline); the probe is a root of examples/models whose closure holds it among others."
+
+[[construct]]
+key = "primitive.array_from_list"
+kind = "not-runtime"
+disposition = "formal-only"
+reason = "Formal only: LexLean refuses a root whose closure reaches it (registry disposition formal-only: an array is realized by the generated Lean alone, and no production target has a realization of it), and the oracle is given no root that holds one, so neither compiler realizes it."
+
+[[construct]]
+key = "primitive.array_to_list"
+kind = "not-runtime"
+disposition = "formal-only"
+reason = "Formal only: LexLean refuses a root whose closure reaches it (registry disposition formal-only: an array is realized by the generated Lean alone, and no production target has a realization of it), and the oracle is given no root that holds one, so neither compiler realizes it."
+
+[[construct]]
+key = "primitive.array_set"
+kind = "not-runtime"
+disposition = "formal-only"
+reason = "Formal only: LexLean refuses a root whose closure reaches it (registry disposition formal-only: an array is realized by the generated Lean alone, and no production target has a realization of it), and the oracle is given no root that holds one, so neither compiler realizes it."
 
 [[construct]]
 key = "declaration.inductive.recursive"

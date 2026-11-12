@@ -7,6 +7,7 @@ use sha2::Digest;
 
 use crate::support::{self, P};
 
+mod arrays;
 mod boolean;
 mod bytes;
 mod declaration_ids;
@@ -2700,6 +2701,8 @@ pub(crate) fn run(id: &str) {
         "SM-37" => nested::run(),
         // §21.9: declaration IDs and statement IDs.
         "SM-38" => declaration_ids::run(),
+        // §17.12: arrays of fixed-width integers.
+        "SM-39" => arrays::run(),
         // §17.10: a theorem proved by a split on the value of a document
         // term.
         "SM-35" => {

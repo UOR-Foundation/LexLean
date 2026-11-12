@@ -761,6 +761,7 @@ impl<'a> Writer<'_, 'a> {
                 | SemanticType::Nat
                 | SemanticType::Bool
                 | SemanticType::Prop
+                | SemanticType::Array { .. }
                 | SemanticType::Unit
                 | SemanticType::Int
                 | SemanticType::Int8
@@ -792,6 +793,13 @@ impl<'a> Writer<'_, 'a> {
             }
         };
         let (name, leading) = match operation {
+            SemanticPrimitive::ArrayFromList
+            | SemanticPrimitive::ArrayToList
+            | SemanticPrimitive::ArraySet => {
+                return Err(format!(
+                    "{operation:?} is formal-only and has no certificate rule"
+                ));
+            }
             SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
                 return Err(format!(
                     "{operation:?} is certified only through its elaboration"

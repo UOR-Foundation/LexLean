@@ -1,0 +1,358 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{arrays.titles@1.0.0}
+\title{Arrays of machine integers}
+\begin{semanticmodule}
+definition{
+  name: widen,
+  parameters: [value : Int8],
+  result: Int,
+  body: (prim to_int value : Int),
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: plus,
+  parameters: [left : Int, right : Int],
+  result: Int,
+  body: (prim subtract left (prim negate right : Int) : Int)
+}
+
+definition{
+  name: dotList,
+  parameters: [left : (List Int8), right : (List Int8)],
+  result: Int,
+  body: (match left
+    | List.nil => (0 : Int)
+    | List.cons x xs => (match right
+      | List.nil => (0 : Int)
+      | List.cons y ys => (plus (prim multiply (widen x) (widen y) : Int) (dotList xs ys)))),
+  axioms: [Quot.sound, propext],
+  recursive_argument: left
+}
+
+definition{
+  name: dotIndex,
+  parameters: [left : (List Int8), right : (List Int8), position : Nat, fuel : Nat, total : Int],
+  result: Int,
+  body: (match fuel
+    | Nat.zero => total
+    | Nat.succ rest => (match (prim index left position : (Option Int8))
+      | Option.none => total
+      | Option.some x => (match (prim index right position : (Option Int8))
+        | Option.none => total
+        | Option.some y => (dotIndex left right (position + 1) rest (plus total (prim multiply (widen x) (widen y) : Int)))))),
+  axioms: [Quot.sound, propext],
+  recursive_argument: fuel
+}
+
+definition{
+  name: dotLoop,
+  parameters: [
+    left : array{element: Int8},
+    right : array{element: Int8},
+    position : Nat,
+    fuel : Nat,
+    total : Int
+  ],
+  result: Int,
+  body: (match fuel
+    | Nat.zero => total
+    | Nat.succ rest => (match (prim index left position : (Option Int8))
+      | Option.none => total
+      | Option.some x => (match (prim index right position : (Option Int8))
+        | Option.none => total
+        | Option.some y => (dotLoop left right (position + 1) rest (plus total (prim multiply (widen x) (widen y) : Int)))))),
+  axioms: [Quot.sound, propext],
+  recursive_argument: fuel
+}
+
+definition{
+  name: dot,
+  parameters: [left : array{element: Int8}, right : array{element: Int8}],
+  result: Int,
+  body: (dotLoop left right 0 (prim length left : Nat) (0 : Int)),
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: array_index,
+  parameters: [value : array{element: Int8}, offset : Nat],
+  statement: ((prim index value offset : (Option Int8)) = (prim index (prim array_to_list value : (List Int8)) offset : (Option Int8))),
+  proof: law{name: array_index, arguments: [value, offset], type_arguments: [Int8]},
+  axioms: [propext]
+}
+
+theorem{
+  name: array_length,
+  parameters: [value : array{element: Int8}],
+  statement: ((prim length value : Nat) = (prim length (prim array_to_list value : (List Int8)) : Nat)),
+  proof: law{name: array_length, arguments: [value], type_arguments: [Int8]}
+}
+
+theorem{
+  name: loop_reads_list,
+  parameters: [
+    left : array{element: Int8},
+    right : array{element: Int8},
+    position : Nat,
+    fuel : Nat,
+    total : Int
+  ],
+  statement: ((dotLoop left right position fuel total) = (dotIndex (prim array_to_list left : (List Int8)) (prim array_to_list right : (List Int8)) position fuel total)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [dotIndex, dotLoop]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [array_index, dotIndex, dotLoop, hypothesis]},
+        binders: [rest, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [position, total],
+    scrutinee: fuel
+  },
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: index_shift,
+  parameters: [x : Int8, xs : (List Int8), position : Nat],
+  statement: ((prim index (cons x xs) (position + 1) : (Option Int8)) = (prim index xs position : (Option Int8))),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: index_head,
+  parameters: [x : Int8, xs : (List Int8)],
+  statement: ((prim index (cons x xs) 0 : (Option Int8)) = (ctor Option.some [Int8] x)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: index_empty,
+  parameters: [position : Nat],
+  statement: ((prim index (nil Int8) position : (Option Int8)) = (ctor Option.none [Int8])),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: length_empty,
+  parameters: [],
+  statement: ((prim length (nil Int8) : Nat) = 0),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: length_step,
+  parameters: [x : Int8, xs : (List Int8)],
+  statement: ((prim length (cons x xs) : Nat) = ((prim length xs : Nat) + 1)),
+  proof: reflexivity{}
+}
+
+theorem{
+  name: shift,
+  parameters: [
+    x : Int8,
+    y : Int8,
+    xs : (List Int8),
+    ys : (List Int8),
+    position : Nat,
+    fuel : Nat,
+    total : Int
+  ],
+  statement: ((dotIndex (cons x xs) (cons y ys) (position + 1) fuel total) = (dotIndex xs ys position fuel total)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [dotIndex]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [dotIndex, hypothesis, index_shift]},
+        binders: [rest, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [position, total],
+    scrutinee: fuel
+  },
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: plus_assoc,
+  parameters: [a : Int, b : Int, c : Int],
+  statement: ((plus (plus a b) c) = (plus a (plus b c))),
+  proof: linear_arithmetic{definitions: [plus]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: plus_zero,
+  parameters: [a : Int],
+  statement: ((plus a (0 : Int)) = a),
+  proof: linear_arithmetic{definitions: [plus]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: zero_plus,
+  parameters: [a : Int],
+  statement: ((plus (0 : Int) a) = a),
+  proof: linear_arithmetic{definitions: [plus]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: index_sums,
+  parameters: [left : (List Int8), right : (List Int8), total : Int],
+  statement: ((dotIndex left right 0 (prim length left : Nat) total) = (plus total (dotList left right))),
+  proof: induction{
+    branches: [
+      {
+        proof: simplify{definitions: [dotIndex, dotList, length_empty, plus_zero]},
+        binders: [],
+        constructor: nil
+      },
+      {
+        proof: cases{
+          branches: [
+            {
+              proof: simplify{
+                definitions: [dotIndex, dotList, index_empty, index_head, length_step, plus_zero]
+              },
+              binders: [],
+              constructor: nil
+            },
+            {
+              proof: simplify{
+                definitions: [
+                  dotIndex,
+                  dotList,
+                  hypothesis,
+                  index_head,
+                  length_step,
+                  plus_assoc,
+                  shift
+                ]
+              },
+              binders: [y, ys],
+              constructor: cons
+            }
+          ],
+          scrutinee: right
+        },
+        binders: [x, xs, hypothesis],
+        constructor: cons
+      }
+    ],
+    generalizing: [right, total],
+    scrutinee: left
+  },
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: dot_equals_list,
+  parameters: [left : array{element: Int8}, right : array{element: Int8}],
+  statement: ((dot left right) = (dotList (prim array_to_list left : (List Int8)) (prim array_to_list right : (List Int8)))),
+  proof: simplify{definitions: [array_length, dot, index_sums, loop_reads_list, zero_plus]},
+  axioms: [Quot.sound, propext]
+}
+
+theorem{
+  name: dot_sample,
+  parameters: [],
+  statement: ((dot (prim array_from_list (cons (2 : Int8) (cons (-3 : Int8) (nil Int8))) : array{
+    element: Int8
+  }) (prim array_from_list (cons (4 : Int8) (cons (5 : Int8) (nil Int8))) : array{
+    element: Int8
+  })) = (-7 : Int)),
+  proof: decide{},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: at,
+  parameters: [values : array{element: Int8}, position : Nat],
+  result: Int8,
+  body: (match (prim index values position : (Option Int8))
+    | Option.none => (0 : Int8)
+    | Option.some value => value)
+}
+
+definition{
+  name: rectify,
+  parameters: [value : Int8],
+  result: Int8,
+  body: (if (prim less_than value (0 : Int8) : Bool) then (0 : Int8) else value),
+  axioms: [propext]
+}
+
+definition{
+  name: rectifyLoop,
+  parameters: [values : array{element: Int8}, position : Nat, fuel : Nat],
+  result: array{element: Int8},
+  body: (match fuel
+    | Nat.zero => values
+    | Nat.succ rest => (rectifyLoop (prim array_set values position (rectify (at values position)) : array{
+      element: Int8
+    }) (position + 1) rest)),
+  axioms: [propext],
+  recursive_argument: fuel
+}
+
+definition{
+  name: rectifyAll,
+  parameters: [values : array{element: Int8}],
+  result: array{element: Int8},
+  body: (rectifyLoop values 0 (prim length values : Nat)),
+  axioms: [propext]
+}
+
+theorem{
+  name: set_keeps_length,
+  parameters: [values : array{element: Int8}, position : Nat, value : Int8],
+  statement: ((prim length (prim array_set values position value : array{
+    element: Int8
+  }) : Nat) = (prim length values : Nat)),
+  proof: law{name: array_set_length, arguments: [values, position, value], type_arguments: [Int8]},
+  axioms: [propext]
+}
+
+theorem{
+  name: loop_keeps_length,
+  parameters: [values : array{element: Int8}, position : Nat, fuel : Nat],
+  statement: ((prim length (rectifyLoop values position fuel) : Nat) = (prim length values : Nat)),
+  proof: induction{
+    branches: [
+      {proof: simplify{definitions: [rectifyLoop]}, binders: [], constructor: zero},
+      {
+        proof: simplify{definitions: [hypothesis, rectifyLoop, set_keeps_length]},
+        binders: [rest, hypothesis],
+        constructor: succ
+      }
+    ],
+    generalizing: [position, values],
+    scrutinee: fuel
+  },
+  axioms: [propext]
+}
+
+theorem{
+  name: rectify_keeps_length,
+  parameters: [values : array{element: Int8}],
+  statement: ((prim length (rectifyAll values) : Nat) = (prim length values : Nat)),
+  proof: simplify{definitions: [loop_keeps_length, rectifyAll]},
+  axioms: [propext]
+}
+
+theorem{
+  name: rectify_sample,
+  parameters: [],
+  statement: ((prim array_to_list (rectifyAll (prim array_from_list (cons (-3 : Int8) (cons (5 : Int8) (cons (-1 : Int8) (nil Int8)))) : array{
+    element: Int8
+  })) : (List Int8)) = (cons (0 : Int8) (cons (5 : Int8) (cons (0 : Int8) (nil Int8))))),
+  proof: decide{},
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}

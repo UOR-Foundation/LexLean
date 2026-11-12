@@ -17,6 +17,25 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Arrays of fixed-width integers (SPEC.md §17.12, *Arrays*, `SM-39`; no new
+  diagnostic code; changes the language-1.2 identity). Language 1.2 gains the
+  type `array{element: T}` over one fixed-width integer type, lowered to the
+  pinned Lean's `Array`; `length` and `index` apply to it, and the primitives
+  `array_from_list`, `array_to_list`, and `array_set` convert it to and from
+  the list of its elements and replace one element, an offset at or past the
+  length leaving the array as it is. The runtime gains a sixth native module,
+  `LexLeanRuntime.Arrays`: the two instances, the three primitives, and nine
+  laws that relate an array to its list, every row within `propext`
+  (`tests/runtime-library/ARRAYS.md`). A `law` proof now imports the module
+  that states its law, so a module that applies an array law does not import
+  `LexLeanRuntime.Laws`. `examples/arrays` proves, for all arrays, that an
+  int8 dot product computed by index equals its definition on lists, and that
+  a rectification written in place keeps the length. The array type and its
+  primitives are formal-only for production (§17.13): a root that reaches one
+  is `LLT4005`. That the pinned Lean writes a singly referenced array in place
+  is cited (`LEAN-ARRAY-4-32-1`), not established here. The design and the
+  decisions left to the owners are in `docs/proposals/verified-arrays.md`.
+  The register is 494 IDs.
 - A one-pass writer for the counts of the bootstrap count cases, #92.
   Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
   `BS-15` records every count it checks in `target/count-report/` instead of

@@ -123,6 +123,28 @@ retrieval_date = "2026-10-02"
 supersession_policy = "explicit-lock-update-only"
 
 [[authority]]
+id = "LEAN-ARRAY-4-32-1"
+name = "Lean 4.32.1 runtime representation of Array"
+citation = "https://github.com/leanprover/lean4/blob/f054605aea4b840552cca2e725580bffd1e1b704/src/include/lean/lean.h"
+checksum = "none"
+checksum_reason = "The authority is the runtime inside the pinned Lean release; nothing from it is vendored. It is identified by the source commit f054605aea4b840552cca2e725580bffd1e1b704, whose src/include/lean/lean.h defines lean_array_fget, lean_array_fset, and lean_ensure_exclusive_array, and whose src/Init/Prelude.lean and src/Init/Data/Array/Set.lean bind Array.size, Array.set, and Array.setIfInBounds to them."
+statement = "In Lean 4.32.1 an `Array` is stored as a contiguous object whose size and elements are read in constant time (`lean_array_get_size`, `lean_array_fget`), and `Array.set`, through which `Array.setIfInBounds` writes, is implemented by `lean_array_fset`, which writes in place when the array object is referenced once (`lean_is_exclusive`) and copies the array first otherwise."
+realized_by = ["SM-39"]
+issuer = "Lean FRO"
+canonical_identifier = "leanprover/lean4/src/include/lean/lean.h"
+edition = "4.32.1"
+source_role = "normative"
+immutable_url = "https://codeload.github.com/leanprover/lean4/tar.gz/f054605aea4b840552cca2e725580bffd1e1b704"
+revision = "f054605aea4b840552cca2e725580bffd1e1b704"
+acquired_sha256 = "6dec8667fbf57ba480a18a8b0c353b2ee157346b2630b211ccbefeedf20545f8"
+signature = "not-published-or-not-relied-upon"
+media_type = "application/gzip"
+license = "Apache-2.0"
+redistribution = "redistributable"
+retrieval_date = "2026-11-12"
+supersession_policy = "explicit-lock-update-only"
+
+[[authority]]
 id = "UOR-GNAF-1-DRAFT-2"
 name = "UOR Global Non-Adjacent Form (UOR-GNAF) v1, Normative Draft 0.2"
 citation = "https://github.com/afflom/wasm-gemm-gnaf/blob/917306fd2b5a397ab02c5d38918fb8620fcc5ae0/authority/UOR-GNAF-v1-draft.2.md; the issuer publishes no upstream copy, so the citation is the downstream repository that vendors the draft and pins its SHA-256 in its authority manifest"
