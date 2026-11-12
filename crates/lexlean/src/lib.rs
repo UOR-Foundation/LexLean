@@ -109,6 +109,7 @@ pub mod embedded {
 /// The compiler that built this crate, as the build script found it
 /// (SPEC.md §22.11): what `rustc -vV` reported and the address of its
 /// executable and driver library. It is no input of any compiler semantics.
+#[doc(hidden)]
 pub mod build_identity {
     include!(concat!(env!("OUT_DIR"), "/rustc_identity.rs"));
 }
