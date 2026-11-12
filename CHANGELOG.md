@@ -17,6 +17,11 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Decoding a semantic module from its canonical JSON as language-1.2 source, ninth slice
+  of the typed IR (SPEC.md §17.23, §17.12, `BS-73`, #269; no new diagnostic code, no change
+  to the language-1.2 identity). `decodeSemanticModule` of `SemanticDecode` returns what
+  `SemanticModule::parse` decodes, or the decoding rejection it reports, for every committed
+  semantic module and for mutated ones. The register is 502 IDs.
 - The declarations of reasoning and text components, and semantic modules of every
   kind, as language-1.2 source, eighth slice of the typed IR (SPEC.md §17.23, §17.12,
   `BS-72`, #269; no new diagnostic code, no change to the language-1.2 identity).

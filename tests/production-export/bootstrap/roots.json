@@ -671,6 +671,14 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "decode_semantic_module",
+      "root": "LexLeanBoot.SemanticDecode.decodeSemanticModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }
