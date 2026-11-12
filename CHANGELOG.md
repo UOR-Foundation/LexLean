@@ -17,6 +17,12 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The proof and declaration IR in their canonical JSON, and the axiom policy check, as
+  language-1.2 source, second slice of the typed IR (SPEC.md §17.23, §17.4, §17.5,
+  §15.9, `BS-66`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `proofText`, `declarationText`, and `permits` of `IrProof` return what
+  `Proof::to_json`, `Declaration::to_json`, and `AxiomPolicy::permits` return; the
+  JSON roots admit `recursion`. The register is 495 IDs.
 - The linked term IR in its canonical JSON as language-1.2 source, first slice of the
   typed IR (SPEC.md §17.23, §17.3, §17.9, `BS-65`, #269; no new diagnostic code, no
   change to the language-1.2 identity). `termText`, `canonicalKey`, `eqKey`,

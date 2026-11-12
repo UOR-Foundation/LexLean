@@ -25,6 +25,7 @@ use crate::support::{self, P};
 mod cli_output;
 mod diagnostics;
 mod gnaf_validate;
+mod ir_proof;
 mod ir_term;
 mod lexicon_lre;
 mod lexicon_lse;
@@ -2487,6 +2488,7 @@ fn case(id: &str) {
         "BS-33" => project_text::case(),
         "BS-34" => manifest_text::case(),
         "BS-65" => ir_term::case(),
+        "BS-66" => ir_proof::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

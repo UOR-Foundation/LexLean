@@ -535,6 +535,30 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "proof_text",
+      "root": "LexLeanBoot.IrProof.proofText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "declaration_text",
+      "root": "LexLeanBoot.IrProof.declarationText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "permits",
+      "root": "LexLeanBoot.IrProof.permits",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }
