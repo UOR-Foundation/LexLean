@@ -358,6 +358,7 @@ struct ModuleSource {
 /// bounded by `max_scope_depth`, and a configured depth larger than the
 /// stack can host is enforced at the depth the stack does host, so deep
 /// input is `LLS8002` and never a stack overflow.
+#[cfg(not(target_os = "wasi"))]
 pub fn check_project(
     project: &Project,
     selection: &Selection,
@@ -385,6 +386,20 @@ pub fn check_project(
             )])),
         }
     })
+}
+
+/// Run the complete check pipeline for a selection on the caller's stack:
+/// WASI has no threads. The executable is linked with the stack the plan is
+/// sized on there (`config::WASI_STACK_BYTES`), so the depth it hosts is
+/// enforced as on any other host and deeper input is `LLS8002` (§8.3, §25.5).
+#[cfg(target_os = "wasi")]
+pub fn check_project(
+    project: &Project,
+    selection: &Selection,
+    lock: &Lock,
+    packages: Vec<LexiconPackage>,
+) -> Result<CheckedProject, LexLeanError> {
+    check_project_inline(project, selection, lock, packages)
 }
 
 /// Read every configured model artifact (§10.1): a confined regular file of

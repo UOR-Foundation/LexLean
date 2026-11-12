@@ -179,3 +179,12 @@ Feature: cli-api
     Given the language-1.1 data-form example with a path lexicon package, the language-1.2 example, and a language-1.1 project whose module the notation cannot express
     When the example is migrated with --check and then without it, and each of the others is migrated
     Then --check writes nothing, the migration leaves a language-1.2 project that checks, locks, and formats canonically with the same modules, and the refused projects are refused with LLC0103 and LLP2003 and left unchanged
+
+  @CL-25 @build
+  Scenario: The lexlean executable builds for wasm32-wasip1 with the pinned toolchain and, run by a WASI host, gives the native executable's exit code and JSON output for check on every single-step check fixture and every example; there a module with two names of one file is refused with LLC0104, nesting beyond the depth its linked stack hosts is refused with LLS8002, and a command that changes the project is refused with LLV7010 and leaves the project unchanged.
+    Given the lexlean executable built for wasm32-wasip1 from this tree and Node's node:wasi over the real file system
+    When check runs natively and under the WASI host on every single-step check fixture and every example, on a project whose module has a second name by a hard link, and on a project nested just within and just beyond the depth the WASI stack hosts, and fmt runs under the WASI host
+    Then every exit code and JSON output is the native one
+    And the hard-linked module is refused with LLC0104 on both hosts
+    And fmt is refused with LLV7010 and leaves every file of the project as it was
+    And nesting within the hosted depth checks as it does natively, and nesting beyond it is LLS8002 on WASI

@@ -904,6 +904,42 @@ Planted: `mentions_family_group` ignored the arguments again (the comparison
 test ir::semantic::family_order_tests::a_group_instantiated_at_its_own_type_has_two_motives ... FAILED
 ```
 
+### check on WASI can trap, merge two names of a file, or differ (CL-25)
+
+`CL-25` holds `lexlean check` on `wasm32-wasip1` (§8.3). `conformance_cl_25`
+builds the executable for the target in the release profile, runs it under
+Node's `node:wasi` over the real file system, and compares it with
+`lexlean::cli::run`. It covers every single-step `check` fixture with no
+toolchain, overlay or environment of its own, and every example: 277 projects
+on the first run, each with the same exit code and byte-identical stdout and
+stderr. A hard-linked module is `LLC0104` on both builds. `fmt` on WASI exits 3
+with `LLV7010` and leaves the project as it was. With `max_scope_depth =
+100000000`, nesting 1,000 is identical on both, and nesting 1,040 is `LLS8002`
+(exit 4) on WASI, where the linked 80 MiB stack hosts 1,024. The case ran in
+435 s, the module build excluded, on a shared Linux x86-64 host.
+
+Planted defect: `build.rs` without the line that links the executable with
+`WASI_STACK_BYTES`, so it gets Rust's default 1 MiB stack. `cargo test -p
+repo-conformance --all-features --test conformance conformance_cl_25` still
+agreed on all 277 projects, then failed in 393 s at the depth vector:
+
+```text
+assertion `left == right` failed: CL-25: nesting 1000 on WASI
+  left: (1, "", "... RuntimeError: memory access out of bounds
+    at ...lexlean7grammar4mathNtB2_7MathAst5atoms ...
+```
+
+With the line restored, the case passes. Before the stack was linked, the
+same depth was measured directly: on WASI, nesting 512 checked and nesting 1,024
+trapped when the project allowed it, while natively both checked. This is the
+trap the depth vector exists to catch.
+
+Node 22 collects garbage inside its fast call of WASI `path_filestat_get`
+and dies with SIGSEGV on a language-1.2 project. The backtrace runs from
+`uvwasi_path_filestat_get` through `MallocImpl` to `Heap::CollectGarbage`. The
+case runs Node with `--no-turbo-fast-api-calls`, under which every project
+checks.
+
 ### a declaration ID can miss a reference or keep a proof (SM-38)
 
 `SM-38` holds the declaration and statement IDs of §21.9. `conformance_sm_38`

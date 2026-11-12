@@ -28,7 +28,15 @@ const SEMANTIC_DIRS: [(&str, &str); 4] = [
     ("tests/golden/canonical-json", "tests/golden/canonical-json"),
 ];
 
+include!("src/wasi_stack.rs");
+
 fn main() {
+    // WASI fixes the one stack when the executable is linked; the depth the
+    // check pipeline accepts there is planned on exactly this stack (§8.3).
+    println!("cargo:rerun-if-changed=src/wasi_stack.rs");
+    if env::var("CARGO_CFG_TARGET_OS").as_deref() == Ok("wasi") {
+        println!("cargo:rustc-link-arg-bins=-zstack-size={WASI_STACK_BYTES}");
+    }
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("cargo sets this"));
 
     let mut files: Vec<(String, PathBuf)> = Vec::new();

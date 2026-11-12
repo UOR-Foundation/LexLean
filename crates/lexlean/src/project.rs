@@ -81,6 +81,27 @@ fn security(message: impl Into<String>) -> Diagnostic {
     Diagnostic::new(code!("LLS8001"), message)
 }
 
+/// What makes two paths one file (§25.1), compared by equality.
+#[cfg(not(target_os = "wasi"))]
+type FileIdentity = same_file::Handle;
+
+#[cfg(not(target_os = "wasi"))]
+fn file_identity(path: &Utf8Path) -> std::io::Result<FileIdentity> {
+    same_file::Handle::from_path(path.as_std_path())
+}
+
+/// `same-file` has no WASI implementation and refuses every path there, but
+/// WASI reports a device and an inode, which is what `same-file` compares on
+/// unix; so a host that links two names to one file is still refused.
+#[cfg(target_os = "wasi")]
+type FileIdentity = (u64, u64);
+
+#[cfg(target_os = "wasi")]
+fn file_identity(path: &Utf8Path) -> std::io::Result<FileIdentity> {
+    let stat = rustix::fs::stat(path.as_std_path())?;
+    Ok((stat.st_dev, stat.st_ino))
+}
+
 /// A non-UTF-8 path is outside language 1.0 and an environment failure
 /// (§8.3), never a security violation.
 pub fn non_utf8_path(path: &std::path::Path) -> Diagnostic {
@@ -422,7 +443,7 @@ impl Project {
     pub fn all_modules(&self) -> Result<BTreeMap<String, String>, Vec<Diagnostic>> {
         let mut diagnostics = Vec::new();
         let mut modules: BTreeMap<String, String> = BTreeMap::new();
-        let mut identities: Vec<(same_file::Handle, String)> = Vec::new();
+        let mut identities: Vec<(FileIdentity, String)> = Vec::new();
         for root in &self.config.source_roots {
             let absolute_root = match self.confined(root, Expect::Creatable) {
                 Ok(absolute) => absolute,
@@ -484,7 +505,7 @@ impl Project {
                     continue;
                 }
                 let relative = self.display(&path);
-                match same_file::Handle::from_path(path.as_std_path()) {
+                match file_identity(&path) {
                     Ok(handle) => {
                         if let Some((_, existing)) = identities
                             .iter()

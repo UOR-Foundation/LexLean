@@ -566,6 +566,7 @@ pub(crate) struct MutationGuard {
 
 /// Acquire the project mutation lock at `<build_root>/.lock` (§21.8). The
 /// build root's components are checked for symlinks first (§25.1).
+#[cfg(not(target_os = "wasi"))]
 fn acquire_lock(project: &Project) -> Result<MutationGuard, LexLeanError> {
     use fs4::fs_std::FileExt;
     let build_root = project
@@ -590,6 +591,17 @@ fn acquire_lock(project: &Project) -> Result<MutationGuard, LexLeanError> {
     file.lock_exclusive()
         .map_err(|io_error| host_failure(format!("{lock_relative}: {io_error}")))?;
     Ok(MutationGuard { _file: file })
+}
+
+/// WASI has no file lock, and a WASI host may share its directories with
+/// other processes, so a command that changes the project is refused there
+/// before it touches anything rather than run without the lock (§8.3, §21.8).
+#[cfg(target_os = "wasi")]
+fn acquire_lock(project: &Project) -> Result<MutationGuard, LexLeanError> {
+    Err(host_failure(format!(
+        "{}/.lock: this host has no file lock, so it runs no command that changes the project",
+        project.config.build_root
+    )))
 }
 
 /// Publish a rendered build atomically at its content-addressed path
