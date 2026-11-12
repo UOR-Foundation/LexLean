@@ -150,7 +150,9 @@ jobs:
       - name: Test the Intel construction and inventory checks
         env:
           PYTHONDONTWRITEBYTECODE: "1"
-        run: python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'
+        run: |
+          python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'
+          python3 -m unittest discover -s .github/scripts -p 'test_host_lanes.py'
       # Stale generated files fail here in minutes, before the expensive
       # roots: every input a committed build oracle records, every lock, and
       # every committed export package must be current (§9.4). No Lean.
@@ -1126,9 +1128,10 @@ jobs:
   # reports which ones it skipped; on Linux x86-64 the same gate makes the
   # toolchain mandatory, so nothing passes vacuously where it matters.
   #
-  # The three hosts below keep their original single invocation. Intel's
-  # conformance execution is partitioned below after one construction; its
-  # final aggregate retains the fourth supported-host status (issue #449).
+  # The two hosts below keep their original single invocation. Windows runs
+  # as lanes below, each building for itself, and Intel's conformance
+  # execution is partitioned below after one construction; each aggregate
+  # retains its supported-host status (issue #449).
   # There is no separate build step here: `cargo test` with the same `--locked
   # --workspace --all-features` builds, in the same profile, the library and the
   # binary of `lexlean` (its integration tests run the binary) before it runs a
@@ -1145,7 +1148,6 @@ jobs:
         include:
           - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
           - { os: macos-15, target: aarch64-apple-darwin }
-          - { os: windows-2022, target: x86_64-pc-windows-msvc }
     runs-on: ${{ matrix.os }}
     # Keep the existing bound; scheduling changes do not extend it.
     timeout-minutes: 240
@@ -1266,3 +1268,72 @@ jobs:
           path: ${{ runner.temp }}/intel-evidence
           if-no-files-found: error
           retention-days: 14
+
+  # Windows x86-64 as lanes of one run (§8.3): its one `cargo test` took 106
+  # to 126 minutes, the longest job of the gate, almost all of it the
+  # conformance harness. Each lane is its own clean checkout and build; the
+  # conformance lanes run the cases of the Intel lanes' partition
+  # (`.github/intel-host-lanes.json`), and `producer` runs every other test
+  # and doctest of the workspace. Each lane records what the host listed and
+  # what ran, and the join requires every lane of this run and commit, lanes
+  # that are disjoint, and an execution equal to the host's whole listing,
+  # before the host's context passes.
+  windows-part:
+    name: Windows tests (${{ matrix.lane }})
+    needs: [plan, honesty]
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [producer, lower, print, validate, moves]
+    runs-on: windows-2022
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: The runner is the host this leg claims
+        shell: bash
+        run: |
+          set -euo pipefail
+          host="$(rustc -vV | sed -n 's/^host: //p')"
+          if [ "$host" != x86_64-pc-windows-msvc ]; then
+            echo "::error::windows-2022 is $host, not x86_64-pc-windows-msvc (SPEC.md §8.3)"
+            exit 1
+          fi
+          echo "$host"
+      - name: Execute this lane and record its inventory
+        shell: bash
+        run: python .github/scripts/host_lanes.py execute --target x86_64-pc-windows-msvc --lane ${{ matrix.lane }} --output "$RUNNER_TEMP/host-lane"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ always() }}
+        with:
+          name: host-x86_64-pc-windows-msvc-${{ matrix.lane }}
+          path: ${{ runner.temp }}/host-lane
+          if-no-files-found: error
+          retention-days: 14
+
+  # The Windows host status: every lane's receipt, joined. It runs even after
+  # a failure, so a missing lane reads as a failure and never as success.
+  windows-join:
+    name: build and non-Lean tests (x86_64-pc-windows-msvc)
+    needs: [plan, windows-part]
+    if: ${{ always() && needs.plan.outputs.full == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: host-x86_64-pc-windows-msvc-*
+          path: ${{ runner.temp }}/host-lanes
+      - name: Verify every lane and the complete Windows inventory
+        run: python3 .github/scripts/host_lanes.py join --target x86_64-pc-windows-msvc --artifacts "$RUNNER_TEMP/host-lanes"
+      - name: All Windows lanes succeeded
+        if: ${{ always() }}
+        shell: bash
+        env:
+          PART_RESULT: ${{ needs.windows-part.result }}
+        run: |
+          set -euo pipefail
+          test "$PART_RESULT" = success

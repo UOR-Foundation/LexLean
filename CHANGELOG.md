@@ -46,6 +46,11 @@ workspace carried at those versions without a tag.
   packages, and uploads the bundle with a custody record (`lexlean/ci-bootstrap-export/1`); a
   leg takes it when a case first needs it, and the harness checks the record against its own
   run and checkout and replays the bundle. No bootstrap part verifies the bootstrap project.
+- CI runs the Windows x86-64 host's tests as five lanes of one run (SPEC.md §8.3): the four
+  conformance lanes of `.github/intel-host-lanes.json` and a `producer` lane with every other test
+  and doctest. A join on `ubuntu-24.04` keeps the context `build and non-Lean tests
+  (x86_64-pc-windows-msvc)` and passes only when the lanes' executed tests equal the host's
+  listing, each once. The single Windows job took 106-126 minutes.
 - Declaration IDs (SPEC.md §21.9, `SM-38`; no new diagnostic code, no change to
   any compiler-semantics ID). A language-1.2 build publishes
   `declarations/<module>.json` (`lexlean/declarations/1`, schema
