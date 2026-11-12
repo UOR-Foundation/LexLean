@@ -17,6 +17,14 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The tables and predicates of the lexicon entry schema as language-1.2 source,
+  the first slice of the lexicon closure (SPEC.md §17.23, §13.1 to §13.6, `BS-50`,
+  #269; no new diagnostic code, no change to the language-1.2 identity).
+  `tokenIndex`, `shapeFacts`, `surfaceSafety`, `isLeanName`, `tomlCommentAt`,
+  and `entryPath` of `LexiconSchema` return what the schema's token tables,
+  `frame_permitted` with the category and frame facts, `surface_safety`,
+  `is_lean_name`, `toml_comment_at`, and `entry_path` return; `surfaceSafety`
+  reads the atoms of `scanSource`. None admits `recursion`.
 - A one-pass writer for the counts of the bootstrap count cases, #92.
   Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
   `BS-15` records every count it checks in `target/count-report/` instead of

@@ -495,6 +495,54 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "entry_path",
+      "root": "LexLeanBoot.LexiconSchema.entryPath",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "is_lean_name",
+      "root": "LexLeanBoot.LexiconSchema.isLeanName",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "shape_facts",
+      "root": "LexLeanBoot.LexiconSchema.shapeFacts",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "surface_safety",
+      "root": "LexLeanBoot.LexiconSchema.surfaceSafety",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "token_index",
+      "root": "LexLeanBoot.LexiconSchema.tokenIndex",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "toml_comment_at",
+      "root": "LexLeanBoot.LexiconSchema.tomlCommentAt",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

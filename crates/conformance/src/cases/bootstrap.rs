@@ -27,6 +27,7 @@ mod diagnostics;
 mod gnaf_validate;
 mod lexicon_lre;
 mod lexicon_lse;
+mod lexicon_schema;
 mod lock_text;
 mod manifest_text;
 mod project_text;
@@ -2574,6 +2575,7 @@ fn case(id: &str) {
         "BS-32" => content_id::case(),
         "BS-33" => project_text::case(),
         "BS-34" => manifest_text::case(),
+        "BS-50" => lexicon_schema::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
