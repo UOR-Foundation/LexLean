@@ -60,11 +60,16 @@ fn constructors(sort: &str) -> &'static Vec<String> {
                 .expect("the inductive's name")
                 .trim()
                 .to_owned();
+            // The constructors after `constructors:`, each named by its
+            // `name:` whether the formatter keeps it on one line or wraps it.
             let names: Vec<String> = block
-                .split("{name: ")
+                .split("constructors:")
+                .nth(1)
+                .expect("the constructors")
+                .split("name: ")
                 .skip(1)
                 .map(|rest| {
-                    rest.split(',')
+                    rest.split([',', '\n'])
                         .next()
                         .expect("a constructor")
                         .trim()
