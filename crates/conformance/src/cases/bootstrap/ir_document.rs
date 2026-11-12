@@ -47,6 +47,9 @@ const ROOTS: [(&str, &[&str]); 3] = [
 const CERTIFICATE_BUDGET: u64 = 3_145_728;
 /// A committed project whose linked IR is longer runs under rustc only.
 const EVALUATOR_BYTES: usize = 262_144;
+/// A committed project whose linked IR is longer is beyond a rendered
+/// package's run: its semantic ID is still asserted to be the recipe.
+const RUSTC_BYTES: usize = 4_194_304;
 /// Directories never searched for committed projects: the negative fixtures
 /// do not link, and UOR Atlas's closed-core modules are beyond a run's input.
 const SKIPPED: &[&str] = &[
@@ -870,7 +873,18 @@ fn runs(vectors: &[Vector], identities: &[Identity], evaluator: bool) -> [Vec<Ru
     }
     for identity in identities {
         let length = identity.project.to_json().to_canonical_string().len();
-        if evaluator && length > EVALUATOR_BYTES {
+        if length
+            > if evaluator {
+                EVALUATOR_BYTES
+            } else {
+                RUSTC_BYTES
+            }
+        {
+            if !evaluator {
+                eprintln!(
+                    "BS-67: a project of {length} bytes of linked IR is beyond a rendered package's run"
+                );
+            }
             continue;
         }
         for module in identity.project.modules.values() {
