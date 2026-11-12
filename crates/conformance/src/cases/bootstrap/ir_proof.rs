@@ -279,7 +279,7 @@ pub(super) fn enc_declaration(declaration: &Declaration) -> Value {
 
 #[derive(Clone)]
 enum Input {
-    Proof(Proof),
+    Proof(Box<Proof>),
     Declaration(Box<Declaration>),
     Permit(AxiomPolicy, Vec<String>),
 }
@@ -392,7 +392,7 @@ fn committed() -> (Vec<Input>, usize, usize) {
                         .to_json(&mut Renumber::default())
                         .to_canonical_string(),
                 ) {
-                    out.push(Input::Proof(inner));
+                    out.push(Input::Proof(Box::new(inner)));
                     proofs += 1;
                 }
             }
@@ -502,7 +502,7 @@ struct Vector {
 fn named() -> Vec<Vector> {
     let mut out = Vec::new();
     let mut add = |label: &'static str, input: Input| out.push(Vector { label, input });
-    let theorem = |proof: Proof| Input::Proof(proof);
+    let theorem = |proof: Proof| Input::Proof(Box::new(proof));
     add(
         "a sequence",
         theorem(Proof::Sequence(vec![
@@ -874,7 +874,7 @@ fn seeded_inputs(count: usize, seed: u64) -> Vec<Input> {
             let policy = drawn_policy(&mut seeded);
             let observed = drawn_names(&mut seeded);
             [
-                Input::Proof(proof),
+                Input::Proof(Box::new(proof)),
                 Input::Declaration(Box::new(declaration)),
                 Input::Permit(policy, observed),
             ]
