@@ -9723,6 +9723,94 @@ Artifacts are written to a same-filesystem staging directory, fsynced where supp
 
 A failed command removes its staging tree and leaves no verified artifact.
 
+### 21.9 Declaration IDs
+
+A language-1.2 build gives every declaration of a semantic module (§17.12) a
+declaration ID, so that a tool can name one definition, structure, or theorem
+by its content, and reuse what was established about it, without re-deriving
+a key of its own. The semantic ID (§21.4) names the whole project and changes
+with any declaration; a declaration ID changes only with what the declaration
+depends on.
+
+The *references* of a declaration are the member references in its canonical
+JSON, an object whose keys are exactly `name`, or `module` and `name`, that
+name a declaration of a semantic module of the linked project, or a member the
+compiler generates for one, such as the constructor `Shape.empty` of `Shape`
+or a field of a structure: a generated member `Owner.member` is a reference to
+its owner, whose declaration it takes its meaning from. A reference
+into the declaration's own module is written without `module` before it is
+hashed, so a declaration ID does not depend on the name of the module that
+holds it. A reference that names no declaration of the linked project, such as
+one into the standard library the compiler embeds, is hashed as written: its
+meaning is fixed by the compiler-semantics ID.
+
+The declarations of the project form a graph by reference. Its strongly
+connected components are the *groups*: a declaration in no cycle is a group of
+its own, and declarations that reference one another, such as a mutual group,
+share one. Groups are hashed so that every group a group references is hashed
+first:
+
+```text
+group_digest(G) = SHA256(
+  "lexlean-declaration-group-v1 "
+  || frame("compiler-semantics", compiler_semantics_digest_bytes)
+  || frame("language", "1.2")
+  || frame("toolchain", "leanprover/lean4:v4.32.1")
+  || for each member of G in (module, name) order:
+       frame("declaration", canonical_declaration_json)
+  || for each reference from a member of G to a declaration outside G,
+     once each, in (module, name) order:
+       [frame("reference-module", module_utf8), when it is another module's]
+       || frame("reference", name_utf8)
+       || frame("reference-id", declaration_id_bytes)
+)
+
+declaration_id(D in G) = SHA256(
+  "lexlean-declaration-v1 "
+  || frame("group", group_digest(G))
+  || frame("name", name_utf8)
+)
+```
+
+A theorem also has a statement ID, the identity of what it states without how
+it is proved, so that two proofs of one statement name one obligation:
+
+```text
+statement_id(T) = SHA256(
+  "lexlean-statement-v1 "
+  || frame("compiler-semantics", compiler_semantics_digest_bytes)
+  || frame("language", "1.2")
+  || frame("toolchain", "leanprover/lean4:v4.32.1")
+  || frame("statement", canonical_declaration_json_without_proof)
+  || for each reference of that JSON, other than T itself, in (module, name)
+     order, framed as for a group
+)
+```
+
+The build publishes the IDs of each semantic module at
+`declarations/<full-module-path>.json`, a manifest output of kind
+`declarations` (§21.6):
+
+```json
+{
+  "spec": "lexlean/declarations/1",
+  "module": "Main",
+  "declarations": [
+    {"name": "judge", "kind": "definition", "id": "...", "references": [{"name": "small"}]},
+    {"name": "judge_five", "kind": "theorem", "id": "...", "statement_id": "...", "references": [{"name": "judge"}]}
+  ]
+}
+```
+
+Declarations are listed in source order; each row's `references` are its
+references to project declarations in `(module, name)` order, with `module`
+only for another module's. The schema is
+`api/schemas/declarations.schema.json`. It lies outside `schemas/` and so
+outside the compiler-semantics ID, like the schemas of §24.7, and its SHA-256
+is recorded under its spec in `api/schemas/versions.toml`: the IDs are derived
+from what the compiler computes and change nothing it computes. A language-1.0
+or 1.1 build publishes no declarations file, so their output is unchanged.
+
 ---
 
 ## 22. Verification
@@ -9869,6 +9957,7 @@ modules/*.tex
 maps/*.map.json
 coverage/*.coverage.json
 lexicons/*.closure.json
+declarations/*.json                       # language 1.2 (§21.9)
 oleans/*.olean
 probe/<probe-module>.lean
 probe/process.json
@@ -11613,6 +11702,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-35` | `semantic-ir` | A language-1.2 theorem may be proved by `term_cases`, a split on the value of a document term: the proof names a term and a nonempty, strictly sorted, duplicate-free list of prior document definitions, the term's type is an inductive type of the document, and the backend lowers the proof to a split of the goal on every constructor of that type with the hypothesis that equates the term to the constructor, then `simp only` over the named definitions, that hypothesis, and the reduction of a conditional on a decided condition, with closed propositions decided, which uses exactly the axioms the theorem's policy states; the schema, the linker, the notation, the Lean backend, the canonical LaTeX, and the formatter accept it, and a use in language 1.1, a term whose type is not an inductive type of the document, an empty list, an unsorted or repeated name, a name that is not a prior definition, and a theorem parameter that takes the hypothesis's name are each refused. | §17.10 |
 | `SM-36` | `semantic-ir` | A language-1.2 `cases` proof may split a local of type `Bool` into its two constructors: the proof names the local and gives a branch for `false` and one for `true`, each with no binders, the backend lowers it to `cases` on the local with those two alternatives, the theorem verifies with exactly the axioms its policy states, and the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it; a use in language 1.1, a missing branch, a repeated branch, a branch with a binder, and an `induction` on a Boolean are each refused. | §17.10 |
 | `SM-37` | `semantic-ir` | A language-1.2 theorem may be proved by `nested_induction`, an induction over a nested inductive type of the document, one that holds a member of itself under `List`, `Option`, `Result`, or a product and is in no mutual group: the proof names a parameter of the theorem, states one proposition for each auxiliary member of the type's recursive family in the order the pinned Lean's recursor takes them, and gives a branch for every constructor of the type and of each auxiliary member, each binding the constructor's fields followed by one hypothesis for each field that is a member of the family, in field order; the backend lowers it to `induction` over the recursor the pinned Lean generates for the type, with the propositions as its auxiliary motives and the goals taken in the order of its minor premises, so that a theorem over every value of a type with a constructor that holds a `List` of the type verifies under the pinned Lean 4.32.1 with exactly the axioms `propext` and `Quot.sound`, the set its build observes; the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it, and a use in language 1.1, a local whose type is not a nested inductive of the document or lies in a mutual group, an auxiliary member that is missing, repeated, or out of order, a missing or repeated branch, a branch with the wrong number of binders, a proposition that is not well typed, and an `induction` proof on a nested type are each refused as LLT4001. | §16.9, §17.10, §17.12 |
+| `SM-38` | `semantic-ir` | A language-1.2 build publishes, for every semantic module, a declaration ID for each declaration and a statement ID for each theorem: the declaration ID is a framed SHA-256 of the declaration's canonical JSON and of the declaration IDs of the project declarations it references, with declarations that reference one another hashed as one group, and the statement ID omits the theorem's proof; changing one literal of one definition changes the declaration IDs of exactly that definition and of the declarations that reach it by reference, changing a theorem's proof alone leaves its statement ID unchanged, adding or reordering independent declarations changes no ID, the IDs equal their recomputation from the specified framed inputs, the file validates against `api/schemas/declarations.schema.json`, and a language-1.0 or 1.1 build publishes none. | §21.9 |
 | `DF-01` | `declarations` | A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry. | §15.7, §18.6 |
 | `DF-02` | `declarations` | A valid term-definition sentence emits one nonrecursive explicitly typed Lean def. | §15.7, §18.6 |
 | `DF-03` | `declarations` | A valid predicate-definition sentence emits one nonrecursive Prop-valued Lean def. | §15.7, §18.6 |
@@ -11987,7 +12077,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 492.
+**Total required capability IDs:** 493.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
