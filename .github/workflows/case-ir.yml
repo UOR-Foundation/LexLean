@@ -1,0 +1,85 @@
+# Not for merge: the local gates and the typed-IR slice cases on a runner,
+# because the shared workstation has no disk to build them.
+name: case-ir
+
+on:
+  push:
+    branches: ['case/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: case-ir-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  gates:
+    if: github.repository == 'UOR-Foundation/LexLean'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Install elan and the pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - name: fmt
+        if: always()
+        run: cargo fmt --all -- --check
+      - name: clippy
+        if: always()
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: validate-model
+        if: always()
+        run: cargo xtask validate-model
+      - name: validate-spec-links
+        if: always()
+        run: cargo xtask validate-spec-links
+      - name: RP cases
+        if: always()
+        run: cargo test -p repo-conformance --test conformance -- conformance_rp_
+      - name: bdd meta-gate
+        if: always()
+        run: cargo test -p repo-conformance --test bdd
+      - name: Intel lanes
+        if: always()
+        run: python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'
+
+  case:
+    if: github.repository == 'UOR-Foundation/LexLean'
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [conformance_bs_65, conformance_bs_66]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Install elan and the pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - name: Reserve bounded overflow memory for the proofs
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-case.swap"
+          sudo chmod 600 "$RUNNER_TEMP/lexlean-case.swap"
+          sudo mkswap "$RUNNER_TEMP/lexlean-case.swap"
+          sudo swapon "$RUNNER_TEMP/lexlean-case.swap"
+      - name: Run the case
+        env:
+          LEXLEAN_VERIFY_WIDTH: "2"
+        run: cargo test -p repo-conformance --test conformance -- --exact ${{ matrix.case }} --nocapture
