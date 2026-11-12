@@ -288,6 +288,40 @@
 'LexLeanBoot.GnafValidate.render' does not depend on any axioms
 'LexLeanBoot.GnafValidate.universeSize' does not depend on any axioms
 'LexLeanBoot.GnafValidate.validateRequest' does not depend on any axioms
+'LexLeanBoot.IrTerm.CoreRef' does not depend on any axioms
+'LexLeanBoot.IrTerm.GlobalRef' does not depend on any axioms
+'LexLeanBoot.IrTerm.Renumber' does not depend on any axioms
+'LexLeanBoot.IrTerm.Resolved' does not depend on any axioms
+'LexLeanBoot.IrTerm.Term' does not depend on any axioms
+'LexLeanBoot.IrTerm.appJson' does not depend on any axioms
+'LexLeanBoot.IrTerm.bind' does not depend on any axioms
+'LexLeanBoot.IrTerm.binderJson' does not depend on any axioms
+'LexLeanBoot.IrTerm.canonicalKey' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrTerm.capped' does not depend on any axioms
+'LexLeanBoot.IrTerm.comparing' does not depend on any axioms
+'LexLeanBoot.IrTerm.coreName' does not depend on any axioms
+'LexLeanBoot.IrTerm.eqKey' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrTerm.fresh' does not depend on any axioms
+'LexLeanBoot.IrTerm.globalJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrTerm.globalTermJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrTerm.hashing' does not depend on any axioms
+'LexLeanBoot.IrTerm.implicitJson' does not depend on any axioms
+'LexLeanBoot.IrTerm.jnat' does not depend on any axioms
+'LexLeanBoot.IrTerm.jtext' does not depend on any axioms
+'LexLeanBoot.IrTerm.larger' does not depend on any axioms
+'LexLeanBoot.IrTerm.lit' does not depend on any axioms
+'LexLeanBoot.IrTerm.localJson' does not depend on any axioms
+'LexLeanBoot.IrTerm.lookupLocal' does not depend on any axioms
+'LexLeanBoot.IrTerm.member' does not depend on any axioms
+'LexLeanBoot.IrTerm.modeName' does not depend on any axioms
+'LexLeanBoot.IrTerm.noLevels' does not depend on any axioms
+'LexLeanBoot.IrTerm.nodeCount' does not depend on any axioms
+'LexLeanBoot.IrTerm.resolve' does not depend on any axioms
+'LexLeanBoot.IrTerm.termDepth' does not depend on any axioms
+'LexLeanBoot.IrTerm.termJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrTerm.termText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrTerm.universeJson' does not depend on any axioms
+'LexLeanBoot.IrTerm.withoutSpellings' does not depend on any axioms
 'LexLeanBoot.LexiconLre.Facts' does not depend on any axioms
 'LexLeanBoot.LexiconLre.RWork' does not depend on any axioms
 'LexLeanBoot.LexiconLre.Render' does not depend on any axioms
