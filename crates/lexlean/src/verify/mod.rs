@@ -2378,14 +2378,16 @@ pub fn run_part(
             .cloned()
             .collect();
         let is_b = |module: &str| {
-            rendered_certificates
-                .iter()
-                .any(|certificate| certificate.module == module)
+            rendered_certificates.iter().any(|certificate| {
+                certificate.module == module
+                    || module.starts_with(&format!("{}_Part", certificate.module))
+            })
         };
         let is_e = |module: &str| {
-            composed_certificates
-                .iter()
-                .any(|certificate| certificate.module == module)
+            composed_certificates.iter().any(|certificate| {
+                certificate.module == module
+                    || module.starts_with(&format!("{}_Part", certificate.module))
+            })
         };
         // Where a rejection lies: the declaration of the certificate Lean's
         // first error is in, and the root it certifies.
@@ -2395,18 +2397,26 @@ pub fn run_part(
                 .unwrap_or_default();
             let root = certified
                 .iter()
-                .find(|root| module.starts_with(&root.certificate.module))
+                .find(|root| {
+                    module == root.certificate.module
+                        || module.starts_with(&format!("{}.", root.certificate.module))
+                        || module.starts_with(&format!("{}_Part", root.certificate.module))
+                })
                 .map(|root| format!(" of root `{}`", root.root))
                 .unwrap_or_default();
             format!("{declaration}{root}")
         };
         let reject = |module: &str, output: &str, exit_code: i32, text: &str| {
-            let place = place(module, output, text);
+            let owner = module
+                .strip_prefix("LexLeanPreserve.Parts.")
+                .map(|suffix| format!("LexLeanPreserve.{suffix}"));
+            let owner = owner.as_deref().unwrap_or(module);
+            let place = place(owner, output, text);
             if let Some(exhausted) =
                 resource_death(module, exit_code, output, text.len() as u64, &limits)
             {
                 exhausted
-            } else if is_e(module) {
+            } else if is_e(owner) {
                 Diagnostic::new(
                     code!("LLV7016"),
                     format!(
@@ -2414,7 +2424,7 @@ pub fn run_part(
                         first_error(output)
                     ),
                 )
-            } else if is_b(module) {
+            } else if is_b(owner) {
                 Diagnostic::new(
                     code!("LLV7015"),
                     format!(

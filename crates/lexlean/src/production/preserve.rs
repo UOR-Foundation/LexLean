@@ -1277,6 +1277,88 @@ fn runtime_files<'a>(
         .collect())
 }
 
+/// Keep the audited certificate's commands intact, but split large modules
+/// across Lean children. Controllers otherwise spend their child budget on
+/// hundreds of independent function proofs. Every part is elaborated and
+/// replayed; the original module imports the chain for the unchanged axiom audit.
+fn certificate_files(certificate: &Certificate) -> Result<Vec<StagedFile>, Diagnostic> {
+    certificate_files_with_limit(certificate, 4 * 1024 * 1024)
+}
+
+fn certificate_files_with_limit(
+    certificate: &Certificate,
+    limit: usize,
+) -> Result<Vec<StagedFile>, Diagnostic> {
+    let original = || StagedFile {
+        path: module_path(&certificate.module),
+        module: certificate.module.clone(),
+        text: certificate.text.clone(),
+        source: certificate.source.clone(),
+    };
+    if certificate.data.is_none() || certificate.text.len() <= limit {
+        return Ok(vec![original()]);
+    }
+    // audit_certificate has compared this text with the core renderer. These
+    // boundaries are complete renderer commands, never lines inside JSON data.
+    let marker = "\nrun_cmd Lean.Elab.Command.liftCoreM (LexLeanCore.Runtime.decodeAndAdd #[";
+    let footer = format!("\nend {}\n", certificate.module);
+    let body = certificate
+        .text
+        .strip_suffix(&footer)
+        .ok_or_else(|| internal("a native certificate lacks its rendered namespace terminator"))?;
+    let first = body
+        .find(marker)
+        .ok_or_else(|| internal("a native certificate lacks its rendered core commands"))?;
+    let (header, commands) = body.split_at(first);
+    let decoder = header
+        .find("namespace LexLeanCore.Runtime")
+        .ok_or_else(|| internal("a native certificate lacks its rendered core decoder"))?;
+    let common = &header[..decoder];
+    let starts: Vec<usize> = commands.match_indices(marker).map(|(at, _)| at).collect();
+    let mut groups = Vec::new();
+    let mut start = 0;
+    for (index, at) in starts.iter().copied().enumerate() {
+        let end = starts.get(index + 1).copied().unwrap_or(commands.len());
+        if at > start && end - start > limit {
+            groups.push(&commands[start..at]);
+            start = at;
+        }
+    }
+    groups.push(&commands[start..]);
+    if groups.len() == 1 {
+        return Ok(vec![original()]);
+    }
+    let mut files = Vec::new();
+    let mut previous = None;
+    for (index, group) in groups.into_iter().enumerate() {
+        // leanchecker selects descendants, too. Keep parts outside every
+        // original certificate's prefix, including certificate A's prefix
+        // which contains B and E. Otherwise a wrapper replays all parts again
+        // concurrently after the whole workspace has been compiled.
+        let owner = certificate
+            .module
+            .strip_prefix("LexLeanPreserve.")
+            .ok_or_else(|| internal("a partitioned certificate is outside LexLeanPreserve"))?;
+        let module = format!("LexLeanPreserve.Parts.{owner}_Part{index}");
+        let text = match &previous {
+            None => format!("{header}{group}{footer}"),
+            Some(import) => format!("import {import}\n{common}{group}{footer}"),
+        };
+        files.push(StagedFile {
+            path: module_path(&module),
+            module: module.clone(),
+            text,
+            source: None,
+        });
+        previous = Some(module);
+    }
+    let mut final_file = original();
+    let previous = previous.ok_or_else(|| internal("empty certificate command groups"))?;
+    final_file.text = format!("import {previous}\n");
+    files.push(final_file);
+    Ok(files)
+}
+
 /// Stage the workspace of a project's certificates.
 ///
 /// # Errors
@@ -1339,6 +1421,7 @@ pub fn workspace(
         });
     }
     environment.extend(user.iter().map(|(module, _)| module.clone()));
+    let mut certificate_modules = Vec::new();
     for certificate in certificates {
         audit_certificate(certificate, &environment).map_err(|reason| {
             internal(format!(
@@ -1353,19 +1436,13 @@ pub fn workspace(
             )));
         }
         environment.insert(certificate.module.clone());
-        files.push(StagedFile {
-            path: module_path(&certificate.module),
-            module: certificate.module.clone(),
-            text: certificate.text.clone(),
-            source: certificate.source.clone(),
-        });
+        let parts = certificate_files(certificate)?;
+        certificate_modules.extend(parts.iter().map(|file| file.module.clone()));
+        files.extend(parts);
     }
     Ok(Workspace {
         files,
-        certificates: certificates
-            .iter()
-            .map(|certificate| certificate.module.clone())
-            .collect(),
+        certificates: certificate_modules,
         audit: StagedFile {
             path: module_path(AUDIT_MODULE),
             module: AUDIT_MODULE.to_owned(),
@@ -1618,12 +1695,7 @@ pub fn stage(modules: &[String], certificates: &[Certificate]) -> Result<Stage, 
         // A later certificate may import an earlier one: certificate E
         // imports the certificates A and B it composes.
         imports.insert(certificate.module.clone());
-        staged.push(StagedFile {
-            path: module_path(&certificate.module),
-            module: certificate.module.clone(),
-            text: certificate.text.clone(),
-            source: certificate.source.clone(),
-        });
+        staged.extend(certificate_files(certificate)?);
     }
     Ok(Stage {
         environment,
@@ -1948,6 +2020,64 @@ mod tests {
 
     fn audited(text: &str) -> Result<(), String> {
         audit_tokens(text, &BTreeSet::new())
+    }
+
+    #[test]
+    fn certificate_partition_preserves_every_command_and_replay_dependency() {
+        let module = "LexLeanPreserve.Cidentity.R14.RustStd";
+        let header = format!("import Lean\nnamespace {module}\nnamespace LexLeanCore.Runtime\nend LexLeanCore.Runtime\n");
+        let footer = format!("\nend {module}\n");
+        let commands: Vec<String> = (0..5).map(|index| format!(
+            "\nrun_cmd Lean.Elab.Command.liftCoreM (LexLeanCore.Runtime.decodeAndAdd #[\"{index}\"] \"payload\")\n"
+        )).collect();
+        let certificate = super::Certificate {
+            module: module.to_owned(),
+            text: format!("{header}{}{footer}", commands.concat()),
+            theorem: format!("{module}.root"),
+            denote: String::new(),
+            imports: vec!["Lean".to_owned()],
+            data: Some(crate::ir::core::CoreModule {
+                spec: "lexlean/core-module/2".to_owned(),
+                imports: Vec::new(),
+                nodes: Vec::new(),
+                proof_nodes: Vec::new(),
+                declarations: Vec::new(),
+            }),
+            source: Some("original certificate record".to_owned()),
+        };
+        let files = super::certificate_files_with_limit(&certificate, commands[0].len() * 2)
+            .expect("complete command boundaries");
+        assert_eq!(files.len(), 4);
+        assert!(files[0].text.starts_with(&header));
+        let mut recovered = String::new();
+        for (index, file) in files[..3].iter().enumerate() {
+            assert!(!file.module.starts_with(&format!("{module}.")));
+            assert!(!file.module.starts_with("LexLeanPreserve.Cidentity.R14."));
+            assert!(file.module.starts_with("LexLeanPreserve.Parts."));
+            if index > 0 {
+                assert!(file
+                    .text
+                    .starts_with(&format!("import {}\n", files[index - 1].module)));
+                assert!(!file.text.contains("namespace LexLeanCore.Runtime"));
+            }
+            let start = file.text.find("\nrun_cmd").expect("commands");
+            recovered.push_str(
+                file.text[start..]
+                    .strip_suffix(&footer)
+                    .expect("closed namespace"),
+            );
+            assert!(file.source.is_none());
+        }
+        assert_eq!(recovered, commands.concat());
+        assert_eq!(files[3].module, module);
+        assert_eq!(files[3].text, format!("import {}\n", files[2].module));
+        assert_eq!(files[3].source, certificate.source);
+        let unchanged = super::certificate_files_with_limit(&certificate, usize::MAX).unwrap();
+        assert_eq!(unchanged.len(), 1);
+        assert_eq!(unchanged[0].text, certificate.text);
+        let mut damaged = certificate;
+        damaged.text.truncate(damaged.text.len() - footer.len());
+        assert!(super::certificate_files_with_limit(&damaged, 1).is_err());
     }
 
     /// A user's name spelled like a forbidden keyword is an identifier when

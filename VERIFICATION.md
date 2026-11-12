@@ -39,6 +39,22 @@ Outside `vv`:
 
 ## Falsifiability records
 
+### large certificate child budgets can fail
+
+Rule30's combined autonomous controller failed certificate-B elaboration with
+`LLS8002`: `child_timeout_ms` was 600000 and the observed duration was 600003 ms.
+A retained-artifact diagnostic checked all 745 declarations successfully; their
+declaration checks alone took 676.891 seconds. Partitioning the identical commands
+into 15 groups let every group elaborate and replay within the unchanged
+600-second limit (all observed completion times were below 259 seconds).
+
+The partition regression preserves every command, its order, and the original
+certificate record. Parts live outside every original certificate's module
+prefix: `leanchecker` selects descendants as well as the named module, so nested
+parts would be replayed together again. The final module imports the checked
+chain for the unchanged axiom audit. This diagnostic is not a project
+attestation; full verification still checks and replays every staged part.
+
 ### extraction literal transport can fail
 
 `cargo test -p repo-conformance --lib extraction_literal_paths_survive_normalization`
