@@ -111,7 +111,8 @@ changes lies in the language-1.2 partition of the compiler-semantics ID
 (`language/runtime-1.2/`, the semantic-module and snapshot schemas of version
 2). The repository's writers regenerated, on Linux x86-64 with the pinned Lean
 4.32.1, every language-1.2 lock, golden, fixture expectation, calculus and
-production package, and the verified records of every example but
-`examples/uor-atlas`. That example's verification was stopped by the host's
-out-of-memory guard in `CensusCert11` (its hinted peak is about 12.1 GB), so
-its committed records still carry the previous identity.
+production package, and the verified records of every language-1.2 project
+(`verify-examples --write` with the part `without:uor-atlas`).
+`examples/uor-atlas` is a language-1.0 project: no file of it changes, and its
+committed records name neither this identity nor the language-1.2 runtime, so
+the gate's Atlas shards verify them as they are.
