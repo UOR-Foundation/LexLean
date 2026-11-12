@@ -101,7 +101,7 @@ pub fn inspect(engine: &Engine, request: &InspectionRequest) -> Result<Vec<u8>, 
         )));
     }
     let project = engine.project();
-    let mut limits = project.config.limits.clone();
+    let mut limits = project.config.limits;
     limits.max_child_output_bytes = limits.max_child_output_bytes.min(8388608);
     let toolchain =
         crate::verify::toolchain::preflight(&limits).map_err(LexLeanError::from_diagnostic)?;
