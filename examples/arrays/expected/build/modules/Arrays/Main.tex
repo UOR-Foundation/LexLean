@@ -1,0 +1,158 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{widen}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Int8)}.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(toInt (value) : Int)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{plus}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Int) (right : Int)}.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.subtract (left) ((LexLeanRuntime.negate (right) : Int)) : Int)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{dotList}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int8)) (right : List (Int8))}.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(match left with | List.nil => (0 : Int) | List.cons x xs => (match right with | List.nil => (0 : Int) | List.cons y ys => plus ((LexLeanRuntime.multiply (widen (x)) (widen (y)) : Int)) (dotList (xs) (ys))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{dotIndex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : List (Int8)) (right : List (Int8)) (position : Nat) (fuel : Nat) (total : Int)}.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(match fuel with | Nat.zero => total | Nat.succ rest => (match (LexLeanRuntime.index (left) (position) : Option (Int8)) with | Option.none => total | Option.some x => (match (LexLeanRuntime.index (right) (position) : Option (Int8)) with | Option.none => total | Option.some y => dotIndex (left) (right) ((position + 1)) (rest) (plus (total) ((LexLeanRuntime.multiply (widen (x)) (widen (y)) : Int))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{dotLoop}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Array (Int8)) (right : Array (Int8)) (position : Nat) (fuel : Nat) (total : Int)}.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{(match fuel with | Nat.zero => total | Nat.succ rest => (match (LexLeanRuntime.index (left) (position) : Option (Int8)) with | Option.none => total | Option.some x => (match (LexLeanRuntime.index (right) (position) : Option (Int8)) with | Option.none => total | Option.some y => dotLoop (left) (right) ((position + 1)) (rest) (plus (total) ((LexLeanRuntime.multiply (widen (x)) (widen (y)) : Int))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{dot}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Array (Int8)) (right : Array (Int8))}.\par
+\noindent Type: \texttt{Int}.\par
+\noindent Definition: \texttt{dotLoop (left) (right) (0) ((LexLeanRuntime.length (left) : Nat)) ((0 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{array\_index}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(value : Array (Int8)) (offset : Nat)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.index (value) (offset) : Option (Int8)) = (LexLeanRuntime.index ((LexLeanArrays.toList (value) : List (Int8))) (offset) : Option (Int8)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{array\_length}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(value : Array (Int8))}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.length (value) : Nat) = (LexLeanRuntime.length ((LexLeanArrays.toList (value) : List (Int8))) : Nat))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{loop\_reads\_list}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(left : Array (Int8)) (right : Array (Int8)) (position : Nat) (fuel : Nat) (total : Int)}.\par
+\noindent Statement: \texttt{(dotLoop (left) (right) (position) (fuel) (total) = dotIndex ((LexLeanArrays.toList (left) : List (Int8))) ((LexLeanArrays.toList (right) : List (Int8))) (position) (fuel) (total))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{index\_shift}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Int8) (xs : List (Int8)) (position : Nat)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.index ((x :: xs)) ((position + 1)) : Option (Int8)) = (LexLeanRuntime.index (xs) (position) : Option (Int8)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{index\_head}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Int8) (xs : List (Int8))}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.index ((x :: xs)) (0) : Option (Int8)) = Option.some (x))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{index\_empty}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(position : Nat)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.index (([] : List (Int8))) (position) : Option (Int8)) = Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{length\_empty}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.length (([] : List (Int8))) : Nat) = 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{length\_step}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Int8) (xs : List (Int8))}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.length ((x :: xs)) : Nat) = ((LexLeanRuntime.length (xs) : Nat) + 1))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shift}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(x : Int8) (y : Int8) (xs : List (Int8)) (ys : List (Int8)) (position : Nat) (fuel : Nat) (total : Int)}.\par
+\noindent Statement: \texttt{(dotIndex ((x :: xs)) ((y :: ys)) ((position + 1)) (fuel) (total) = dotIndex (xs) (ys) (position) (fuel) (total))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{plus\_assoc}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(a : Int) (b : Int) (c : Int)}.\par
+\noindent Statement: \texttt{(plus (plus (a) (b)) (c) = plus (a) (plus (b) (c)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{plus\_zero}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(a : Int)}.\par
+\noindent Statement: \texttt{(plus (a) ((0 : Int)) = a)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{zero\_plus}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(a : Int)}.\par
+\noindent Statement: \texttt{(plus ((0 : Int)) (a) = a)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{index\_sums}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(left : List (Int8)) (right : List (Int8)) (total : Int)}.\par
+\noindent Statement: \texttt{(dotIndex (left) (right) (0) ((LexLeanRuntime.length (left) : Nat)) (total) = plus (total) (dotList (left) (right)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{dot\_equals\_list}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(left : Array (Int8)) (right : Array (Int8))}.\par
+\noindent Statement: \texttt{(dot (left) (right) = dotList ((LexLeanArrays.toList (left) : List (Int8))) ((LexLeanArrays.toList (right) : List (Int8))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{dot\_sample}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{(dot ((LexLeanArrays.fromList (((2 : Int8) :: ((-3 : Int8) :: ([] : List (Int8))))) : Array (Int8))) ((LexLeanArrays.fromList (((4 : Int8) :: ((5 : Int8) :: ([] : List (Int8))))) : Array (Int8))) = (-7 : Int))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{at}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(values : Array (Int8)) (position : Nat)}.\par
+\noindent Type: \texttt{Int8}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (values) (position) : Option (Int8)) with | Option.none => (0 : Int8) | Option.some value => value)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rectify}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Int8)}.\par
+\noindent Type: \texttt{Int8}.\par
+\noindent Definition: \texttt{(if (LexLeanCollections.lessThan (value) ((0 : Int8)) : Bool) then (0 : Int8) else value)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{rectifyLoop}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(values : Array (Int8)) (position : Nat) (fuel : Nat)}.\par
+\noindent Type: \texttt{Array (Int8)}.\par
+\noindent Definition: \texttt{(match fuel with | Nat.zero => values | Nat.succ rest => rectifyLoop ((LexLeanArrays.set (values) (position) (rectify (<U+00AB>at<U+00BB> (values) (position))) : Array (Int8))) ((position + 1)) (rest))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{rectifyAll}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(values : Array (Int8))}.\par
+\noindent Type: \texttt{Array (Int8)}.\par
+\noindent Definition: \texttt{rectifyLoop (values) (0) ((LexLeanRuntime.length (values) : Nat))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{set\_keeps\_length}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(values : Array (Int8)) (position : Nat) (value : Int8)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.length ((LexLeanArrays.set (values) (position) (value) : Array (Int8))) : Nat) = (LexLeanRuntime.length (values) : Nat))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{loop\_keeps\_length}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(values : Array (Int8)) (position : Nat) (fuel : Nat)}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.length (rectifyLoop (values) (position) (fuel)) : Nat) = (LexLeanRuntime.length (values) : Nat))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{rectify\_keeps\_length}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(values : Array (Int8))}.\par
+\noindent Statement: \texttt{((LexLeanRuntime.length (rectifyAll (values)) : Nat) = (LexLeanRuntime.length (values) : Nat))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{rectify\_sample}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Statement: \texttt{((LexLeanArrays.toList (rectifyAll ((LexLeanArrays.fromList (((-3 : Int8) :: ((5 : Int8) :: ((-1 : Int8) :: ([] : List (Int8)))))) : Array (Int8)))) : List (Int8)) = ((0 : Int8) :: ((5 : Int8) :: ((0 : Int8) :: ([] : List (Int8))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\end{document}
