@@ -1,0 +1,426 @@
+\begin{lexlean}{LexiconSchema}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Text}
+\importmodule{LexiconLse}
+\importmodule{PrimitiveScan}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Shape,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: permitted, type: Bool},
+    {name: fixedArity, type: (Option Nat)},
+    {name: coreOnly, type: Bool},
+    {name: hasSignature, type: Bool},
+    {name: requiredChannels, type: (List Nat)},
+    {name: needsSome, type: Bool}
+  ]
+}
+
+structure{
+  name: Cm,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: pos, type: Nat}, {name: mode, type: Nat}, {name: found, type: (Option Nat)}]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: indexIn,
+  parameters: [table : (List Bytes), text : Bytes],
+  result: (Option Nat),
+  body: (second (prim list_fold (fun [text] (state : (Nat * (Option Nat))) (row : Bytes) => (match (second state)
+    | Option.some found => state
+    | Option.none => (if (prim equal row text : Bool) then ((first state), (ctor Option.some [Nat] (first state))) else (((first state) + 1), (ctor Option.none [Nat]))))) (0, (ctor Option.none [Nat])) table : (Nat * (Option Nat)))),
+  executable: true
+}
+
+definition{
+  name: natAt,
+  parameters: [table : (List Nat), wanted : Nat],
+  result: Nat,
+  body: (second (prim list_fold (fun [wanted] (state : (Nat * Nat)) (row : Nat) => (if ((first state) =? wanted) then (((first state) + 1), row) else (((first state) + 1), (second state)))) (0, 0) table : (Nat * Nat))),
+  executable: true
+}
+
+definition{
+  name: categories,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "structural") (cons (lit "grammar") (cons (lit "label-word") (cons (lit "type-noun") (cons (lit "term-constant") (cons (lit "function") (cons (lit "prefix-function") (cons (lit "postfix-function") (cons (lit "infix-function") (cons (lit "noun-function") (cons (lit "binary-noun-function") (cons (lit "predicate-constant") (cons (lit "adjective-predicate") (cons (lit "intransitive-predicate") (cons (lit "transitive-predicate") (cons (lit "infix-predicate") (cons (lit "proof-constant") (nil Bytes)))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: frames,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "atom") (cons (lit "call") (cons (lit "prefix") (cons (lit "postfix") (cons (lit "infix") (cons (lit "noun-of") (cons (lit "binary-noun-of") (cons (lit "adjective") (cons (lit "intransitive") (cons (lit "transitive") (nil Bytes))))))))))),
+  executable: true
+}
+
+definition{
+  name: channels,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "text") (cons (lit "math") (cons (lit "both") (nil Bytes)))),
+  executable: true
+}
+
+definition{
+  name: associativities,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "left") (cons (lit "right") (cons (lit "none") (nil Bytes)))),
+  executable: true
+}
+
+definition{
+  name: features,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "singular") (cons (lit "plural") (cons (lit "sentence-case") (cons (lit "lower-case") (cons (lit "article-a") (cons (lit "article-an") (nil Bytes))))))),
+  executable: true
+}
+
+definition{
+  name: tableOf,
+  parameters: [which : Nat],
+  result: (List Bytes),
+  body: (if (which =? 0) then (categories) else (if (which =? 1) then (frames) else (if (which =? 2) then (channels) else (if (which =? 3) then (associativities) else (features))))),
+  executable: true
+}
+
+definition{
+  name: tokenIndex,
+  parameters: [which : Nat, text : Bytes],
+  result: (Option Nat),
+  body: (indexIn (tableOf which) text),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: framesOfCategories,
+  parameters: [],
+  result: (List Nat),
+  body: (cons 0 (cons 0 (cons 0 (cons 0 (cons 0 (cons 1 (cons 2 (cons 3 (cons 4 (cons 5 (cons 6 (cons 0 (cons 7 (cons 8 (cons 9 (cons 4 (cons 0 (nil Nat)))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: channelsOfCategories,
+  parameters: [],
+  result: (List Nat),
+  body: (cons 0 (cons 0 (cons 1 (cons 0 (cons 0 (cons 2 (cons 2 (cons 2 (cons 2 (cons 1 (cons 1 (cons 2 (cons 1 (cons 1 (cons 1 (cons 2 (cons 2 (nil Nat)))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: permittedFrame,
+  parameters: [category : Nat, arity : Nat],
+  result: Nat,
+  body: (if (category =? 16) then (if (arity =? 0) then 0 else 1) else (natAt (framesOfCategories) category)),
+  executable: true
+}
+
+definition{
+  name: fixedArity,
+  parameters: [frame : Nat],
+  result: (Option Nat),
+  body: (if (frame =? 1) then (ctor Option.none [Nat]) else (if (frame =? 0) then (ctor Option.some [Nat] 0) else (if (if (frame =? 4) then true else (if (frame =? 6) then true else (frame =? 9))) then (ctor Option.some [Nat] 2) else (ctor Option.some [Nat] 1)))),
+  executable: true
+}
+
+definition{
+  name: requiredChannels,
+  parameters: [category : Nat],
+  result: (List Nat),
+  body: (let code : Nat := (natAt (channelsOfCategories) category); (if (code =? 1) then (cons 0 (nil Nat)) else (if (code =? 2) then (cons 1 (nil Nat)) else (nil Nat)))),
+  executable: true
+}
+
+definition{
+  name: shapeFacts,
+  parameters: [category : Nat, frame : Nat, arity : Nat],
+  result: Shape,
+  body: (record Shape {permitted := (frame =? (permittedFrame category arity)), fixedArity := (fixedArity frame), coreOnly := (category <? 2), hasSignature := (2 <? category), requiredChannels := (requiredChannels category), needsSome := (if (category =? 3) then true else (category =? 4))}),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: inRange,
+  parameters: [code : Nat, low : Nat, high : Nat],
+  result: Bool,
+  body: (if (code <? low) then false else (code <=? high)),
+  executable: true
+}
+
+definition{
+  name: isMathSafeCode,
+  parameters: [code : Nat],
+  result: Bool,
+  body: ((((((code =? 172) || (code =? 177)) || ((code =? 183) || (code =? 215))) || (((code =? 247) || (if (inRange code 913 937) then (if (code =? 930) then false else true) else false)) || ((inRange code 945 969) || (code =? 8230)))) || ((((inRange code 8242 8244) || (inRange code 8448 8527)) || ((inRange code 8592 8703) || (inRange code 8704 8959))) || (((inRange code 8968 8971) || (inRange code 10176 10223)) || ((inRange code 10624 10751) || (inRange code 10752 11007))))) || (inRange code 119808 120831)),
+  executable: true
+}
+
+definition{
+  name: scalarWidth,
+  parameters: [lead : Nat],
+  result: Nat,
+  body: (if (lead <? 128) then 1 else (if (lead <? 224) then 2 else (if (lead <? 240) then 3 else 4))),
+  executable: true
+}
+
+definition{
+  name: contByte,
+  parameters: [text : Bytes, position : Nat],
+  result: Nat,
+  body: (prim remainder (LexiconLse::byteNum text position) 64 0 : Nat),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scalarCode,
+  parameters: [text : Bytes, position : Nat],
+  result: Nat,
+  body: (let lead : Nat := (LexiconLse::byteNum text position); (let width : Nat := (scalarWidth lead); (if (width =? 1) then lead else (if (width =? 2) then ((prim multiply (prim remainder lead 32 0 : Nat) 64 : Nat) + (contByte text (position + 1))) else (if (width =? 3) then (((prim multiply (prim remainder lead 16 0 : Nat) 4096 : Nat) + (prim multiply (contByte text (position + 1)) 64 : Nat)) + (contByte text (position + 2))) else ((((prim multiply (prim remainder lead 8 0 : Nat) 262144 : Nat) + (prim multiply (contByte text (position + 1)) 4096 : Nat)) + (prim multiply (contByte text (position + 2)) 64 : Nat)) + (contByte text (position + 3)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: mathSafeStep,
+  parameters: [text : Bytes, n : Nat, position : Nat],
+  result: (Option Nat),
+  body: (if (position <? n) then (if (isMathSafeCode (scalarCode text position)) then (ctor Option.some [Nat] (position + (scalarWidth (LexiconLse::byteNum text position)))) else (ctor Option.none [Nat])) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: allMathSafe,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let n : Nat := (prim length text : Nat); (n <=? (first (prim iterate_until (fun [n, text] (position : Nat) => (mathSafeStep text n position)) (n + 1) 0 : (Nat * Bool))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: textSafePunctuation,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit ":") (cons (lit "-") (cons (lit ",") (cons (lit ".") (cons (lit ";") (cons (lit "'") (nil Bytes))))))),
+  executable: true
+}
+
+definition{
+  name: rendererUnsafeAscii,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons 0x5c (cons 0x25 (cons 0x24 (cons 0x23 (cons 0x26 (cons 0x7e (cons 0x5e (cons 0x5f (cons 0x7b (cons 0x7d (cons 0x22 (cons 0x60 (nil Bytes))))))))))))),
+  executable: true
+}
+
+definition{
+  name: mathDelimiters,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "(") (cons (lit ")") (cons (lit "[") (cons (lit "]") (nil Bytes))))),
+  executable: true
+}
+
+definition{
+  name: isIn,
+  parameters: [table : (List Bytes), text : Bytes],
+  result: Bool,
+  body: (match (indexIn table text) | Option.some found => true | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: textOk,
+  parameters: [atom : PrimitiveScan::Atom],
+  result: Bool,
+  body: (match (project atom kind)
+    | PrimitiveScan::AtomClass.Control => false
+    | PrimitiveScan::AtomClass.Word => true
+    | PrimitiveScan::AtomClass.Numeral => false
+    | PrimitiveScan::AtomClass.Delimiter => false
+    | PrimitiveScan::AtomClass.AsciiSymbol => (isIn (textSafePunctuation) (project atom text))
+    | PrimitiveScan::AtomClass.UnicodeSymbol => false
+    | PrimitiveScan::AtomClass.Whitespace => true),
+  executable: true
+}
+
+definition{
+  name: mathOk,
+  parameters: [atom : PrimitiveScan::Atom, place : Nat],
+  result: Bool,
+  body: (match (project atom kind)
+    | PrimitiveScan::AtomClass.Control => false
+    | PrimitiveScan::AtomClass.Word => true
+    | PrimitiveScan::AtomClass.Numeral => (0 <? place)
+    | PrimitiveScan::AtomClass.Delimiter => (isIn (mathDelimiters) (project atom text))
+    | PrimitiveScan::AtomClass.AsciiSymbol => (if (isIn (rendererUnsafeAscii) (project atom text)) then false else true)
+    | PrimitiveScan::AtomClass.UnicodeSymbol => (allMathSafe (project atom text))
+    | PrimitiveScan::AtomClass.Whitespace => true),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: className,
+  parameters: [atom : PrimitiveScan::Atom],
+  result: Bytes,
+  body: (match (project atom kind)
+    | PrimitiveScan::AtomClass.Control => (lit "control")
+    | PrimitiveScan::AtomClass.Word => (lit "word")
+    | PrimitiveScan::AtomClass.Numeral => (lit "numeral")
+    | PrimitiveScan::AtomClass.Delimiter => (lit "delimiter")
+    | PrimitiveScan::AtomClass.AsciiSymbol => (lit "ascii-symbol")
+    | PrimitiveScan::AtomClass.UnicodeSymbol => (lit "unicode-symbol")
+    | PrimitiveScan::AtomClass.Whitespace => (lit "whitespace")),
+  executable: true
+}
+
+definition{
+  name: channelName,
+  parameters: [channel : Nat],
+  result: Bytes,
+  body: (if (channel =? 0) then (lit "text") else (if (channel =? 1) then (lit "math") else (lit "text and math"))),
+  executable: true
+}
+
+definition{
+  name: atomSafe,
+  parameters: [atom : PrimitiveScan::Atom, place : Nat, channel : Nat],
+  result: Bool,
+  body: (if (channel =? 0) then (textOk atom) else (if (channel =? 1) then (mathOk atom place) else (if (textOk atom) then (mathOk atom place) else false))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: unsafeMessage,
+  parameters: [atom : PrimitiveScan::Atom, channel : Nat],
+  result: Bytes,
+  body: (cat (cat (cat (cat (cat (cat (lit "`") (project atom text)) (lit "` (")) (className atom)) (lit ") is not renderer-safe in the ")) (channelName channel)) (lit " channel")),
+  executable: true
+}
+
+definition{
+  name: surfaceSafety,
+  parameters: [atoms : (List PrimitiveScan::Atom), channel : Nat],
+  result: (Option Bytes),
+  body: (second (prim list_fold (fun [channel] (state : (Nat * (Option Bytes))) (atom : PrimitiveScan::Atom) => (match (second state)
+    | Option.some reason => state
+    | Option.none => (if (atomSafe atom (first state) channel) then (((first state) + 1), (ctor Option.none [Bytes])) else (((first state) + 1), (ctor Option.some [Bytes] (unsafeMessage atom channel)))))) (0, (ctor Option.none [Bytes])) atoms : (Nat * (Option Bytes)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: isNameStart,
+  parameters: [value : Nat],
+  result: Bool,
+  body: (if (LexiconLse::isAlphaNum value) then true else (value =? 95)),
+  executable: true
+}
+
+definition{
+  name: isNameRest,
+  parameters: [value : Nat],
+  result: Bool,
+  body: (if (LexiconLse::isAlnumNum value) then true else (value =? 95)),
+  executable: true
+}
+
+definition{
+  name: leanStep,
+  parameters: [text : Bytes, n : Nat, st : (Nat * Bool)],
+  result: (Option (Nat * Bool)),
+  body: (let position : Nat := (first st); (if (position <? n) then (let value : Nat := (LexiconLse::byteNum text position); (if (value =? 46) then (if (second st) then (ctor Option.none [(Nat * Bool)]) else (ctor Option.some [(Nat * Bool)] ((position + 1), true))) else (if (second st) then (if (isNameStart value) then (ctor Option.some [(Nat * Bool)] ((position + 1), false)) else (ctor Option.none [(Nat * Bool)])) else (if (isNameRest value) then (ctor Option.some [(Nat * Bool)] ((position + 1), false)) else (ctor Option.none [(Nat * Bool)]))))) else (ctor Option.none [(Nat * Bool)]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isLeanName,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let n : Nat := (prim length text : Nat); (let final : (Nat * Bool) := (first (prim iterate_until (fun [n, text] (st : (Nat * Bool)) => (leanStep text n st)) (n + 1) (0, true) : ((Nat * Bool) * Bool))); (if ((first final) =? n) then (if (second final) then false else true) else false))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: cmMove,
+  parameters: [st : Cm, step : Nat, mode : Nat],
+  result: (Option Cm),
+  body: (ctor Option.some [Cm] (record Cm {pos := ((project st pos) + step), mode := mode, found := (ctor Option.none [Nat])})),
+  executable: true
+}
+
+definition{
+  name: plainStep,
+  parameters: [text : Bytes, st : Cm],
+  result: (Option Cm),
+  body: (let position : Nat := (project st pos); (if (LexLeanStd.Text::matchAt text 0x222222 position) then (cmMove st 3 3) else (if (LexLeanStd.Text::matchAt text 0x272727 position) then (cmMove st 3 4) else (let value : Nat := (LexiconLse::byteNum text position); (if (value =? 34) then (cmMove st 1 1) else (if (value =? 39) then (cmMove st 1 2) else (if (value =? 35) then (ctor Option.some [Cm] (record Cm {pos := position, mode := 0, found := (ctor Option.some [Nat] position)})) else (cmMove st 1 0)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: commentStep,
+  parameters: [text : Bytes, n : Nat, st : Cm],
+  result: (Option Cm),
+  body: (match (project st found)
+    | Option.some spot => (ctor Option.none [Cm])
+    | Option.none => (let position : Nat := (project st pos); (if (position <? n) then (let mode : Nat := (project st mode); (let value : Nat := (LexiconLse::byteNum text position); (if (mode =? 0) then (plainStep text st) else (if (mode =? 1) then (if (value =? 92) then (cmMove st 2 1) else (if (if (value =? 34) then true else (value =? 10)) then (cmMove st 1 0) else (cmMove st 1 1))) else (if (mode =? 2) then (if (if (value =? 39) then true else (value =? 10)) then (cmMove st 1 0) else (cmMove st 1 2)) else (if (mode =? 3) then (if (LexLeanStd.Text::matchAt text 0x222222 position) then (cmMove st 3 0) else (if (value =? 92) then (cmMove st 2 3) else (cmMove st 1 3))) else (if (LexLeanStd.Text::matchAt text 0x272727 position) then (cmMove st 3 0) else (cmMove st 1 4)))))))) else (ctor Option.none [Cm])))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tomlCommentAt,
+  parameters: [text : Bytes],
+  result: (Option Nat),
+  body: (let n : Nat := (prim length text : Nat); (project (first (prim iterate_until (fun [n, text] (st : Cm) => (commentStep text n st)) (n + 2) (record Cm {pos := 0, mode := 0, found := (ctor Option.none [Nat])}) : (Cm * Bool))) found)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: entryPath,
+  parameters: [localId : Bytes],
+  result: Bytes,
+  body: (cat (cat (lit "entries/") (LexLeanStd.Text::joinWith (LexLeanStd.Text::splitOn localId (46 : UInt8)) (lit "/"))) (lit ".toml")),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

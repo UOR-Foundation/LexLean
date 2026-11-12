@@ -11552,6 +11552,45 @@ axioms the module now declares. The case then stops at the stack-bound step,
 bootstrap member did before its regeneration, which produces the package and
 measures the root's stack bound.
 
+### the tables of the lexicon entry schema are source (BS-50)
+
+`BS-50` holds the six production roots of `LexLeanBoot.LexiconSchema`
+(`bootstrap/src/LexiconSchema.lex.tex`) to `lexicon::entry` and
+`lexicon::package`: `tokenIndex` to the category, frame, channel, and
+associativity parsers and the feature list, as a position in the schema's
+order; `shapeFacts` to `frame_permitted`, `Frame::fixed_arity`, and the
+category's `core_only`, `has_signature`, `required_channels`, and
+`needs_some_canonical`; `surfaceSafety` to `surface_safety` over the atoms the
+primitive scanner returns, which reads each scalar of a Unicode atom from its
+UTF-8 bytes against the allow-list of `is_math_safe_scalar`; `isLeanName` to
+`is_lean_name`; `tomlCommentAt` to `toml_comment_at`; and `entryPath` to
+`entry_path`. No root admits `recursion`: each scan is a loop under
+`iterate_until` or a fold. The oracle is the existing public code of
+`entry.rs` and `package.rs`; no Rust outside the case changes.
+
+The case holds the roots to the oracle on hand-built vectors that reach every
+token of every table and near misses, every category with every frame at
+arities 0 to 3 and at the largest, every class of atom in every channel and
+the edges of every range of the allow-list, Lean names with empty, leading,
+and trailing segments, comments inside and after every TOML string form with
+escapes, and entry IDs of empty segments; on every form surface in its own
+channel and the two others, every Lean name of a denotation or an eliminator,
+and every entry ID of the committed lexicon entries, and on every committed
+TOML file; and on seeded inputs. Each of the 24 planted defects names the one
+vector that catches it, and the case asserts that the site of each plant
+occurs once. The row's statement carries no counts.
+
+The case was first compiled and run on the normative host over `release/v0.4`
+at `26e5e0ace` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_50`). Its corpus is 838 named vectors, 1,064 committed forms,
+725 Lean names, 1,007 entry IDs, 1,055 lexicon files, and 1,683 other TOML
+files, and 300 and 2,000 seeded runs per root. The evaluator agrees with the
+oracle on 8,317 runs, the rendered packages under the pinned rustc on 18,500
+runs, and each of the 24 planted defects is detected by its own vector. The
+case then stops at the stack-bound step, `bootstrap/token_index is no package
+of the committed exports`, as each bootstrap member does before its
+regeneration, which produces the six packages.
+
 ### the lexer of the authoring notation is source (BS-22)
 
 `BS-22` holds the two production roots of `LexLeanBoot.SurfaceLex`
