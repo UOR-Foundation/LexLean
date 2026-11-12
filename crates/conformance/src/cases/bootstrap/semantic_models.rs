@@ -201,14 +201,14 @@ pub(super) fn enc_model_binder(value: &ModelBinder) -> Value {
     adt(
         "ModelBinder",
         "ModelBinderOf",
-        vec![text((&value.name)), enc_type((&value.r#type))],
+        vec![text(&value.name), enc_type(&value.r#type)],
     )
 }
 
 pub(super) fn example_model_binder(step: usize) -> ModelBinder {
     ModelBinder {
         name: format!("s{step}"),
-        r#type: if step % 2 == 0 {
+        r#type: if step.is_multiple_of(2) {
             SemanticType::Nat
         } else {
             SemanticType::Bytes
@@ -221,9 +221,9 @@ pub(super) fn enc_contract_state(value: &ContractState) -> Value {
         "ContractState",
         "ContractStateOf",
         vec![
-            text((&value.name)),
-            text((&value.next)),
-            enc_type((&value.r#type)),
+            text(&value.name),
+            text(&value.next),
+            enc_type(&value.r#type),
         ],
     )
 }
@@ -232,7 +232,7 @@ pub(super) fn example_contract_state(step: usize) -> ContractState {
     ContractState {
         name: format!("s{step}"),
         next: format!("s{step}"),
-        r#type: if step % 2 == 0 {
+        r#type: if step.is_multiple_of(2) {
             SemanticType::Nat
         } else {
             SemanticType::Bytes
@@ -263,10 +263,10 @@ pub(super) fn enc_contract_validator(value: &ContractValidator) -> Value {
         "ContractValidator",
         "ContractValidatorOf",
         vec![
-            enc_contract_predicate((&value.predicate)),
-            enc_member((&value.validator)),
-            enc_member((&value.sound)),
-            option((&value.complete).as_ref().map(|item| enc_member(item))),
+            enc_contract_predicate(&value.predicate),
+            enc_member(&value.validator),
+            enc_member(&value.sound),
+            option(value.complete.as_ref().map(enc_member)),
         ],
     )
 }
@@ -275,15 +275,15 @@ pub(super) fn example_contract_validator(step: usize) -> ContractValidator {
     ContractValidator {
         predicate: example_contract_predicate(step),
         validator: MemberRef {
-            module: (step % 2 == 0).then(|| "M".to_owned()),
+            module: step.is_multiple_of(2).then(|| "M".to_owned()),
             name: format!("m{step}"),
         },
         sound: MemberRef {
-            module: (step % 2 == 0).then(|| "M".to_owned()),
+            module: step.is_multiple_of(2).then(|| "M".to_owned()),
             name: format!("m{step}"),
         },
         complete: (step % 3 != 2).then(|| MemberRef {
-            module: (step % 2 == 0).then(|| "M".to_owned()),
+            module: step.is_multiple_of(2).then(|| "M".to_owned()),
             name: format!("m{step}"),
         }),
     }
@@ -294,13 +294,8 @@ pub(super) fn enc_model_use(value: &ModelUse) -> Value {
         "ModelUse",
         "ModelUseOf",
         vec![
-            enc_member((&value.member)),
-            list(
-                (&value.type_arguments)
-                    .iter()
-                    .map(|item| enc_type(item))
-                    .collect(),
-            ),
+            enc_member(&value.member),
+            list(value.type_arguments.iter().map(enc_type).collect()),
         ],
     )
 }
@@ -308,7 +303,7 @@ pub(super) fn enc_model_use(value: &ModelUse) -> Value {
 pub(super) fn example_model_use(step: usize) -> ModelUse {
     ModelUse {
         member: MemberRef {
-            module: (step % 2 == 0).then(|| "M".to_owned()),
+            module: step.is_multiple_of(2).then(|| "M".to_owned()),
             name: format!("m{step}"),
         },
         type_arguments: if step % 3 == 2 {
@@ -316,7 +311,7 @@ pub(super) fn example_model_use(step: usize) -> ModelUse {
         } else {
             (step..step + 2)
                 .map(|next| {
-                    if next % 2 == 0 {
+                    if next.is_multiple_of(2) {
                         SemanticType::Nat
                     } else {
                         SemanticType::Bytes
@@ -332,9 +327,9 @@ pub(super) fn enc_realization_state(value: &RealizationState) -> Value {
         "RealizationState",
         "RealizationStateOf",
         vec![
-            text((&value.name)),
-            enc_type((&value.r#type)),
-            enc_term((&value.initial)),
+            text(&value.name),
+            enc_type(&value.r#type),
+            enc_term(&value.initial),
         ],
     )
 }
@@ -342,7 +337,7 @@ pub(super) fn enc_realization_state(value: &RealizationState) -> Value {
 pub(super) fn example_realization_state(step: usize) -> RealizationState {
     RealizationState {
         name: format!("s{step}"),
-        r#type: if step % 2 == 0 {
+        r#type: if step.is_multiple_of(2) {
             SemanticType::Nat
         } else {
             SemanticType::Bytes
@@ -358,9 +353,9 @@ pub(super) fn enc_realization_rule(value: &RealizationRule) -> Value {
         "RealizationRule",
         "RealizationRuleOf",
         vec![
-            text((&value.name)),
-            enc_term((&value.guard)),
-            enc_term((&value.action)),
+            text(&value.name),
+            enc_term(&value.guard),
+            enc_term(&value.action),
         ],
     )
 }
@@ -444,11 +439,11 @@ pub(super) fn example_neural_layer(step: usize) -> NeuralLayer {
             inputs: u64::try_from(rest).expect("a step") + 1,
             outputs: u64::try_from(rest).expect("a step") + 1,
             weights: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             bias: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
         },
@@ -466,7 +461,7 @@ pub(super) fn enc_neural_decoder(value: &NeuralDecoder) -> Value {
         NeuralDecoder::Argmax { labels } => adt(
             "NeuralDecoder",
             "NeuralDecoderArgmax",
-            vec![list(labels.iter().map(|item| enc_term(item)).collect())],
+            vec![list(labels.iter().map(enc_term).collect())],
         ),
         NeuralDecoder::Function { binder, body } => adt(
             "NeuralDecoder",
@@ -523,7 +518,7 @@ pub(super) fn example_composite_junction(step: usize) -> CompositeJunction {
         0 => CompositeJunction::Unconditional,
         1 => CompositeJunction::Proved {
             evidence: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
         },
@@ -537,13 +532,8 @@ pub(super) fn enc_composite_form(value: &CompositeForm) -> Value {
             "CompositeForm",
             "CompositeFormSequence",
             vec![
-                list(stages.iter().map(|item| enc_model_use(item)).collect()),
-                list(
-                    junctions
-                        .iter()
-                        .map(|item| enc_composite_junction(item))
-                        .collect(),
-                ),
+                list(stages.iter().map(enc_model_use).collect()),
+                list(junctions.iter().map(enc_composite_junction).collect()),
             ],
         ),
         CompositeForm::Fanout { left, right } => adt(
@@ -626,12 +616,7 @@ pub(super) fn enc_realization_descriptor(value: &RealizationDescriptor) -> Value
             "RealizationDescriptor",
             "RealizationDescriptorRule",
             vec![
-                list(
-                    rules
-                        .iter()
-                        .map(|item| enc_realization_rule(item))
-                        .collect(),
-                ),
+                list(rules.iter().map(enc_realization_rule).collect()),
                 enc_term(default),
             ],
         ),
@@ -653,7 +638,7 @@ pub(super) fn enc_realization_descriptor(value: &RealizationDescriptor) -> Value
                 enc_member(width_evidence),
                 enc_member(weights),
                 enc_member(bias),
-                list(labels.iter().map(|item| enc_term(item)).collect()),
+                list(labels.iter().map(enc_term).collect()),
             ],
         ),
         RealizationDescriptor::Neural {
@@ -671,7 +656,7 @@ pub(super) fn enc_realization_descriptor(value: &RealizationDescriptor) -> Value
                 enc_term(encoder),
                 nat(*width),
                 enc_member(width_evidence),
-                list(layers.iter().map(|item| enc_neural_layer(item)).collect()),
+                list(layers.iter().map(enc_neural_layer).collect()),
                 enc_neural_decoder(decoder),
             ],
         ),
@@ -711,15 +696,15 @@ pub(super) fn example_realization_descriptor(step: usize) -> RealizationDescript
             },
             width: u64::try_from(rest).expect("a step") + 1,
             width_evidence: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             weights: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             bias: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             labels: if rest % 3 == 2 {
@@ -739,7 +724,7 @@ pub(super) fn example_realization_descriptor(step: usize) -> RealizationDescript
             },
             width: u64::try_from(rest).expect("a step") + 1,
             width_evidence: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             layers: if rest % 3 == 2 {
@@ -807,46 +792,46 @@ pub(super) fn example_evidence_claim(step: usize) -> EvidenceClaim {
     match step % 5 {
         0 => EvidenceClaim::DatasetAgreement {
             dataset: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             comparison: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             comparison_sound: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             examples: u64::try_from(rest).expect("a step") + 1,
             agreements: u64::try_from(rest).expect("a step") + 1,
             theorem: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
         },
         1 => EvidenceClaim::EquivalentTo {
             reference: example_model_use(rest),
             theorem: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
         },
         2 => EvidenceClaim::InitialInvariant {
             theorem: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
         },
         3 => EvidenceClaim::PreservesInvariant {
             theorem: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
         },
         _ => EvidenceClaim::SatisfiesContract {
             theorem: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
         },
@@ -895,16 +880,11 @@ pub(super) fn enc_model_declaration(value: &SemanticDeclaration) -> Value {
                 list(type_parameters.iter().map(|item| text(item)).collect()),
                 enc_model_binder(input),
                 enc_model_binder(output),
-                option(state.as_ref().map(|item| enc_contract_state(item))),
-                option(precondition.as_ref().map(|item| enc_member(item))),
-                option(postcondition.as_ref().map(|item| enc_member(item))),
-                option(invariant.as_ref().map(|item| enc_member(item))),
-                list(
-                    validators
-                        .iter()
-                        .map(|item| enc_contract_validator(item))
-                        .collect(),
-                ),
+                option(state.as_ref().map(enc_contract_state)),
+                option(precondition.as_ref().map(enc_member)),
+                option(postcondition.as_ref().map(enc_member)),
+                option(invariant.as_ref().map(enc_member)),
+                list(validators.iter().map(enc_contract_validator).collect()),
                 list(axioms.iter().map(|item| text(item)).collect()),
             ],
         ),
@@ -925,7 +905,7 @@ pub(super) fn enc_model_declaration(value: &SemanticDeclaration) -> Value {
                 list(type_parameters.iter().map(|item| text(item)).collect()),
                 enc_model_binder(input),
                 enc_type(output),
-                option(state.as_ref().map(|item| enc_realization_state(item))),
+                option(state.as_ref().map(enc_realization_state)),
                 enc_realization_descriptor(descriptor),
                 Value::Bool { value: *executable },
                 list(axioms.iter().map(|item| text(item)).collect()),
@@ -946,7 +926,7 @@ pub(super) fn enc_model_declaration(value: &SemanticDeclaration) -> Value {
                 list(type_parameters.iter().map(|item| text(item)).collect()),
                 enc_model_use(contract),
                 enc_model_use(realization),
-                list(claims.iter().map(|item| enc_evidence_claim(item)).collect()),
+                list(claims.iter().map(enc_evidence_claim).collect()),
                 list(axioms.iter().map(|item| text(item)).collect()),
             ],
         ),
@@ -966,8 +946,8 @@ pub(super) fn enc_model_declaration(value: &SemanticDeclaration) -> Value {
                 list(type_parameters.iter().map(|item| text(item)).collect()),
                 enc_model_use(contract),
                 enc_model_use(realization),
-                list(evidence.iter().map(|item| enc_model_use(item)).collect()),
-                list(entry.iter().map(|item| enc_member(item)).collect()),
+                list(evidence.iter().map(enc_model_use).collect()),
+                list(entry.iter().map(enc_member).collect()),
                 list(axioms.iter().map(|item| text(item)).collect()),
             ],
         ),
@@ -985,7 +965,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             sha256: format!("s{rest}"),
             length: u64::try_from(rest).expect("a step") + 1,
             schema: example_artifact_schema(rest),
-            r#type: if rest % 2 == 0 {
+            r#type: if rest.is_multiple_of(2) {
                 SemanticType::Nat
             } else {
                 SemanticType::Bytes
@@ -1007,15 +987,15 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             output: example_model_binder(rest),
             state: (rest % 3 != 2).then(|| example_contract_state(rest)),
             precondition: (rest % 3 != 2).then(|| MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             }),
             postcondition: (rest % 3 != 2).then(|| MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             }),
             invariant: (rest % 3 != 2).then(|| MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             }),
             validators: if rest % 3 == 2 {
@@ -1039,14 +1019,14 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
                 (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
             input: example_model_binder(rest),
-            output: if rest % 2 == 0 {
+            output: if rest.is_multiple_of(2) {
                 SemanticType::Nat
             } else {
                 SemanticType::Bytes
             },
             state: (rest % 3 != 2).then(|| example_realization_state(rest)),
             descriptor: example_realization_descriptor(rest),
-            executable: rest % 2 == 0,
+            executable: rest.is_multiple_of(2),
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
@@ -1096,7 +1076,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             } else {
                 (rest..rest + 2)
                     .map(|next| MemberRef {
-                        module: (next % 2 == 0).then(|| "M".to_owned()),
+                        module: next.is_multiple_of(2).then(|| "M".to_owned()),
                         name: format!("m{next}"),
                     })
                     .collect()

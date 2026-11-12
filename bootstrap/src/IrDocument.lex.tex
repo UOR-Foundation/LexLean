@@ -140,7 +140,6 @@ definition{
   parameters: [linked : DocumentModule, imported : Bytes],
   result: Bytes,
   body: (let leanName : Bytes := (project linked leanModule); (let short : Nat := (prim length (project linked name) : Nat); (let total : Nat := (prim length leanName : Nat); (let stem : Bytes := (if (LexLeanStd.Text::endsWith leanName (project linked name)) then (LexLeanStd.Text::sliceOr leanName 0 (prim subtract total short : Nat)) else 0x); (prim append stem imported : Bytes))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -149,7 +148,6 @@ definition{
   parameters: [linked : DocumentModule],
   result: LexLeanStd.Json::Json,
   body: (prim list_fold (fun [linked] (rest : LexLeanStd.Json::Json) (entry : (Bytes * Bytes)) => (if (prim equal (second entry) (defaultImport linked (first entry)) : Bool) then rest else (ctor LexLeanStd.Json::Json.JMember (first entry) (jbytes (second entry)) rest))) (jnil) (project linked importLean) : LexLeanStd.Json::Json),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -174,7 +172,6 @@ definition{
     | LexLeanStd.Json::Json.JMember key inner rest => (IrTerm::member "import_lean" (jobj foreign) withCore)); (match (project linked origin)
     | Option.some named => (IrTerm::member "origin" (jbytes named) withForeign)
     | Option.none => withForeign)))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
