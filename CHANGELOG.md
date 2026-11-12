@@ -37,6 +37,10 @@ workspace carried at those versions without a tag.
   lists every number it cannot place unambiguously. A landing that moved
   the counts took a run and a hand mirror per stage of the cases; it takes
   one pass. Unset, the cases assert as before. The register is unchanged.
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, the maintainer's decision): with `RB-24`'s runtime validator, Lean's
+  extraction of the project writes more than the 33,554,432 bytes it allowed. A
+  semantic input, so its lock and every package move.
 - The bootstrap project configures `max_total_source_bytes = 536870912` (SPEC.md
   §17.23): with `BS-27` its production export is 135,273,215 bytes, beyond the
   134,217,728 it configured. A semantic input, so its lock and every package move.
