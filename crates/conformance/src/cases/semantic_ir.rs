@@ -9,6 +9,7 @@ use crate::support::{self, P};
 
 mod boolean;
 mod bytes;
+mod declaration_ids;
 mod names;
 mod nested;
 mod strings;
@@ -2278,8 +2279,8 @@ pub(crate) fn run(id: &str) {
                 compared += 1;
             }
             assert_eq!(
-                compared, 9,
-                "three modules' Lean, LaTeX, and lexicon closures"
+                compared, 12,
+                "three modules' Lean, LaTeX, lexicon closures, and declaration IDs"
             );
             let reject = |from: &str, to: &str, message: &str| {
                 P::assert_mutation_rejected("collections", "src/Main.lex.tex", from, to, message);
@@ -2697,6 +2698,8 @@ pub(crate) fn run(id: &str) {
         "SM-36" => boolean::run(),
         // §17.10: a theorem proved by induction over a nested inductive type.
         "SM-37" => nested::run(),
+        // §21.9: declaration IDs and statement IDs.
+        "SM-38" => declaration_ids::run(),
         // §17.10: a theorem proved by a split on the value of a document
         // term.
         "SM-35" => {
