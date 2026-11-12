@@ -17,6 +17,10 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- `cargo xtask check-freshness` (SPEC.md §9.4), run in the honesty job before the expensive roots:
+  every input a committed build oracle records still hashes to its recorded digest, every lock
+  passes `lexlean lock --check`, and every committed export package names this compiler's
+  semantics and its project's committed semantic ID. Stale generated files fail in minutes.
 - `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
   initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
   `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.

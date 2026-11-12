@@ -16,6 +16,7 @@ pub mod certification_library;
 pub mod differential;
 pub mod evidence;
 pub mod fixtures;
+pub mod freshness;
 pub mod gnaf;
 pub mod inventory;
 pub mod lcnf_adapter;
