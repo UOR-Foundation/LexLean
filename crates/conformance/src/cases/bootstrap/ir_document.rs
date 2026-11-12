@@ -316,17 +316,33 @@ fn committed() -> Vec<Identity> {
     projects_under(repo_root().as_std_path(), &mut dirs);
     let mut out = Vec::new();
     for dir in &dirs {
-        let Ok(project) = lexlean::project::Project::load(&dir.join("lexlean.toml")) else {
-            continue;
+        let project = match lexlean::project::Project::load(&dir.join("lexlean.toml")) {
+            Ok(project) => project,
+            Err(error) => {
+                eprintln!("BS-67: {dir}: not loaded: {error:?}");
+                continue;
+            }
         };
-        let Ok((lock, packages)) = lexlean::lock::read_current_lock(&project) else {
-            continue;
+        let (lock, packages) = match lexlean::lock::read_current_lock(&project) {
+            Ok(read) => read,
+            Err(error) => {
+                eprintln!("BS-67: {dir}: no current lock: {error:?}");
+                continue;
+            }
         };
-        let Ok(checked) =
-            lexlean::link::check_project(&project, &Selection::Entrypoints, &lock, packages)
-        else {
-            continue;
+        let checked = match lexlean::link::check_project(
+            &project,
+            &Selection::Entrypoints,
+            &lock,
+            packages,
+        ) {
+            Ok(checked) => checked,
+            Err(error) => {
+                eprintln!("BS-67: {dir}: does not link: {error:?}");
+                continue;
+            }
         };
+        eprintln!("BS-67: {dir}: links, {} modules", checked.modules.len());
         let linked = LinkedProject {
             modules: checked
                 .modules
@@ -442,13 +458,17 @@ struct Vector {
 }
 
 /// The smallest committed module with the given embedded module.
-fn smallest(identities: &[Identity], pick: fn(&DocumentModule) -> bool) -> DocumentModule {
+fn smallest(
+    identities: &[Identity],
+    kind: &str,
+    pick: fn(&DocumentModule) -> bool,
+) -> DocumentModule {
     identities
         .iter()
         .flat_map(|identity| identity.project.modules.values())
         .filter(|module| pick(module))
         .min_by_key(|module| module.to_json().to_canonical_string().len())
-        .expect("a committed module of that kind")
+        .unwrap_or_else(|| panic!("no committed module embeds a {kind} module"))
         .clone()
 }
 
@@ -588,13 +608,13 @@ fn named(identities: &[Identity]) -> Vec<Vector> {
     );
     add(
         "a semantic module",
-        Input::Module(Box::new(smallest(identities, |module| {
+        Input::Module(Box::new(smallest(identities, "semantic", |module| {
             module.semantic.is_some()
         }))),
     );
     add(
         "a tooling module",
-        Input::Module(Box::new(smallest(identities, |module| {
+        Input::Module(Box::new(smallest(identities, "tooling", |module| {
             module.tooling.is_some()
         }))),
     );
