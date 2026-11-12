@@ -17,6 +17,13 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The scopes, references, and outer shape of a LexLean Semantic Expression as
+  language-1.2 source, the second slice of the lexicon closure (SPEC.md §17.23,
+  §13.8, `BS-51`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `checkScopes`, `referencedConsts`, and `outerShape` of `LseScopes`
+  return what `Lse::check_scopes`, `referenced_consts`, and
+  `outer_explicit_binders` with `result` return, over the expressions of
+  `BS-25`. None admits `recursion`.
 - A one-pass writer for the counts of the bootstrap count cases, #92.
   Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
   `BS-15` records every count it checks in `target/count-report/` instead of

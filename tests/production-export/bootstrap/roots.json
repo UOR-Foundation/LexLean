@@ -495,6 +495,30 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "check_scopes",
+      "root": "LexLeanBoot.LseScopes.checkScopes",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "outer_shape",
+      "root": "LexLeanBoot.LseScopes.outerShape",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "referenced_consts",
+      "root": "LexLeanBoot.LseScopes.referencedConsts",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

@@ -277,6 +277,9 @@
     ],
     "bootstrap-manifest-text": [
       "BS-34"
+    ],
+    "bootstrap-lse-scopes": [
+      "BS-51"
     ]
   },
   "targets": {
