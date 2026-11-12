@@ -46,6 +46,10 @@ workspace carried at those versions without a tag.
   declarations that reference one another hashed as one, and a statement ID
   for every theorem that omits its proof. Builds of languages 1.0 and 1.1 are
   unchanged. The register is 483 IDs.
+- The evaluator differential of the `BS` cases runs its corpus on every processor of the host:
+  the calling thread and helpers from one budget the process shares, each taking the next run.
+  The verdict and the disagreements it reports are the sequential ones; each `bdd-bootstrap-*`
+  part of the gate is a single case, so three of a runner's four processors were idle.
 - `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
   initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
   `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
