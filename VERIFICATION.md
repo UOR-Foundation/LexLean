@@ -11812,7 +11812,8 @@ recorded semantic ID of every committed project outside the negative fixtures
 and UOR Atlas that links under its committed lock, or under a lock computed from its manifest when it commits none, for each of which the case
 first asserts that the recorded ID is the recipe over the oracle's linked text.
 The evaluator takes the projects whose linked text is at most 262,144 bytes, the
-rendered packages all of them. Each planted defect names the vector that
+rendered packages those of at most 4,194,304 bytes: a larger one's runs were beyond
+a runner's memory twice, and its semantic ID is still asserted to be the recipe. Each planted defect names the vector that
 catches it, and the case asserts that the site of each plant occurs once. The
 row's statement carries no counts.
 
