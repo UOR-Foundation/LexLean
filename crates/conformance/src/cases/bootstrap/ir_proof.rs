@@ -444,7 +444,7 @@ fn external() -> Term {
     )
 }
 
-fn case(constructor: &str, lean: &str, binders: &[(u64, &str)], proof: Proof) -> CaseProof {
+fn branch(constructor: &str, lean: &str, binders: &[(u64, &str)], proof: Proof) -> CaseProof {
     CaseProof {
         constructor: qualified("demo", constructor),
         lean_name: lean.to_owned(),
@@ -458,8 +458,8 @@ fn case(constructor: &str, lean: &str, binders: &[(u64, &str)], proof: Proof) ->
 
 fn two_cases() -> Vec<CaseProof> {
     vec![
-        case("zero", "Nat.zero", &[], Proof::Reflexivity),
-        case(
+        branch("zero", "Nat.zero", &[], Proof::Reflexivity),
+        branch(
             "succ",
             "Nat.succ",
             &[(8, "n"), (9, "ih")],
