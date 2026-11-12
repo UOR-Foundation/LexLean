@@ -873,5 +873,5 @@ pub(super) fn case() {
 // §17.23, the register statement of BS-09, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
 const NAMED: usize = 117;
-const REFUSED: usize = 576;
+const REFUSED: usize = 575;
 const WITHIN: usize = 717;

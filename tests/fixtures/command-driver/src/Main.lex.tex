@@ -7,10 +7,7 @@ structure{
   name: Session,
   type_parameters: [],
   parameters: [],
-  fields: [
-    {name: next, type: Nat},
-    {name: program, type: String}
-  ]
+  fields: [{name: next, type: Nat}, {name: program, type: String}]
 }
 
 definition{
@@ -104,9 +101,7 @@ definition{
     | LexLeanStd.Host::Event.read ignored2 => 0x
     | LexLeanStd.Host::Event.finished ignored3 => 0x
     | LexLeanStd.Host::Event.listed result => (match result
-      | Result.ok names => (match names
-        | List.nil => 0x
-        | List.cons head tail => head)
+      | Result.ok names => (match names | List.nil => 0x | List.cons head tail => head)
       | Result.error failure => 0x)
     | LexLeanStd.Host::Event.stat ignored4 => 0x
     | LexLeanStd.Host::Event.canonical ignored5 => 0x
