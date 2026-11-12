@@ -102,7 +102,7 @@ fn unit_name(ty: &SemanticType) -> Option<String> {
         .then(|| format!("S{debug}"))
 }
 
-fn type_chain(items: &[SemanticType]) -> Value {
+pub(super) fn type_chain(items: &[SemanticType]) -> Value {
     items
         .iter()
         .rev()
@@ -149,6 +149,14 @@ pub(super) fn enc_type(ty: &SemanticType) -> Value {
         SemanticType::Set { element } => adt("SemanticType", "SSet", vec![enc_type(element)]),
         other => panic!("no encoding of {other:?}"),
     }
+}
+
+pub(super) fn enc_primitive(primitive: SemanticPrimitive) -> Value {
+    adt("SemanticPrimitive", &format!("P{primitive:?}"), Vec::new())
+}
+
+pub(super) fn enc_integer(integer: SemanticInteger) -> Value {
+    adt("SemanticInteger", &format!("I{integer:?}"), Vec::new())
 }
 
 /// The serialized name a primitive or an integer family carries.

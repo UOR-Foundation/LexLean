@@ -45,6 +45,7 @@ mod rust_succeed;
 mod rust_terms;
 mod rust_validate;
 mod scan;
+mod semantic_terms;
 mod semantic_types;
 mod structural_grammar;
 mod surface_doc;
@@ -2493,6 +2494,7 @@ fn case(id: &str) {
         "BS-66" => ir_proof::case(),
         "BS-67" => ir_document::case(),
         "BS-68" => semantic_types::case(),
+        "BS-69" => semantic_terms::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

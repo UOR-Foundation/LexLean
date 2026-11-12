@@ -615,6 +615,22 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "semantic_term_text",
+      "root": "LexLeanBoot.SemanticTerms.termText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "semantic_proof_text",
+      "root": "LexLeanBoot.SemanticTerms.proofText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }
