@@ -36,6 +36,68 @@ const LEAN_BACKED: [&str; 14] = [
 ];
 
 pub(crate) fn run(id: &str) {
+    if id == "VR-28" {
+        let project = P::example();
+        let (exit, help, errors) = project.cli(&["inspect", "--help"]);
+        assert_eq!(exit, 0, "inspection is a public command: {errors}");
+        assert!(help.contains("--declaration") && help.contains("--max-nodes"));
+        if !support::lean_backed(id) {
+            return;
+        }
+        let (exit, _, errors) = project.cli(&[
+            "inspect",
+            "--import",
+            "Init",
+            "--declaration",
+            "Eq.refl",
+            "--max-nodes",
+            "4096",
+            "--max-depth",
+            "64",
+            "--out",
+            "inspection.json",
+        ]);
+        assert_eq!(exit, 0, "owned kernel inspection: {errors}");
+        let report: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(project.root.join("inspection.json")).expect("inspection report"),
+        )
+        .expect("inspection JSON");
+        assert_eq!(report["spec"], "lexlean/kernel-inspection/1");
+        assert!(report.get("attestation_id").is_none());
+        let declarations = report["declarations"].as_array().expect("declarations");
+        assert_eq!(declarations.len(), 1);
+        assert_eq!(declarations[0]["native"]["status"], "available");
+        let arena = declarations[0]["native"]["nodes"]
+            .as_array()
+            .expect("native arena");
+        let root = declarations[0]["native"]["root"]
+            .as_u64()
+            .expect("native root") as usize;
+        assert!(root < arena.len());
+        assert_eq!(arena[root]["k"], "p");
+        let ty = declarations[0]["type"].to_string();
+        assert!(ty.contains("forallE") && ty.contains("implicit"));
+        assert!(!declarations[0]["parameters"]
+            .as_array()
+            .expect("universe parameters")
+            .is_empty());
+        let (exit, _, _) = project.cli(&[
+            "inspect",
+            "--import",
+            "Init",
+            "--declaration",
+            "Eq.refl",
+            "--max-nodes",
+            "1",
+            "--max-depth",
+            "1",
+            "--out",
+            "refused.json",
+        ]);
+        assert_ne!(exit, 0, "bounded inspection cannot truncate a type");
+        assert!(!project.root.join("refused.json").exists());
+        return;
+    }
     // The operational cases (§22.11, §22.12) gate their own Lean-backed halves.
     if matches!(id, "VR-20" | "VR-21" | "VR-22" | "VR-23") {
         super::operational::run(id);

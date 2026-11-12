@@ -29,7 +29,7 @@ rustix = { version = "1", default-features = false, features = ["std", "process"
 same-file = "1.0"
 semver = "1.0"
 serde = { version = "1", features = ["derive"] }
-serde_json = { version = "1", features = ["unbounded_depth"] }
+serde_json = { version = "1", features = ["unbounded_depth", "arbitrary_precision"] }
 sha2 = "0.10"
 signal-hook = { version = "0.3", default-features = false, features = ["iterator"] }
 tempfile = "3"

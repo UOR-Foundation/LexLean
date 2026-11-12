@@ -9502,6 +9502,16 @@ Wall time, resident-set and swap measurements, scheduling and completion order, 
 
 Telemetry is write-only: no stage reads it, no ID or verified artifact contains any of it, and a failure to write it changes no result. Every key it uses is in a closed vocabulary (`wall_ms`, `started_unix_ms`, `peak_rss_kib`, `peak_swap_kib`, `mem_total_kib`, `mem_available_kib`, `swap_total_kib`, `swap_used_kib`, `host_cpus`, `process_width`, `completion_seq`), and a JSON key of that vocabulary anywhere in a verified directory fails the gate: `cargo xtask verify-examples` checks every example's verified directory for one.
 
+### 22.13 Kernel type inspection
+
+`lexlean inspect` and the sibling `api::inspection` API inspect declarations in the pinned local Lean environment. Inspection is data retrieval, not verification: it runs no proof acceptance shortcut and publishes no verification attestation (`VR-28`). The caller supplies explicit import modules and declaration names; the compiler admits at most 64 declarations, a positive traversal budget no larger than 65536 nodes, a depth bound no larger than 128, and a report bound no larger than 8388608 bytes. Invalid requests fail before running the adapter.
+
+The compiler renders its embedded LexLean tooling adapter through the typed tooling backend and checks the pinned toolchain and registered authority signatures before use. The adapter obtains each declaration's actual kernel type and universe parameters from the loaded environment. It preserves structural names, universes, binder visibility, lambdas, dependent functions, lets, literals and projections; metadata annotations may be omitted because they do not change the kernel type. It rejects free variables, expression metavariables and universe metavariables. A shared traversal budget covers repeated occurrences, names and universes before invoking serialization, so expanding a shared expression cannot bypass the bounds. Budget exhaustion refuses the inspection; it never substitutes a truncated type.
+
+The result binds the admitted import and declaration request, compiler identity and actual tool identities to the bounded process record and inspected data. Only a normal successful owned process with the exact output schema produces an inspection result. A malformed, noisy, timed-out or interrupted adapter fails without accepted inspection output. The caller remains responsible for owning and pinning the imported library build; inspection data alone establishes neither that ownership nor a theorem's proof acceptance.
+
+Each declaration also carries a native-core view when its names and expressions are representable by the native-core schema. That view preserves universe parameters, binder visibility, natural literals and scalar-valued string literals and uses only backward arena references. When a kernel projection has no reported elaborator projection label, or a structural name is outside the native-core name schema, the view explicitly reports why it is unrepresentable; the complete structural kernel type remains available. Neither form is a proof candidate or acceptance receipt.
+
 ---
 
 ## 23. Command-line interface
@@ -11150,6 +11160,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `VR-21` | `verification` | A multi-module project whose imports form nontrivial frontiers verifies at width 1 and at a larger width to byte-identical verified directories and the same attestation identity, observed axiom sets, and policy rows, and no completion order orders a record or changes which failure is reported. | §22.3, §22.4, §22.11 |
 | `VR-22` | `verification` | Performance telemetry is written only to the CI evidence directory the environment names, a verification with telemetry on publishes byte-identical artifacts to one without, and telemetry planted in a verified artifact fails the gate. | §22.12 |
 | `VR-23` | `verification` | A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused. | §9.4, §22.11 |
+| `VR-28` | `verification` | Kernel type inspection runs an owned bounded adapter against the pinned local Lean environment, preserves structural names, universe levels and binder visibility, rejects unresolved terms and exhausted traversal budgets, and returns inspection data without a verification attestation or proof-acceptance claim. | §22.13 |
 | `CL-01` | `cli-api` | Global options and upward project discovery obey the exact CLI contract. | §23.1, §23.2 |
 | `CL-02` | `cli-api` | Init creates the complete canonical skeleton only in an absent or empty destination and never overwrites. | §23.4 |
 | `CL-03` | `cli-api` | Lock check, local update, and explicit network acquisition obey their exact mutually exclusive behavior. | §23.4 |
@@ -11413,7 +11424,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `NS-06` | `normative-source` | The hand-edited normative inputs of the repository are the `.lex.tex` modules of the specification project: `model/` holds only the projected files and the copies an authority row vendors, every Markdown file at the root is a projection or is on the closed list of hand-written documents, the projections carry the notice that names their source, and no hand-written document restates a registered statement, a plant of each being refused naming R1. | §27.2, §27.5, §27.10 |
 | `NS-07` | `normative-source` | `cargo xtask spec` changes the chapter modules of the specification project by item: it replaces a block, inserts one after a block, and ports the hunks of a merged SPEC.md that lie outside derived regions, each through the authoring SDK, and it writes nothing unless the regenerated SPEC.md equals the intended text outside derived regions, refusing a first line that matches no block or two and a hunk that spans two blocks. | §24.8, §27.5 |
 
-**Total required capability IDs:** 486.
+**Total required capability IDs:** 487.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

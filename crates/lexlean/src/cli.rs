@@ -104,6 +104,24 @@ enum CommandKind {
         /// Explicit input modules.
         inputs: Vec<Utf8PathBuf>,
     },
+    /// Inspect bounded kernel types from the pinned local Lean environment.
+    Inspect {
+        /// Modules to import, in order.
+        #[arg(long = "import", required = true)]
+        imports: Vec<String>,
+        /// Fully qualified declarations to inspect.
+        #[arg(long = "declaration", required = true)]
+        declarations: Vec<String>,
+        /// Shared structural traversal budget.
+        #[arg(long, default_value_t = 65536)]
+        max_nodes: u64,
+        /// Maximum structural depth.
+        #[arg(long, default_value_t = 128)]
+        max_depth: u64,
+        /// Destination for the complete inspection report.
+        #[arg(long)]
+        out: Utf8PathBuf,
+    },
     /// Build a selection to the fixed content-addressed layout.
     Build {
         /// Every module beneath every source root.
@@ -568,6 +586,7 @@ pub fn run(
         CommandKind::Lock { .. } => "lock",
         CommandKind::Check { .. } => "check",
         CommandKind::Snapshot { .. } => "snapshot",
+        CommandKind::Inspect { .. } => "inspect",
         CommandKind::Build { .. } => "build",
         CommandKind::Verify { .. } => "verify",
         CommandKind::Fmt { .. } => "fmt",
@@ -665,6 +684,43 @@ pub fn run(
                         selection: selection_from(all, inputs)?,
                     })?;
                     outcome.document = Some(snapshot.canonical_bytes());
+                    Ok(())
+                }
+                CommandKind::Inspect {
+                    imports,
+                    declarations,
+                    max_nodes,
+                    max_depth,
+                    out,
+                } => {
+                    let bytes = crate::api::inspection::inspect(
+                        &engine,
+                        &crate::api::inspection::InspectionRequest {
+                            imports,
+                            declarations,
+                            max_nodes,
+                            max_depth,
+                        },
+                    )?;
+                    let destination = if out.is_absolute() {
+                        out
+                    } else {
+                        working_directory.join(out)
+                    };
+                    let parent = destination
+                        .parent()
+                        .ok_or_else(|| usage_error("inspection output has no parent"))?;
+                    let mut temporary = tempfile::NamedTempFile::new_in(parent)
+                        .map_err(|error| usage_error(format!("inspection output: {error}")))?;
+                    temporary
+                        .write_all(&bytes)
+                        .map_err(|error| usage_error(format!("inspection output: {error}")))?;
+                    temporary
+                        .persist(&destination)
+                        .map_err(|error| usage_error(format!("inspection output: {error}")))?;
+                    outcome.artifacts.push(destination.to_string());
+                    outcome.summary =
+                        "inspected kernel types; no verification attestation issued\n".to_owned();
                     Ok(())
                 }
                 CommandKind::Build { all, inputs } => {

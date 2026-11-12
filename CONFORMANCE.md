@@ -684,6 +684,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `VR-21` | `build` | A multi-module project whose imports form nontrivial frontiers verifies at width 1 and at a larger width to byte-identical verified directories and the same attestation identity, observed axiom sets, and policy rows, and no completion order orders a record or changes which failure is reported. |
 | `VR-22` | `build` | Performance telemetry is written only to the CI evidence directory the environment names, a verification with telemetry on publishes byte-identical artifacts to one without, and telemetry planted in a verified artifact fails the gate. |
 | `VR-23` | `build` | A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused. |
+| `VR-28` | `build` | Kernel type inspection runs an owned bounded adapter against the pinned local Lean environment, preserves structural names, universe levels and binder visibility, rejects unresolved terms and exhausted traversal budgets, and returns inspection data without a verification attestation or proof-acceptance claim. |
 
 ## Cited authorities
 

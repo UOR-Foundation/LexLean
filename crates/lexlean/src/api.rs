@@ -22,6 +22,9 @@ use crate::source::coverage::Coverage;
 // The production export contract (§24.7): the stable façade through which a
 // consumer compiles production roots to certified Rust packages and replays
 // the result without the source.
+/// Bounded kernel type inspection, without proof acceptance.
+pub mod inspection;
+mod inspection_core;
 pub mod production;
 
 // The migration of a language-1.1 project to language 1.2 (§17.12): one
