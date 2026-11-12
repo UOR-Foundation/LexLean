@@ -17,6 +17,10 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, the maintainer's decision): with `BS-52` the Lean extraction of its
+  production export writes more than the 33,554,432 bytes it configured. A semantic
+  input, so its lock and every package move.
 - The conservative checker of LexLean Semantic Expressions as language-1.2
   source, the third slice of the lexicon closure (SPEC.md §17.23, §13.7,
   `BS-52`, #269; no new diagnostic code, no change to the language-1.2
