@@ -413,9 +413,9 @@ fn math_title(id: u64) -> Phrase {
 }
 
 enum Input {
-    Module(DocumentModule),
+    Module(Box<DocumentModule>),
     Linked(LinkedProject, bool),
-    Identity(Identity),
+    Identity(Box<Identity>),
 }
 
 impl Input {
@@ -458,22 +458,22 @@ fn named(identities: &[Identity]) -> Vec<Vector> {
     let mut add = |label: &'static str, input: Input| out.push(Vector { label, input });
     add(
         "an empty module",
-        Input::Module(module("Main", "Demo.Main")),
+        Input::Module(Box::new(module("Main", "Demo.Main"))),
     );
     add(
         "the title renumbers first",
-        Input::Module(DocumentModule {
+        Input::Module(Box::new(DocumentModule {
             title: math_title(5),
             blocks: vec![
                 declaration_block("thm-a", local(7)),
                 declaration_block("thm-b", local(5)),
             ],
             ..module("Main", "Demo.Main")
-        }),
+        })),
     );
     add(
         "a section with parameters",
-        Input::Module(DocumentModule {
+        Input::Module(Box::new(DocumentModule {
             blocks: vec![Block::Section(Section {
                 component: "sec-one".to_owned(),
                 heading: math_title(9),
@@ -493,11 +493,11 @@ fn named(identities: &[Identity]) -> Vec<Vector> {
                 )],
             })],
             ..module("Main", "Demo.Main")
-        }),
+        })),
     );
     add(
         "phrase items",
-        Input::Module(DocumentModule {
+        Input::Module(Box::new(DocumentModule {
             title: Phrase {
                 items: vec![
                     PhraseItem::Word {
@@ -509,18 +509,18 @@ fn named(identities: &[Identity]) -> Vec<Vector> {
                 ],
             },
             ..module("Main", "Demo.Main")
-        }),
+        })),
     );
     add(
         "an origin",
-        Input::Module(DocumentModule {
+        Input::Module(Box::new(DocumentModule {
             origin: Some("lexlean.stdlib".to_owned()),
             ..module("Json", "LexLeanStd.Json")
-        }),
+        })),
     );
     add(
         "foreign imports",
-        Input::Module(DocumentModule {
+        Input::Module(Box::new(DocumentModule {
             imports: vec!["A".to_owned(), "B".to_owned()],
             import_lean: [
                 ("A".to_owned(), "Demo.A".to_owned()),
@@ -529,11 +529,11 @@ fn named(identities: &[Identity]) -> Vec<Vector> {
             .into_iter()
             .collect(),
             ..module("Main", "Demo.Main")
-        }),
+        })),
     );
     add(
         "a module not under its prefix",
-        Input::Module(DocumentModule {
+        Input::Module(Box::new(DocumentModule {
             imports: vec!["A".to_owned(), "B".to_owned()],
             import_lean: [
                 ("A".to_owned(), "A".to_owned()),
@@ -542,19 +542,25 @@ fn named(identities: &[Identity]) -> Vec<Vector> {
             .into_iter()
             .collect(),
             ..module("Main", "X.Y")
-        }),
+        })),
     );
     add(
         "a core module",
-        Input::Module(smallest(identities, |module| module.core.is_some())),
+        Input::Module(Box::new(smallest(identities, |module| {
+            module.core.is_some()
+        }))),
     );
     add(
         "a semantic module",
-        Input::Module(smallest(identities, |module| module.semantic.is_some())),
+        Input::Module(Box::new(smallest(identities, |module| {
+            module.semantic.is_some()
+        }))),
     );
     add(
         "a tooling module",
-        Input::Module(smallest(identities, |module| module.tooling.is_some())),
+        Input::Module(Box::new(smallest(identities, |module| {
+            module.tooling.is_some()
+        }))),
     );
     let two = LinkedProject {
         modules: [
@@ -568,7 +574,7 @@ fn named(identities: &[Identity]) -> Vec<Vector> {
     add("modules in order", Input::Linked(two.clone(), false));
     add(
         "a semantic ID",
-        Input::Identity(Identity {
+        Input::Identity(Box::new(Identity {
             semantic_id: lexlean::artifact::content_id::semantic_id_for(
                 lexlean::compiler_semantics_id_for("1.2"),
                 "1.2",
@@ -578,7 +584,7 @@ fn named(identities: &[Identity]) -> Vec<Vector> {
             project: two,
             language: "1.2".to_owned(),
             closure: "{}".to_owned(),
-        }),
+        })),
     );
     out
 }
