@@ -11697,6 +11697,13 @@ after it.
 
 ### the term IR is source (BS-65)
 
+The first regeneration with this module (run 43210252444) stopped the production
+export of the bootstrap project at `LLS8002`: the Lean extraction wrote more than
+the 33,554,432 bytes of output the project let one child write. The project now
+configures `max_child_output_bytes = 268435456` (the maintainer's decision,
+2026-11-12; a semantic input, so the lock and every package move at the landing),
+which leaves room for the further components of the typed IR.
+
 `BS-65` holds the five production roots of `LexLeanBoot.IrTerm`
 (`bootstrap/src/IrTerm.lex.tex`) to `lexlean::ir::term`: `termText` to
 `Term::to_json` under the hashing renumbering written canonically,
