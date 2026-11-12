@@ -11857,8 +11857,8 @@ passes.
 ### the semantic terms and proofs are source (BS-69)
 
 `BS-69` holds the two production roots of `LexLeanBoot.SemanticTerms`
-(`bootstrap/src/SemanticTerms.lex.tex`) to `lexlean::ir::semantic`: `termText`
-to the canonical JSON of the serde form of `SemanticTerm` and `proofText` to
+(`bootstrap/src/SemanticTerms.lex.tex`) to `lexlean::ir::semantic`: `semanticTermText`
+to the canonical JSON of the serde form of `SemanticTerm` and `semanticProofText` to
 that of `SemanticProof`, as `DocumentModule::to_json` embeds a semantic module.
 The module declares the 42 term forms and the 13 proof forms of SPEC.md §17.11
 and §17.12 as inductives over the types of `SemanticTypes` (`BS-68`). Arguments,

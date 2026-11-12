@@ -19,8 +19,8 @@ workspace carried at those versions without a tag.
 
 - The closed terms and proofs of the semantic module language as language-1.2 source,
   fifth slice of the typed IR (SPEC.md §17.23, §17.11, §17.12, `BS-69`, #269; no new
-  diagnostic code, no change to the language-1.2 identity). `termText` and
-  `proofText` of `SemanticTerms` return the canonical JSON of the serde form of
+  diagnostic code, no change to the language-1.2 identity). `semanticTermText` and
+  `semanticProofText` of `SemanticTerms` return the canonical JSON of the serde form of
   `SemanticTerm` and `SemanticProof`, and admit `recursion`. The register is 498 IDs.
 - The closed types of the semantic module language, its primitives, and its integer
   families as language-1.2 source, fourth slice of the typed IR (SPEC.md §17.23, §17.11,

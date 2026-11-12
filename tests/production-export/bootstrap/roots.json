@@ -618,7 +618,7 @@
     },
     {
       "name": "semantic_term_text",
-      "root": "LexLeanBoot.SemanticTerms.termText",
+      "root": "LexLeanBoot.SemanticTerms.semanticTermText",
       "targets": [
         "rust-std"
       ],
@@ -626,7 +626,7 @@
     },
     {
       "name": "semantic_proof_text",
-      "root": "LexLeanBoot.SemanticTerms.proofText",
+      "root": "LexLeanBoot.SemanticTerms.semanticProofText",
       "targets": [
         "rust-std"
       ],
