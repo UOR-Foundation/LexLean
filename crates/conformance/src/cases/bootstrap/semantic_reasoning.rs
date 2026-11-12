@@ -719,9 +719,7 @@ pub(super) fn example_reasoning_declaration(step: usize) -> SemanticDeclaration 
             rules: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2)
-                    .map(|next| example_model_use(next))
-                    .collect()
+                (rest..rest + 2).map(example_model_use).collect()
             },
             strategy: example_reasoning_strategy(rest),
             answer: (rest % 3 != 2).then(|| example_reasoning_answer(rest)),
@@ -729,9 +727,7 @@ pub(super) fn example_reasoning_declaration(step: usize) -> SemanticDeclaration 
             claims: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2)
-                    .map(|next| example_reasoning_claim(next))
-                    .collect()
+                (rest..rest + 2).map(example_reasoning_claim).collect()
             },
             executable: rest.is_multiple_of(2),
             axioms: if rest % 3 == 2 {

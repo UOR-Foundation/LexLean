@@ -234,7 +234,6 @@ definition{
   result: LexLeanStd.Json::Json,
   body: (match value
     | LogicInvariant.LogicInvariantOf part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "predicate"), (SemanticTerms::memberJson (first part0) (second part0))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "preserves"), (SemanticTerms::memberJson (first part1) (second part1))) entries1); (objectOf entries2)))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -244,7 +243,6 @@ definition{
   result: LexLeanStd.Json::Json,
   body: (match value
     | RuleBinding.RuleBindingOf part0 part1 part2 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "type"), (SemanticTypes::typeJson part1)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "candidates"), (SemanticTerms::termJson part2)) entries2); (objectOf entries3))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -254,7 +252,6 @@ definition{
   result: LexLeanStd.Json::Json,
   body: (match value
     | ReasoningAnswer.ReasoningAnswerOf part0 part1 part2 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "type"), (SemanticTypes::typeJson part1)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "value"), (SemanticTerms::termJson part2)) entries2); (objectOf entries3))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -265,7 +262,6 @@ definition{
   body: (match value
     | SearchOrder.SearchOrderBreadthFirst => (ctor LexLeanStd.Json::Json.JStr (lit "breadth_first"))
     | SearchOrder.SearchOrderDepthFirst => (ctor LexLeanStd.Json::Json.JStr (lit "depth_first"))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -285,7 +281,6 @@ definition{
     | ReasoningStrategy.ReasoningStrategyGenerateAndVerify part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "generate_and_verify"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "generator"), (SemanticTerms::termJson part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (match part1
       | Option.some present => (cons ((lit "budget"), (SemanticTerms::termJson present)) entries2)
       | Option.none => entries2); (objectOf entries3))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -298,7 +293,6 @@ definition{
     | ReasoningClaim.ReasoningClaimTerminates part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "terminates"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "theorem"), (SemanticTerms::memberJson (first part0) (second part0))) entries1); (objectOf entries2)))
     | ReasoningClaim.ReasoningClaimObservationInvariant part0 part1 part2 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "observation_invariant"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "predicate"), (SemanticTerms::memberJson (first part0) (second part0))) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "initial"), (SemanticTerms::memberJson (first part1) (second part1))) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "preserved"), (SemanticTerms::memberJson (first part2) (second part2))) entries3); (objectOf entries4)))))
     | ReasoningClaim.ReasoningClaimAnswerCorrect part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "answer_correct"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "theorem"), (SemanticTerms::memberJson (first part0) (second part0))) entries1); (objectOf entries2)))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -309,7 +303,6 @@ definition{
   body: (match value
     | TokenizerScheme.TokenizerSchemeByteLevel => (ctor LexLeanStd.Json::Json.JStr (lit "byte_level"))
     | TokenizerScheme.TokenizerSchemeLongestMatch => (ctor LexLeanStd.Json::Json.JStr (lit "longest_match"))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -320,7 +313,6 @@ definition{
   body: (match value
     | OverflowDisposition.OverflowDispositionRefuse => (ctor LexLeanStd.Json::Json.JStr (lit "refuse"))
     | OverflowDisposition.OverflowDispositionKeepLast => (ctor LexLeanStd.Json::Json.JStr (lit "keep_last"))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -330,7 +322,6 @@ definition{
   result: LexLeanStd.Json::Json,
   body: (match value
     | SamplingGenerator.SamplingGeneratorXorshift32 => (ctor LexLeanStd.Json::Json.JStr (lit "xorshift32"))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -340,7 +331,6 @@ definition{
   result: LexLeanStd.Json::Json,
   body: (match value
     | SamplingDistribution.SamplingDistributionProportional => (ctor LexLeanStd.Json::Json.JStr (lit "proportional"))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -351,7 +341,6 @@ definition{
   body: (match value
     | GenerationPolicy.GenerationPolicyGreedy => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "greedy"))) (nil (Bytes * LexLeanStd.Json::Json))); (objectOf entries1))
     | GenerationPolicy.GenerationPolicySample part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "sample"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "generator"), (samplingGeneratorJson part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "distribution"), (samplingDistributionJson part1)) entries2); (objectOf entries3))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -412,7 +401,6 @@ definition{
     | ReasoningDeclaration.ReasoningDeclarationTextClassifier part0 part1 part2 part3 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "text_classifier"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "tokenizer"), (SemanticTerms::memberJson (first part1) (second part1))) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "model"), (SemanticModels::modelUseJson part2)) entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (match part3
       | List.nil => entries4
       | List.cons head tail => (cons ((lit "axioms"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part3) : (List LexLeanStd.Json::Json))))) entries4)); (objectOf entries5))))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -445,7 +433,6 @@ definition{
     | AnyDeclaration.AnyOrdinary declared => (SemanticDecls::declarationJson declared)
     | AnyDeclaration.AnyModel declared => (SemanticModels::modelDeclarationJson declared)
     | AnyDeclaration.AnyReasoning declared => (reasoningDeclarationJson declared)),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
