@@ -17,6 +17,17 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- One address scheme for every content identity (SPEC.md §21.10, `AR-15`).
+  A UOR address is `sha256:` and the SHA-256 of an artifact's canonical
+  bytes, the label form of the UOR Foundation's `uor-addr`; every identity
+  LexLean records is already that digest, so no recorded byte moves.
+  `lexlean::artifact::address` has one function per artifact kind returning
+  its canonical bytes, written by the same recipe as the identity
+  (`content_id::*_frames` over a hash or a buffer), and
+  `Engine::identities` gives a checked project's. `AR-15` recomputes with
+  its own SHA-256 every identity the committed build manifests, locks,
+  build outputs, and Rust packages record, and requires each to equal the
+  recorded one. The register is 494 IDs.
 - A one-pass writer for the counts of the bootstrap count cases, #92.
   Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
   `BS-15` records every count it checks in `target/count-report/` instead of

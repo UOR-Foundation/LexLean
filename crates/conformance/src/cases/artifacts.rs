@@ -1,4 +1,4 @@
-//! The `artifacts` suite: AR-01..AR-14.
+//! The `artifacts` suite: AR-01..AR-15.
 
 use lexlean::artifact::canonical_json::Json;
 use lexlean::artifact::content_id::{FramedHasher, Sha256Digest};
@@ -725,6 +725,328 @@ pub(crate) fn run(id: &str) {
                 );
             }
         }
+        // §21.10, AR-15: every recorded identity is a UOR address.
+        "AR-15" => recorded_identities_are_addresses(),
         other => panic!("no artifacts case is wired for {other}"),
     }
+}
+
+/// The lowercase-hex SHA-256 of `bytes`, computed here and not by the
+/// compiler, so a recorded identity is held to the hash of the canonical
+/// bytes and not to the compiler's own digest of them.
+fn sha256_hex(bytes: &[u8]) -> String {
+    sha2::Sha256::digest(bytes)
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+/// One comparison of a recorded identity with the address of its artifact's
+/// canonical bytes.
+struct Addresses {
+    compared: usize,
+    unmet: Vec<String>,
+}
+
+impl Addresses {
+    fn same(&mut self, what: &str, recorded: Option<&str>, canonical: &[u8]) {
+        self.compared += 1;
+        let address = sha256_hex(canonical);
+        match recorded {
+            Some(recorded) if recorded == address => {}
+            other => self.unmet.push(format!(
+                "{what}: recorded {other:?}, address sha256:{address}"
+            )),
+        }
+    }
+}
+
+/// Every committed project with a committed build manifest, relative to the
+/// repository root, in path order.
+fn committed_manifest_projects() -> Vec<camino::Utf8PathBuf> {
+    let root = support::repo_root();
+    let mut out = Vec::new();
+    for entry in walkdir::WalkDir::new(root.as_std_path())
+        .sort_by_file_name()
+        .into_iter()
+        .filter_entry(|entry| {
+            let name = entry.file_name().to_string_lossy();
+            !(entry.depth() > 0 && (name.starts_with('.') || name == "target"))
+        })
+        .flatten()
+    {
+        if entry.file_name() == "manifest.json"
+            && entry.path().ends_with("expected/build/manifest.json")
+        {
+            let project = entry
+                .path()
+                .parent()
+                .and_then(std::path::Path::parent)
+                .and_then(std::path::Path::parent)
+                .expect("a project directory");
+            if project.join("lexlean.toml").is_file() {
+                out.push(
+                    camino::Utf8PathBuf::from_path_buf(project.to_path_buf())
+                        .expect("a UTF-8 path"),
+                );
+            }
+        }
+    }
+    out
+}
+
+/// Compare every identity a committed project records with the address of
+/// the canonical bytes `lexlean::artifact::address` gives for it: the
+/// manifest's source, semantic, build, and compiler-semantics IDs, the
+/// lock's compiler-semantics ID and workspace files, and every build output
+/// committed beside the manifest. A project that commits no lock (its case
+/// writes one) is locked in a copy first, and has no lock rows to compare.
+fn audit_project(dir: &camino::Utf8Path, into: &mut Addresses) {
+    use lexlean::{CheckRequest, Engine, LockRequest, Selection};
+    let expected = dir.join("expected/build");
+    let manifest: serde_json::Value = serde_json::from_slice(
+        &std::fs::read(expected.join("manifest.json").as_std_path()).expect("the manifest"),
+    )
+    .expect("the manifest parses");
+    let text = |value: &serde_json::Value| value.as_str().map(str::to_owned);
+    // A tooling fixture (§17.20) is rendered as an embedded project, not
+    // checked as a user project: its build ID is held to the build recipe
+    // over the source and semantic IDs it records, its compiler-semantics ID
+    // to its language's tree, and its outputs to their bytes.
+    if dir.starts_with(support::repo_root().join("tests/tooling")) {
+        let id = |key: &str| {
+            lexlean::Sha256Digest::from_hex(manifest[key].as_str().expect("an ID"))
+                .expect("a digest")
+        };
+        into.same(
+            &format!("{dir}: build_id"),
+            text(&manifest["build_id"]).as_deref(),
+            &lexlean::artifact::address::build(id("source_id"), id("semantic_id")).bytes,
+        );
+        let language = manifest["language"].as_str().expect("a language");
+        into.same(
+            &format!("{dir}: compiler.semantics_id"),
+            text(&manifest["compiler"]["semantics_id"]).as_deref(),
+            &lexlean::artifact::address::compiler_semantics(language)
+                .expect("a supported language")
+                .bytes,
+        );
+        audit_outputs(dir, &manifest, into);
+        return;
+    }
+    let committed_lock = dir.join("lexlean.lock").as_std_path().is_file();
+    let copy = tempfile::tempdir().expect("tempdir");
+    let engine = if committed_lock {
+        Engine::load(&dir.join("lexlean.toml")).expect("the project loads")
+    } else {
+        support::copy_tree(dir.as_std_path(), copy.path(), &[".lexlean", "expected"]);
+        let root = camino::Utf8Path::from_path(copy.path()).expect("a UTF-8 path");
+        let engine = Engine::load(&root.join("lexlean.toml")).expect("the project loads");
+        engine
+            .lock(LockRequest {
+                check_only: false,
+                allow_network: false,
+            })
+            .unwrap_or_else(|error| panic!("{dir}: the project locks: {error}"));
+        engine
+    };
+    let identities = engine
+        .identities(CheckRequest {
+            selection: Selection::Entrypoints,
+        })
+        .unwrap_or_else(|error| panic!("{dir}: the project checks: {error}"));
+    for (what, recorded, canonical) in [
+        (
+            "source_id",
+            text(&manifest["source_id"]),
+            &identities.source,
+        ),
+        (
+            "semantic_id",
+            text(&manifest["semantic_id"]),
+            &identities.semantic,
+        ),
+        ("build_id", text(&manifest["build_id"]), &identities.build),
+        (
+            "compiler.semantics_id",
+            text(&manifest["compiler"]["semantics_id"]),
+            &identities.compiler_semantics,
+        ),
+    ] {
+        into.same(
+            &format!("{dir}: {what}"),
+            recorded.as_deref(),
+            &canonical.bytes,
+        );
+    }
+    if !committed_lock {
+        audit_outputs(dir, &manifest, into);
+        return;
+    }
+    let lock: toml::Value = toml::from_str(
+        &std::fs::read_to_string(dir.join("lexlean.lock").as_std_path()).expect("the lock"),
+    )
+    .expect("the lock parses");
+    into.same(
+        &format!("{dir}: lexlean.lock compiler_semantics"),
+        lock.get("compiler_semantics").and_then(toml::Value::as_str),
+        &identities.compiler_semantics.bytes,
+    );
+    for row in lock
+        .get("workspace_file")
+        .and_then(toml::Value::as_array)
+        .into_iter()
+        .flatten()
+    {
+        let path = row["path"].as_str().expect("a workspace file path");
+        let bytes = std::fs::read(dir.join(path).as_std_path()).expect("a workspace file");
+        into.same(
+            &format!("{dir}: lexlean.lock workspace_file {path}"),
+            row.get("sha256").and_then(toml::Value::as_str),
+            &lexlean::artifact::address::file(&bytes).bytes,
+        );
+    }
+    audit_outputs(dir, &manifest, into);
+}
+
+/// Compare every build output committed beside a manifest with the address
+/// of its bytes, and its recorded length with theirs.
+fn audit_outputs(dir: &camino::Utf8Path, manifest: &serde_json::Value, into: &mut Addresses) {
+    let expected = dir.join("expected/build");
+    for output in manifest["outputs"].as_array().expect("outputs") {
+        let path = output["path"].as_str().expect("an output path");
+        let Ok(bytes) = std::fs::read(expected.join(path).as_std_path()) else {
+            continue;
+        };
+        assert_eq!(
+            output["byte_length"].as_u64(),
+            Some(bytes.len() as u64),
+            "{dir}: output {path}: byte length"
+        );
+        into.same(
+            &format!("{dir}: output {path}"),
+            output["sha256"].as_str(),
+            &lexlean::artifact::address::file(&bytes).bytes,
+        );
+    }
+}
+
+/// Compare every identity a committed Rust package records (§17.23) with the
+/// address of its canonical bytes: each file of the package, its program,
+/// and the compiler-semantics ID it was exported under.
+fn audit_package(dir: &std::path::Path, into: &mut Addresses) {
+    let read = |name: &str| -> serde_json::Value {
+        serde_json::from_slice(&std::fs::read(dir.join(name)).expect("a package file"))
+            .expect("a package file parses")
+    };
+    let provenance = read("provenance.json");
+    let package = read("package.json");
+    let at = dir.display();
+    for (path, recorded) in provenance["files"].as_object().expect("files") {
+        let bytes = std::fs::read(dir.join(path)).expect("a packaged file");
+        into.same(
+            &format!("{at}: {path}"),
+            recorded.as_str(),
+            &lexlean::artifact::address::file(&bytes).bytes,
+        );
+    }
+    let program = lexlean::artifact::canonical_json::Json::parse(
+        &serde_json::to_vec(&package["program"]).expect("the program serializes"),
+    )
+    .expect("the program is canonical JSON");
+    into.same(
+        &format!("{at}: program"),
+        provenance["program"].as_str(),
+        &lexlean::artifact::address::rust_program(&program).bytes,
+    );
+    let language = lexlean::LANGUAGE_1_2;
+    into.same(
+        &format!("{at}: compiler_semantics"),
+        provenance["compiler_semantics"].as_str(),
+        &lexlean::artifact::address::compiler_semantics(language)
+            .expect("language 1.2")
+            .bytes,
+    );
+}
+
+/// §21.10: every content identity a committed artifact records is the UOR
+/// address of that artifact's canonical bytes, and a recorded identity that
+/// no longer matches its artifact is named.
+fn recorded_identities_are_addresses() {
+    let projects = committed_manifest_projects();
+    assert!(
+        projects.len() >= 26,
+        "every committed build manifest is audited: {projects:?}"
+    );
+    let mut audit = Addresses {
+        compared: 0,
+        unmet: Vec::new(),
+    };
+    for project in &projects {
+        audit_project(project, &mut audit);
+    }
+    let after_projects = audit.compared;
+    let root = support::repo_root();
+    let mut packages = 0;
+    for entry in walkdir::WalkDir::new(root.join("tests/production-export").as_std_path())
+        .sort_by_file_name()
+        .into_iter()
+        .flatten()
+    {
+        if entry.file_name() == "provenance.json" {
+            audit_package(entry.path().parent().expect("a package"), &mut audit);
+            packages += 1;
+        }
+    }
+    assert!(
+        packages >= 164,
+        "every committed package is audited: {packages}"
+    );
+    assert!(
+        audit.unmet.is_empty(),
+        "{} of {} recorded identities are not the address of their canonical bytes:\n{}",
+        audit.unmet.len(),
+        audit.compared,
+        audit.unmet.join("\n")
+    );
+    eprintln!(
+        "AR-15: {} identities of {} projects and {packages} packages are the addresses of their canonical bytes",
+        audit.compared,
+        projects.len()
+    );
+    assert!(
+        after_projects > 26 * 4,
+        "{after_projects} project identities"
+    );
+
+    // A recorded identity that no longer names its artifact is refused: a
+    // copy of an example whose theorem label changed still carries the
+    // committed manifest, whose source and build IDs name the old source.
+    let project = P::copy_example("nat-add-zero");
+    let committed = root.join("examples/nat-add-zero/expected/build/manifest.json");
+    let copied = project.root.join("expected/build/manifest.json");
+    std::fs::create_dir_all(copied.parent().expect("a parent").as_std_path()).expect("mkdir");
+    std::fs::copy(committed.as_std_path(), copied.as_std_path()).expect("the manifest");
+    project.edit(
+        "src/Main.lex.tex",
+        "\\begin{theorem}{add-zero}",
+        "\\begin{theorem}{add-zero-again}",
+    );
+    let mut planted = Addresses {
+        compared: 0,
+        unmet: Vec::new(),
+    };
+    audit_project(&project.root, &mut planted);
+    assert!(
+        planted
+            .unmet
+            .iter()
+            .any(|line| line.contains(": source_id: recorded"))
+            && planted
+                .unmet
+                .iter()
+                .any(|line| line.contains(": build_id: recorded")),
+        "a stale recorded identity is named: {:?}",
+        planted.unmet
+    );
 }

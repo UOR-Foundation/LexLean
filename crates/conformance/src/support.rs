@@ -321,7 +321,7 @@ pub struct P {
     pub root: Utf8PathBuf,
 }
 
-fn copy_tree(from: &Path, to: &Path, skip: &[&str]) {
+pub(crate) fn copy_tree(from: &Path, to: &Path, skip: &[&str]) {
     for entry in walkdir::WalkDir::new(from).into_iter().flatten() {
         let relative = entry.path().strip_prefix(from).expect("under root");
         let text = relative.to_string_lossy();

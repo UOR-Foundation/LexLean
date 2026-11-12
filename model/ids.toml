@@ -1214,6 +1214,12 @@ suite = "artifacts"
 statement = "Platform-independent build evidence is distinguished from platform-bound oleans, process records, PDF bytes, and attestations."
 
 [[id]]
+id = "AR-15"
+level = "build"
+suite = "artifacts"
+statement = "Every content identity a committed artifact records, the source, semantic, build, and compiler-semantics IDs of each build manifest and lock, each lock workspace file, each committed build output, and each Rust package's files and program, is the SHA-256 of the canonical bytes of its kind, so its UOR address is `sha256:` and that digest, and a recorded identity that no longer names its artifact is refused."
+
+[[id]]
 id = "VR-01"
 level = "build"
 suite = "verification"

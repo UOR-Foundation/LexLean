@@ -105,3 +105,10 @@ Feature: artifacts
     When the verified root and the content-addressed build directory are each listed
     Then the verified set contains a `.olean` file, `attestation.json`, and a `process/lean/` record
     And the build set contains no `.olean`, no `process/` entry, no `attestation.json`, and no `.pdf`
+
+  @AR-15 @build
+  Scenario: Every content identity a committed artifact records, the source, semantic, build, and compiler-semantics IDs of each build manifest and lock, each lock workspace file, each committed build output, and each Rust package's files and program, is the SHA-256 of the canonical bytes of its kind, so its UOR address is `sha256:` and that digest, and a recorded identity that no longer names its artifact is refused.
+    Given every committed project with a build manifest and every committed Rust package
+    When the canonical bytes of each recorded identity's kind are hashed with SHA-256
+    Then each digest equals the identity the artifact records
+    And a copy whose source changed while it kept the committed manifest has its source and build IDs named
