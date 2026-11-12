@@ -15,6 +15,7 @@ pub mod certification;
 pub mod certification_library;
 pub mod differential;
 pub mod evidence;
+pub mod export_custody;
 pub mod fixtures;
 pub mod gnaf;
 pub mod inventory;

@@ -321,7 +321,20 @@ pub fn exported(example: &str) -> &'static Exported {
         HELPDESK => &DESK,
         other => panic!("`{other}` is not an exported example"),
     };
-    cell.get_or_init(|| export(example).unwrap_or_else(|reason| panic!("{reason}")))
+    cell.get_or_init(|| {
+        // In a CI run that exports the bootstrap project once (SPEC.md §9.4),
+        // the job's harness takes that export instead of running it again.
+        if example == BOOTSTRAP {
+            if let Some(directory) = std::env::var(crate::export_custody::VARIABLE)
+                .ok()
+                .filter(|value| !value.is_empty())
+            {
+                return crate::export_custody::take(Utf8Path::new(&directory))
+                    .unwrap_or_else(|reason| panic!("§9.4: the run's bootstrap export: {reason}"));
+            }
+        }
+        export(example).unwrap_or_else(|reason| panic!("{reason}"))
+    })
 }
 
 /// Every file under `root`, by `/`-separated relative path.
@@ -343,6 +356,28 @@ pub fn tree(root: &Utf8Path) -> BTreeMap<String, Vec<u8>> {
         }
     }
     out
+}
+
+/// Every difference between one export's packages and the committed expected
+/// packages of `example`, one line each.
+#[must_use]
+pub fn differences(example: &str, exported: &Exported) -> Vec<String> {
+    let packages = tree(&exported.bundle().join("packages"));
+    let expected = tree(&fixture_dir(example).join("packages"));
+    let mut unmet = Vec::new();
+    for (relative, bytes) in &packages {
+        match expected.get(relative) {
+            Some(committed) if committed == bytes => {}
+            Some(_) => unmet.push(format!("{example}: packages/{relative} differs")),
+            None => unmet.push(format!("{example}: packages/{relative} is not committed")),
+        }
+    }
+    for relative in expected.keys() {
+        if !packages.contains_key(relative) {
+            unmet.push(format!("{example}: packages/{relative} was not exported"));
+        }
+    }
+    unmet
 }
 
 /// Compare every exported package with the committed expected packages, or
@@ -367,19 +402,7 @@ pub fn check(write: bool) -> Result<(), String> {
             }
             continue;
         }
-        let expected = tree(&expected_root);
-        for (relative, bytes) in &packages {
-            match expected.get(relative) {
-                Some(committed) if committed == bytes => {}
-                Some(_) => unmet.push(format!("{example}: packages/{relative} differs")),
-                None => unmet.push(format!("{example}: packages/{relative} is not committed")),
-            }
-        }
-        for relative in expected.keys() {
-            if !packages.contains_key(relative) {
-                unmet.push(format!("{example}: packages/{relative} was not exported"));
-            }
-        }
+        unmet.extend(differences(example, &exported));
     }
     if unmet.is_empty() {
         Ok(())

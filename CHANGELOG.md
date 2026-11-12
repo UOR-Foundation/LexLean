@@ -17,6 +17,11 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- CI exports the bootstrap project once per run (SPEC.md §9.4): the `bootstrap export` job
+  runs `cargo xtask export-bootstrap` at the `examples` leg's profile, requires the committed
+  packages, and uploads the bundle with a custody record (`lexlean/ci-bootstrap-export/1`); a
+  leg takes it when a case first needs it, and the harness checks the record against its own
+  run and checkout and replays the bundle. No bootstrap part verifies the bootstrap project.
 - `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
   initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
   `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
