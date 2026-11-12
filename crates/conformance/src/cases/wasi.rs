@@ -113,7 +113,6 @@ fn wasi(module: &Utf8Path, host: &Utf8Path, root: &Utf8Path, arguments: &[&str])
         .arg(module.as_str())
         .arg(root.as_str())
         .args(arguments)
-        .env_clear()
         .output()
         .expect("node runs");
     (
