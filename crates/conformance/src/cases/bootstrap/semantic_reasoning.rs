@@ -141,11 +141,11 @@ pub(super) fn enc_logic_invariant(value: &LogicInvariant) -> Value {
 pub(super) fn example_logic_invariant(step: usize) -> LogicInvariant {
     LogicInvariant {
         predicate: MemberRef {
-            module: (step % 2 == 0).then(|| "M".to_owned()),
+            module: step.is_multiple_of(2).then(|| "M".to_owned()),
             name: format!("m{step}"),
         },
         preserves: MemberRef {
-            module: (step % 2 == 0).then(|| "M".to_owned()),
+            module: step.is_multiple_of(2).then(|| "M".to_owned()),
             name: format!("m{step}"),
         },
     }
@@ -166,7 +166,7 @@ pub(super) fn enc_rule_binding(value: &RuleBinding) -> Value {
 pub(super) fn example_rule_binding(step: usize) -> RuleBinding {
     RuleBinding {
         name: format!("s{step}"),
-        r#type: if step % 2 == 0 {
+        r#type: if step.is_multiple_of(2) {
             SemanticType::Nat
         } else {
             SemanticType::Bytes
@@ -192,7 +192,7 @@ pub(super) fn enc_reasoning_answer(value: &ReasoningAnswer) -> Value {
 pub(super) fn example_reasoning_answer(step: usize) -> ReasoningAnswer {
     ReasoningAnswer {
         name: format!("s{step}"),
-        r#type: if step % 2 == 0 {
+        r#type: if step.is_multiple_of(2) {
             SemanticType::Nat
         } else {
             SemanticType::Bytes
@@ -219,7 +219,7 @@ pub(super) fn enc_reasoning_strategy(value: &ReasoningStrategy) -> Value {
         ReasoningStrategy::Forward { fuel } => adt(
             "ReasoningStrategy",
             "ReasoningStrategyForward",
-            vec![option(fuel.as_ref().map(|item| enc_term(item)))],
+            vec![option(fuel.as_ref().map(enc_term))],
         ),
         ReasoningStrategy::Search {
             order,
@@ -231,8 +231,8 @@ pub(super) fn enc_reasoning_strategy(value: &ReasoningStrategy) -> Value {
             "ReasoningStrategySearch",
             vec![
                 enc_search_order(order),
-                option(fuel.as_ref().map(|item| enc_term(item))),
-                option(frontier.as_ref().map(|item| enc_term(item))),
+                option(fuel.as_ref().map(enc_term)),
+                option(frontier.as_ref().map(enc_term)),
                 Value::Bool {
                     value: *deduplicate,
                 },
@@ -241,10 +241,7 @@ pub(super) fn enc_reasoning_strategy(value: &ReasoningStrategy) -> Value {
         ReasoningStrategy::GenerateAndVerify { generator, budget } => adt(
             "ReasoningStrategy",
             "ReasoningStrategyGenerateAndVerify",
-            vec![
-                enc_term(generator),
-                option(budget.as_ref().map(|item| enc_term(item))),
-            ],
+            vec![enc_term(generator), option(budget.as_ref().map(enc_term))],
         ),
     }
 }
@@ -266,7 +263,7 @@ pub(super) fn example_reasoning_strategy(step: usize) -> ReasoningStrategy {
             frontier: (rest % 3 != 2).then(|| SemanticTerm::Nat {
                 value: rest.to_string(),
             }),
-            deduplicate: rest % 2 == 0,
+            deduplicate: rest.is_multiple_of(2),
         },
         _ => ReasoningStrategy::GenerateAndVerify {
             generator: SemanticTerm::Nat {
@@ -318,33 +315,33 @@ pub(super) fn example_reasoning_claim(step: usize) -> ReasoningClaim {
     match step % 4 {
         0 => ReasoningClaim::InitialInvariant {
             theorem: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
         },
         1 => ReasoningClaim::Terminates {
             theorem: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
         },
         2 => ReasoningClaim::ObservationInvariant {
             predicate: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             initial: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             preserved: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
         },
         _ => ReasoningClaim::AnswerCorrect {
             theorem: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
         },
@@ -457,8 +454,8 @@ pub(super) fn enc_reasoning_declaration(value: &SemanticDeclaration) -> Value {
                 list(type_parameters.iter().map(|item| text(item)).collect()),
                 enc_contract_state(state),
                 enc_member(relation),
-                option(invariant.as_ref().map(|item| enc_logic_invariant(item))),
-                option(ranking.as_ref().map(|item| enc_member(item))),
+                option(invariant.as_ref().map(enc_logic_invariant)),
+                option(ranking.as_ref().map(enc_member)),
                 list(axioms.iter().map(|item| text(item)).collect()),
             ],
         ),
@@ -480,11 +477,11 @@ pub(super) fn enc_reasoning_declaration(value: &SemanticDeclaration) -> Value {
                 text(name),
                 list(type_parameters.iter().map(|item| text(item)).collect()),
                 enc_model_use(logic),
-                option(binding.as_ref().map(|item| enc_rule_binding(item))),
+                option(binding.as_ref().map(enc_rule_binding)),
                 enc_term(guard),
                 enc_term(conclusion),
                 enc_member(soundness),
-                option(progress.as_ref().map(|item| enc_member(item))),
+                option(progress.as_ref().map(enc_member)),
                 Value::Bool { value: *executable },
                 list(axioms.iter().map(|item| text(item)).collect()),
             ],
@@ -510,7 +507,7 @@ pub(super) fn enc_reasoning_declaration(value: &SemanticDeclaration) -> Value {
                 enc_member(specification),
                 enc_member(check),
                 enc_member(sound),
-                option(complete.as_ref().map(|item| enc_member(item))),
+                option(complete.as_ref().map(enc_member)),
                 list(axioms.iter().map(|item| text(item)).collect()),
             ],
         ),
@@ -533,19 +530,14 @@ pub(super) fn enc_reasoning_declaration(value: &SemanticDeclaration) -> Value {
             vec![
                 text(name),
                 list(type_parameters.iter().map(|item| text(item)).collect()),
-                option(logic.as_ref().map(|item| enc_model_use(item))),
+                option(logic.as_ref().map(enc_model_use)),
                 enc_model_binder(observation),
-                option(observe.as_ref().map(|item| enc_term(item))),
-                list(rules.iter().map(|item| enc_model_use(item)).collect()),
+                option(observe.as_ref().map(enc_term)),
+                list(rules.iter().map(enc_model_use).collect()),
                 enc_reasoning_strategy(strategy),
-                option(answer.as_ref().map(|item| enc_reasoning_answer(item))),
+                option(answer.as_ref().map(enc_reasoning_answer)),
                 enc_model_use(verifier),
-                list(
-                    claims
-                        .iter()
-                        .map(|item| enc_reasoning_claim(item))
-                        .collect(),
-                ),
+                list(claims.iter().map(enc_reasoning_claim).collect()),
                 Value::Bool { value: *executable },
                 list(axioms.iter().map(|item| text(item)).collect()),
             ],
@@ -633,22 +625,22 @@ pub(super) fn example_reasoning_declaration(step: usize) -> SemanticDeclaration 
             type_parameters: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
             state: example_contract_state(rest),
             relation: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             invariant: (rest % 3 != 2).then(|| example_logic_invariant(rest)),
             ranking: (rest % 3 != 2).then(|| MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             }),
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
         1 => SemanticDeclaration::InferenceRule {
@@ -656,7 +648,7 @@ pub(super) fn example_reasoning_declaration(step: usize) -> SemanticDeclaration 
             type_parameters: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
             logic: example_model_use(rest),
             binding: (rest % 3 != 2).then(|| example_rule_binding(rest)),
@@ -667,18 +659,18 @@ pub(super) fn example_reasoning_declaration(step: usize) -> SemanticDeclaration 
                 value: rest.to_string(),
             },
             soundness: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             progress: (rest % 3 != 2).then(|| MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             }),
-            executable: rest % 2 == 0,
+            executable: rest.is_multiple_of(2),
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
         2 => SemanticDeclaration::Verifier {
@@ -686,30 +678,30 @@ pub(super) fn example_reasoning_declaration(step: usize) -> SemanticDeclaration 
             type_parameters: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
             subject: example_model_binder(rest),
             candidate: example_model_binder(rest),
             specification: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             check: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             sound: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             complete: (rest % 3 != 2).then(|| MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             }),
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
         3 => SemanticDeclaration::Reasoner {
@@ -717,7 +709,7 @@ pub(super) fn example_reasoning_declaration(step: usize) -> SemanticDeclaration 
             type_parameters: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
             logic: (rest % 3 != 2).then(|| example_model_use(rest)),
             observation: example_model_binder(rest),
@@ -741,11 +733,11 @@ pub(super) fn example_reasoning_declaration(step: usize) -> SemanticDeclaration 
                     .map(|next| example_reasoning_claim(next))
                     .collect()
             },
-            executable: rest % 2 == 0,
+            executable: rest.is_multiple_of(2),
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
         4 => SemanticDeclaration::Tokenizer {
@@ -753,60 +745,60 @@ pub(super) fn example_reasoning_declaration(step: usize) -> SemanticDeclaration 
             type_parameters: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
             scheme: example_tokenizer_scheme(rest),
             vocabulary: example_model_use(rest),
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
         5 => SemanticDeclaration::ContextWindow {
             name: format!("s{rest}"),
-            capacity: u64::try_from(rest).expect("a rest") + 1,
+            capacity: u64::try_from(rest).expect("a step") + 1,
             overflow: example_overflow_disposition(rest),
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
         6 => SemanticDeclaration::TextGenerator {
             name: format!("s{rest}"),
             tokenizer: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             window: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             scorer: example_model_use(rest),
-            max_tokens: u64::try_from(rest).expect("a rest") + 1,
+            max_tokens: u64::try_from(rest).expect("a step") + 1,
             stop: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             policy: example_generation_policy(rest),
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
         _ => SemanticDeclaration::TextClassifier {
             name: format!("s{rest}"),
             tokenizer: MemberRef {
-                module: (rest % 2 == 0).then(|| "M".to_owned()),
+                module: rest.is_multiple_of(2).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
             model: example_model_use(rest),
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
     }
