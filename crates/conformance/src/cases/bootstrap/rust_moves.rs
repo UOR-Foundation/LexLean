@@ -35,8 +35,8 @@ const CERTIFICATE_BUDGET: u64 = 3_145_728;
 /// The crates of at most this many expressions are the evaluator's share.
 const EVALUATOR_NODES: usize = 400;
 /// The crates the moves are run on, and those within the evaluator's share.
-const CRATES: usize = 409;
-const WITHIN: usize = 351;
+const CRATES: usize = 440;
+const WITHIN: usize = 355;
 const EVALUATOR_MUTANTS: usize = 150;
 const RUSTC_MUTANTS: usize = 1_500;
 
@@ -519,15 +519,21 @@ pub(super) fn case() {
         .map(run)
         .collect();
     assert_eq!(
-        (
-            base.len(),
-            small_runs.len(),
-            evaluator_mutants.len(),
-            rustc_mutants.len()
-        ),
-        (CRATES, WITHIN, EVALUATOR_MUTANTS, RUSTC_MUTANTS),
-        "the crates the moves are run on, those within the evaluator's bound, and the mutants"
+        (evaluator_mutants.len(), rustc_mutants.len()),
+        (EVALUATOR_MUTANTS, RUSTC_MUTANTS),
+        "the mutants"
     );
+    crate::counts!(
+        "BS-08",
+        "the crates the moves are run on, and those within the evaluator's bound",
+        {
+            CRATES: base.len(),
+            WITHIN: small_runs.len(),
+        }
+    );
+    if crate::counts::stop_before_runs("BS-08") {
+        return;
+    }
     eprintln!(
         "BS-08: {} crates ({} within {EVALUATOR_NODES} expressions), {} + {} mutants ({:?})",
         base.len(),

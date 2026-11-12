@@ -178,6 +178,69 @@
 'LexLeanBoot.CalculusCheck.valueOk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.CalculusCheck.walk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.CalculusCheck.zeroStep' does not depend on any axioms
+'LexLeanBoot.CliOutput.Palette' does not depend on any axioms
+'LexLeanBoot.CliOutput.afterFirst' does not depend on any axioms
+'LexLeanBoot.CliOutput.cat' does not depend on any axioms
+'LexLeanBoot.CliOutput.commandNames' does not depend on any axioms
+'LexLeanBoot.CliOutput.humanDiagnostics' does not depend on any axioms
+'LexLeanBoot.CliOutput.humanOne' does not depend on any axioms
+'LexLeanBoot.CliOutput.isCommand' does not depend on any axioms
+'LexLeanBoot.CliOutput.jsonStep' does not depend on any axioms
+'LexLeanBoot.CliOutput.labelLines' does not depend on any axioms
+'LexLeanBoot.CliOutput.lines' does not depend on any axioms
+'LexLeanBoot.CliOutput.lit' does not depend on any axioms
+'LexLeanBoot.CliOutput.namedCommand' does not depend on any axioms
+'LexLeanBoot.CliOutput.noteMessages' does not depend on any axioms
+'LexLeanBoot.CliOutput.paletteOf' does not depend on any axioms
+'LexLeanBoot.CliOutput.place' does not depend on any axioms
+'LexLeanBoot.CliOutput.wantsJson' does not depend on any axioms
+'LexLeanBoot.ContentId.attestationId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ContentId.bigEndian' does not depend on any axioms
+'LexLeanBoot.ContentId.buildId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ContentId.byteText' does not depend on any axioms
+'LexLeanBoot.ContentId.cat' does not depend on any axioms
+'LexLeanBoot.ContentId.digestBytes' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ContentId.frame' does not depend on any axioms
+'LexLeanBoot.ContentId.framedHash' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ContentId.lit' does not depend on any axioms
+'LexLeanBoot.ContentId.pdfRecipeId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ContentId.semanticId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ContentId.sourceId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ContentId.treeDigest' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ContentId.wordBytes' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.Diagnostic' does not depend on any axioms
+'LexLeanBoot.Diagnostics.Label' does not depend on any axioms
+'LexLeanBoot.Diagnostics.Note' does not depend on any axioms
+'LexLeanBoot.Diagnostics.Span' does not depend on any axioms
+'LexLeanBoot.Diagnostics.arrayOf' does not depend on any axioms
+'LexLeanBoot.Diagnostics.beStep' does not depend on any axioms
+'LexLeanBoot.Diagnostics.bigEndian' does not depend on any axioms
+'LexLeanBoot.Diagnostics.byteText' does not depend on any axioms
+'LexLeanBoot.Diagnostics.cat' does not depend on any axioms
+'LexLeanBoot.Diagnostics.codeExit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.diagnosticText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.exceeded' does not depend on any axioms
+'LexLeanBoot.Diagnostics.field' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.firstOf' does not depend on any axioms
+'LexLeanBoot.Diagnostics.isEnvironmentCode' does not depend on any axioms
+'LexLeanBoot.Diagnostics.jsonString' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.keyed' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.labelText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.labelsText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.lit' does not depend on any axioms
+'LexLeanBoot.Diagnostics.noteText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.notesText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.num' does not depend on any axioms
+'LexLeanBoot.Diagnostics.objectOf' does not depend on any axioms
+'LexLeanBoot.Diagnostics.orderStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.orderedPath' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.reportDiagnostics' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.sortDiagnostics' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.sortKey' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.spanText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.strings' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.Diagnostics.takeStep' does not depend on any axioms
+'LexLeanBoot.Diagnostics.worstExit' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.GnafValidate.Action' does not depend on any axioms
 'LexLeanBoot.GnafValidate.ActionKind' does not depend on any axioms
 'LexLeanBoot.GnafValidate.Boundary' does not depend on any axioms
@@ -225,6 +288,184 @@
 'LexLeanBoot.GnafValidate.render' does not depend on any axioms
 'LexLeanBoot.GnafValidate.universeSize' does not depend on any axioms
 'LexLeanBoot.GnafValidate.validateRequest' does not depend on any axioms
+'LexLeanBoot.LexiconLre.Facts' does not depend on any axioms
+'LexLeanBoot.LexiconLre.RWork' does not depend on any axioms
+'LexLeanBoot.LexiconLre.Render' does not depend on any axioms
+'LexLeanBoot.LexiconLre.Rv' does not depend on any axioms
+'LexLeanBoot.LexiconLre.Wk' does not depend on any axioms
+'LexLeanBoot.LexiconLre.binaryFacts' does not depend on any axioms
+'LexLeanBoot.LexiconLre.firstProblem' does not depend on any axioms
+'LexLeanBoot.LexiconLre.firstSome' does not depend on any axioms
+'LexLeanBoot.LexiconLre.isBinary' does not depend on any axioms
+'LexLeanBoot.LexiconLre.isFormId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.isOperatorName' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.isScript' does not depend on any axioms
+'LexLeanBoot.LexiconLre.isTokenId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.isUnary' does not depend on any axioms
+'LexLeanBoot.LexiconLre.nothingStep' does not depend on any axioms
+'LexLeanBoot.LexiconLre.operandProblem' does not depend on any axioms
+'LexLeanBoot.LexiconLre.parseLre' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.pushVisitsR' does not depend on any axioms
+'LexLeanBoot.LexiconLre.renderChain' does not depend on any axioms
+'LexLeanBoot.LexiconLre.renderFacts' does not depend on any axioms
+'LexLeanBoot.LexiconLre.renderItems' does not depend on any axioms
+'LexLeanBoot.LexiconLre.renderOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.rendersNothing' does not depend on any axioms
+'LexLeanBoot.LexiconLre.rvBuild' does not depend on any axioms
+'LexLeanBoot.LexiconLre.rvFail' does not depend on any axioms
+'LexLeanBoot.LexiconLre.rvPush' does not depend on any axioms
+'LexLeanBoot.LexiconLre.rvStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.rvVisit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.scanOperatorName' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.scanTokenId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.scriptProblem' does not depend on any axioms
+'LexLeanBoot.LexiconLre.takeRenders' does not depend on any axioms
+'LexLeanBoot.LexiconLre.visitForm' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.visitHead' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.visitNamed' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.visitSlot' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLre.withFacts' does not depend on any axioms
+'LexLeanBoot.LexiconLre.wkStep' does not depend on any axioms
+'LexLeanBoot.LexiconLre.wrapOne' does not depend on any axioms
+'LexLeanBoot.LexiconLre.wrapTwo' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Cv' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Failure' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Header' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Lse' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Node' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Rt' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Sg' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Tk' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Tok' does not depend on any axioms
+'LexLeanBoot.LexiconLse.UWork' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Universe' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Uv' does not depend on any axioms
+'LexLeanBoot.LexiconLse.Work' does not depend on any axioms
+'LexLeanBoot.LexiconLse.allDigits' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.argChain' does not depend on any axioms
+'LexLeanBoot.LexiconLse.atomOf' does not depend on any axioms
+'LexLeanBoot.LexiconLse.binderChainOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.binderHeader' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.binderMode' does not depend on any axioms
+'LexLeanBoot.LexiconLse.binderVisits' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.byteNum' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.cat' does not depend on any axioms
+'LexLeanBoot.LexiconLse.chainOf' does not depend on any axioms
+'LexLeanBoot.LexiconLse.constError' does not depend on any axioms
+'LexLeanBoot.LexiconLse.constText' does not depend on any axioms
+'LexLeanBoot.LexiconLse.cvBuild' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.cvFail' does not depend on any axioms
+'LexLeanBoot.LexiconLse.cvStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.cvVisit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.decimalFault' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.decimalValue' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.describe' does not depend on any axioms
+'LexLeanBoot.LexiconLse.failed' does not depend on any axioms
+'LexLeanBoot.LexiconLse.fresh' does not depend on any axioms
+'LexLeanBoot.LexiconLse.idScan' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.idStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.isAlnumNum' does not depend on any axioms
+'LexLeanBoot.LexiconLse.isAlphaNum' does not depend on any axioms
+'LexLeanBoot.LexiconLse.isBinderForm' does not depend on any axioms
+'LexLeanBoot.LexiconLse.isDigitNum' does not depend on any axioms
+'LexLeanBoot.LexiconLse.isEntryId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.isLeafForm' does not depend on any axioms
+'LexLeanBoot.LexiconLse.isLowerNum' does not depend on any axioms
+'LexLeanBoot.LexiconLse.isLseIdentifier' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.isPackageId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.itemStep' does not depend on any axioms
+'LexLeanBoot.LexiconLse.itemsOf' does not depend on any axioms
+'LexLeanBoot.LexiconLse.leafConst' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.leafLocal' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.leafNat' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.leafOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.leafSort' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.lit' does not depend on any axioms
+'LexLeanBoot.LexiconLse.lookup' does not depend on any axioms
+'LexLeanBoot.LexiconLse.lseOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.modeText' does not depend on any axioms
+'LexLeanBoot.LexiconLse.nodeAt' does not depend on any axioms
+'LexLeanBoot.LexiconLse.parseLse' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.printLse' does not depend on any axioms
+'LexLeanBoot.LexiconLse.pushVisits' does not depend on any axioms
+'LexLeanBoot.LexiconLse.pushVisitsU' does not depend on any axioms
+'LexLeanBoot.LexiconLse.qualifiedId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.quoted' does not depend on any axioms
+'LexLeanBoot.LexiconLse.readTree' does not depend on any axioms
+'LexLeanBoot.LexiconLse.rtFail' does not depend on any axioms
+'LexLeanBoot.LexiconLse.rtPlace' does not depend on any axioms
+'LexLeanBoot.LexiconLse.rtStep' does not depend on any axioms
+'LexLeanBoot.LexiconLse.rtToken' does not depend on any axioms
+'LexLeanBoot.LexiconLse.scanDigits' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.scanIdentifier' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.sgStep' does not depend on any axioms
+'LexLeanBoot.LexiconLse.sgStop' does not depend on any axioms
+'LexLeanBoot.LexiconLse.showArgs' does not depend on any axioms
+'LexLeanBoot.LexiconLse.showBinders' does not depend on any axioms
+'LexLeanBoot.LexiconLse.showExpr' does not depend on any axioms
+'LexLeanBoot.LexiconLse.sortError' does not depend on any axioms
+'LexLeanBoot.LexiconLse.takeUniverses' does not depend on any axioms
+'LexLeanBoot.LexiconLse.takeValues' does not depend on any axioms
+'LexLeanBoot.LexiconLse.tkFlush' does not depend on any axioms
+'LexLeanBoot.LexiconLse.tkStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.tokenize' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.universeChain' does not depend on any axioms
+'LexLeanBoot.LexiconLse.universeItems' does not depend on any axioms
+'LexLeanBoot.LexiconLse.universeOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.universeText' does not depend on any axioms
+'LexLeanBoot.LexiconLse.universesOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.uvBuild' does not depend on any axioms
+'LexLeanBoot.LexiconLse.uvFail' does not depend on any axioms
+'LexLeanBoot.LexiconLse.uvStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.uvVisit' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.visitBinderForm' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.visitForm' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LexiconLse.visitLet' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LockText.Lock' does not depend on any axioms
+'LexLeanBoot.LockText.LockPackage' does not depend on any axioms
+'LexLeanBoot.LockText.LockPdf' does not depend on any axioms
+'LexLeanBoot.LockText.LockSourcePackage' does not depend on any axioms
+'LexLeanBoot.LockText.canonicalLock' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LockText.cat' does not depend on any axioms
+'LexLeanBoot.LockText.digestLine' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LockText.escapeByte' does not depend on any axioms
+'LexLeanBoot.LockText.escapeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LockText.escapedKey' does not depend on any axioms
+'LexLeanBoot.LockText.header' does not depend on any axioms
+'LexLeanBoot.LockText.leanToolchain' does not depend on any axioms
+'LexLeanBoot.LockText.line' does not depend on any axioms
+'LexLeanBoot.LockText.lit' does not depend on any axioms
+'LexLeanBoot.LockText.packageKey' does not depend on any axioms
+'LexLeanBoot.LockText.packageText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LockText.packagesSorted' depends on axioms: [propext]
+'LexLeanBoot.LockText.pairsByPath' depends on axioms: [propext]
+'LexLeanBoot.LockText.pdfText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LockText.pinText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LockText.sourceText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LockText.sourcesSorted' depends on axioms: [propext]
+'LexLeanBoot.LockText.stringLine' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LockText.tomlArray' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LockText.tomlString' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.LockText.upperHex' does not depend on any axioms
+'LexLeanBoot.ManifestText.BuildManifest' does not depend on any axioms
+'LexLeanBoot.ManifestText.FileRow' does not depend on any axioms
+'LexLeanBoot.ManifestText.ModuleRow' does not depend on any axioms
+'LexLeanBoot.ManifestText.bigEndian' does not depend on any axioms
+'LexLeanBoot.ManifestText.buildManifest' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ManifestText.cat' does not depend on any axioms
+'LexLeanBoot.ManifestText.escapedKey' does not depend on any axioms
+'LexLeanBoot.ManifestText.jsonDigest' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ManifestText.jsonText' does not depend on any axioms
+'LexLeanBoot.ManifestText.lit' does not depend on any axioms
+'LexLeanBoot.ManifestText.manifestJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ManifestText.member' does not depend on any axioms
+'LexLeanBoot.ManifestText.moduleJson' does not depend on any axioms
+'LexLeanBoot.ManifestText.modulesJson' does not depend on any axioms
+'LexLeanBoot.ManifestText.rowJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ManifestText.rowKey' does not depend on any axioms
+'LexLeanBoot.ManifestText.rowsJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ManifestText.rowsSorted' depends on axioms: [propext]
+'LexLeanBoot.ManifestText.textArray' does not depend on any axioms
 'LexLeanBoot.PrimitiveScan.Atom' does not depend on any axioms
 'LexLeanBoot.PrimitiveScan.AtomClass' does not depend on any axioms
 'LexLeanBoot.PrimitiveScan.CheckState' does not depend on any axioms
@@ -275,6 +516,29 @@
 'LexLeanBoot.PrimitiveScan.stepScan' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.PrimitiveScan.ticks' does not depend on any axioms
 'LexLeanBoot.PrimitiveScan.zeroStep' does not depend on any axioms
+'LexLeanBoot.ProjectText.ArtifactSource' does not depend on any axioms
+'LexLeanBoot.ProjectText.LexiconSource' does not depend on any axioms
+'LexLeanBoot.ProjectText.Limits' does not depend on any axioms
+'LexLeanBoot.ProjectText.PdfProvider' does not depend on any axioms
+'LexLeanBoot.ProjectText.ProjectConfig' does not depend on any axioms
+'LexLeanBoot.ProjectText.SourcePackage' does not depend on any axioms
+'LexLeanBoot.ProjectText.arrayLine' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ProjectText.artifactText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ProjectText.canonicalProject' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ProjectText.cat' does not depend on any axioms
+'LexLeanBoot.ProjectText.configSha256' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ProjectText.digestLine' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ProjectText.header' does not depend on any axioms
+'LexLeanBoot.ProjectText.limitsText' does not depend on any axioms
+'LexLeanBoot.ProjectText.lit' does not depend on any axioms
+'LexLeanBoot.ProjectText.numberLine' does not depend on any axioms
+'LexLeanBoot.ProjectText.packageOf' does not depend on any axioms
+'LexLeanBoot.ProjectText.packageText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ProjectText.pdfText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ProjectText.sourceText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ProjectText.sourcesSorted' depends on axioms: [propext]
+'LexLeanBoot.ProjectText.sourcesText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.ProjectText.stringLine' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.AttrSeen' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.Crate' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.Entry' does not depend on any axioms
@@ -1068,6 +1332,292 @@
 'LexLeanBoot.RustValidate.widthKind' does not depend on any axioms
 'LexLeanBoot.RustValidate.wrapConstruct' does not depend on any axioms
 'LexLeanBoot.RustValidate.zeroStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Arg' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ArgAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ArgScan' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Block' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.BlocksCtx' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.CalcStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.CaseRow' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.CasesHeader' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Ctx' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.DataForm' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Decl' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.DeclFrame' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.DeclKind' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.EnvAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ItemAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.LabelScan' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.LabeledHeader' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Machine' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Mode' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ModuleAst' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Origin' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Policy' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.PolicyAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.PolicyKind' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Proof' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ProofCtx' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ProofFrame' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Ps' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Quoting' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Row' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.SectionFrame' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.Sentence' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.SentenceAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.SentenceScan' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.argList' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.argNext' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.argStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.atBeginOf' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.atControl' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.atomAt' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.atomIs' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.before' depends on axioms: [propext]
+'LexLeanBoot.StructuralGrammar.beginEnv' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.blocksOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.blocksStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.brace' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.braceWith' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.calcStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.calculateItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.casesNext' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.cat' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.chainBlocks' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.chainCases' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.chainItems' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.chainLabeled' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.closeBlocks' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.componentArg' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.componentByte' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.componentStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.cover' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.coverMetadata' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.coverPayload' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.coverRange' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.coverStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.dataForm' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.declKindOf' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.enterProof' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.envOrigin' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.expectAtom' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.expectControl' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.expectEnd' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.fail' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.finishDecl' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.finishModule' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.foundEnd' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.foundText' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.haveItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.headerRows' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.insertName' depends on axioms: [propext]
+'LexLeanBoot.StructuralGrammar.insertStep' depends on axioms: [propext]
+'LexLeanBoot.StructuralGrammar.isAtom' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.isComponentId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.isLeanName' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.isTheoremLike' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.joined' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.labelStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.labeledNext' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.leafItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.leanStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.lit' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.machineStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.metadata' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.moved' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.nameStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.nestingMessage' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.noForm' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.openDeclaration' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.openSection' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.parseBody' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.parseLabel' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.parseModule' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.placeHere' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.policyNamed' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.policyOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.proofEnvItem' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.proofStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.pushBlock' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.pushItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.quoteRun' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.quoteStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.refuse' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.returnProof' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.StructuralGrammar.rewriteItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.rewriteStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.rowOf' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.same' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.sentence' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.sentenceControl' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.sentenceMove' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.sentenceStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.sentenceStop' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.simplifyItem' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.simplifyStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.skipStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.skipWs' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.structural' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.ticked' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.verbatimBody' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.verbatimStep' does not depend on any axioms
+'LexLeanBoot.StructuralGrammar.wholeFile' does not depend on any axioms
+'LexLeanBoot.SurfaceDoc.Doc' does not depend on any axioms
+'LexLeanBoot.SurfaceDoc.Fit' does not depend on any axioms
+'LexLeanBoot.SurfaceDoc.Item' does not depend on any axioms
+'LexLeanBoot.SurfaceDoc.Layout' does not depend on any axioms
+'LexLeanBoot.SurfaceDoc.broken' does not depend on any axioms
+'LexLeanBoot.SurfaceDoc.byteNum' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceDoc.fitItem' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceDoc.fitStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceDoc.fitWith' does not depend on any axioms
+'LexLeanBoot.SurfaceDoc.fits' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceDoc.joined' does not depend on any axioms
+'LexLeanBoot.SurfaceDoc.layoutItem' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceDoc.layoutStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceDoc.lit' does not depend on any axioms
+'LexLeanBoot.SurfaceDoc.renderDoc' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceDoc.scalarStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceDoc.scalars' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceDoc.spaceStep' does not depend on any axioms
+'LexLeanBoot.SurfaceDoc.withIndent' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.Frame' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.Rd' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.arrayHead' depends on axioms: [propext]
+'LexLeanBoot.SurfaceGeneric.atComma' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.bareByte' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.bareEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.bareStart' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.bareStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.byteNo' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.cat' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.closeTop' depends on axioms: [propext]
+'LexLeanBoot.SurfaceGeneric.closing' depends on axioms: [propext]
+'LexLeanBoot.SurfaceGeneric.codeAt' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.completeValue' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.delimitedRev' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.describe' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.describeAt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.digitStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.digitsEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.docItems' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.docMembers' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.docNodes' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.docValue' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.failed' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.fieldDoc' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.hasKey' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.inI64' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.intOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.isBare' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.isInteger' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.isKeyword' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.itemChain' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.joinStep' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.keyAt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.kindTag' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.lit' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.memberChain' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.objectDoc' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.objectHead' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.offsetAt' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.parseGeneric' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.parseTokens' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.printGeneric' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.rank' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.rankKey' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.rdMode' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.rdStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.readFrom' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.refuse' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.spell' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.textAt' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.tokenAt' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.tokenCode' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.tokenText' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.valueDone' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.valuePush' does not depend on any axioms
+'LexLeanBoot.SurfaceGeneric.valueStart' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.wordValue' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.zeroStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceGeneric.zerosEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.Failure' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.Lx' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.Quoting' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.Scanned' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.Spanned' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.Token' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.byteIs' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.byteNum' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.byteOf' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.cat' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.colonAt' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.escapeAt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.escapePiece' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.failed' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.fourHex' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.halted' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.hex2' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.hex4' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.hexAbove' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.hexAt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.hexChar' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.hexOf' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.isDelimiter' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.isDelimiterByte' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.joined' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.lexStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.lexText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.lit' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.pushed' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.quoteStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.quoteText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.quoted' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.rawEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.rawStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.readString' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.reverseSpans' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.scanStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.taken' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.unicodeEscape' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.utf8Of' does not depend on any axioms
+'LexLeanBoot.SurfaceLex.widthAt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.wordAt' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.wordEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceLex.wordStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceModule.Located' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.beginMarker' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.control' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.dataRange' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceModule.endMarker' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.environment' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.lastAt' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.lit' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.locateFrom' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceModule.locateModule' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceModule.tail' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.tryKind' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.Sp' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.declarationSpans' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.failure' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.firstNonWhite' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.hasSpec' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.lastEnd' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.lit' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.memberStep' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.membersOf' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.parseToolingModule' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.printToolingModule' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.spAt' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.spEnd' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.spFail' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.spMember' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.spPhase' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.spRead' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.spStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.specOffset' does not depend on any axioms
+'LexLeanBoot.SurfaceTooling.whiteStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceTooling.withoutSpec' does not depend on any axioms
 'LexLeanBoot.TokenAudit.AuditState' does not depend on any axioms
 'LexLeanBoot.TokenAudit.CommentState' does not depend on any axioms
 'LexLeanBoot.TokenAudit.LexState' does not depend on any axioms
@@ -1513,6 +2063,60 @@
 'LexLeanStd.Buffer.writeEach' depends on axioms: [propext, Quot.sound]
 'LexLeanStd.Buffer.writeNumbers' does not depend on any axioms
 'LexLeanStd.Buffer.zeroStep' does not depend on any axioms
+'LexLeanStd.Json.Json' does not depend on any axioms
+'LexLeanStd.Json.arrayText' does not depend on any axioms
+'LexLeanStd.Json.escapeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.escapeString' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.escapedPiece' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.integerText' does not depend on any axioms
+'LexLeanStd.Json.keepLast' does not depend on any axioms
+'LexLeanStd.Json.memberText' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.objectText' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.quoted' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.renderItems' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.renderMembers' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeJson' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeJsonFile' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Json.writeValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.accumulate' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.byteValues' does not depend on any axioms
+'LexLeanStd.Numeral.canonicalDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.decimal' does not depend on any axioms
+'LexLeanStd.Numeral.decimalDigits' does not depend on any axioms
+'LexLeanStd.Numeral.decimalEnd' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.decimalValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.digitStep' does not depend on any axioms
+'LexLeanStd.Numeral.digits' does not depend on any axioms
+'LexLeanStd.Numeral.hex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexByte' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexDigits' does not depend on any axioms
+'LexLeanStd.Numeral.hexNat' does not depend on any axioms
+'LexLeanStd.Numeral.hexStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.hexValue' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.isDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.isHex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.pairStep' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.parseDecimal' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.parseHex' depends on axioms: [propext, Quot.sound]
+'LexLeanStd.Numeral.pick' does not depend on any axioms
+'LexLeanStd.Order.ascendStep' depends on axioms: [propext]
+'LexLeanStd.Order.dedupStep' does not depend on any axioms
+'LexLeanStd.Order.insertSorted' depends on axioms: [propext]
+'LexLeanStd.Order.insertStep' depends on axioms: [propext]
+'LexLeanStd.Order.isAscending' depends on axioms: [propext]
+'LexLeanStd.Order.keysOf' does not depend on any axioms
+'LexLeanStd.Order.lessBytes' depends on axioms: [propext]
+'LexLeanStd.Order.mergeEntries' depends on axioms: [propext]
+'LexLeanStd.Order.mergePass' depends on axioms: [propext]
+'LexLeanStd.Order.mergeStep' depends on axioms: [propext]
+'LexLeanStd.Order.passStep' depends on axioms: [propext]
+'LexLeanStd.Order.reverseList' does not depend on any axioms
+'LexLeanStd.Order.sortByKey' depends on axioms: [propext]
+'LexLeanStd.Order.sortBytes' depends on axioms: [propext]
+'LexLeanStd.Order.sortEntries' depends on axioms: [propext]
+'LexLeanStd.Order.sortStep' depends on axioms: [propext]
+'LexLeanStd.Order.sortedSet' depends on axioms: [propext]
+'LexLeanStd.Order.withUnit' does not depend on any axioms
 'LexLeanStd.Sha256.Digest' does not depend on any axioms
 'LexLeanStd.Sha256.Schedule' does not depend on any axioms
 'LexLeanStd.Sha256.Working' does not depend on any axioms

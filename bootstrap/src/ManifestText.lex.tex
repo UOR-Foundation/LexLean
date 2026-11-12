@@ -1,0 +1,189 @@
+\begin{lexlean}{ManifestText}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: FileRow,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: kind, type: Bytes},
+    {name: location, type: Bytes},
+    {name: byteLength, type: Nat},
+    {name: digest, type: Bytes}
+  ]
+}
+
+structure{
+  name: ModuleRow,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: moduleName, type: Bytes},
+    {name: leanModule, type: Bytes},
+    {name: sourcePath, type: Bytes},
+    {name: origin, type: (Option Bytes)}
+  ]
+}
+
+structure{
+  name: BuildManifest,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: language, type: Bytes},
+    {name: compilerVersion, type: Bytes},
+    {name: semanticsId, type: Bytes},
+    {name: projectName, type: Bytes},
+    {name: sourceId, type: Bytes},
+    {name: semanticId, type: Bytes},
+    {name: buildId, type: Bytes},
+    {name: selection, type: (List Bytes)},
+    {name: modules, type: (List ModuleRow)},
+    {name: inputs, type: (List FileRow)},
+    {name: outputs, type: (List FileRow)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: jsonText,
+  parameters: [value : Bytes],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JStr value),
+  executable: true
+}
+
+definition{
+  name: jsonDigest,
+  parameters: [digest : Bytes],
+  result: LexLeanStd.Json::Json,
+  body: (jsonText (LexLeanStd.Numeral::hex digest)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: member,
+  parameters: [key : String, value : LexLeanStd.Json::Json, rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JMember (lit key) value rest),
+  executable: true
+}
+
+definition{
+  name: textArray,
+  parameters: [values : (List Bytes)],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JArr (prim list_fold (fun (acc : LexLeanStd.Json::Json) (item : Bytes) => (ctor LexLeanStd.Json::Json.JItem (jsonText item) acc)) (ctor LexLeanStd.Json::Json.JNil) (LexLeanStd.Order::reverseList [Bytes] values) : LexLeanStd.Json::Json)),
+  executable: true
+}
+
+definition{
+  name: bigEndian,
+  parameters: [value : Nat, width : Nat],
+  result: Bytes,
+  body: (second (prim iterate (fun (state : (Nat * Bytes)) => ((prim quotient (first state) 256 0 : Nat), (cat (LexLeanStd.Numeral::pick (LexLeanStd.Numeral::byteValues) (prim remainder (first state) 256 0 : Nat)) (second state)))) width (value, 0x) : (Nat * Bytes))),
+  executable: true
+}
+
+definition{
+  name: escapedKey,
+  parameters: [text : Bytes],
+  result: Bytes,
+  body: (cat (LexLeanStd.Text::joinWith (LexLeanStd.Text::splitOn text (0 : UInt8)) 0x0001) 0x0000),
+  executable: true
+}
+
+definition{
+  name: rowKey,
+  parameters: [row : FileRow],
+  result: Bytes,
+  body: (cat (cat (cat (escapedKey (project row kind)) (escapedKey (project row location))) (bigEndian (project row byteLength) 8)) (project row digest)),
+  executable: true
+}
+
+definition{
+  name: rowsSorted,
+  parameters: [rows : (List FileRow)],
+  result: (List FileRow),
+  body: (prim list_fold (fun (acc : (List FileRow)) (entry : (Bytes * FileRow)) => (cons (second entry) acc)) (nil FileRow) (LexLeanStd.Order::reverseList [(Bytes * FileRow)] (LexLeanStd.Order::sortByKey [FileRow] (LexLeanStd.Order::reverseList [(Bytes * FileRow)] (prim list_fold (fun (acc : (List (Bytes * FileRow))) (row : FileRow) => (cons ((rowKey row), row) acc)) (nil (Bytes * FileRow)) rows : (List (Bytes * FileRow)))))) : (List FileRow)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: rowJson,
+  parameters: [row : FileRow],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj (member "kind" (jsonText (project row kind)) (member "path" (jsonText (project row location)) (member "byte_length" (ctor LexLeanStd.Json::Json.JInt false (project row byteLength)) (member "sha256" (jsonDigest (project row digest)) (ctor LexLeanStd.Json::Json.JNil)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: rowsJson,
+  parameters: [rows : (List FileRow)],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JArr (prim list_fold (fun (acc : LexLeanStd.Json::Json) (row : FileRow) => (ctor LexLeanStd.Json::Json.JItem (rowJson row) acc)) (ctor LexLeanStd.Json::Json.JNil) (LexLeanStd.Order::reverseList [FileRow] (rowsSorted rows)) : LexLeanStd.Json::Json)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: moduleJson,
+  parameters: [entry : ModuleRow],
+  result: LexLeanStd.Json::Json,
+  body: (let tail : LexLeanStd.Json::Json := (match (project entry origin)
+    | Option.some named => (member "origin" (jsonText named) (ctor LexLeanStd.Json::Json.JNil))
+    | Option.none => (ctor LexLeanStd.Json::Json.JNil)); (ctor LexLeanStd.Json::Json.JObj (member "module" (jsonText (project entry moduleName)) (member "lean_module" (jsonText (project entry leanModule)) (member "source_path" (jsonText (project entry sourcePath)) tail))))),
+  executable: true
+}
+
+definition{
+  name: modulesJson,
+  parameters: [rows : (List ModuleRow)],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JArr (prim list_fold (fun (acc : LexLeanStd.Json::Json) (entry : ModuleRow) => (ctor LexLeanStd.Json::Json.JItem (moduleJson entry) acc)) (ctor LexLeanStd.Json::Json.JNil) (LexLeanStd.Order::reverseList [ModuleRow] rows) : LexLeanStd.Json::Json)),
+  executable: true
+}
+
+definition{
+  name: manifestJson,
+  parameters: [manifest : BuildManifest],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj (member "spec" (jsonText (lit "lexlean/build-manifest/1")) (member "compiler" (ctor LexLeanStd.Json::Json.JObj (member "version" (jsonText (project manifest compilerVersion)) (member "semantics_id" (jsonDigest (project manifest semanticsId)) (ctor LexLeanStd.Json::Json.JNil)))) (member "language" (jsonText (project manifest language)) (member "project" (jsonText (project manifest projectName)) (member "source_id" (jsonDigest (project manifest sourceId)) (member "semantic_id" (jsonDigest (project manifest semanticId)) (member "build_id" (jsonDigest (project manifest buildId)) (member "lean_toolchain" (jsonText (lit "leanprover/lean4:v4.32.1")) (member "selection" (textArray (project manifest selection)) (member "modules" (modulesJson (project manifest modules)) (member "inputs" (rowsJson (project manifest inputs)) (member "outputs" (rowsJson (project manifest outputs)) (ctor LexLeanStd.Json::Json.JNil)))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: buildManifest,
+  parameters: [manifest : BuildManifest],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJsonFile (manifestJson manifest)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -31,3 +31,8 @@ sha256 = "d059ee791b5105af61d70e3a8d8b73b3fb17e1102589f3b5a62761ce2106fe04"
 schema = "production-replay"
 spec = "lexlean/production-replay/1"
 sha256 = "79af079fe0b9125befce1bc9650660a8911fe08e33d98458066816335c3ad590"
+
+[[version]]
+schema = "declarations"
+spec = "lexlean/declarations/1"
+sha256 = "054f0fb549700404d9b3bcd51c03f43e4f249cfdc49c1b2a4e9dfe1607da979b"

@@ -2,6 +2,8 @@
 //! native modules and the frozen bytes of languages 1.0 and 1.1 (SPEC.md
 //! §17.12, *Runtime modules*).
 
+mod native;
+
 use std::collections::BTreeSet;
 
 use lexlean::backend::runtime;
@@ -367,6 +369,7 @@ fn rt_03() {
     let project = P::runtime_project();
     project.relock();
     support::verify_ok(&project);
+    native::check();
     // A row that pins an axiom its declaration does not use is refused.
     let planted = P::runtime_project();
     planted.edit(
