@@ -17,6 +17,11 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- CI runs the Windows x86-64 host's tests as five lanes of one run (SPEC.md §8.3): the four
+  conformance lanes of `.github/intel-host-lanes.json` and a `producer` lane with every other test
+  and doctest. A join on `ubuntu-24.04` keeps the context `build and non-Lean tests
+  (x86_64-pc-windows-msvc)` and passes only when the lanes' executed tests equal the host's
+  listing, each once. The single Windows job took 106-126 minutes.
 - `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
   initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
   `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
