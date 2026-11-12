@@ -34,7 +34,7 @@ const ROOTS: [(&str, &[&str]); 4] = [
     ("primitiveFacts", &["allocation"]),
     ("integerName", &["allocation"]),
     ("typeText", &["allocation", "overflow", "recursion"]),
-    ("typeSpelling", &["allocation", "overflow", "recursion"]),
+    ("typeSpelling", &["allocation", "recursion"]),
 ];
 
 /// The most a part of a certificate of a root may be, as the row states.

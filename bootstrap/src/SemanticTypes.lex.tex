@@ -391,7 +391,7 @@ definition{
   result: Bytes,
   body: (typeDisplay semantic),
   executable: true,
-  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+  production: {effects: [allocation, recursion], targets: [rust-std]}
 }
 \end{semanticmodule}
 \end{lexlean}

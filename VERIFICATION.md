@@ -11828,8 +11828,8 @@ families as inductives. The type arguments of a named type and the parameters
 of a function type are a chain of cells of the type itself, so that `typeText`
 is one structural recursion and `typeSpelling` a mutual recursion of a type and
 the spellings of a chain. `primitiveFacts` and `integerName` admit exactly
-`allocation`, the two type roots exactly `allocation`, `overflow`, and
-`recursion`. The oracle is the existing public code of `semantic.rs` and its
+`allocation`, `typeText` exactly `allocation`, `overflow`, and `recursion`,
+and `typeSpelling` exactly `allocation` and `recursion`. The oracle is the existing public code of `semantic.rs` and its
 serde derivations; no Rust outside the case changes.
 
 The case holds each root to the oracle on hand-built types that reach every
