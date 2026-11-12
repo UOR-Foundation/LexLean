@@ -93,7 +93,7 @@ impl Writer<'_, '_> {
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::String
@@ -134,7 +134,7 @@ impl Writer<'_, '_> {
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int8
             | SemanticType::Int16
@@ -185,7 +185,7 @@ impl Writer<'_, '_> {
             SemanticType::Type
             | SemanticType::Parameter { name: _ }
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Option { value: _ }
@@ -356,7 +356,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
-                    | SemanticType::Array { .. }
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -501,7 +501,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
-                    | SemanticType::Array { .. }
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -544,7 +544,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
-                    | SemanticType::Array { .. }
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -635,7 +635,7 @@ impl Writer<'_, '_> {
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8
@@ -716,7 +716,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
-                    | SemanticType::Array { .. }
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -881,7 +881,7 @@ impl Writer<'_, '_> {
             SemanticType::Type
             | SemanticType::Parameter { name: _ }
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8
@@ -1013,7 +1013,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
-                    | SemanticType::Array { .. }
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -1160,7 +1160,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
-                    | SemanticType::Array { .. }
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -1201,7 +1201,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
-                    | SemanticType::Array { .. }
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -1378,7 +1378,7 @@ impl Writer<'_, '_> {
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8

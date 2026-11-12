@@ -163,7 +163,7 @@ impl Writer<'_, '_> {
             }
             SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ } => {
                 return Err(format!(
                     "`{}` has no runtime encoding",
@@ -286,7 +286,7 @@ impl Writer<'_, '_> {
             }
             | SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ } => {
                 return Err(format!(
                     "`{}` has no value encoding",
@@ -327,7 +327,7 @@ impl Writer<'_, '_> {
             }
             | SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Nat
             | SemanticType::Bool

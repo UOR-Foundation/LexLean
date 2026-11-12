@@ -217,7 +217,7 @@ impl<'g, 'a> Composer<'g, 'a> {
             }
             | SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ } => {
                 return Err(format!(
                     "`{}` has no runtime encoding",
@@ -380,7 +380,7 @@ impl<'g, 'a> Composer<'g, 'a> {
             }
             | SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ } => {
                 return Err(format!(
                     "`{}` has no runtime encoding",
@@ -432,7 +432,7 @@ impl<'g, 'a> Composer<'g, 'a> {
             }
             | SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Nat
             | SemanticType::Bool
@@ -513,7 +513,7 @@ impl<'g, 'a> Composer<'g, 'a> {
                 }
                 | SemanticType::Type
                 | SemanticType::Prop
-                | SemanticType::Array { .. }
+                | SemanticType::Array { element: _ }
                 | SemanticType::Parameter { name: _ }
                 | SemanticType::Nat
                 | SemanticType::Bool
@@ -632,7 +632,7 @@ impl<'g, 'a> Composer<'g, 'a> {
             }
             | SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ } => Err(format!(
                 "`{}` crosses no root boundary",
                 self.gen.source.type_text(ty)
@@ -782,7 +782,7 @@ impl<'g, 'a> Composer<'g, 'a> {
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8
@@ -1424,7 +1424,7 @@ pub(super) fn canonical(ty: &SemanticType) -> SemanticType {
         }
         | SemanticType::Type
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Parameter { name: _ }
         | SemanticType::Nat
         | SemanticType::Bool
@@ -1528,7 +1528,7 @@ impl Composer<'_, '_> {
             }
             | SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Nat
             | SemanticType::Bool
@@ -1580,7 +1580,7 @@ impl Composer<'_, '_> {
             }
             | SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Nat
             | SemanticType::Bool
@@ -2103,7 +2103,7 @@ pub(super) fn container_parts(ty: &SemanticType) -> Result<Vec<SemanticType>, St
         }
         | SemanticType::Type
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Parameter { name: _ }
         | SemanticType::Nat
         | SemanticType::Bool
@@ -2144,7 +2144,7 @@ pub(super) fn type_arguments(ty: &SemanticType) -> Vec<SemanticType> {
         | SemanticType::ReasoningFailure
         | SemanticType::Type
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Parameter { name: _ }
         | SemanticType::Nat
         | SemanticType::Bool
@@ -2185,7 +2185,7 @@ pub(super) fn named_member(ty: &SemanticType) -> Result<MemberRef, String> {
         | SemanticType::ReasoningFailure
         | SemanticType::Type
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Parameter { name: _ }
         | SemanticType::Nat
         | SemanticType::Bool
@@ -2242,7 +2242,7 @@ fn element_type(container: &SemanticType, element: &SemanticType) -> SemanticTyp
         }
         | SemanticType::Type
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Parameter { name: _ }
         | SemanticType::Nat
         | SemanticType::Bool

@@ -1392,7 +1392,7 @@ const fn is_violation(ty: &SemanticType) -> bool {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -1439,7 +1439,7 @@ pub(crate) const fn fixed_kind(ty: &SemanticType) -> Option<IntKind> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::String
@@ -1525,7 +1525,7 @@ pub(crate) fn template_of(
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8
@@ -1566,7 +1566,7 @@ pub(crate) fn template_of(
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8
@@ -1917,7 +1917,7 @@ impl Lowerer<'_> {
             }
             SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Function {
                 parameters: _,
@@ -2056,7 +2056,7 @@ impl Lowerer<'_> {
             }
             SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Function {
                 parameters: _,
@@ -2180,7 +2180,7 @@ impl Lowerer<'_> {
             },
             SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ } => {
                 return Err(format!(
                     "`{}` has no runtime realization",
@@ -3462,7 +3462,7 @@ impl Lowerer<'_> {
                 | SemanticType::Parameter { name: _ }
                 | SemanticType::Bool
                 | SemanticType::Prop
-                | SemanticType::Array { .. }
+                | SemanticType::Array { element: _ }
                 | SemanticType::Unit
                 | SemanticType::Int8
                 | SemanticType::Int16
@@ -3501,7 +3501,7 @@ impl Lowerer<'_> {
                 | SemanticType::Nat
                 | SemanticType::Bool
                 | SemanticType::Prop
-                | SemanticType::Array { .. }
+                | SemanticType::Array { element: _ }
                 | SemanticType::Unit
                 | SemanticType::Int
                 | SemanticType::Int8
@@ -3647,7 +3647,7 @@ fn product(ty: SemanticType) -> Result<(SemanticType, SemanticType), String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -3855,7 +3855,7 @@ impl Source<'_> {
                 | SemanticType::Nat
                 | SemanticType::Bool
                 | SemanticType::Prop
-                | SemanticType::Array { .. }
+                | SemanticType::Array { element: _ }
                 | SemanticType::Unit
                 | SemanticType::Int
                 | SemanticType::Int8

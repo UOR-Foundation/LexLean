@@ -144,7 +144,7 @@ pub fn source_type(
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -667,7 +667,7 @@ fn runtime_type(source: &Source<'_>, ty: &SemanticType) -> Result<RuntimeType, S
         }
         SemanticType::Type
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Parameter { name: _ } => {
             return Err(format!(
                 "`{}` has no runtime encoding",
@@ -688,7 +688,7 @@ fn function_type(ty: &SemanticType) -> Option<(&[SemanticType], &SemanticType)> 
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -856,7 +856,7 @@ fn integer_suffix(ty: &SemanticType) -> Result<&'static str, String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int8
         | SemanticType::Int16
@@ -903,7 +903,7 @@ fn element_of(ty: &SemanticType) -> Result<SemanticType, String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -942,7 +942,7 @@ fn option_value(ty: &SemanticType) -> Result<SemanticType, String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -989,7 +989,7 @@ fn numeric(ty: &SemanticType) -> Result<Numeric, String> {
         | SemanticType::Parameter { name: _ }
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int8
         | SemanticType::Int16
@@ -1040,7 +1040,7 @@ fn sequence(ty: &SemanticType) -> Result<Sequence, String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -1093,7 +1093,7 @@ fn equal_suffix(ty: &SemanticType) -> Result<&'static str, String> {
         SemanticType::Type
         | SemanticType::Parameter { name: _ }
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Option { value: _ }
@@ -2412,7 +2412,7 @@ fn named_types(ty: &SemanticType, out: &mut Vec<SemanticType>) {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -2533,7 +2533,7 @@ impl<'a> Gen<'a> {
             }
             | SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Nat
             | SemanticType::Bool
@@ -2661,7 +2661,7 @@ impl Gen<'_> {
             }
             SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ } => {
                 return Err(format!(
                     "`{}` has no runtime realization",
@@ -2693,7 +2693,7 @@ fn parts(ty: &SemanticType) -> Result<(SemanticType, SemanticType), String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -2740,7 +2740,7 @@ fn shape_tag(ty: &SemanticType) -> &'static str {
         } => "document",
         SemanticType::Type
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Parameter { name: _ }
         | SemanticType::Function {
             parameters: _,
@@ -2814,7 +2814,7 @@ fn component_types(ty: &SemanticType) -> Vec<SemanticType> {
         }
         | SemanticType::Type
         | SemanticType::Prop
-        | SemanticType::Array { .. }
+        | SemanticType::Array { element: _ }
         | SemanticType::Parameter { name: _ }
         | SemanticType::Function {
             parameters: _,
@@ -2995,7 +2995,7 @@ impl Gen<'_> {
             }
             SemanticType::Type
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Function {
                 parameters: _,

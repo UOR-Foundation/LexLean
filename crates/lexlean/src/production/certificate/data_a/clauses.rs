@@ -181,7 +181,7 @@ impl Writer<'_, '_> {
             SemanticType::Type
             | SemanticType::Parameter { name: _ }
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Bytes
             | SemanticType::Ordering
@@ -249,7 +249,7 @@ impl Writer<'_, '_> {
             SemanticType::Type
             | SemanticType::Parameter { name: _ }
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::String
             | SemanticType::Bytes
@@ -344,7 +344,7 @@ impl Writer<'_, '_> {
             | SemanticType::Type
             | SemanticType::Parameter { name: _ }
             | SemanticType::Prop
-            | SemanticType::Array { .. }
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Bytes
             | SemanticType::Ordering
