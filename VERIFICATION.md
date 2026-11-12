@@ -11857,8 +11857,8 @@ passes.
 ### the semantic terms and proofs are source (BS-69)
 
 `BS-69` holds the two production roots of `LexLeanBoot.SemanticTerms`
-(`bootstrap/src/SemanticTerms.lex.tex`) to `lexlean::ir::semantic`: `termText`
-to the canonical JSON of the serde form of `SemanticTerm` and `proofText` to
+(`bootstrap/src/SemanticTerms.lex.tex`) to `lexlean::ir::semantic`: `semanticTermText`
+to the canonical JSON of the serde form of `SemanticTerm` and `semanticProofText` to
 that of `SemanticProof`, as `DocumentModule::to_json` embeds a semantic module.
 The module declares the 42 term forms and the 13 proof forms of SPEC.md §17.11
 and §17.12 as inductives over the types of `SemanticTypes` (`BS-68`). Arguments,
@@ -11888,9 +11888,9 @@ passes.
 
 `BS-70` holds the two production roots of `LexLeanBoot.SemanticDecls`
 (`bootstrap/src/SemanticDecls.lex.tex`) to `lexlean::ir::semantic`:
-`declarationText` to the canonical JSON of the serde form of
+`semanticDeclarationText` to the canonical JSON of the serde form of
 `SemanticDeclaration` for structures, classes, instances, inductives,
-definitions, and theorems, and `moduleText` to that of `SemanticModule`, as
+definitions, and theorems, and `semanticModuleText` to that of `SemanticModule`, as
 `DocumentModule::to_json` embeds a semantic module. The module declares the six
 ordinary declaration kinds of SPEC.md §17.11 and §17.12 as one inductive over
 the terms and proofs of `SemanticTerms` (`BS-69`) and the types of
@@ -11898,7 +11898,7 @@ the terms and proofs of `SemanticTerms` (`BS-69`) and the types of
 recursive argument, axioms, executable flag, mutual group, termination, and
 production, and an inductive's mutual group, are left out exactly where the
 oracle's serde attributes skip them. Every module of the `bootstrap/` project and
-of the standard library declares only these kinds, so `moduleText` writes the
+of the standard library declares only these kinds, so `semanticModuleText` writes the
 semantic modules of LexLean's own sources. Both roots admit exactly
 `allocation`, `overflow`, and `recursion`. The oracle is the existing public code
 of `semantic.rs` and its serde derivations; no Rust outside the case changes.

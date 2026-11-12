@@ -185,7 +185,7 @@ definition{
 }
 
 definition{
-  name: declarationText,
+  name: semanticDeclarationText,
   parameters: [declaration : SDecl],
   result: Bytes,
   body: (LexLeanStd.Json::writeJson (declarationJson declaration)),
@@ -195,7 +195,7 @@ definition{
 }
 
 definition{
-  name: moduleText,
+  name: semanticModuleText,
   parameters: [spec : Bytes, declarations : (List SDecl)],
   result: Bytes,
   body: (LexLeanStd.Json::writeJson (ctor LexLeanStd.Json::Json.JObj (member "spec" (jtext spec) (member "declarations" (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (declaration : SDecl) => (cons (declarationJson declaration) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [SDecl] declarations) : (List LexLeanStd.Json::Json)))) (jnil))))),
