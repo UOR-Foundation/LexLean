@@ -11552,6 +11552,39 @@ axioms the module now declares. The case then stops at the stack-bound step,
 bootstrap member did before its regeneration, which produces the package and
 measures the root's stack bound.
 
+### the scopes and references of a semantic expression are source (BS-51)
+
+`BS-51` holds the three production roots of `LexLeanBoot.LseScopes`
+(`bootstrap/src/LseScopes.lex.tex`) to `lexicon::lse`: `checkScopes` to
+`Lse::check_scopes`, `referencedConsts` to `Lse::referenced_consts`, and
+`outerShape` to `outer_explicit_binders` with whether `result` is a sort. Each
+walks an expression of `BS-25` with an explicit work stack in the oracle's
+order of visit, so that the first error is the oracle's first; a universe is
+walked on the same stack, and a scope is a list truncated when its binder
+ends. The host passes the length of the expression's text, which bounds the
+walk. No root admits `recursion`. The oracle is the existing public code of
+`lse.rs`; the case reads the encoder and the seeded expressions of `BS-25`'s
+case, made visible to its sibling, and no other Rust changes.
+
+The case holds the roots to the oracle on hand-built expressions that reach
+both errors, a binder's type before its name, a `let`'s value before its name,
+shadowing, the end of the scope of every binder form, and every universe form;
+on every signature and defined value of the committed lexicon entries under
+the universes its entry declares, each of which the case asserts is in scope;
+and on seeded expressions under seeded declarations. Each of the 14 planted
+defects names the one vector that catches it, and the case asserts that the
+site of each plant occurs once. The row's statement carries no counts.
+
+The case was first compiled and run on the normative host over `release/v0.4`
+at `26e5e0ace` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_51`). Its corpus is 43 named vectors, the 417 committed
+signatures and defined values, and 300 and 2,000 seeded expressions. The
+evaluator agrees with the oracle on 2,194 runs, the rendered packages under
+the pinned rustc on 7,294 runs, and each of the 14 planted defects is detected
+by its own vector. The case then stops at the stack-bound step, as each
+bootstrap member does before its regeneration, which produces the three
+packages.
+
 ### the lexer of the authoring notation is source (BS-22)
 
 `BS-22` holds the two production roots of `LexLeanBoot.SurfaceLex`

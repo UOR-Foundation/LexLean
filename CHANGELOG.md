@@ -17,6 +17,13 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The scopes, references, and outer shape of a LexLean Semantic Expression as
+  language-1.2 source, the second slice of the lexicon closure (SPEC.md §17.23,
+  §13.8, `BS-51`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `checkScopes`, `referencedConsts`, and `outerShape` of `LseScopes`
+  return what `Lse::check_scopes`, `referenced_consts`, and
+  `outer_explicit_binders` with `result` return, over the expressions of
+  `BS-25`. None admits `recursion`.
 - Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
   new diagnostic code; changes the language-1.2 identity). The runtime gains a
   sixth native module, `LexLeanRuntime.Regions`: a checker of local box
