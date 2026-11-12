@@ -323,7 +323,7 @@ definition{
 }
 
 definition{
-  name: termText,
+  name: semanticTermText,
   parameters: [term : STerm],
   result: Bytes,
   body: (LexLeanStd.Json::writeJson (termJson term)),
@@ -333,7 +333,7 @@ definition{
 }
 
 definition{
-  name: proofText,
+  name: semanticProofText,
   parameters: [proof : SProof],
   result: Bytes,
   body: (LexLeanStd.Json::writeJson (proofJson proof)),
