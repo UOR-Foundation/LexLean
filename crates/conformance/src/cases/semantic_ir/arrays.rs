@@ -309,11 +309,11 @@ pub(super) fn run() {
         // A loop that skips every second element is not the list definition:
         // Lean refuses exactly the theorem that says it reads the list.
         let skipping = P::copy_example("arrays");
-        let source = skipping.read(FILE);
-        let from = "| Option.some y => (dotLoop left right (position + 1) rest";
-        let to = "| Option.some y => (dotLoop left right (position + 2) rest";
+        let source = skipping.read_raw(FILE);
+        let from = "=> (dotLoop left right (position + 1) rest";
+        let to = "=> (dotLoop left right (position + 2) rest";
         assert!(source.contains(from), "the array loop advances by one");
-        skipping.write(FILE, &source.replacen(from, to, 1));
+        skipping.write_raw(FILE, &source.replacen(from, to, 1));
         skipping.check_ok();
         let error = skipping.verify_fails_with("LLV7002");
         assert!(
