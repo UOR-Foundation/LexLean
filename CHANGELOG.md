@@ -37,6 +37,10 @@ workspace carried at those versions without a tag.
   `SurfaceTooling` return what `surface::tooling::print_module`,
   `parse_module`, and `declaration_spans` return; the printer admits
   `recursion` and the other two do not. The register is 484 IDs.
+- `cargo xtask check-freshness` (SPEC.md §9.4), run in the honesty job before the expensive roots:
+  every input a committed build oracle records still hashes to its recorded digest, every lock
+  passes `lexlean lock --check`, and every committed export package names this compiler's
+  semantics and its project's committed semantic ID. Stale generated files fail in minutes.
 - Declaration IDs (SPEC.md §21.9, `SM-38`; no new diagnostic code, no change to
   any compiler-semantics ID). A language-1.2 build publishes
   `declarations/<module>.json` (`lexlean/declarations/1`, schema

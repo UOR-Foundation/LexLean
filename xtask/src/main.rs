@@ -36,6 +36,7 @@ fn main() -> ExitCode {
         "check-fixtures" => check_fixtures(&root, write),
         "check-calculus" => check_calculus(&root, write),
         "check-production-export" => check_production_export(write),
+        "check-freshness" => check_freshness(&root),
         "check-package" => check_package(&root),
         "counts" => counts::counts(&root, write),
         "check-test-inventory" => ci::check_test_inventory(&root),
@@ -64,6 +65,8 @@ fn main() -> ExitCode {
                                          LEXLEAN_COUNTS=fast|report into its constants and statements\n\
                  check-production-export §24.7: the consumer's exported packages equal the committed\n\
                                          packages under tests/production-export\n\
+                 check-freshness         §9.4: every committed build oracle's recorded inputs, every lock,
+                                         and every committed export package are current (no Lean)
                  check-package          §30.3, RP-12: package lexlean crate, verify offline build & identity\n\
                  check-test-inventory    RP-13: the `test` and `bdd` recipes partition the workspace tests,\n\
                                          and the parts of .github/bdd-parts.json partition `bdd`\n\
@@ -125,6 +128,18 @@ fn check_production_export(write: bool) -> Result<(), Fail> {
             "check-production-export: every exported package equals its committed package (§24.7)"
         );
     }
+    Ok(())
+}
+
+/// §9.4: the committed generated files are current, checked in honesty
+/// before the expensive roots (`repo_conformance::freshness`).
+fn check_freshness(root: &Path) -> Result<(), Fail> {
+    let root = camino::Utf8Path::from_path(root).ok_or("the repository path is UTF-8")?;
+    let summary = repo_conformance::freshness::check(root)?;
+    println!(
+        "check-freshness: {} build oracles ({} recorded inputs), their locks, and {} committed export packages are current (§9.4)",
+        summary.projects, summary.inputs, summary.packages
+    );
     Ok(())
 }
 

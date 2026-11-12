@@ -151,6 +151,11 @@ jobs:
         env:
           PYTHONDONTWRITEBYTECODE: "1"
         run: python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'
+      # Stale generated files fail here in minutes, before the expensive
+      # roots: every input a committed build oracle records, every lock, and
+      # every committed export package must be current (§9.4). No Lean.
+      - name: Check that the committed generated files are current
+        run: cargo xtask check-freshness
       - name: Run the honesty part of the acceptance gate
         shell: bash
         run: |

@@ -2244,6 +2244,15 @@ pub(crate) fn run(id: &str) {
             );
             // The honesty and reproducibility workflows stay separate.
             let honesty = job("honesty");
+            // §9.4: stale generated files fail in honesty, before the gate
+            // command and every expensive root.
+            let fresh = honesty
+                .find("        run: cargo xtask check-freshness\n")
+                .expect("§9.4: honesty checks that the committed generated files are current");
+            assert!(
+                fresh < honesty.find("just --timestamp").expect("the gate command"),
+                "§9.4: the freshness check runs before the honesty recipes"
+            );
             assert!(
                 honesty.contains("LEXLEAN_BDD_PART: ${{ matrix.bdd_part }}")
                     && honesty.contains("fromJSON(needs.plan.outputs.honesty)")
