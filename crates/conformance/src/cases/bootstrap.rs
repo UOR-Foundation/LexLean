@@ -986,30 +986,119 @@ fn readable(value: &Json) -> String {
 }
 
 /// Every run of `corpus` on which the evaluator and the oracle disagree, up
-/// to `limit`, each as the input and the two outcomes.
+/// to `limit`, each as the input and the two outcomes: the first `limit` in
+/// the corpus's order, whichever thread ran them.
+///
+/// The runs are independent, so they run on the calling thread and on as
+/// many helpers as the shared budget of [`helpers`] allows, each taking the
+/// next run in order. When one has found `limit` disagreements no run is
+/// taken after it; every run before the last one taken still finishes, so
+/// the first `limit` disagreements are among those run and the answer is the
+/// sequential one. When the cases measure the evaluator's stack (`PD-08`)
+/// every run is on the calling thread, whose stack is the one measured.
 fn evaluate(lowered: &Lowered, corpus: &[Run], limit: usize) -> Vec<String> {
-    let mut out = Vec::new();
-    for (run, (arguments, expected)) in corpus.iter().enumerate() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let disagreement = |run: usize| -> Option<String> {
+        let (arguments, expected) = &corpus[run];
         let outcome = interp::run(&lowered.program, FUEL, lowered.entry(), arguments);
         let observed = rust::observable(&outcome)
             .unwrap_or_else(|| panic!("run {run} on {arguments:?}: {outcome:?}"));
-        if &observed != expected {
+        (&observed != expected).then(|| {
             let input: Vec<String> = arguments
                 .iter()
                 .map(|argument| readable(&serde_json::to_value(argument).expect("JSON")))
                 .collect();
-            out.push(format!(
+            format!(
                 "run {run} on {}: the program gives {}, the oracle {}",
                 input.join(" "),
                 readable(&observed),
                 readable(expected)
-            ));
-            if out.len() >= limit {
+            )
+        })
+    };
+    let next = AtomicUsize::new(0);
+    let found = AtomicUsize::new(0);
+    let work = || {
+        let mut out = Vec::new();
+        while found.load(Ordering::SeqCst) < limit {
+            let run = next.fetch_add(1, Ordering::SeqCst);
+            if run >= corpus.len() {
                 break;
             }
+            if let Some(text) = disagreement(run) {
+                found.fetch_add(1, Ordering::SeqCst);
+                out.push((run, text));
+            }
+        }
+        out
+    };
+    let wanted = if crate::stack_bounds::measuring().is_some() {
+        0
+    } else {
+        corpus.len().saturating_sub(1)
+    };
+    let permits = helpers::take(wanted);
+    let mut out = std::thread::scope(|scope| {
+        let spawned: Vec<_> = (0..permits.0)
+            .map(|_| {
+                std::thread::Builder::new()
+                    .stack_size(EVALUATOR_STACK)
+                    .spawn_scoped(scope, work)
+                    .expect("an evaluator thread")
+            })
+            .collect();
+        let mut out = work();
+        for helper in spawned {
+            match helper.join() {
+                Ok(more) => out.extend(more),
+                Err(failure) => std::panic::resume_unwind(failure),
+            }
+        }
+        out
+    });
+    drop(permits);
+    out.sort_by_key(|(run, _)| *run);
+    out.truncate(limit);
+    out.into_iter().map(|(_, text)| text).collect()
+}
+
+/// The helper threads every [`evaluate`] of this process shares: one fewer
+/// than the host's processors, because the threads that call it, the test
+/// harness's, already run, and a part of the `bdd` recipe may run several
+/// cases at once. Taking never waits: a call takes what is free, and the
+/// calling thread alone runs every run when nothing is.
+mod helpers {
+    use std::sync::Mutex;
+
+    static FREE: Mutex<Option<usize>> = Mutex::new(None);
+
+    fn budget() -> usize {
+        std::thread::available_parallelism().map_or(1, std::num::NonZeroUsize::get) - 1
+    }
+
+    /// Helpers taken from the budget, returned when dropped, on a panic too.
+    pub(super) struct Taken(pub(super) usize);
+
+    impl Drop for Taken {
+        fn drop(&mut self) {
+            let mut free = FREE
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            *free.get_or_insert_with(budget) += self.0;
         }
     }
-    out
+
+    /// Up to `wanted` helpers, as many as are free.
+    pub(super) fn take(wanted: usize) -> Taken {
+        let mut free = FREE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let available = free.get_or_insert_with(budget);
+        let taken = wanted.min(*available);
+        *available -= taken;
+        Taken(taken)
+    }
 }
 
 /// What the lowered root returns for `arguments`, as the oracle's values are
