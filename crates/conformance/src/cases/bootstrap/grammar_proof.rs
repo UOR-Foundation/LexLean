@@ -516,16 +516,13 @@ fn seeded_runs(count: usize, bases: &[String], seed: u64) -> (Vec<Run>, Vec<Run>
     (tokens, sentences)
 }
 
+/// The runs of `textTokens` and of `parseProofSentence` on drawn ranges.
+type RangeRuns = (Vec<Run>, Vec<Run>);
+
 /// The ranges of one scanned source: up to [`RANGE_ATOMS`] atoms from an atom
 /// where a range may start (a period ends the one before it, as the elaborator
 /// cuts sentences), with [`TAIL_ATOMS`] atoms after it.
-fn ranges_of(
-    seeded: &mut Seeded,
-    path: &str,
-    atoms: &[Atom],
-    count: usize,
-    out: &mut (Vec<Run>, Vec<Run>),
-) {
+fn ranges_of(seeded: &mut Seeded, path: &str, atoms: &[Atom], count: usize, out: &mut RangeRuns) {
     if atoms.is_empty() {
         return;
     }
@@ -552,7 +549,7 @@ fn ranges_of(
 /// bytes, each source scanned once and dropped, the same number from each,
 /// for the evaluator and for rustc: the scanned atoms of the whole checkout
 /// do not fit in memory at once.
-fn source_runs() -> (usize, (Vec<Run>, Vec<Run>), (Vec<Run>, Vec<Run>)) {
+fn source_runs() -> (usize, RangeRuns, RangeRuns) {
     let sources: Vec<(String, String)> = super::scan::sources()
         .into_iter()
         .filter(|(_, content)| content.len() <= SOURCE_BYTES)

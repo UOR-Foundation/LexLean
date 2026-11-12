@@ -11724,7 +11724,8 @@ only entrypoint is `GrammarProof`: `lexlean check`, `lexlean build`, and
 
 The case was first compiled and run on the normative host on `release/v0.4` at
 `aaf845507` (`cargo test -p repo-conformance --test conformance --
-conformance_bs_35`, 278 s). Its corpus is 110 named vectors (99 of them read as
+conformance_bs_35`, 278 s), and again after merging `release/v0.4` at `26e5e0ace`
+(302 s), with the same counts. Its corpus is 110 named vectors (99 of them read as
 sentences), 1,002 committed sources, 600 and 4,000 seeded ranges, and 400 and
 3,000 seeded sentences. The evaluator agrees with the oracle on 1,110 runs of
 `textTokens` and 1,008 of `parseProofSentence`, the rendered packages under the
