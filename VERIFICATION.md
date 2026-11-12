@@ -11949,6 +11949,41 @@ Measured with the compiler binary of this tree's compiler sources: `lexlean
 check` of the `bootstrap/` project passes, with the root eligible for `rust-std`
 with exactly its declared effects, and `lexlean fmt --check` passes.
 
+### the reasoning declarations and whole semantic modules are source (BS-72)
+
+`BS-72` holds the two production roots of `LexLeanBoot.SemanticReasoning`
+(`bootstrap/src/SemanticReasoning.lex.tex`) to `lexlean::ir::semantic`:
+`reasoningDeclarationText` to the canonical JSON of the serde form of the
+logic, inference rule, verifier, reasoner, tokenizer, context window, text
+generator, and text classifier variants of `SemanticDeclaration`, and
+`semanticModuleText` to that of `SemanticModule`, as `DocumentModule::to_json`
+embeds a semantic module. The module declares the eleven types those
+declarations hold and the declarations themselves, each as one inductive with
+one writer, over the uses, binders, and states of `SemanticModels` (`BS-71`), the
+terms of `SemanticTerms` (`BS-69`), and the types of `SemanticTypes` (`BS-68`), and
+a declaration of any kind, written through `SemanticDecls` (`BS-70`),
+`SemanticModels`, or this module. With it every semantic module the linked IR
+embeds is written by source. The module, the case's encoders, and the case's
+example builders are generated from one description of the oracle's types, as
+`BS-71`'s are. Both roots admit exactly `allocation`, `overflow`, and
+`recursion`. The oracle is the existing public code of `semantic.rs` and its
+serde derivations; no Rust outside the case changes.
+
+The case holds `reasoningDeclarationText` to the oracle on 150 examples whose
+step's digits choose every variant at every depth, each optional member present
+and absent and each list empty and not, on every distinct such declaration of
+every committed semantic module that links, and on seeded examples; and
+`semanticModuleText` on every distinct semantic module of every committed
+project that links, the evaluator taking those whose JSON is at most 262,144
+bytes and the rendered package all of them. Each planted defect misspells one
+serialized kind or closed name, and the first example that holds it detects it;
+the case asserts that the site of each plant occurs once. The row's statement
+carries no counts.
+
+Measured with the compiler binary of this tree's compiler sources: `lexlean
+check` of the `bootstrap/` project passes, with each root eligible for `rust-std`
+with exactly its declared effects, and `lexlean fmt --check` passes.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

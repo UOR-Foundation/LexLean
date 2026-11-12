@@ -655,6 +655,22 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "reasoning_declaration_text",
+      "root": "LexLeanBoot.SemanticReasoning.reasoningDeclarationText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "whole_semantic_module_text",
+      "root": "LexLeanBoot.SemanticReasoning.semanticModuleText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

@@ -76,3 +76,6 @@ semantic module language and its modules as the linked IR embeds them.
 `src/SemanticModels.lex.tex` (SPEC.md §17.23, `BS-71`) imports `SemanticTerms`, `SemanticTypes`, and the
 standard library's `Json` and `Order`, and writes the declarations of artifacts, contracts,
 realizations, evidence, and models as the linked IR embeds them.
+`src/SemanticReasoning.lex.tex` (SPEC.md §17.23, `BS-72`) imports `SemanticDecls`, `SemanticModels`,
+`SemanticTerms`, `SemanticTypes`, and the standard library's `Json` and `Order`, and writes the
+declarations of reasoning and text components and semantic modules of every kind.

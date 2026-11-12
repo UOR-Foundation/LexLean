@@ -120,7 +120,7 @@ fn enc_member(member: &MemberRef) -> Value {
 
 // ------------------------------------------- generated from the type schema
 
-fn enc_artifact_role(value: &ArtifactRole) -> Value {
+pub(super) fn enc_artifact_role(value: &ArtifactRole) -> Value {
     adt(
         "ArtifactRole",
         &format!("ArtifactRole{value:?}"),
@@ -128,7 +128,7 @@ fn enc_artifact_role(value: &ArtifactRole) -> Value {
     )
 }
 
-const ALL_ARTIFACT_ROLE: &[ArtifactRole] = &[
+pub(super) const ALL_ARTIFACT_ROLE: &[ArtifactRole] = &[
     ArtifactRole::Parameters,
     ArtifactRole::Vocabulary,
     ArtifactRole::Dataset,
@@ -136,11 +136,11 @@ const ALL_ARTIFACT_ROLE: &[ArtifactRole] = &[
     ArtifactRole::Binary,
 ];
 
-fn example_artifact_role(step: usize) -> ArtifactRole {
+pub(super) fn example_artifact_role(step: usize) -> ArtifactRole {
     ALL_ARTIFACT_ROLE[step % ALL_ARTIFACT_ROLE.len()]
 }
 
-fn enc_tensor_element(value: &TensorElement) -> Value {
+pub(super) fn enc_tensor_element(value: &TensorElement) -> Value {
     adt(
         "TensorElement",
         &format!("TensorElement{value:?}"),
@@ -148,7 +148,7 @@ fn enc_tensor_element(value: &TensorElement) -> Value {
     )
 }
 
-const ALL_TENSOR_ELEMENT: &[TensorElement] = &[
+pub(super) const ALL_TENSOR_ELEMENT: &[TensorElement] = &[
     TensorElement::Int8,
     TensorElement::Int16,
     TensorElement::Int32,
@@ -159,11 +159,11 @@ const ALL_TENSOR_ELEMENT: &[TensorElement] = &[
     TensorElement::UInt64,
 ];
 
-fn example_tensor_element(step: usize) -> TensorElement {
+pub(super) fn example_tensor_element(step: usize) -> TensorElement {
     ALL_TENSOR_ELEMENT[step % ALL_TENSOR_ELEMENT.len()]
 }
 
-fn enc_artifact_schema(value: &ArtifactSchema) -> Value {
+pub(super) fn enc_artifact_schema(value: &ArtifactSchema) -> Value {
     match value {
         ArtifactSchema::Bytes => adt("ArtifactSchema", "ArtifactSchemaBytes", vec![]),
         ArtifactSchema::IntTensor { element, shape } => adt(
@@ -179,7 +179,7 @@ fn enc_artifact_schema(value: &ArtifactSchema) -> Value {
 }
 
 #[allow(clippy::too_many_lines)]
-fn example_artifact_schema(step: usize) -> ArtifactSchema {
+pub(super) fn example_artifact_schema(step: usize) -> ArtifactSchema {
     let rest = step / 3;
     match step % 3 {
         0 => ArtifactSchema::Bytes,
@@ -197,7 +197,7 @@ fn example_artifact_schema(step: usize) -> ArtifactSchema {
     }
 }
 
-fn enc_model_binder(value: &ModelBinder) -> Value {
+pub(super) fn enc_model_binder(value: &ModelBinder) -> Value {
     adt(
         "ModelBinder",
         "ModelBinderOf",
@@ -205,7 +205,7 @@ fn enc_model_binder(value: &ModelBinder) -> Value {
     )
 }
 
-fn example_model_binder(step: usize) -> ModelBinder {
+pub(super) fn example_model_binder(step: usize) -> ModelBinder {
     ModelBinder {
         name: format!("s{step}"),
         r#type: if step % 2 == 0 {
@@ -216,7 +216,7 @@ fn example_model_binder(step: usize) -> ModelBinder {
     }
 }
 
-fn enc_contract_state(value: &ContractState) -> Value {
+pub(super) fn enc_contract_state(value: &ContractState) -> Value {
     adt(
         "ContractState",
         "ContractStateOf",
@@ -228,7 +228,7 @@ fn enc_contract_state(value: &ContractState) -> Value {
     )
 }
 
-fn example_contract_state(step: usize) -> ContractState {
+pub(super) fn example_contract_state(step: usize) -> ContractState {
     ContractState {
         name: format!("s{step}"),
         next: format!("s{step}"),
@@ -240,7 +240,7 @@ fn example_contract_state(step: usize) -> ContractState {
     }
 }
 
-fn enc_contract_predicate(value: &ContractPredicate) -> Value {
+pub(super) fn enc_contract_predicate(value: &ContractPredicate) -> Value {
     adt(
         "ContractPredicate",
         &format!("ContractPredicate{value:?}"),
@@ -248,17 +248,17 @@ fn enc_contract_predicate(value: &ContractPredicate) -> Value {
     )
 }
 
-const ALL_CONTRACT_PREDICATE: &[ContractPredicate] = &[
+pub(super) const ALL_CONTRACT_PREDICATE: &[ContractPredicate] = &[
     ContractPredicate::Invariant,
     ContractPredicate::Postcondition,
     ContractPredicate::Precondition,
 ];
 
-fn example_contract_predicate(step: usize) -> ContractPredicate {
+pub(super) fn example_contract_predicate(step: usize) -> ContractPredicate {
     ALL_CONTRACT_PREDICATE[step % ALL_CONTRACT_PREDICATE.len()]
 }
 
-fn enc_contract_validator(value: &ContractValidator) -> Value {
+pub(super) fn enc_contract_validator(value: &ContractValidator) -> Value {
     adt(
         "ContractValidator",
         "ContractValidatorOf",
@@ -271,7 +271,7 @@ fn enc_contract_validator(value: &ContractValidator) -> Value {
     )
 }
 
-fn example_contract_validator(step: usize) -> ContractValidator {
+pub(super) fn example_contract_validator(step: usize) -> ContractValidator {
     ContractValidator {
         predicate: example_contract_predicate(step),
         validator: MemberRef {
@@ -289,7 +289,7 @@ fn example_contract_validator(step: usize) -> ContractValidator {
     }
 }
 
-fn enc_model_use(value: &ModelUse) -> Value {
+pub(super) fn enc_model_use(value: &ModelUse) -> Value {
     adt(
         "ModelUse",
         "ModelUseOf",
@@ -306,7 +306,7 @@ fn enc_model_use(value: &ModelUse) -> Value {
     )
 }
 
-fn example_model_use(step: usize) -> ModelUse {
+pub(super) fn example_model_use(step: usize) -> ModelUse {
     ModelUse {
         member: MemberRef {
             module: (step % 2 == 0).then(|| "M".to_owned()),
@@ -328,7 +328,7 @@ fn example_model_use(step: usize) -> ModelUse {
     }
 }
 
-fn enc_realization_state(value: &RealizationState) -> Value {
+pub(super) fn enc_realization_state(value: &RealizationState) -> Value {
     adt(
         "RealizationState",
         "RealizationStateOf",
@@ -340,7 +340,7 @@ fn enc_realization_state(value: &RealizationState) -> Value {
     )
 }
 
-fn example_realization_state(step: usize) -> RealizationState {
+pub(super) fn example_realization_state(step: usize) -> RealizationState {
     RealizationState {
         name: format!("s{step}"),
         r#type: if step % 2 == 0 {
@@ -354,7 +354,7 @@ fn example_realization_state(step: usize) -> RealizationState {
     }
 }
 
-fn enc_realization_rule(value: &RealizationRule) -> Value {
+pub(super) fn enc_realization_rule(value: &RealizationRule) -> Value {
     adt(
         "RealizationRule",
         "RealizationRuleOf",
@@ -366,7 +366,7 @@ fn enc_realization_rule(value: &RealizationRule) -> Value {
     )
 }
 
-fn example_realization_rule(step: usize) -> RealizationRule {
+pub(super) fn example_realization_rule(step: usize) -> RealizationRule {
     RealizationRule {
         name: format!("s{step}"),
         guard: SemanticTerm::Nat {
@@ -378,7 +378,7 @@ fn example_realization_rule(step: usize) -> RealizationRule {
     }
 }
 
-fn enc_statistical_scheme(value: &StatisticalScheme) -> Value {
+pub(super) fn enc_statistical_scheme(value: &StatisticalScheme) -> Value {
     adt(
         "StatisticalScheme",
         &format!("StatisticalScheme{value:?}"),
@@ -386,13 +386,13 @@ fn enc_statistical_scheme(value: &StatisticalScheme) -> Value {
     )
 }
 
-const ALL_STATISTICAL_SCHEME: &[StatisticalScheme] = &[StatisticalScheme::LinearScoring];
+pub(super) const ALL_STATISTICAL_SCHEME: &[StatisticalScheme] = &[StatisticalScheme::LinearScoring];
 
-fn example_statistical_scheme(step: usize) -> StatisticalScheme {
+pub(super) fn example_statistical_scheme(step: usize) -> StatisticalScheme {
     ALL_STATISTICAL_SCHEME[step % ALL_STATISTICAL_SCHEME.len()]
 }
 
-fn enc_neural_architecture(value: &NeuralArchitecture) -> Value {
+pub(super) fn enc_neural_architecture(value: &NeuralArchitecture) -> Value {
     adt(
         "NeuralArchitecture",
         &format!("NeuralArchitecture{value:?}"),
@@ -400,13 +400,14 @@ fn enc_neural_architecture(value: &NeuralArchitecture) -> Value {
     )
 }
 
-const ALL_NEURAL_ARCHITECTURE: &[NeuralArchitecture] = &[NeuralArchitecture::IntegerFeedforward];
+pub(super) const ALL_NEURAL_ARCHITECTURE: &[NeuralArchitecture] =
+    &[NeuralArchitecture::IntegerFeedforward];
 
-fn example_neural_architecture(step: usize) -> NeuralArchitecture {
+pub(super) fn example_neural_architecture(step: usize) -> NeuralArchitecture {
     ALL_NEURAL_ARCHITECTURE[step % ALL_NEURAL_ARCHITECTURE.len()]
 }
 
-fn enc_neural_layer(value: &NeuralLayer) -> Value {
+pub(super) fn enc_neural_layer(value: &NeuralLayer) -> Value {
     match value {
         NeuralLayer::Dense {
             inputs,
@@ -437,7 +438,7 @@ fn enc_neural_layer(value: &NeuralLayer) -> Value {
 }
 
 #[allow(clippy::too_many_lines)]
-fn example_neural_layer(step: usize) -> NeuralLayer {
+pub(super) fn example_neural_layer(step: usize) -> NeuralLayer {
     let rest = step / 3;
     match step % 3 {
         0 => NeuralLayer::Dense {
@@ -461,7 +462,7 @@ fn example_neural_layer(step: usize) -> NeuralLayer {
     }
 }
 
-fn enc_neural_decoder(value: &NeuralDecoder) -> Value {
+pub(super) fn enc_neural_decoder(value: &NeuralDecoder) -> Value {
     match value {
         NeuralDecoder::Argmax { labels } => adt(
             "NeuralDecoder",
@@ -477,7 +478,7 @@ fn enc_neural_decoder(value: &NeuralDecoder) -> Value {
 }
 
 #[allow(clippy::too_many_lines)]
-fn example_neural_decoder(step: usize) -> NeuralDecoder {
+pub(super) fn example_neural_decoder(step: usize) -> NeuralDecoder {
     let rest = step / 2;
     match step % 2 {
         0 => NeuralDecoder::Argmax {
@@ -500,7 +501,7 @@ fn example_neural_decoder(step: usize) -> NeuralDecoder {
     }
 }
 
-fn enc_composite_junction(value: &CompositeJunction) -> Value {
+pub(super) fn enc_composite_junction(value: &CompositeJunction) -> Value {
     match value {
         CompositeJunction::Unconditional => adt(
             "CompositeJunction",
@@ -517,7 +518,7 @@ fn enc_composite_junction(value: &CompositeJunction) -> Value {
 }
 
 #[allow(clippy::too_many_lines)]
-fn example_composite_junction(step: usize) -> CompositeJunction {
+pub(super) fn example_composite_junction(step: usize) -> CompositeJunction {
     let rest = step / 3;
     match step % 3 {
         0 => CompositeJunction::Unconditional,
@@ -531,7 +532,7 @@ fn example_composite_junction(step: usize) -> CompositeJunction {
     }
 }
 
-fn enc_composite_form(value: &CompositeForm) -> Value {
+pub(super) fn enc_composite_form(value: &CompositeForm) -> Value {
     match value {
         CompositeForm::Sequence { stages, junctions } => adt(
             "CompositeForm",
@@ -574,7 +575,7 @@ fn enc_composite_form(value: &CompositeForm) -> Value {
 }
 
 #[allow(clippy::too_many_lines)]
-fn example_composite_form(step: usize) -> CompositeForm {
+pub(super) fn example_composite_form(step: usize) -> CompositeForm {
     let rest = step / 5;
     match step % 5 {
         0 => CompositeForm::Sequence {
@@ -615,7 +616,7 @@ fn example_composite_form(step: usize) -> CompositeForm {
     }
 }
 
-fn enc_realization_descriptor(value: &RealizationDescriptor) -> Value {
+pub(super) fn enc_realization_descriptor(value: &RealizationDescriptor) -> Value {
     match value {
         RealizationDescriptor::Deterministic { body } => adt(
             "RealizationDescriptor",
@@ -684,7 +685,7 @@ fn enc_realization_descriptor(value: &RealizationDescriptor) -> Value {
 }
 
 #[allow(clippy::too_many_lines)]
-fn example_realization_descriptor(step: usize) -> RealizationDescriptor {
+pub(super) fn example_realization_descriptor(step: usize) -> RealizationDescriptor {
     let rest = step / 5;
     match step % 5 {
         0 => RealizationDescriptor::Deterministic {
@@ -757,7 +758,7 @@ fn example_realization_descriptor(step: usize) -> RealizationDescriptor {
     }
 }
 
-fn enc_evidence_claim(value: &EvidenceClaim) -> Value {
+pub(super) fn enc_evidence_claim(value: &EvidenceClaim) -> Value {
     match value {
         EvidenceClaim::DatasetAgreement {
             dataset,
@@ -802,7 +803,7 @@ fn enc_evidence_claim(value: &EvidenceClaim) -> Value {
 }
 
 #[allow(clippy::too_many_lines)]
-fn example_evidence_claim(step: usize) -> EvidenceClaim {
+pub(super) fn example_evidence_claim(step: usize) -> EvidenceClaim {
     let rest = step / 5;
     match step % 5 {
         0 => EvidenceClaim::DatasetAgreement {
@@ -853,7 +854,7 @@ fn example_evidence_claim(step: usize) -> EvidenceClaim {
     }
 }
 
-fn enc_model_declaration(value: &SemanticDeclaration) -> Value {
+pub(super) fn enc_model_declaration(value: &SemanticDeclaration) -> Value {
     match value {
         SemanticDeclaration::Artifact {
             name,
@@ -976,7 +977,7 @@ fn enc_model_declaration(value: &SemanticDeclaration) -> Value {
 }
 
 #[allow(clippy::too_many_lines)]
-fn example_model_declaration(step: usize) -> SemanticDeclaration {
+pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
     let rest = step / 5;
     match step % 5 {
         0 => SemanticDeclaration::Artifact {
@@ -1147,7 +1148,7 @@ const KINDS: &[&str] = &[
 
 // ------------------------------------------------------------- the inputs
 
-fn is_model(declaration: &SemanticDeclaration) -> bool {
+pub(super) fn is_model(declaration: &SemanticDeclaration) -> bool {
     matches!(
         declaration,
         SemanticDeclaration::Artifact { .. }

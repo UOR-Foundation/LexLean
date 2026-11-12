@@ -1,0 +1,462 @@
+\begin{lexlean}{SemanticReasoning}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{SemanticDecls}
+\importmodule{SemanticModels}
+\importmodule{SemanticTerms}
+\importmodule{SemanticTypes}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Order}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: LogicInvariant,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: LogicInvariantOf, fields: [((Option Bytes) * Bytes), ((Option Bytes) * Bytes)]}
+  ]
+}
+
+inductive{
+  name: RuleBinding,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: RuleBindingOf, fields: [Bytes, SemanticTypes::SemanticType, SemanticTerms::STerm]}
+  ]
+}
+
+inductive{
+  name: ReasoningAnswer,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: ReasoningAnswerOf, fields: [Bytes, SemanticTypes::SemanticType, SemanticTerms::STerm]}
+  ]
+}
+
+inductive{
+  name: SearchOrder,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: SearchOrderBreadthFirst, fields: []},
+    {name: SearchOrderDepthFirst, fields: []}
+  ]
+}
+
+inductive{
+  name: ReasoningStrategy,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: ReasoningStrategyForward, fields: [(Option SemanticTerms::STerm)]},
+    {
+      name: ReasoningStrategySearch,
+      fields: [SearchOrder, (Option SemanticTerms::STerm), (Option SemanticTerms::STerm), Bool]
+    },
+    {
+      name: ReasoningStrategyGenerateAndVerify,
+      fields: [SemanticTerms::STerm, (Option SemanticTerms::STerm)]
+    }
+  ]
+}
+
+inductive{
+  name: ReasoningClaim,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: ReasoningClaimInitialInvariant, fields: [((Option Bytes) * Bytes)]},
+    {name: ReasoningClaimTerminates, fields: [((Option Bytes) * Bytes)]},
+    {
+      name: ReasoningClaimObservationInvariant,
+      fields: [((Option Bytes) * Bytes), ((Option Bytes) * Bytes), ((Option Bytes) * Bytes)]
+    },
+    {name: ReasoningClaimAnswerCorrect, fields: [((Option Bytes) * Bytes)]}
+  ]
+}
+
+inductive{
+  name: TokenizerScheme,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TokenizerSchemeByteLevel, fields: []},
+    {name: TokenizerSchemeLongestMatch, fields: []}
+  ]
+}
+
+inductive{
+  name: OverflowDisposition,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: OverflowDispositionRefuse, fields: []},
+    {name: OverflowDispositionKeepLast, fields: []}
+  ]
+}
+
+inductive{
+  name: SamplingGenerator,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: SamplingGeneratorXorshift32, fields: []}]
+}
+
+inductive{
+  name: SamplingDistribution,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: SamplingDistributionProportional, fields: []}]
+}
+
+inductive{
+  name: GenerationPolicy,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: GenerationPolicyGreedy, fields: []},
+    {name: GenerationPolicySample, fields: [SamplingGenerator, SamplingDistribution]}
+  ]
+}
+
+inductive{
+  name: ReasoningDeclaration,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {
+      name: ReasoningDeclarationLogic,
+      fields: [
+        Bytes,
+        (List Bytes),
+        SemanticModels::ContractState,
+        ((Option Bytes) * Bytes),
+        (Option LogicInvariant),
+        (Option ((Option Bytes) * Bytes)),
+        (List Bytes)
+      ]
+    },
+    {
+      name: ReasoningDeclarationInferenceRule,
+      fields: [
+        Bytes,
+        (List Bytes),
+        SemanticModels::ModelUse,
+        (Option RuleBinding),
+        SemanticTerms::STerm,
+        SemanticTerms::STerm,
+        ((Option Bytes) * Bytes),
+        (Option ((Option Bytes) * Bytes)),
+        Bool,
+        (List Bytes)
+      ]
+    },
+    {
+      name: ReasoningDeclarationVerifier,
+      fields: [
+        Bytes,
+        (List Bytes),
+        SemanticModels::ModelBinder,
+        SemanticModels::ModelBinder,
+        ((Option Bytes) * Bytes),
+        ((Option Bytes) * Bytes),
+        ((Option Bytes) * Bytes),
+        (Option ((Option Bytes) * Bytes)),
+        (List Bytes)
+      ]
+    },
+    {
+      name: ReasoningDeclarationReasoner,
+      fields: [
+        Bytes,
+        (List Bytes),
+        (Option SemanticModels::ModelUse),
+        SemanticModels::ModelBinder,
+        (Option SemanticTerms::STerm),
+        (List SemanticModels::ModelUse),
+        ReasoningStrategy,
+        (Option ReasoningAnswer),
+        SemanticModels::ModelUse,
+        (List ReasoningClaim),
+        Bool,
+        (List Bytes)
+      ]
+    },
+    {
+      name: ReasoningDeclarationTokenizer,
+      fields: [Bytes, (List Bytes), TokenizerScheme, SemanticModels::ModelUse, (List Bytes)]
+    },
+    {
+      name: ReasoningDeclarationContextWindow,
+      fields: [Bytes, Nat, OverflowDisposition, (List Bytes)]
+    },
+    {
+      name: ReasoningDeclarationTextGenerator,
+      fields: [
+        Bytes,
+        ((Option Bytes) * Bytes),
+        ((Option Bytes) * Bytes),
+        SemanticModels::ModelUse,
+        Nat,
+        ((Option Bytes) * Bytes),
+        GenerationPolicy,
+        (List Bytes)
+      ]
+    },
+    {
+      name: ReasoningDeclarationTextClassifier,
+      fields: [Bytes, ((Option Bytes) * Bytes), SemanticModels::ModelUse, (List Bytes)]
+    }
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: objectOf,
+  parameters: [entries : (List (Bytes * LexLeanStd.Json::Json))],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj (prim list_fold (fun (rest : LexLeanStd.Json::Json) (entry : (Bytes * LexLeanStd.Json::Json)) => (ctor LexLeanStd.Json::Json.JMember (first entry) (second entry) rest)) (ctor LexLeanStd.Json::Json.JNil) entries : LexLeanStd.Json::Json)),
+  executable: true
+}
+
+definition{
+  name: logicInvariantJson,
+  parameters: [value : LogicInvariant],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | LogicInvariant.LogicInvariantOf part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "predicate"), (SemanticTerms::memberJson (first part0) (second part0))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "preserves"), (SemanticTerms::memberJson (first part1) (second part1))) entries1); (objectOf entries2)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: ruleBindingJson,
+  parameters: [value : RuleBinding],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | RuleBinding.RuleBindingOf part0 part1 part2 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "type"), (SemanticTypes::typeJson part1)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "candidates"), (SemanticTerms::termJson part2)) entries2); (objectOf entries3))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: reasoningAnswerJson,
+  parameters: [value : ReasoningAnswer],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | ReasoningAnswer.ReasoningAnswerOf part0 part1 part2 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "type"), (SemanticTypes::typeJson part1)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "value"), (SemanticTerms::termJson part2)) entries2); (objectOf entries3))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: searchOrderJson,
+  parameters: [value : SearchOrder],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | SearchOrder.SearchOrderBreadthFirst => (ctor LexLeanStd.Json::Json.JStr (lit "breadth_first"))
+    | SearchOrder.SearchOrderDepthFirst => (ctor LexLeanStd.Json::Json.JStr (lit "depth_first"))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: reasoningStrategyJson,
+  parameters: [value : ReasoningStrategy],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | ReasoningStrategy.ReasoningStrategyForward part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "forward"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (match part0
+      | Option.some present => (cons ((lit "fuel"), (SemanticTerms::termJson present)) entries1)
+      | Option.none => entries1); (objectOf entries2)))
+    | ReasoningStrategy.ReasoningStrategySearch part0 part1 part2 part3 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "search"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "order"), (searchOrderJson part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (match part1
+      | Option.some present => (cons ((lit "fuel"), (SemanticTerms::termJson present)) entries2)
+      | Option.none => entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (match part2
+      | Option.some present => (cons ((lit "frontier"), (SemanticTerms::termJson present)) entries3)
+      | Option.none => entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (if part3 then (cons ((lit "deduplicate"), (ctor LexLeanStd.Json::Json.JBool true)) entries4) else entries4); (objectOf entries5))))))
+    | ReasoningStrategy.ReasoningStrategyGenerateAndVerify part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "generate_and_verify"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "generator"), (SemanticTerms::termJson part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (match part1
+      | Option.some present => (cons ((lit "budget"), (SemanticTerms::termJson present)) entries2)
+      | Option.none => entries2); (objectOf entries3))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: reasoningClaimJson,
+  parameters: [value : ReasoningClaim],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | ReasoningClaim.ReasoningClaimInitialInvariant part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "initial_invariant"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "theorem"), (SemanticTerms::memberJson (first part0) (second part0))) entries1); (objectOf entries2)))
+    | ReasoningClaim.ReasoningClaimTerminates part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "terminates"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "theorem"), (SemanticTerms::memberJson (first part0) (second part0))) entries1); (objectOf entries2)))
+    | ReasoningClaim.ReasoningClaimObservationInvariant part0 part1 part2 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "observation_invariant"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "predicate"), (SemanticTerms::memberJson (first part0) (second part0))) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "initial"), (SemanticTerms::memberJson (first part1) (second part1))) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "preserved"), (SemanticTerms::memberJson (first part2) (second part2))) entries3); (objectOf entries4)))))
+    | ReasoningClaim.ReasoningClaimAnswerCorrect part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "answer_correct"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "theorem"), (SemanticTerms::memberJson (first part0) (second part0))) entries1); (objectOf entries2)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tokenizerSchemeJson,
+  parameters: [value : TokenizerScheme],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | TokenizerScheme.TokenizerSchemeByteLevel => (ctor LexLeanStd.Json::Json.JStr (lit "byte_level"))
+    | TokenizerScheme.TokenizerSchemeLongestMatch => (ctor LexLeanStd.Json::Json.JStr (lit "longest_match"))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: overflowDispositionJson,
+  parameters: [value : OverflowDisposition],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | OverflowDisposition.OverflowDispositionRefuse => (ctor LexLeanStd.Json::Json.JStr (lit "refuse"))
+    | OverflowDisposition.OverflowDispositionKeepLast => (ctor LexLeanStd.Json::Json.JStr (lit "keep_last"))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: samplingGeneratorJson,
+  parameters: [value : SamplingGenerator],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | SamplingGenerator.SamplingGeneratorXorshift32 => (ctor LexLeanStd.Json::Json.JStr (lit "xorshift32"))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: samplingDistributionJson,
+  parameters: [value : SamplingDistribution],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | SamplingDistribution.SamplingDistributionProportional => (ctor LexLeanStd.Json::Json.JStr (lit "proportional"))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: generationPolicyJson,
+  parameters: [value : GenerationPolicy],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | GenerationPolicy.GenerationPolicyGreedy => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "greedy"))) (nil (Bytes * LexLeanStd.Json::Json))); (objectOf entries1))
+    | GenerationPolicy.GenerationPolicySample part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "sample"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "generator"), (samplingGeneratorJson part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "distribution"), (samplingDistributionJson part1)) entries2); (objectOf entries3))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: reasoningDeclarationJson,
+  parameters: [value : ReasoningDeclaration],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | ReasoningDeclaration.ReasoningDeclarationLogic part0 part1 part2 part3 part4 part5 part6 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "logic"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (match part1
+      | List.nil => entries2
+      | List.cons head tail => (cons ((lit "type_parameters"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part1) : (List LexLeanStd.Json::Json))))) entries2)); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "state"), (SemanticModels::contractStateJson part2)) entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "relation"), (SemanticTerms::memberJson (first part3) (second part3))) entries4); (let entries6 : (List (Bytes * LexLeanStd.Json::Json)) := (match part4
+      | Option.some present => (cons ((lit "invariant"), (logicInvariantJson present)) entries5)
+      | Option.none => entries5); (let entries7 : (List (Bytes * LexLeanStd.Json::Json)) := (match part5
+      | Option.some present => (cons ((lit "ranking"), (SemanticTerms::memberJson (first present) (second present))) entries6)
+      | Option.none => entries6); (let entries8 : (List (Bytes * LexLeanStd.Json::Json)) := (match part6
+      | List.nil => entries7
+      | List.cons head tail => (cons ((lit "axioms"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part6) : (List LexLeanStd.Json::Json))))) entries7)); (objectOf entries8)))))))))
+    | ReasoningDeclaration.ReasoningDeclarationInferenceRule part0 part1 part2 part3 part4 part5 part6 part7 part8 part9 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "inference_rule"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (match part1
+      | List.nil => entries2
+      | List.cons head tail => (cons ((lit "type_parameters"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part1) : (List LexLeanStd.Json::Json))))) entries2)); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "logic"), (SemanticModels::modelUseJson part2)) entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (match part3
+      | Option.some present => (cons ((lit "binding"), (ruleBindingJson present)) entries4)
+      | Option.none => entries4); (let entries6 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "guard"), (SemanticTerms::termJson part4)) entries5); (let entries7 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "conclusion"), (SemanticTerms::termJson part5)) entries6); (let entries8 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "soundness"), (SemanticTerms::memberJson (first part6) (second part6))) entries7); (let entries9 : (List (Bytes * LexLeanStd.Json::Json)) := (match part7
+      | Option.some present => (cons ((lit "progress"), (SemanticTerms::memberJson (first present) (second present))) entries8)
+      | Option.none => entries8); (let entries10 : (List (Bytes * LexLeanStd.Json::Json)) := (if part8 then (cons ((lit "executable"), (ctor LexLeanStd.Json::Json.JBool true)) entries9) else entries9); (let entries11 : (List (Bytes * LexLeanStd.Json::Json)) := (match part9
+      | List.nil => entries10
+      | List.cons head tail => (cons ((lit "axioms"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part9) : (List LexLeanStd.Json::Json))))) entries10)); (objectOf entries11))))))))))))
+    | ReasoningDeclaration.ReasoningDeclarationVerifier part0 part1 part2 part3 part4 part5 part6 part7 part8 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "verifier"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (match part1
+      | List.nil => entries2
+      | List.cons head tail => (cons ((lit "type_parameters"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part1) : (List LexLeanStd.Json::Json))))) entries2)); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "subject"), (SemanticModels::modelBinderJson part2)) entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "candidate"), (SemanticModels::modelBinderJson part3)) entries4); (let entries6 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "specification"), (SemanticTerms::memberJson (first part4) (second part4))) entries5); (let entries7 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "check"), (SemanticTerms::memberJson (first part5) (second part5))) entries6); (let entries8 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "sound"), (SemanticTerms::memberJson (first part6) (second part6))) entries7); (let entries9 : (List (Bytes * LexLeanStd.Json::Json)) := (match part7
+      | Option.some present => (cons ((lit "complete"), (SemanticTerms::memberJson (first present) (second present))) entries8)
+      | Option.none => entries8); (let entries10 : (List (Bytes * LexLeanStd.Json::Json)) := (match part8
+      | List.nil => entries9
+      | List.cons head tail => (cons ((lit "axioms"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part8) : (List LexLeanStd.Json::Json))))) entries9)); (objectOf entries10)))))))))))
+    | ReasoningDeclaration.ReasoningDeclarationReasoner part0 part1 part2 part3 part4 part5 part6 part7 part8 part9 part10 part11 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "reasoner"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (match part1
+      | List.nil => entries2
+      | List.cons head tail => (cons ((lit "type_parameters"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part1) : (List LexLeanStd.Json::Json))))) entries2)); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (match part2
+      | Option.some present => (cons ((lit "logic"), (SemanticModels::modelUseJson present)) entries3)
+      | Option.none => entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "observation"), (SemanticModels::modelBinderJson part3)) entries4); (let entries6 : (List (Bytes * LexLeanStd.Json::Json)) := (match part4
+      | Option.some present => (cons ((lit "observe"), (SemanticTerms::termJson present)) entries5)
+      | Option.none => entries5); (let entries7 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "rules"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : SemanticModels::ModelUse) => (cons (SemanticModels::modelUseJson item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [SemanticModels::ModelUse] part5) : (List LexLeanStd.Json::Json))))) entries6); (let entries8 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "strategy"), (reasoningStrategyJson part6)) entries7); (let entries9 : (List (Bytes * LexLeanStd.Json::Json)) := (match part7
+      | Option.some present => (cons ((lit "answer"), (reasoningAnswerJson present)) entries8)
+      | Option.none => entries8); (let entries10 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "verifier"), (SemanticModels::modelUseJson part8)) entries9); (let entries11 : (List (Bytes * LexLeanStd.Json::Json)) := (match part9
+      | List.nil => entries10
+      | List.cons head tail => (cons ((lit "claims"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : ReasoningClaim) => (cons (reasoningClaimJson item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [ReasoningClaim] part9) : (List LexLeanStd.Json::Json))))) entries10)); (let entries12 : (List (Bytes * LexLeanStd.Json::Json)) := (if part10 then (cons ((lit "executable"), (ctor LexLeanStd.Json::Json.JBool true)) entries11) else entries11); (let entries13 : (List (Bytes * LexLeanStd.Json::Json)) := (match part11
+      | List.nil => entries12
+      | List.cons head tail => (cons ((lit "axioms"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part11) : (List LexLeanStd.Json::Json))))) entries12)); (objectOf entries13))))))))))))))
+    | ReasoningDeclaration.ReasoningDeclarationTokenizer part0 part1 part2 part3 part4 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "tokenizer"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (match part1
+      | List.nil => entries2
+      | List.cons head tail => (cons ((lit "type_parameters"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part1) : (List LexLeanStd.Json::Json))))) entries2)); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "scheme"), (tokenizerSchemeJson part2)) entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "vocabulary"), (SemanticModels::modelUseJson part3)) entries4); (let entries6 : (List (Bytes * LexLeanStd.Json::Json)) := (match part4
+      | List.nil => entries5
+      | List.cons head tail => (cons ((lit "axioms"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part4) : (List LexLeanStd.Json::Json))))) entries5)); (objectOf entries6)))))))
+    | ReasoningDeclaration.ReasoningDeclarationContextWindow part0 part1 part2 part3 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "context_window"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "capacity"), (ctor LexLeanStd.Json::Json.JInt false part1)) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "overflow"), (overflowDispositionJson part2)) entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (match part3
+      | List.nil => entries4
+      | List.cons head tail => (cons ((lit "axioms"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part3) : (List LexLeanStd.Json::Json))))) entries4)); (objectOf entries5))))))
+    | ReasoningDeclaration.ReasoningDeclarationTextGenerator part0 part1 part2 part3 part4 part5 part6 part7 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "text_generator"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "tokenizer"), (SemanticTerms::memberJson (first part1) (second part1))) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "window"), (SemanticTerms::memberJson (first part2) (second part2))) entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "scorer"), (SemanticModels::modelUseJson part3)) entries4); (let entries6 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "max_tokens"), (ctor LexLeanStd.Json::Json.JInt false part4)) entries5); (let entries7 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "stop"), (SemanticTerms::memberJson (first part5) (second part5))) entries6); (let entries8 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "policy"), (generationPolicyJson part6)) entries7); (let entries9 : (List (Bytes * LexLeanStd.Json::Json)) := (match part7
+      | List.nil => entries8
+      | List.cons head tail => (cons ((lit "axioms"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part7) : (List LexLeanStd.Json::Json))))) entries8)); (objectOf entries9))))))))))
+    | ReasoningDeclaration.ReasoningDeclarationTextClassifier part0 part1 part2 part3 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "text_classifier"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "tokenizer"), (SemanticTerms::memberJson (first part1) (second part1))) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "model"), (SemanticModels::modelUseJson part2)) entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (match part3
+      | List.nil => entries4
+      | List.cons head tail => (cons ((lit "axioms"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part3) : (List LexLeanStd.Json::Json))))) entries4)); (objectOf entries5))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: reasoningDeclarationText,
+  parameters: [value : ReasoningDeclaration],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (reasoningDeclarationJson value)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+inductive{
+  name: AnyDeclaration,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: AnyOrdinary, fields: [SemanticDecls::SDecl]},
+    {name: AnyModel, fields: [SemanticModels::ModelDeclaration]},
+    {name: AnyReasoning, fields: [ReasoningDeclaration]}
+  ]
+}
+
+definition{
+  name: anyDeclarationJson,
+  parameters: [value : AnyDeclaration],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | AnyDeclaration.AnyOrdinary declared => (SemanticDecls::declarationJson declared)
+    | AnyDeclaration.AnyModel declared => (SemanticModels::modelDeclarationJson declared)
+    | AnyDeclaration.AnyReasoning declared => (reasoningDeclarationJson declared)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: semanticModuleText,
+  parameters: [spec : Bytes, declarations : (List AnyDeclaration)],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (objectOf (cons ((lit "spec"), (ctor LexLeanStd.Json::Json.JStr spec)) (cons ((lit "declarations"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (declared : AnyDeclaration) => (cons (anyDeclarationJson declared) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [AnyDeclaration] declarations) : (List LexLeanStd.Json::Json))))) (nil (Bytes * LexLeanStd.Json::Json)))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

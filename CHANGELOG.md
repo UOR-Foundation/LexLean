@@ -17,6 +17,12 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The declarations of reasoning and text components, and semantic modules of every
+  kind, as language-1.2 source, eighth slice of the typed IR (SPEC.md §17.23, §17.12,
+  `BS-72`, #269; no new diagnostic code, no change to the language-1.2 identity).
+  `reasoningDeclarationText` and `semanticModuleText` of `SemanticReasoning` return the
+  canonical JSON of the serde form of those declarations and of `SemanticModule`, for
+  every committed semantic module. The register is 501 IDs.
 - The declarations of artifacts, contracts, realizations, evidence, and models as
   language-1.2 source, seventh slice of the typed IR (SPEC.md §17.23, §17.12, `BS-71`,
   #269; no new diagnostic code, no change to the language-1.2 identity).
