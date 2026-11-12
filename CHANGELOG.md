@@ -17,6 +17,10 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, the maintainer's decision): with `BS-65` the Lean extraction of its
+  production export writes more than the 33,554,432 bytes it configured. A semantic
+  input, so its lock and every package move.
 - The linked term IR in its canonical JSON as language-1.2 source, first slice of the
   typed IR (SPEC.md §17.23, §17.3, §17.9, `BS-65`, #269; no new diagnostic code, no
   change to the language-1.2 identity). `termText`, `canonicalKey`, `eqKey`,
