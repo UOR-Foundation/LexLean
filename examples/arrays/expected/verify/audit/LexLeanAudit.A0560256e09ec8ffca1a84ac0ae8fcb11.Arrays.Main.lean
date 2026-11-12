@@ -1,0 +1,31 @@
+module
+import Arrays.Main
+#print axioms Arrays.Main.array_index
+#print axioms Arrays.Main.array_length
+#print axioms Arrays.Main.«at»
+#print axioms Arrays.Main.dot
+#print axioms Arrays.Main.dotIndex
+#print axioms Arrays.Main.dotList
+#print axioms Arrays.Main.dotLoop
+#print axioms Arrays.Main.dot_equals_list
+#print axioms Arrays.Main.dot_sample
+#print axioms Arrays.Main.index_empty
+#print axioms Arrays.Main.index_head
+#print axioms Arrays.Main.index_shift
+#print axioms Arrays.Main.index_sums
+#print axioms Arrays.Main.length_empty
+#print axioms Arrays.Main.length_step
+#print axioms Arrays.Main.loop_keeps_length
+#print axioms Arrays.Main.loop_reads_list
+#print axioms Arrays.Main.plus
+#print axioms Arrays.Main.plus_assoc
+#print axioms Arrays.Main.plus_zero
+#print axioms Arrays.Main.rectify
+#print axioms Arrays.Main.rectifyAll
+#print axioms Arrays.Main.rectifyLoop
+#print axioms Arrays.Main.rectify_keeps_length
+#print axioms Arrays.Main.rectify_sample
+#print axioms Arrays.Main.set_keeps_length
+#print axioms Arrays.Main.shift
+#print axioms Arrays.Main.widen
+#print axioms Arrays.Main.zero_plus
