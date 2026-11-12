@@ -571,16 +571,12 @@ pub(super) fn example_composite_form(step: usize) -> CompositeForm {
             stages: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2)
-                    .map(|next| example_model_use(next))
-                    .collect()
+                (rest..rest + 2).map(example_model_use).collect()
             },
             junctions: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2)
-                    .map(|next| example_composite_junction(next))
-                    .collect()
+                (rest..rest + 2).map(example_composite_junction).collect()
             },
         },
         1 => CompositeForm::Fanout {
@@ -681,9 +677,7 @@ pub(super) fn example_realization_descriptor(step: usize) -> RealizationDescript
             rules: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2)
-                    .map(|next| example_realization_rule(next))
-                    .collect()
+                (rest..rest + 2).map(example_realization_rule).collect()
             },
             default: SemanticTerm::Nat {
                 value: rest.to_string(),
@@ -730,9 +724,7 @@ pub(super) fn example_realization_descriptor(step: usize) -> RealizationDescript
             layers: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2)
-                    .map(|next| example_neural_layer(next))
-                    .collect()
+                (rest..rest + 2).map(example_neural_layer).collect()
             },
             decoder: example_neural_decoder(rest),
         },
@@ -1001,9 +993,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             validators: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2)
-                    .map(|next| example_contract_validator(next))
-                    .collect()
+                (rest..rest + 2).map(example_contract_validator).collect()
             },
             axioms: if rest % 3 == 2 {
                 Vec::new()
@@ -1045,9 +1035,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             claims: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2)
-                    .map(|next| example_evidence_claim(next))
-                    .collect()
+                (rest..rest + 2).map(example_evidence_claim).collect()
             },
             axioms: if rest % 3 == 2 {
                 Vec::new()
@@ -1067,9 +1055,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             evidence: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2)
-                    .map(|next| example_model_use(next))
-                    .collect()
+                (rest..rest + 2).map(example_model_use).collect()
             },
             entry: if rest % 3 == 2 {
                 Vec::new()

@@ -324,7 +324,6 @@ definition{
     | ArtifactRole.ArtifactRoleDataset => (ctor LexLeanStd.Json::Json.JStr (lit "dataset"))
     | ArtifactRole.ArtifactRoleTable => (ctor LexLeanStd.Json::Json.JStr (lit "table"))
     | ArtifactRole.ArtifactRoleBinary => (ctor LexLeanStd.Json::Json.JStr (lit "binary"))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -341,7 +340,6 @@ definition{
     | TensorElement.TensorElementUInt16 => (ctor LexLeanStd.Json::Json.JStr (lit "uint16"))
     | TensorElement.TensorElementUInt32 => (ctor LexLeanStd.Json::Json.JStr (lit "uint32"))
     | TensorElement.TensorElementUInt64 => (ctor LexLeanStd.Json::Json.JStr (lit "uint64"))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -353,7 +351,6 @@ definition{
     | ArtifactSchema.ArtifactSchemaBytes => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "bytes"))) (nil (Bytes * LexLeanStd.Json::Json))); (objectOf entries1))
     | ArtifactSchema.ArtifactSchemaIntTensor part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "int_tensor"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "element"), (tensorElementJson part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "shape"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Nat) => (cons (ctor LexLeanStd.Json::Json.JInt false item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Nat] part1) : (List LexLeanStd.Json::Json))))) entries2); (objectOf entries3))))
     | ArtifactSchema.ArtifactSchemaUtf8Lines => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "utf8_lines"))) (nil (Bytes * LexLeanStd.Json::Json))); (objectOf entries1))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -363,7 +360,6 @@ definition{
   result: LexLeanStd.Json::Json,
   body: (match value
     | ModelBinder.ModelBinderOf part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "type"), (SemanticTypes::typeJson part1)) entries1); (objectOf entries2)))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -373,7 +369,6 @@ definition{
   result: LexLeanStd.Json::Json,
   body: (match value
     | ContractState.ContractStateOf part0 part1 part2 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "next"), (ctor LexLeanStd.Json::Json.JStr part1)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "type"), (SemanticTypes::typeJson part2)) entries2); (objectOf entries3))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -385,7 +380,6 @@ definition{
     | ContractPredicate.ContractPredicateInvariant => (ctor LexLeanStd.Json::Json.JStr (lit "invariant"))
     | ContractPredicate.ContractPredicatePostcondition => (ctor LexLeanStd.Json::Json.JStr (lit "postcondition"))
     | ContractPredicate.ContractPredicatePrecondition => (ctor LexLeanStd.Json::Json.JStr (lit "precondition"))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -397,7 +391,6 @@ definition{
     | ContractValidator.ContractValidatorOf part0 part1 part2 part3 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "predicate"), (contractPredicateJson part0)) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "validator"), (SemanticTerms::memberJson (first part1) (second part1))) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "sound"), (SemanticTerms::memberJson (first part2) (second part2))) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (match part3
       | Option.some present => (cons ((lit "complete"), (SemanticTerms::memberJson (first present) (second present))) entries3)
       | Option.none => entries3); (objectOf entries4)))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -409,7 +402,6 @@ definition{
     | ModelUse.ModelUseOf part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "member"), (SemanticTerms::memberJson (first part0) (second part0))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (match part1
       | List.nil => entries1
       | List.cons head tail => (cons ((lit "type_arguments"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : SemanticTypes::SemanticType) => (cons (SemanticTypes::typeJson item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [SemanticTypes::SemanticType] part1) : (List LexLeanStd.Json::Json))))) entries1)); (objectOf entries2)))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -419,7 +411,6 @@ definition{
   result: LexLeanStd.Json::Json,
   body: (match value
     | RealizationState.RealizationStateOf part0 part1 part2 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "type"), (SemanticTypes::typeJson part1)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "initial"), (SemanticTerms::termJson part2)) entries2); (objectOf entries3))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -429,7 +420,6 @@ definition{
   result: LexLeanStd.Json::Json,
   body: (match value
     | RealizationRule.RealizationRuleOf part0 part1 part2 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "name"), (ctor LexLeanStd.Json::Json.JStr part0)) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "guard"), (SemanticTerms::termJson part1)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "action"), (SemanticTerms::termJson part2)) entries2); (objectOf entries3))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -439,7 +429,6 @@ definition{
   result: LexLeanStd.Json::Json,
   body: (match value
     | StatisticalScheme.StatisticalSchemeLinearScoring => (ctor LexLeanStd.Json::Json.JStr (lit "linear_scoring"))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -449,7 +438,6 @@ definition{
   result: LexLeanStd.Json::Json,
   body: (match value
     | NeuralArchitecture.NeuralArchitectureIntegerFeedforward => (ctor LexLeanStd.Json::Json.JStr (lit "integer_feedforward"))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -461,7 +449,6 @@ definition{
     | NeuralLayer.NeuralLayerDense part0 part1 part2 part3 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "dense"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "inputs"), (ctor LexLeanStd.Json::Json.JInt false part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "outputs"), (ctor LexLeanStd.Json::Json.JInt false part1)) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "weights"), (SemanticTerms::memberJson (first part2) (second part2))) entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "bias"), (SemanticTerms::memberJson (first part3) (second part3))) entries4); (objectOf entries5))))))
     | NeuralLayer.NeuralLayerRelu => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "relu"))) (nil (Bytes * LexLeanStd.Json::Json))); (objectOf entries1))
     | NeuralLayer.NeuralLayerRequantize part0 part1 part2 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "requantize"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "shift"), (ctor LexLeanStd.Json::Json.JInt false part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "minimum"), (ctor LexLeanStd.Json::Json.JStr part1)) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "maximum"), (ctor LexLeanStd.Json::Json.JStr part2)) entries3); (objectOf entries4)))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -472,7 +459,6 @@ definition{
   body: (match value
     | NeuralDecoder.NeuralDecoderArgmax part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "argmax"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "labels"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : SemanticTerms::STerm) => (cons (SemanticTerms::termJson item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [SemanticTerms::STerm] part0) : (List LexLeanStd.Json::Json))))) entries1); (objectOf entries2)))
     | NeuralDecoder.NeuralDecoderFunction part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "function"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "binder"), (ctor LexLeanStd.Json::Json.JStr part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "body"), (SemanticTerms::termJson part1)) entries2); (objectOf entries3))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -484,7 +470,6 @@ definition{
     | CompositeJunction.CompositeJunctionUnconditional => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "unconditional"))) (nil (Bytes * LexLeanStd.Json::Json))); (objectOf entries1))
     | CompositeJunction.CompositeJunctionProved part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "proved"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "evidence"), (SemanticTerms::memberJson (first part0) (second part0))) entries1); (objectOf entries2)))
     | CompositeJunction.CompositeJunctionChecked => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "checked"))) (nil (Bytes * LexLeanStd.Json::Json))); (objectOf entries1))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -498,7 +483,6 @@ definition{
     | CompositeForm.CompositeFormProduct part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "product"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "left"), (modelUseJson part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "right"), (modelUseJson part1)) entries2); (objectOf entries3))))
     | CompositeForm.CompositeFormBranch part0 part1 part2 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "branch"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "guard"), (SemanticTerms::termJson part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "then"), (modelUseJson part1)) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "else"), (modelUseJson part2)) entries3); (objectOf entries4)))))
     | CompositeForm.CompositeFormScan part0 part1 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "scan"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "stage"), (modelUseJson part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "junction"), (compositeJunctionJson part1)) entries2); (objectOf entries3))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -512,7 +496,6 @@ definition{
     | RealizationDescriptor.RealizationDescriptorStatistical part0 part1 part2 part3 part4 part5 part6 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "statistical"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "scheme"), (statisticalSchemeJson part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "features"), (SemanticTerms::termJson part1)) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "width"), (ctor LexLeanStd.Json::Json.JInt false part2)) entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "width_evidence"), (SemanticTerms::memberJson (first part3) (second part3))) entries4); (let entries6 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "weights"), (SemanticTerms::memberJson (first part4) (second part4))) entries5); (let entries7 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "bias"), (SemanticTerms::memberJson (first part5) (second part5))) entries6); (let entries8 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "labels"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : SemanticTerms::STerm) => (cons (SemanticTerms::termJson item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [SemanticTerms::STerm] part6) : (List LexLeanStd.Json::Json))))) entries7); (objectOf entries8)))))))))
     | RealizationDescriptor.RealizationDescriptorNeural part0 part1 part2 part3 part4 part5 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "neural"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "architecture"), (neuralArchitectureJson part0)) entries1); (let entries3 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "encoder"), (SemanticTerms::termJson part1)) entries2); (let entries4 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "width"), (ctor LexLeanStd.Json::Json.JInt false part2)) entries3); (let entries5 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "width_evidence"), (SemanticTerms::memberJson (first part3) (second part3))) entries4); (let entries6 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "layers"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : NeuralLayer) => (cons (neuralLayerJson item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [NeuralLayer] part4) : (List LexLeanStd.Json::Json))))) entries5); (let entries7 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "decoder"), (neuralDecoderJson part5)) entries6); (objectOf entries7))))))))
     | RealizationDescriptor.RealizationDescriptorComposite part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "composite"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "form"), (compositeFormJson part0)) entries1); (objectOf entries2)))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -526,7 +509,6 @@ definition{
     | EvidenceClaim.EvidenceClaimInitialInvariant part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "initial_invariant"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "theorem"), (SemanticTerms::memberJson (first part0) (second part0))) entries1); (objectOf entries2)))
     | EvidenceClaim.EvidenceClaimPreservesInvariant part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "preserves_invariant"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "theorem"), (SemanticTerms::memberJson (first part0) (second part0))) entries1); (objectOf entries2)))
     | EvidenceClaim.EvidenceClaimSatisfiesContract part0 => (let entries1 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr (lit "satisfies_contract"))) (nil (Bytes * LexLeanStd.Json::Json))); (let entries2 : (List (Bytes * LexLeanStd.Json::Json)) := (cons ((lit "theorem"), (SemanticTerms::memberJson (first part0) (second part0))) entries1); (objectOf entries2)))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -574,7 +556,6 @@ definition{
       | List.cons head tail => (cons ((lit "entry"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : ((Option Bytes) * Bytes)) => (cons (SemanticTerms::memberJson (first item) (second item)) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [((Option Bytes) * Bytes)] part5) : (List LexLeanStd.Json::Json))))) entries6)); (let entries8 : (List (Bytes * LexLeanStd.Json::Json)) := (match part6
       | List.nil => entries7
       | List.cons head tail => (cons ((lit "axioms"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (item : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr item) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] part6) : (List LexLeanStd.Json::Json))))) entries7)); (objectOf entries8)))))))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
