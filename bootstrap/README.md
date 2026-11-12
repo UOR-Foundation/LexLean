@@ -61,3 +61,6 @@ the canonical JSON of a linked term of SPEC.md §17.9.
 `src/IrProof.lex.tex` (SPEC.md §17.23, `BS-66`) imports `IrTerm` (`BS-65`), whose term JSON and
 renumbering it uses, `LexiconLse`, and the standard library's `Json` and `Order`, and writes the
 canonical JSON of a linked proof and declaration and checks an axiom policy.
+`src/IrDocument.lex.tex` (SPEC.md §17.23, `BS-67`) imports `IrTerm`, `IrProof`, and `ContentId`, and
+the standard library's `Json`, `Order`, and `Text`, and writes the canonical JSON of a linked module
+and of a linked project, and the project's semantic ID.

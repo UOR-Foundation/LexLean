@@ -559,6 +559,30 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "module_text",
+      "root": "LexLeanBoot.IrDocument.moduleText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "linked_text",
+      "root": "LexLeanBoot.IrDocument.linkedText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "project_semantic_id",
+      "root": "LexLeanBoot.IrDocument.projectSemanticId",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

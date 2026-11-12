@@ -11773,6 +11773,47 @@ check` of the `bootstrap/` project passes, with each of the three roots eligible
 for `rust-std` with exactly its declared effects, and `lexlean fmt --check`
 passes.
 
+### the document IR and the semantic ID are source (BS-67)
+
+`BS-67` holds the three production roots of `LexLeanBoot.IrDocument`
+(`bootstrap/src/IrDocument.lex.tex`) to `lexlean::ir::document` and the
+linker: `moduleText` to `DocumentModule::to_json` written canonically,
+`linkedText` to `LinkedProject::to_json`, and `projectSemanticId` to the
+semantic ID `link::check_project` records. The module declares the phrase
+items, the blocks, and the linked module of SPEC.md §17.5 over the term IR of
+`IrTerm` (`BS-65`) and the declarations of `IrProof` (`BS-66`). A module's title
+and blocks share one hashing renumbering; blocks are a chain of cells of `Block`
+itself, so that the module JSON is one structural recursion; a section writes
+its heading, binds its parameters, and then writes its blocks. An import's Lean
+module is written only when it is not the one the module's prefix gives, that
+prefix being the module's Lean name without its own name when it ends with it.
+An embedded closed-core module enters as its serialized text and a semantic or
+tooling module as its JSON value, as the oracle embeds them. `linkedText` sorts
+the named modules with the standard library's stable merge sort, and
+`projectSemanticId` hashes the linked text with the recipe of `ContentId`
+(`BS-32`). Every root admits exactly `allocation`, `overflow`, and `recursion`.
+The oracle is the existing public code of `document.rs`, `link.rs`, and
+`content_id.rs`; no Rust outside the case changes.
+
+The case holds each root to the oracle on hand-built modules that reach every
+phrase item, a title and declarations sharing one renumbering, a section with a
+parameter, an origin, default and foreign imports, a module whose Lean name does
+not end with its own, and the smallest committed module embedding each kind of
+module; on hand-built projects listed out of order and in order, and on a
+hand-built identity; and on every module, every linked project, and the
+recorded semantic ID of every committed project outside the negative fixtures
+and UOR Atlas that links under its committed lock, for each of which the case
+first asserts that the recorded ID is the recipe over the oracle's linked text.
+The evaluator takes the projects whose linked text is at most 262,144 bytes, the
+rendered packages all of them. Each planted defect names the vector that
+catches it, and the case asserts that the site of each plant occurs once. The
+row's statement carries no counts.
+
+Measured with the compiler binary of this tree's compiler sources: `lexlean
+check` of the `bootstrap/` project passes, with each of the three roots eligible
+for `rust-std` with exactly its declared effects, and `lexlean fmt --check`
+passes.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

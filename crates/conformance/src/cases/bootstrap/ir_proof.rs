@@ -249,7 +249,7 @@ fn enc_policy(policy: &AxiomPolicy) -> Value {
     }
 }
 
-fn enc_declaration(declaration: &Declaration) -> Value {
+pub(super) fn enc_declaration(declaration: &Declaration) -> Value {
     let body = match &declaration.body {
         DeclBody::Definition { entry, ty, value } => adt(
             "DeclBody",

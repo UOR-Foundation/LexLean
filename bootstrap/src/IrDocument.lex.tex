@@ -1,0 +1,234 @@
+\begin{lexlean}{IrDocument}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{ContentId}
+\importmodule{IrProof}
+\importmodule{IrTerm}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: PhraseItem,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: WWord, fields: [Bytes, Bytes]},
+    {name: WMath, fields: [IrTerm::Term]},
+    {name: WPunct, fields: [Bytes]}
+  ]
+}
+
+inductive{
+  name: Block,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: BSection, fields: [Bytes, (List PhraseItem), IrTerm::Term, Block]},
+    {name: BDecl, fields: [IrProof::Declaration]},
+    {name: BNil, fields: []},
+    {name: BItem, fields: [Block, Block]}
+  ]
+}
+
+structure{
+  name: DocumentModule,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: name, type: Bytes},
+    {name: leanModule, type: Bytes},
+    {name: sourcePath, type: Bytes},
+    {name: sourceSha256, type: Bytes},
+    {name: origin, type: (Option Bytes)},
+    {name: glossary, type: (List Bytes)},
+    {name: imports, type: (List Bytes)},
+    {name: importLean, type: (List (Bytes * Bytes))},
+    {name: title, type: (List PhraseItem)},
+    {name: blocks, type: Block},
+    {name: core, type: (Option Bytes)},
+    {name: semantic, type: (Option LexLeanStd.Json::Json)},
+    {name: tooling, type: (Option LexLeanStd.Json::Json)}
+  ]
+}
+
+definition{
+  name: jnil,
+  parameters: [],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JNil),
+  executable: true
+}
+
+definition{
+  name: jobj,
+  parameters: [members : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj members),
+  executable: true
+}
+
+definition{
+  name: jarr,
+  parameters: [items : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JArr items),
+  executable: true
+}
+
+definition{
+  name: jbytes,
+  parameters: [text : Bytes],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JStr text),
+  executable: true
+}
+
+definition{
+  name: chainOf,
+  parameters: [items : (List LexLeanStd.Json::Json)],
+  result: LexLeanStd.Json::Json,
+  body: (prim list_fold (fun (chain : LexLeanStd.Json::Json) (item : LexLeanStd.Json::Json) => (ctor LexLeanStd.Json::Json.JItem item chain)) (jnil) (LexLeanStd.Order::reverseList [LexLeanStd.Json::Json] items) : LexLeanStd.Json::Json),
+  executable: true
+}
+
+definition{
+  name: textArray,
+  parameters: [texts : (List Bytes)],
+  result: LexLeanStd.Json::Json,
+  body: (jarr (chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (text : Bytes) => (cons (jbytes text) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] texts) : (List LexLeanStd.Json::Json)))),
+  executable: true
+}
+
+definition{
+  name: itemJson,
+  parameters: [item : PhraseItem, state : IrTerm::Renumber],
+  result: (LexLeanStd.Json::Json * IrTerm::Renumber),
+  body: (match item
+    | PhraseItem.WWord entry form => ((jobj (IrTerm::member "k" (IrTerm::jtext "word") (IrTerm::member "entry" (jbytes entry) (IrTerm::member "form" (jbytes form) (jnil))))), state)
+    | PhraseItem.WMath term => (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson term state); ((jobj (IrTerm::member "k" (IrTerm::jtext "math") (IrTerm::member "t" (first written) (jnil)))), (second written)))
+    | PhraseItem.WPunct entry => ((jobj (IrTerm::member "k" (IrTerm::jtext "punct") (IrTerm::member "entry" (jbytes entry) (jnil)))), state)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: phraseJson,
+  parameters: [items : (List PhraseItem), state : IrTerm::Renumber],
+  result: (LexLeanStd.Json::Json * IrTerm::Renumber),
+  body: (let folded : ((List LexLeanStd.Json::Json) * IrTerm::Renumber) := (prim list_fold (fun (acc : ((List LexLeanStd.Json::Json) * IrTerm::Renumber)) (item : PhraseItem) => (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (itemJson item (second acc)); ((cons (first written) (first acc)), (second written)))) ((nil LexLeanStd.Json::Json), state) items : ((List LexLeanStd.Json::Json) * IrTerm::Renumber)); ((jarr (prim list_fold (fun (chain : LexLeanStd.Json::Json) (written : LexLeanStd.Json::Json) => (ctor LexLeanStd.Json::Json.JItem written chain)) (jnil) (first folded) : LexLeanStd.Json::Json)), (second folded))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: blockJson,
+  parameters: [block : Block, state : IrTerm::Renumber],
+  result: (LexLeanStd.Json::Json * IrTerm::Renumber),
+  body: (match block
+    | Block.BSection component heading params nested => (let headed : (LexLeanStd.Json::Json * IrTerm::Renumber) := (phraseJson heading state); (let bound : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson params (second headed)); (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (blockJson nested (second bound)); ((jobj (IrTerm::member "k" (IrTerm::jtext "section") (IrTerm::member "component" (jbytes component) (IrTerm::member "heading" (first headed) (IrTerm::member "params" (jarr (first bound)) (IrTerm::member "blocks" (jarr (first inner)) (jnil))))))), (second inner)))))
+    | Block.BDecl declaration => (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrProof::declarationJson declaration state); ((jobj (IrTerm::member "k" (IrTerm::jtext "declaration") (IrTerm::member "d" (first written) (jnil)))), (second written)))
+    | Block.BNil => ((jnil), state)
+    | Block.BItem head tail => (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (blockJson head state); (let rest : (LexLeanStd.Json::Json * IrTerm::Renumber) := (blockJson tail (second written)); ((ctor LexLeanStd.Json::Json.JItem (first written) (first rest)), (second rest))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: block
+}
+
+definition{
+  name: defaultImport,
+  parameters: [linked : DocumentModule, imported : Bytes],
+  result: Bytes,
+  body: (let leanName : Bytes := (project linked leanModule); (let short : Nat := (prim length (project linked name) : Nat); (let total : Nat := (prim length leanName : Nat); (let stem : Bytes := (if (LexLeanStd.Text::endsWith leanName (project linked name)) then (LexLeanStd.Text::sliceOr leanName 0 (prim subtract total short : Nat)) else 0x); (prim append stem imported : Bytes))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: foreignImports,
+  parameters: [linked : DocumentModule],
+  result: LexLeanStd.Json::Json,
+  body: (prim list_fold (fun [linked] (rest : LexLeanStd.Json::Json) (entry : (Bytes * Bytes)) => (if (prim equal (second entry) (defaultImport linked (first entry)) : Bool) then rest else (ctor LexLeanStd.Json::Json.JMember (first entry) (jbytes (second entry)) rest))) (jnil) (project linked importLean) : LexLeanStd.Json::Json),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: optionalTail,
+  parameters: [linked : DocumentModule],
+  result: LexLeanStd.Json::Json,
+  body: (let withTooling : LexLeanStd.Json::Json := (match (project linked tooling)
+    | Option.some value => (IrTerm::member "tooling" value (jnil))
+    | Option.none => (jnil)); (let withSemantic : LexLeanStd.Json::Json := (match (project linked semantic)
+    | Option.some value => (IrTerm::member "semantic" value withTooling)
+    | Option.none => withTooling); (let withCore : LexLeanStd.Json::Json := (match (project linked core)
+    | Option.some text => (IrTerm::member "core" (jbytes text) withSemantic)
+    | Option.none => withSemantic); (let foreign : LexLeanStd.Json::Json := (foreignImports linked); (let withForeign : LexLeanStd.Json::Json := (match foreign
+    | LexLeanStd.Json::Json.JNil => withCore
+    | LexLeanStd.Json::Json.JBool flag => withCore
+    | LexLeanStd.Json::Json.JInt negative magnitude => withCore
+    | LexLeanStd.Json::Json.JStr text => withCore
+    | LexLeanStd.Json::Json.JArr items => withCore
+    | LexLeanStd.Json::Json.JObj members => withCore
+    | LexLeanStd.Json::Json.JItem element rest => withCore
+    | LexLeanStd.Json::Json.JMember key inner rest => (IrTerm::member "import_lean" (jobj foreign) withCore)); (match (project linked origin)
+    | Option.some named => (IrTerm::member "origin" (jbytes named) withForeign)
+    | Option.none => withForeign)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: moduleJson,
+  parameters: [linked : DocumentModule],
+  result: LexLeanStd.Json::Json,
+  body: (let titled : (LexLeanStd.Json::Json * IrTerm::Renumber) := (phraseJson (project linked title) (IrTerm::hashing)); (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (blockJson (project linked blocks) (second titled)); (jobj (IrTerm::member "name" (jbytes (project linked name)) (IrTerm::member "lean_module" (jbytes (project linked leanModule)) (IrTerm::member "glossary" (textArray (project linked glossary)) (IrTerm::member "imports" (textArray (project linked imports)) (IrTerm::member "title" (first titled) (IrTerm::member "blocks" (jarr (first inner)) (optionalTail linked)))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: linkedJson,
+  parameters: [modules : (List (Bytes * DocumentModule))],
+  result: LexLeanStd.Json::Json,
+  body: (jobj (IrTerm::member "spec" (IrTerm::jtext "lexlean/linked-ir/1") (IrTerm::member "modules" (jarr (chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (entry : (Bytes * DocumentModule)) => (cons (moduleJson (second entry)) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [(Bytes * DocumentModule)] (LexLeanStd.Order::sortByKey [DocumentModule] modules)) : (List LexLeanStd.Json::Json)))) (jnil)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: moduleText,
+  parameters: [linked : DocumentModule],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (moduleJson linked)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: linkedText,
+  parameters: [modules : (List (Bytes * DocumentModule))],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (linkedJson modules)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: projectSemanticId,
+  parameters: [
+    compilerSemantics : Bytes,
+    language : Bytes,
+    modules : (List (Bytes * DocumentModule)),
+    lexiconClosure : Bytes
+  ],
+  result: Bytes,
+  body: (ContentId::semanticId compilerSemantics language (LexLeanStd.Json::writeJson (linkedJson modules)) lexiconClosure),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
