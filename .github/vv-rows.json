@@ -385,5 +385,14 @@
     "width": "",
     "memory_kib": "",
     "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-semantic-types",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-semantic-types",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
   }
 ]

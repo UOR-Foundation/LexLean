@@ -583,6 +583,38 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "primitive_facts",
+      "root": "LexLeanBoot.SemanticTypes.primitiveFacts",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "integer_name",
+      "root": "LexLeanBoot.SemanticTypes.integerName",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "type_text",
+      "root": "LexLeanBoot.SemanticTypes.typeText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "type_spelling",
+      "root": "LexLeanBoot.SemanticTypes.typeSpelling",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

@@ -359,6 +359,14 @@ fn committed() -> Vec<Identity> {
     out
 }
 
+/// The linked projects of the committed projects that link.
+pub(super) fn linked_projects() -> Vec<LinkedProject> {
+    committed()
+        .into_iter()
+        .map(|identity| identity.project)
+        .collect()
+}
+
 // ------------------------------------------------------------------ vectors
 
 fn qualified(package: &str, entry: &str) -> QualifiedId {

@@ -1,0 +1,397 @@
+\begin{lexlean}{SemanticTypes}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: SemanticType,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: SType, fields: []},
+    {name: SNat, fields: []},
+    {name: SBool, fields: []},
+    {name: SProp, fields: []},
+    {name: SUnit, fields: []},
+    {name: SInt, fields: []},
+    {name: SInt8, fields: []},
+    {name: SInt16, fields: []},
+    {name: SInt32, fields: []},
+    {name: SInt64, fields: []},
+    {name: SUInt8, fields: []},
+    {name: SUInt16, fields: []},
+    {name: SUInt32, fields: []},
+    {name: SUInt64, fields: []},
+    {name: SString, fields: []},
+    {name: SBytes, fields: []},
+    {name: SOrdering, fields: []},
+    {name: SContractViolation, fields: []},
+    {name: SReasoningFailure, fields: []},
+    {name: SParameter, fields: [Bytes]},
+    {name: SOption, fields: [SemanticType]},
+    {name: SResult, fields: [SemanticType, SemanticType]},
+    {name: SList, fields: [SemanticType]},
+    {name: SNamed, fields: [(Option Bytes), Bytes, SemanticType]},
+    {name: SProduct, fields: [SemanticType, SemanticType]},
+    {name: SFunction, fields: [SemanticType, SemanticType]},
+    {name: SMap, fields: [SemanticType, SemanticType]},
+    {name: SSet, fields: [SemanticType]},
+    {name: SNil, fields: []},
+    {name: SItem, fields: [SemanticType, SemanticType]}
+  ]
+}
+
+inductive{
+  name: SemanticPrimitive,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: PSubtract, fields: []},
+    {name: PMultiply, fields: []},
+    {name: PQuotient, fields: []},
+    {name: PRemainder, fields: []},
+    {name: PNegate, fields: []},
+    {name: PCheckedConvert, fields: []},
+    {name: PCheckedAdd, fields: []},
+    {name: PCheckedSubtract, fields: []},
+    {name: PCheckedMultiply, fields: []},
+    {name: PCheckedNegate, fields: []},
+    {name: PCheckedQuotient, fields: []},
+    {name: PBitAnd, fields: []},
+    {name: PBitOr, fields: []},
+    {name: PBitXor, fields: []},
+    {name: PBitNot, fields: []},
+    {name: PShiftLeft, fields: []},
+    {name: PShiftRight, fields: []},
+    {name: PAppend, fields: []},
+    {name: PLength, fields: []},
+    {name: PIndex, fields: []},
+    {name: PSlice, fields: []},
+    {name: PUtf8Encode, fields: []},
+    {name: PUtf8Decode, fields: []},
+    {name: PCompareBytes, fields: []},
+    {name: PEqual, fields: []},
+    {name: PSplitExact, fields: []},
+    {name: PJoin, fields: []},
+    {name: PParseDecimal, fields: []},
+    {name: PFormatDecimal, fields: []},
+    {name: PMapInsert, fields: []},
+    {name: PMapRemove, fields: []},
+    {name: PMapLookup, fields: []},
+    {name: PMapContains, fields: []},
+    {name: PMapSize, fields: []},
+    {name: PMapKeys, fields: []},
+    {name: PMapValues, fields: []},
+    {name: PMapEntries, fields: []},
+    {name: PMapFold, fields: []},
+    {name: PSetInsert, fields: []},
+    {name: PSetRemove, fields: []},
+    {name: PSetContains, fields: []},
+    {name: PSetSize, fields: []},
+    {name: PSetElements, fields: []},
+    {name: PSetUnion, fields: []},
+    {name: PSetIntersection, fields: []},
+    {name: PSetDifference, fields: []},
+    {name: PSetFold, fields: []},
+    {name: PListFold, fields: []},
+    {name: PIterate, fields: []},
+    {name: PIterateUntil, fields: []},
+    {name: PGraphSuccessors, fields: []},
+    {name: PGraphReachable, fields: []},
+    {name: PGraphTopological, fields: []},
+    {name: PLessThan, fields: []},
+    {name: PToInt, fields: []},
+    {name: PToNat, fields: []}
+  ]
+}
+
+inductive{
+  name: SemanticInteger,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: IInt, fields: []},
+    {name: IInt8, fields: []},
+    {name: IInt16, fields: []},
+    {name: IInt32, fields: []},
+    {name: IInt64, fields: []},
+    {name: IUInt8, fields: []},
+    {name: IUInt16, fields: []},
+    {name: IUInt32, fields: []},
+    {name: IUInt64, fields: []}
+  ]
+}
+
+structure{
+  name: PrimitiveFacts,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: serdeName, type: Bytes},
+    {name: languageOneTwo, type: Bool},
+    {name: widening, type: Bool},
+    {name: functionArgument, type: (Option Nat)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: member,
+  parameters: [key : String, entry : LexLeanStd.Json::Json, rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JMember (lit key) entry rest),
+  executable: true
+}
+
+definition{
+  name: kinded,
+  parameters: [kind : String, rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj (member "kind" (ctor LexLeanStd.Json::Json.JStr (lit kind)) rest)),
+  executable: true
+}
+
+definition{
+  name: typeJson,
+  parameters: [semantic : SemanticType],
+  result: LexLeanStd.Json::Json,
+  body: (match semantic
+    | SemanticType.SType => (kinded "type" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SNat => (kinded "nat" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SBool => (kinded "bool" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SProp => (kinded "prop" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SUnit => (kinded "unit" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SInt => (kinded "int" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SInt8 => (kinded "int8" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SInt16 => (kinded "int16" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SInt32 => (kinded "int32" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SInt64 => (kinded "int64" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SUInt8 => (kinded "uint8" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SUInt16 => (kinded "uint16" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SUInt32 => (kinded "uint32" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SUInt64 => (kinded "uint64" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SString => (kinded "string" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SBytes => (kinded "bytes" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SOrdering => (kinded "ordering" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SContractViolation => (kinded "contract_violation" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SReasoningFailure => (kinded "reasoning_failure" (ctor LexLeanStd.Json::Json.JNil))
+    | SemanticType.SParameter named => (kinded "parameter" (member "name" (ctor LexLeanStd.Json::Json.JStr named) (ctor LexLeanStd.Json::Json.JNil)))
+    | SemanticType.SOption inner => (kinded "option" (member "value" (typeJson inner) (ctor LexLeanStd.Json::Json.JNil)))
+    | SemanticType.SResult good bad => (kinded "result" (member "ok" (typeJson good) (member "error" (typeJson bad) (ctor LexLeanStd.Json::Json.JNil))))
+    | SemanticType.SList inner => (kinded "list" (member "element" (typeJson inner) (ctor LexLeanStd.Json::Json.JNil)))
+    | SemanticType.SNamed owner named arguments => (kinded "named" (member "member" (ctor LexLeanStd.Json::Json.JObj (match owner
+      | Option.some source => (member "module" (ctor LexLeanStd.Json::Json.JStr source) (member "name" (ctor LexLeanStd.Json::Json.JStr named) (ctor LexLeanStd.Json::Json.JNil)))
+      | Option.none => (member "name" (ctor LexLeanStd.Json::Json.JStr named) (ctor LexLeanStd.Json::Json.JNil)))) (member "arguments" (ctor LexLeanStd.Json::Json.JArr (typeJson arguments)) (ctor LexLeanStd.Json::Json.JNil))))
+    | SemanticType.SProduct left right => (kinded "product" (member "left" (typeJson left) (member "right" (typeJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | SemanticType.SFunction parameters outcome => (kinded "function" (member "parameters" (ctor LexLeanStd.Json::Json.JArr (typeJson parameters)) (member "result" (typeJson outcome) (ctor LexLeanStd.Json::Json.JNil))))
+    | SemanticType.SMap key entry => (kinded "map" (member "key" (typeJson key) (member "value" (typeJson entry) (ctor LexLeanStd.Json::Json.JNil))))
+    | SemanticType.SSet inner => (kinded "set" (member "element" (typeJson inner) (ctor LexLeanStd.Json::Json.JNil)))
+    | SemanticType.SNil => (ctor LexLeanStd.Json::Json.JNil)
+    | SemanticType.SItem head tail => (ctor LexLeanStd.Json::Json.JItem (typeJson head) (typeJson tail))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: semantic
+}
+
+definition{
+  name: typeDisplay,
+  parameters: [semantic : SemanticType],
+  result: Bytes,
+  body: (match semantic
+    | SemanticType.SType => (lit "Type")
+    | SemanticType.SNat => (lit "Nat")
+    | SemanticType.SBool => (lit "Bool")
+    | SemanticType.SProp => (lit "Prop")
+    | SemanticType.SUnit => (lit "Unit")
+    | SemanticType.SInt => (lit "Int")
+    | SemanticType.SInt8 => (lit "Int8")
+    | SemanticType.SInt16 => (lit "Int16")
+    | SemanticType.SInt32 => (lit "Int32")
+    | SemanticType.SInt64 => (lit "Int64")
+    | SemanticType.SUInt8 => (lit "UInt8")
+    | SemanticType.SUInt16 => (lit "UInt16")
+    | SemanticType.SUInt32 => (lit "UInt32")
+    | SemanticType.SUInt64 => (lit "UInt64")
+    | SemanticType.SString => (lit "String")
+    | SemanticType.SBytes => (lit "Bytes")
+    | SemanticType.SOrdering => (lit "Ordering")
+    | SemanticType.SContractViolation => (lit "ContractViolation")
+    | SemanticType.SReasoningFailure => (lit "ReasoningFailure")
+    | SemanticType.SParameter named => named
+    | SemanticType.SOption inner => (cat (lit "Option (") (cat (typeDisplay inner) (lit ")")))
+    | SemanticType.SResult good bad => (cat (cat (lit "Result (") (typeDisplay good)) (cat (cat (lit ") (") (typeDisplay bad)) (lit ")")))
+    | SemanticType.SList inner => (cat (lit "List (") (cat (typeDisplay inner) (lit ")")))
+    | SemanticType.SNamed owner named arguments => (cat (match owner
+      | Option.some source => (cat (cat source (lit ".")) named)
+      | Option.none => named) (prim list_fold (fun (acc : Bytes) (shown : Bytes) => (cat acc (cat (lit " (") (cat shown (lit ")"))))) 0x (displayItems arguments) : Bytes))
+    | SemanticType.SProduct left right => (cat (cat (lit "Prod (") (typeDisplay left)) (cat (cat (lit ") (") (typeDisplay right)) (lit ")")))
+    | SemanticType.SFunction parameters outcome => (cat (cat (lit "(") (prim list_fold (fun (acc : Bytes) (shown : Bytes) => (cat acc (cat (lit "(") (cat shown (lit ") -> "))))) 0x (displayItems parameters) : Bytes)) (cat (lit "(") (cat (typeDisplay outcome) (lit "))"))))
+    | SemanticType.SMap key entry => (cat (cat (lit "Map (") (typeDisplay key)) (cat (cat (lit ") (") (typeDisplay entry)) (lit ")")))
+    | SemanticType.SSet inner => (cat (lit "Set (") (cat (typeDisplay inner) (lit ")")))
+    | SemanticType.SNil => 0x
+    | SemanticType.SItem head tail => 0x),
+  executable: true,
+  mutual: Display,
+  recursive_argument: semantic
+}
+
+definition{
+  name: displayItems,
+  parameters: [semantic : SemanticType],
+  result: (List Bytes),
+  body: (match semantic
+    | SemanticType.SType => (nil Bytes)
+    | SemanticType.SNat => (nil Bytes)
+    | SemanticType.SBool => (nil Bytes)
+    | SemanticType.SProp => (nil Bytes)
+    | SemanticType.SUnit => (nil Bytes)
+    | SemanticType.SInt => (nil Bytes)
+    | SemanticType.SInt8 => (nil Bytes)
+    | SemanticType.SInt16 => (nil Bytes)
+    | SemanticType.SInt32 => (nil Bytes)
+    | SemanticType.SInt64 => (nil Bytes)
+    | SemanticType.SUInt8 => (nil Bytes)
+    | SemanticType.SUInt16 => (nil Bytes)
+    | SemanticType.SUInt32 => (nil Bytes)
+    | SemanticType.SUInt64 => (nil Bytes)
+    | SemanticType.SString => (nil Bytes)
+    | SemanticType.SBytes => (nil Bytes)
+    | SemanticType.SOrdering => (nil Bytes)
+    | SemanticType.SContractViolation => (nil Bytes)
+    | SemanticType.SReasoningFailure => (nil Bytes)
+    | SemanticType.SParameter named => (nil Bytes)
+    | SemanticType.SOption inner => (nil Bytes)
+    | SemanticType.SResult good bad => (nil Bytes)
+    | SemanticType.SList inner => (nil Bytes)
+    | SemanticType.SNamed owner named arguments => (nil Bytes)
+    | SemanticType.SProduct left right => (nil Bytes)
+    | SemanticType.SFunction parameters outcome => (nil Bytes)
+    | SemanticType.SMap key entry => (nil Bytes)
+    | SemanticType.SSet inner => (nil Bytes)
+    | SemanticType.SNil => (nil Bytes)
+    | SemanticType.SItem head tail => (cons (typeDisplay head) (displayItems tail))),
+  executable: true,
+  mutual: Display,
+  recursive_argument: semantic
+}
+
+definition{
+  name: primitiveFacts,
+  parameters: [primitive : SemanticPrimitive],
+  result: PrimitiveFacts,
+  body: (match primitive
+    | SemanticPrimitive.PSubtract => (record PrimitiveFacts {serdeName := (lit "subtract"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PMultiply => (record PrimitiveFacts {serdeName := (lit "multiply"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PQuotient => (record PrimitiveFacts {serdeName := (lit "quotient"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PRemainder => (record PrimitiveFacts {serdeName := (lit "remainder"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PNegate => (record PrimitiveFacts {serdeName := (lit "negate"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PCheckedConvert => (record PrimitiveFacts {serdeName := (lit "checked_convert"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PCheckedAdd => (record PrimitiveFacts {serdeName := (lit "checked_add"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PCheckedSubtract => (record PrimitiveFacts {serdeName := (lit "checked_subtract"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PCheckedMultiply => (record PrimitiveFacts {serdeName := (lit "checked_multiply"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PCheckedNegate => (record PrimitiveFacts {serdeName := (lit "checked_negate"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PCheckedQuotient => (record PrimitiveFacts {serdeName := (lit "checked_quotient"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PBitAnd => (record PrimitiveFacts {serdeName := (lit "bit_and"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PBitOr => (record PrimitiveFacts {serdeName := (lit "bit_or"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PBitXor => (record PrimitiveFacts {serdeName := (lit "bit_xor"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PBitNot => (record PrimitiveFacts {serdeName := (lit "bit_not"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PShiftLeft => (record PrimitiveFacts {serdeName := (lit "shift_left"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PShiftRight => (record PrimitiveFacts {serdeName := (lit "shift_right"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PAppend => (record PrimitiveFacts {serdeName := (lit "append"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PLength => (record PrimitiveFacts {serdeName := (lit "length"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PIndex => (record PrimitiveFacts {serdeName := (lit "index"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PSlice => (record PrimitiveFacts {serdeName := (lit "slice"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PUtf8Encode => (record PrimitiveFacts {serdeName := (lit "utf8_encode"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PUtf8Decode => (record PrimitiveFacts {serdeName := (lit "utf8_decode"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PCompareBytes => (record PrimitiveFacts {serdeName := (lit "compare_bytes"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PEqual => (record PrimitiveFacts {serdeName := (lit "equal"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PSplitExact => (record PrimitiveFacts {serdeName := (lit "split_exact"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PJoin => (record PrimitiveFacts {serdeName := (lit "join"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PParseDecimal => (record PrimitiveFacts {serdeName := (lit "parse_decimal"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PFormatDecimal => (record PrimitiveFacts {serdeName := (lit "format_decimal"), languageOneTwo := false, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PMapInsert => (record PrimitiveFacts {serdeName := (lit "map_insert"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PMapRemove => (record PrimitiveFacts {serdeName := (lit "map_remove"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PMapLookup => (record PrimitiveFacts {serdeName := (lit "map_lookup"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PMapContains => (record PrimitiveFacts {serdeName := (lit "map_contains"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PMapSize => (record PrimitiveFacts {serdeName := (lit "map_size"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PMapKeys => (record PrimitiveFacts {serdeName := (lit "map_keys"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PMapValues => (record PrimitiveFacts {serdeName := (lit "map_values"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PMapEntries => (record PrimitiveFacts {serdeName := (lit "map_entries"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PMapFold => (record PrimitiveFacts {serdeName := (lit "map_fold"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.some [Nat] 0)})
+    | SemanticPrimitive.PSetInsert => (record PrimitiveFacts {serdeName := (lit "set_insert"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PSetRemove => (record PrimitiveFacts {serdeName := (lit "set_remove"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PSetContains => (record PrimitiveFacts {serdeName := (lit "set_contains"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PSetSize => (record PrimitiveFacts {serdeName := (lit "set_size"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PSetElements => (record PrimitiveFacts {serdeName := (lit "set_elements"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PSetUnion => (record PrimitiveFacts {serdeName := (lit "set_union"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PSetIntersection => (record PrimitiveFacts {serdeName := (lit "set_intersection"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PSetDifference => (record PrimitiveFacts {serdeName := (lit "set_difference"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PSetFold => (record PrimitiveFacts {serdeName := (lit "set_fold"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.some [Nat] 0)})
+    | SemanticPrimitive.PListFold => (record PrimitiveFacts {serdeName := (lit "list_fold"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.some [Nat] 0)})
+    | SemanticPrimitive.PIterate => (record PrimitiveFacts {serdeName := (lit "iterate"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.some [Nat] 0)})
+    | SemanticPrimitive.PIterateUntil => (record PrimitiveFacts {serdeName := (lit "iterate_until"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.some [Nat] 0)})
+    | SemanticPrimitive.PGraphSuccessors => (record PrimitiveFacts {serdeName := (lit "graph_successors"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PGraphReachable => (record PrimitiveFacts {serdeName := (lit "graph_reachable"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PGraphTopological => (record PrimitiveFacts {serdeName := (lit "graph_topological"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PLessThan => (record PrimitiveFacts {serdeName := (lit "less_than"), languageOneTwo := true, widening := false, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PToInt => (record PrimitiveFacts {serdeName := (lit "to_int"), languageOneTwo := true, widening := true, functionArgument := (ctor Option.none [Nat])})
+    | SemanticPrimitive.PToNat => (record PrimitiveFacts {serdeName := (lit "to_nat"), languageOneTwo := true, widening := true, functionArgument := (ctor Option.none [Nat])})),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: integerName,
+  parameters: [integer : SemanticInteger],
+  result: Bytes,
+  body: (match integer
+    | SemanticInteger.IInt => (lit "int")
+    | SemanticInteger.IInt8 => (lit "int8")
+    | SemanticInteger.IInt16 => (lit "int16")
+    | SemanticInteger.IInt32 => (lit "int32")
+    | SemanticInteger.IInt64 => (lit "int64")
+    | SemanticInteger.IUInt8 => (lit "uint8")
+    | SemanticInteger.IUInt16 => (lit "uint16")
+    | SemanticInteger.IUInt32 => (lit "uint32")
+    | SemanticInteger.IUInt64 => (lit "uint64")),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: typeText,
+  parameters: [semantic : SemanticType],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (typeJson semantic)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: typeSpelling,
+  parameters: [semantic : SemanticType],
+  result: Bytes,
+  body: (typeDisplay semantic),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
