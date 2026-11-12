@@ -823,6 +823,12 @@ pub(crate) fn run(id: &str) {
             let files = support::file_set(&fixture.outcome.root);
             type Matcher = Box<dyn Fn(&str) -> bool>;
             // The slots present exactly when a production root exists.
+            // §21.9: language 1.2 publishes each semantic module's
+            // declaration IDs; languages 1.0 and 1.1 publish none.
+            let language_1_2: Vec<(&str, Matcher)> = vec![(
+                "declarations/*.json",
+                Box::new(|f: &str| f.starts_with("declarations/") && f.ends_with(".json")),
+            )];
             let production: Vec<(&str, Matcher)> = vec![
                 (
                     "production/*.eligibility.json",
@@ -964,6 +970,10 @@ pub(crate) fn run(id: &str) {
                     !production.iter().any(|(_, matches)| matches(file)),
                     "§22.8: `{file}` exists without a production root"
                 );
+                assert!(
+                    !language_1_2.iter().any(|(_, matches)| matches(file)),
+                    "§22.8: `{file}` exists outside language 1.2"
+                );
             }
             for (pattern, matches) in &patterns {
                 assert!(
@@ -994,11 +1004,12 @@ pub(crate) fn run(id: &str) {
                         patterns
                             .iter()
                             .chain(&production)
+                            .chain(&language_1_2)
                             .any(|(_, matches)| matches(file)),
                         "§22.8: `{file}` is outside the fixed artifact set"
                     );
                 }
-                for (pattern, matches) in patterns.iter().chain(&production) {
+                for (pattern, matches) in patterns.iter().chain(&production).chain(&language_1_2) {
                     assert!(
                         files.iter().any(|file| matches(file)),
                         "§22.8: the `{pattern}` slot is populated with production roots"

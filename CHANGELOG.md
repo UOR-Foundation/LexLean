@@ -22,6 +22,15 @@ workspace carried at those versions without a tag.
   packages, and uploads the bundle with a custody record (`lexlean/ci-bootstrap-export/1`); a
   leg takes it when a case first needs it, and the harness checks the record against its own
   run and checkout and replays the bundle. No bootstrap part verifies the bootstrap project.
+- Declaration IDs (SPEC.md §21.9, `SM-38`; no new diagnostic code, no change to
+  any compiler-semantics ID). A language-1.2 build publishes
+  `declarations/<module>.json` (`lexlean/declarations/1`, schema
+  `api/schemas/declarations.schema.json`) with a declaration ID for every
+  declaration of a semantic module, a framed SHA-256 over its canonical JSON
+  and the IDs of the project declarations it references, with each group of
+  declarations that reference one another hashed as one, and a statement ID
+  for every theorem that omits its proof. Builds of languages 1.0 and 1.1 are
+  unchanged. The register is 483 IDs.
 - `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
   initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
   `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
