@@ -308,7 +308,8 @@ fn projects_under(dir: &std::path::Path, out: &mut Vec<camino::Utf8PathBuf>) {
     }
 }
 
-/// Every committed project that links under its committed lock, with the
+/// Every committed project that links under its committed lock, or under one
+/// computed from its manifest when it commits none, with the
 /// semantic ID the linker records, each checked to be the recipe of `BS-32`
 /// over the oracle's linked text.
 fn committed() -> Vec<Identity> {
@@ -323,12 +324,17 @@ fn committed() -> Vec<Identity> {
                 continue;
             }
         };
+        // A project that commits no lock links under one computed from its
+        // manifest, as the tooling fixtures' own cases link them.
         let (lock, packages) = match lexlean::lock::read_current_lock(&project) {
             Ok(read) => read,
-            Err(error) => {
-                eprintln!("BS-67: {dir}: no current lock: {error:?}");
-                continue;
-            }
+            Err(_) => match lexlean::lock::compute_lock(&project, false) {
+                Ok(computed) => computed,
+                Err(error) => {
+                    eprintln!("BS-67: {dir}: no lock: {error:?}");
+                    continue;
+                }
+            },
         };
         let checked = match lexlean::link::check_project(
             &project,

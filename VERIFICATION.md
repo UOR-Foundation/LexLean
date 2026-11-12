@@ -11802,7 +11802,7 @@ not end with its own, and the smallest committed module embedding each kind of
 module; on hand-built projects listed out of order and in order, and on a
 hand-built identity; and on every module, every linked project, and the
 recorded semantic ID of every committed project outside the negative fixtures
-and UOR Atlas that links under its committed lock, for each of which the case
+and UOR Atlas that links under its committed lock, or under a lock computed from its manifest when it commits none, for each of which the case
 first asserts that the recorded ID is the recipe over the oracle's linked text.
 The evaluator takes the projects whose linked text is at most 262,144 bytes, the
 rendered packages all of them. Each planted defect names the vector that
