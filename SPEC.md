@@ -8777,7 +8777,11 @@ project configured `max_total_source_bytes = 134217728` (twice the default), the
 term-lowering passes needing about 100 MB in all. The surface tooling of `BS-27`
 took the export past that, to 135,273,215 bytes, so the project now configures
 `max_total_source_bytes = 536870912` (eight times the default), with room for the
-further components of the driver.
+further components of the driver. The lexicon closure of `BS-50` took the Lean extraction of
+that export past the 33,554,432 bytes of output the project let one child write
+(`max_child_output_bytes`, §10.2), so the project configures
+`max_child_output_bytes = 268435456` (the maintainer's decision), with room for the
+further components of the lexicon closure.
 
 `BS-16` holds `validateRequest` of `GnafValidate` to `gnaf::validate` (§17.15). The root takes the projection
 of a request that validation reads, as first-order data: the length of the domain, the machine (its capacity,
