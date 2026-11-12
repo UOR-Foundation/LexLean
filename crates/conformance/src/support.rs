@@ -204,6 +204,7 @@ fn ty(value: &SnapshotType) -> usize {
         SnapshotType::Function { parameters, result } => parameters.iter().map(ty).sum::<usize>() + ty(result),
         SnapshotType::Map { key, value } => ty(key) + ty(value),
         SnapshotType::Set { element } => ty(element),
+        SnapshotType::Array { element } => ty(element),
     }
 }
 
