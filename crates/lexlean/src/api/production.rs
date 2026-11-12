@@ -1061,6 +1061,7 @@ fn build_inner(
     request: &ProductionRequest,
 ) -> Result<ProductionOutput, LexLeanError> {
     request.validate()?;
+    crate::production::preserve::require_library().map_err(LexLeanError::from_diagnostic)?;
     let project = &engine.project;
     let (checked, _lock) = engine.checked(&Selection::Entrypoints)?;
     let lock_bytes =
