@@ -1657,8 +1657,11 @@ fn lm_07() {
 /// audit's reviewed classification: an operation absent from it is refused,
 /// so a primitive added to the language must be classified before the
 /// registries may name it.
-const PRIMITIVES: [(&str, bool, &str); 56] = [
+const PRIMITIVES: [(&str, bool, &str); 59] = [
     ("append", true, "bytes_or_list"),
+    ("array_from_list", false, "container"),
+    ("array_set", false, "container"),
+    ("array_to_list", false, "container"),
     ("bit_and", false, "fixed_width"),
     ("bit_not", false, "fixed_width"),
     ("bit_or", false, "fixed_width"),
