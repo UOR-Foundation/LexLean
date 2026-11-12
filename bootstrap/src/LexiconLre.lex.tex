@@ -1,0 +1,493 @@
+\begin{lexlean}{LexiconLre}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexiconLse}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Render,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: RForm, fields: [Bytes, Bytes, Bytes]},
+    {name: RSelfForm, fields: [Bytes]},
+    {name: RSlot, fields: [Nat]},
+    {name: RSeq, fields: [Render]},
+    {name: RSpace, fields: []},
+    {name: RToken, fields: [Bytes]},
+    {name: RGroup, fields: [Render]},
+    {name: RParen, fields: [Render]},
+    {name: RBracket, fields: [Render]},
+    {name: RSub, fields: [Render, Render]},
+    {name: RSup, fields: [Render, Render]},
+    {name: RFrac, fields: [Render, Render]},
+    {name: ROperatorName, fields: [Bytes]},
+    {name: RNil, fields: []},
+    {name: RItem, fields: [Render, Render]}
+  ]
+}
+
+inductive{
+  name: RWork,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: RVisit, fields: [LexiconLse::Node]}, {name: RBuild, fields: [Bytes, Nat]}]
+}
+
+structure{
+  name: Rv,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: work, type: (List RWork)},
+    {name: values, type: (List Render)},
+    {name: error, type: (Option LexiconLse::Failure)}
+  ]
+}
+
+structure{
+  name: Facts,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: slots, type: (List Nat)},
+    {name: tokens, type: (List Bytes)},
+    {name: formRefs, type: (List (Bytes * (Bytes * Bytes)))},
+    {name: selfForms, type: (List Bytes)},
+    {name: operatorNames, type: (List Bytes)},
+    {name: mathOnly, type: (Option Bytes)},
+    {name: scriptError, type: (Option Bytes)}
+  ]
+}
+
+structure{
+  name: Wk,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: stack, type: (List Render)}, {name: facts, type: Facts}]
+}
+
+definition{
+  name: scanOperatorName,
+  parameters: [subject : Bytes, n : Nat, position : Nat],
+  result: (Option Nat),
+  body: (if (position <? n) then (let value : Nat := (LexiconLse::byteNum subject position); (if (if (LexiconLse::isAlnumNum value) then true else (value =? 95)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isOperatorName,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let n : Nat := (prim length text : Nat); (if (n =? 0) then false else (if (LexiconLse::isAlphaNum (LexiconLse::byteNum text 0)) then ((first (prim iterate_until (fun [n, text] (position : Nat) => (scanOperatorName text n position)) n 1 : (Nat * Bool))) =? n) else false))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scanTokenId,
+  parameters: [subject : Bytes, n : Nat, position : Nat],
+  result: (Option Nat),
+  body: (if (position <? n) then (let value : Nat := (LexiconLse::byteNum subject position); (if (if (LexiconLse::isLowerNum value) then true else (if (LexiconLse::isDigitNum value) then true else (value =? 45))) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isTokenId,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let n : Nat := (prim length text : Nat); (if (n =? 0) then false else (if (LexiconLse::isLowerNum (LexiconLse::byteNum text 0)) then ((first (prim iterate_until (fun [n, text] (position : Nat) => (scanTokenId text n position)) n 1 : (Nat * Bool))) =? n) else false))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isFormId,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (isTokenId text),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: rvFail,
+  parameters: [st : Rv, failure : LexiconLse::Failure],
+  result: Rv,
+  body: (record Rv {work := (project st work), values := (project st values), error := (ctor Option.some [LexiconLse::Failure] failure)}),
+  executable: true
+}
+
+definition{
+  name: rvPush,
+  parameters: [st : Rv, rest : (List RWork), value : Render],
+  result: Rv,
+  body: (record Rv {work := rest, values := (cons value (project st values)), error := (ctor Option.none [LexiconLse::Failure])}),
+  executable: true
+}
+
+definition{
+  name: pushVisitsR,
+  parameters: [items : (List LexiconLse::Node), work : (List RWork)],
+  result: (List RWork),
+  body: (prim list_fold (fun (acc : (List RWork)) (item : LexiconLse::Node) => (cons (ctor RWork.RVisit item) acc)) work (LexLeanStd.Order::reverseList [LexiconLse::Node] items) : (List RWork)),
+  executable: true
+}
+
+definition{
+  name: takeRenders,
+  parameters: [values : (List Render), count : Nat],
+  result: ((List Render) * (List Render)),
+  body: (first (prim iterate_until (fun (state : ((List Render) * (List Render))) => (match (second state)
+    | List.nil => (ctor Option.none [((List Render) * (List Render))])
+    | List.cons top rest => (ctor Option.some [((List Render) * (List Render))] ((cons top (first state)), rest)))) count ((nil Render), values) : (((List Render) * (List Render)) * Bool))),
+  executable: true
+}
+
+definition{
+  name: renderChain,
+  parameters: [items : (List Render)],
+  result: Render,
+  body: (prim list_fold (fun (chain : Render) (item : Render) => (ctor Render.RItem item chain)) (ctor Render.RNil) (LexLeanStd.Order::reverseList [Render] items) : Render),
+  executable: true
+}
+
+definition{
+  name: visitForm,
+  parameters: [st : Rv, rest : (List RWork), arguments : (List LexiconLse::Node), fuel : Nat],
+  result: Rv,
+  body: (if ((prim length arguments : Nat) =? 2) then (match (LexiconLse::atomOf (LexiconLse::nodeAt arguments 0) (LexiconLse::lit "a qualified ID") fuel)
+    | Result.ok spelled => (match (LexiconLse::qualifiedId spelled)
+      | Result.ok parts => (match (LexiconLse::atomOf (LexiconLse::nodeAt arguments 1) (LexiconLse::lit "a form ID") fuel)
+        | Result.ok form => (if (isFormId form) then (rvPush st rest (ctor Render.RForm (first parts) (second parts) form)) else (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::quoted form) (LexiconLse::lit " is not a form ID")))))
+        | Result.error failure => (rvFail st failure))
+      | Result.error failure => (rvFail st failure))
+    | Result.error failure => (rvFail st failure)) else (rvFail st (LexiconLse::failed (LexiconLse::lit "a form reference is `(form qualified-id form-id)`")))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: visitNamed,
+  parameters: [
+    st : Rv,
+    rest : (List RWork),
+    arguments : (List LexiconLse::Node),
+    fuel : Nat,
+    what : Bytes,
+    shape : Bytes,
+    kind : Nat
+  ],
+  result: Rv,
+  body: (if ((prim length arguments : Nat) =? 1) then (match (LexiconLse::atomOf (LexiconLse::nodeAt arguments 0) what fuel)
+    | Result.ok text => (if (kind =? 0) then (if (isFormId text) then (rvPush st rest (ctor Render.RSelfForm text)) else (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::quoted text) (LexiconLse::lit " is not a form ID"))))) else (if (kind =? 1) then (if (isTokenId text) then (rvPush st rest (ctor Render.RToken text)) else (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::quoted text) (LexiconLse::lit " is not a renderer-token ID"))))) else (if (isOperatorName text) then (rvPush st rest (ctor Render.ROperatorName text)) else (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::quoted text) (LexiconLse::lit " is not an operator name")))))))
+    | Result.error failure => (rvFail st failure)) else (rvFail st (LexiconLse::failed shape))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: visitSlot,
+  parameters: [st : Rv, rest : (List RWork), arguments : (List LexiconLse::Node), fuel : Nat],
+  result: Rv,
+  body: (if ((prim length arguments : Nat) =? 1) then (match (LexiconLse::atomOf (LexiconLse::nodeAt arguments 0) (LexiconLse::lit "a slot index") fuel)
+    | Result.ok digits => (match (LexiconLse::decimalFault digits)
+      | Option.some fault => (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::quoted digits) (LexiconLse::lit " is not a slot index"))))
+      | Option.none => (let value : Nat := (LexiconLse::decimalValue digits); (if (4294967295 <? value) then (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::quoted digits) (LexiconLse::lit " is not a slot index")))) else (rvPush st rest (ctor Render.RSlot value)))))
+    | Result.error failure => (rvFail st failure)) else (rvFail st (LexiconLse::failed (LexiconLse::lit "a slot is `(slot decimal)`")))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isUnary,
+  parameters: [head : Bytes],
+  result: Bool,
+  body: (if (prim equal head (LexiconLse::lit "group") : Bool) then true else (if (prim equal head (LexiconLse::lit "paren") : Bool) then true else (prim equal head (LexiconLse::lit "bracket") : Bool))),
+  executable: true
+}
+
+definition{
+  name: isBinary,
+  parameters: [head : Bytes],
+  result: Bool,
+  body: (if (prim equal head (LexiconLse::lit "sub") : Bool) then true else (if (prim equal head (LexiconLse::lit "sup") : Bool) then true else (prim equal head (LexiconLse::lit "frac") : Bool))),
+  executable: true
+}
+
+definition{
+  name: visitHead,
+  parameters: [
+    st : Rv,
+    rest : (List RWork),
+    head : Bytes,
+    arguments : (List LexiconLse::Node),
+    fuel : Nat
+  ],
+  result: Rv,
+  body: (let argc : Nat := (prim length arguments : Nat); (if (prim equal head (LexiconLse::lit "form") : Bool) then (visitForm st rest arguments fuel) else (if (prim equal head (LexiconLse::lit "self-form") : Bool) then (visitNamed st rest arguments fuel (LexiconLse::lit "a form ID") (LexiconLse::lit "a self form is `(self-form form-id)`") 0) else (if (prim equal head (LexiconLse::lit "slot") : Bool) then (visitSlot st rest arguments fuel) else (if (prim equal head (LexiconLse::lit "space") : Bool) then (if (argc =? 0) then (rvPush st rest (ctor Render.RSpace)) else (rvFail st (LexiconLse::failed (LexiconLse::lit "`(space)` takes no operand")))) else (if (prim equal head (LexiconLse::lit "token") : Bool) then (visitNamed st rest arguments fuel (LexiconLse::lit "a renderer-token ID") (LexiconLse::lit "a token is `(token renderer-token-id)`") 1) else (if (prim equal head (LexiconLse::lit "operator-name") : Bool) then (visitNamed st rest arguments fuel (LexiconLse::lit "an operator name") (LexiconLse::lit "an operator name is `(operator-name identifier)`") 2) else (if (prim equal head (LexiconLse::lit "seq") : Bool) then (if (argc =? 0) then (rvFail st (LexiconLse::failed (LexiconLse::lit "`seq` has at least one item"))) else (record Rv {work := (pushVisitsR arguments (cons (ctor RWork.RBuild head argc) rest)), values := (project st values), error := (ctor Option.none [LexiconLse::Failure])})) else (if (isUnary head) then (if (argc =? 1) then (record Rv {work := (cons (ctor RWork.RVisit (LexiconLse::nodeAt arguments 0)) (cons (ctor RWork.RBuild head 1) rest)), values := (project st values), error := (ctor Option.none [LexiconLse::Failure])}) else (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::quoted head) (LexiconLse::lit " takes exactly one operand"))))) else (if (isBinary head) then (if (argc =? 2) then (record Rv {work := (cons (ctor RWork.RVisit (LexiconLse::nodeAt arguments 0)) (cons (ctor RWork.RVisit (LexiconLse::nodeAt arguments 1)) (cons (ctor RWork.RBuild head 2) rest))), values := (project st values), error := (ctor Option.none [LexiconLse::Failure])}) else (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::quoted head) (LexiconLse::lit " takes exactly two operands"))))) else (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::quoted head) (LexiconLse::lit " is not an LRE form")))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: rvVisit,
+  parameters: [st : Rv, rest : (List RWork), node : LexiconLse::Node, fuel : Nat],
+  result: Rv,
+  body: (match node
+    | LexiconLse::Node.NList chain => (match (LexiconLse::itemsOf chain fuel)
+      | List.nil => (rvFail st (LexiconLse::failed (LexiconLse::lit "expected an LRE form")))
+      | List.cons headNode arguments => (match headNode
+        | LexiconLse::Node.NAtom head => (visitHead st rest head arguments fuel)
+        | LexiconLse::Node.NList inner => (rvFail st (LexiconLse::failed (LexiconLse::lit "expected an LRE form")))
+        | LexiconLse::Node.NNil => (rvFail st (LexiconLse::failed (LexiconLse::lit "expected an LRE form")))
+        | LexiconLse::Node.NItem h t => (rvFail st (LexiconLse::failed (LexiconLse::lit "expected an LRE form")))))
+    | LexiconLse::Node.NAtom text => (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::lit "expected `(`, found ") (LexiconLse::describe node))))
+    | LexiconLse::Node.NNil => (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::lit "expected `(`, found ") (LexiconLse::describe node))))
+    | LexiconLse::Node.NItem head tail => (rvFail st (LexiconLse::failed (LexiconLse::cat (LexiconLse::lit "expected `(`, found ") (LexiconLse::describe node))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: wrapOne,
+  parameters: [head : Bytes, inner : Render],
+  result: Render,
+  body: (if (prim equal head (LexiconLse::lit "group") : Bool) then (ctor Render.RGroup inner) else (if (prim equal head (LexiconLse::lit "paren") : Bool) then (ctor Render.RParen inner) else (ctor Render.RBracket inner))),
+  executable: true
+}
+
+definition{
+  name: wrapTwo,
+  parameters: [head : Bytes, left : Render, right : Render],
+  result: Render,
+  body: (if (prim equal head (LexiconLse::lit "sub") : Bool) then (ctor Render.RSub left right) else (if (prim equal head (LexiconLse::lit "sup") : Bool) then (ctor Render.RSup left right) else (ctor Render.RFrac left right))),
+  executable: true
+}
+
+definition{
+  name: rvBuild,
+  parameters: [st : Rv, rest : (List RWork), head : Bytes, count : Nat],
+  result: Rv,
+  body: (let taken : ((List Render) * (List Render)) := (takeRenders (project st values) count); (let parts : (List Render) := (first taken); (if (prim equal head (LexiconLse::lit "seq") : Bool) then (rvPush (record Rv {work := rest, values := (second taken), error := (ctor Option.none [LexiconLse::Failure])}) rest (ctor Render.RSeq (renderChain parts))) else (if (isUnary head) then (match parts
+    | List.nil => (rvFail st (LexiconLse::failed (LexiconLse::lit "missing operand")))
+    | List.cons inner more => (rvPush (record Rv {work := rest, values := (second taken), error := (ctor Option.none [LexiconLse::Failure])}) rest (wrapOne head inner))) else (match parts
+    | List.nil => (rvFail st (LexiconLse::failed (LexiconLse::lit "missing operand")))
+    | List.cons left more => (match more
+      | List.nil => (rvFail st (LexiconLse::failed (LexiconLse::lit "missing operand")))
+      | List.cons right tail => (rvPush (record Rv {work := rest, values := (second taken), error := (ctor Option.none [LexiconLse::Failure])}) rest (wrapTwo head left right)))))))),
+  executable: true
+}
+
+definition{
+  name: rvStep,
+  parameters: [fuel : Nat, st : Rv],
+  result: (Option Rv),
+  body: (match (project st error)
+    | Option.some stopped => (ctor Option.none [Rv])
+    | Option.none => (match (project st work)
+      | List.nil => (ctor Option.none [Rv])
+      | List.cons item rest => (match item
+        | RWork.RVisit node => (ctor Option.some [Rv] (rvVisit st rest node fuel))
+        | RWork.RBuild head count => (ctor Option.some [Rv] (rvBuild st rest head count))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: renderOf,
+  parameters: [root : LexiconLse::Node, fuel : Nat],
+  result: (Result Render LexiconLse::Failure),
+  body: (let final : Rv := (first (prim iterate_until (fun [fuel] (st : Rv) => (rvStep fuel st)) ((prim multiply fuel 2 : Nat) + 2) (record Rv {work := (cons (ctor RWork.RVisit root) (nil RWork)), values := (nil Render), error := (ctor Option.none [LexiconLse::Failure])}) : (Rv * Bool))); (match (project final error)
+    | Option.some failure => (ctor Result.error [Render, LexiconLse::Failure] failure)
+    | Option.none => (match (project final values)
+      | List.nil => (ctor Result.error [Render, LexiconLse::Failure] (LexiconLse::failed (LexiconLse::lit "malformed render expression")))
+      | List.cons value more => (match more
+        | List.nil => (ctor Result.ok [Render, LexiconLse::Failure] value)
+        | List.cons another rest => (ctor Result.error [Render, LexiconLse::Failure] (LexiconLse::failed (LexiconLse::lit "malformed render expression"))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parseLre,
+  parameters: [text : Bytes, maxDepth : Nat],
+  result: (Result Render LexiconLse::Failure),
+  body: (match (LexiconLse::tokenize text)
+    | Result.error failure => (ctor Result.error [Render, LexiconLse::Failure] failure)
+    | Result.ok toks => (match (LexiconLse::readTree toks maxDepth)
+      | Result.error failure => (ctor Result.error [Render, LexiconLse::Failure] failure)
+      | Result.ok root => (renderOf root (prim length toks : Nat)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: renderItems,
+  parameters: [chain : Render, fuel : Nat],
+  result: (List Render),
+  body: (LexLeanStd.Order::reverseList [Render] (second (first (prim iterate_until (fun (state : (Render * (List Render))) => (match (first state)
+    | Render.RItem head tail => (ctor Option.some [(Render * (List Render))] (tail, (cons head (second state))))
+    | Render.RNil => (ctor Option.none [(Render * (List Render))])
+    | Render.RForm p e f => (ctor Option.none [(Render * (List Render))])
+    | Render.RSelfForm f => (ctor Option.none [(Render * (List Render))])
+    | Render.RSlot n => (ctor Option.none [(Render * (List Render))])
+    | Render.RSeq items => (ctor Option.none [(Render * (List Render))])
+    | Render.RSpace => (ctor Option.none [(Render * (List Render))])
+    | Render.RToken t => (ctor Option.none [(Render * (List Render))])
+    | Render.RGroup inner => (ctor Option.none [(Render * (List Render))])
+    | Render.RParen inner => (ctor Option.none [(Render * (List Render))])
+    | Render.RBracket inner => (ctor Option.none [(Render * (List Render))])
+    | Render.RSub a b => (ctor Option.none [(Render * (List Render))])
+    | Render.RSup a b => (ctor Option.none [(Render * (List Render))])
+    | Render.RFrac a b => (ctor Option.none [(Render * (List Render))])
+    | Render.ROperatorName n => (ctor Option.none [(Render * (List Render))]))) (fuel + 1) (chain, (nil Render)) : ((Render * (List Render)) * Bool))))),
+  executable: true
+}
+
+definition{
+  name: nothingStep,
+  parameters: [fuel : Nat, state : ((List Render) * Nat)],
+  result: (Option ((List Render) * Nat)),
+  body: (if ((second state) =? 1) then (ctor Option.none [((List Render) * Nat)]) else (match (first state)
+    | List.nil => (ctor Option.none [((List Render) * Nat)])
+    | List.cons top rest => (match top
+      | Render.RSpace => (ctor Option.some [((List Render) * Nat)] (rest, 0))
+      | Render.RSeq items => (ctor Option.some [((List Render) * Nat)] ((prim list_fold (fun (acc : (List Render)) (item : Render) => (cons item acc)) rest (renderItems items fuel) : (List Render)), 0))
+      | Render.RForm p e f => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.RSelfForm f => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.RSlot n => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.RToken t => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.RGroup inner => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.RParen inner => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.RBracket inner => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.RSub a b => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.RSup a b => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.RFrac a b => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.ROperatorName n => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.RNil => (ctor Option.some [((List Render) * Nat)] (rest, 1))
+      | Render.RItem h t => (ctor Option.some [((List Render) * Nat)] (rest, 1))))),
+  executable: true
+}
+
+definition{
+  name: rendersNothing,
+  parameters: [render : Render, fuel : Nat],
+  result: Bool,
+  body: ((second (first (prim iterate_until (fun [fuel] (state : ((List Render) * Nat)) => (nothingStep fuel state)) (fuel + 1) ((cons render (nil Render)), 0) : (((List Render) * Nat) * Bool)))) =? 0),
+  executable: true
+}
+
+definition{
+  name: isScript,
+  parameters: [render : Render],
+  result: Bool,
+  body: (match render
+    | Render.RSub a b => true
+    | Render.RSup a b => true
+    | Render.RFrac a b => false
+    | Render.RForm p e f => false
+    | Render.RSelfForm f => false
+    | Render.RSlot n => false
+    | Render.RSeq items => false
+    | Render.RSpace => false
+    | Render.RToken t => false
+    | Render.RGroup inner => false
+    | Render.RParen inner => false
+    | Render.RBracket inner => false
+    | Render.ROperatorName n => false
+    | Render.RNil => false
+    | Render.RItem h t => false),
+  executable: true
+}
+
+definition{
+  name: operandProblem,
+  parameters: [name : Bytes, operand : Render, fuel : Nat],
+  result: (Option Bytes),
+  body: (if (rendersNothing operand fuel) then (ctor Option.some [Bytes] (LexiconLse::cat (LexiconLse::quoted name) (LexiconLse::lit " operand renders nothing"))) else (if (if (prim equal name (LexiconLse::lit "frac") : Bool) then false else (isScript operand)) then (ctor Option.some [Bytes] (LexiconLse::cat (LexiconLse::quoted name) (LexiconLse::lit " operand is a bare script; wrap nested scripts in `(group ...)`"))) else (ctor Option.none [Bytes]))),
+  executable: true
+}
+
+definition{
+  name: scriptProblem,
+  parameters: [name : Bytes, left : Render, right : Render, fuel : Nat],
+  result: (Option Bytes),
+  body: (match (operandProblem name left fuel)
+    | Option.some problem => (ctor Option.some [Bytes] problem)
+    | Option.none => (operandProblem name right fuel)),
+  executable: true
+}
+
+definition{
+  name: withFacts,
+  parameters: [stack : (List Render), facts : Facts],
+  result: (Option Wk),
+  body: (ctor Option.some [Wk] (record Wk {stack := stack, facts := facts})),
+  executable: true
+}
+
+definition{
+  name: firstSome,
+  parameters: [current : (Option Bytes), candidate : Bytes],
+  result: (Option Bytes),
+  body: (match current
+    | Option.some kept => current
+    | Option.none => (ctor Option.some [Bytes] candidate)),
+  executable: true
+}
+
+definition{
+  name: firstProblem,
+  parameters: [current : (Option Bytes), candidate : (Option Bytes)],
+  result: (Option Bytes),
+  body: (match current | Option.some kept => current | Option.none => candidate),
+  executable: true
+}
+
+definition{
+  name: binaryFacts,
+  parameters: [facts : Facts, name : Bytes, left : Render, right : Render, fuel : Nat],
+  result: Facts,
+  body: (record Facts {slots := (project facts slots), tokens := (project facts tokens), formRefs := (project facts formRefs), selfForms := (project facts selfForms), operatorNames := (project facts operatorNames), mathOnly := (firstSome (project facts mathOnly) name), scriptError := (firstProblem (project facts scriptError) (scriptProblem name left right fuel))}),
+  executable: true
+}
+
+definition{
+  name: wkStep,
+  parameters: [fuel : Nat, st : Wk],
+  result: (Option Wk),
+  body: (match (project st stack)
+    | List.nil => (ctor Option.none [Wk])
+    | List.cons top rest => (let facts : Facts := (project st facts); (match top
+      | Render.RForm p e f => (withFacts rest (record Facts {slots := (project facts slots), tokens := (project facts tokens), formRefs := (cons (p, (e, f)) (project facts formRefs)), selfForms := (project facts selfForms), operatorNames := (project facts operatorNames), mathOnly := (project facts mathOnly), scriptError := (project facts scriptError)}))
+      | Render.RSelfForm f => (withFacts rest (record Facts {slots := (project facts slots), tokens := (project facts tokens), formRefs := (project facts formRefs), selfForms := (cons f (project facts selfForms)), operatorNames := (project facts operatorNames), mathOnly := (project facts mathOnly), scriptError := (project facts scriptError)}))
+      | Render.RSlot n => (withFacts rest (record Facts {slots := (cons n (project facts slots)), tokens := (project facts tokens), formRefs := (project facts formRefs), selfForms := (project facts selfForms), operatorNames := (project facts operatorNames), mathOnly := (project facts mathOnly), scriptError := (project facts scriptError)}))
+      | Render.RSeq items => (withFacts (prim list_fold (fun (acc : (List Render)) (item : Render) => (cons item acc)) rest (LexLeanStd.Order::reverseList [Render] (renderItems items fuel)) : (List Render)) facts)
+      | Render.RSpace => (withFacts rest facts)
+      | Render.RToken t => (withFacts rest (record Facts {slots := (project facts slots), tokens := (cons t (project facts tokens)), formRefs := (project facts formRefs), selfForms := (project facts selfForms), operatorNames := (project facts operatorNames), mathOnly := (project facts mathOnly), scriptError := (project facts scriptError)}))
+      | Render.RGroup inner => (withFacts (cons inner rest) facts)
+      | Render.RParen inner => (withFacts (cons inner rest) facts)
+      | Render.RBracket inner => (withFacts (cons inner rest) facts)
+      | Render.RSub a b => (withFacts (cons a (cons b rest)) (binaryFacts facts (LexiconLse::lit "sub") a b fuel))
+      | Render.RSup a b => (withFacts (cons a (cons b rest)) (binaryFacts facts (LexiconLse::lit "sup") a b fuel))
+      | Render.RFrac a b => (withFacts (cons a (cons b rest)) (binaryFacts facts (LexiconLse::lit "frac") a b fuel))
+      | Render.ROperatorName n => (withFacts rest (record Facts {slots := (project facts slots), tokens := (project facts tokens), formRefs := (project facts formRefs), selfForms := (project facts selfForms), operatorNames := (cons n (project facts operatorNames)), mathOnly := (firstSome (project facts mathOnly) (LexiconLse::lit "operator-name")), scriptError := (project facts scriptError)}))
+      | Render.RNil => (withFacts rest facts)
+      | Render.RItem h t => (withFacts rest facts)))),
+  executable: true
+}
+
+definition{
+  name: renderFacts,
+  parameters: [render : Render, nodes : Nat],
+  result: Facts,
+  body: (let final : Wk := (first (prim iterate_until (fun [nodes] (st : Wk) => (wkStep nodes st)) (nodes + 1) (record Wk {stack := (cons render (nil Render)), facts := (record Facts {slots := (nil Nat), tokens := (nil Bytes), formRefs := (nil (Bytes * (Bytes * Bytes))), selfForms := (nil Bytes), operatorNames := (nil Bytes), mathOnly := (ctor Option.none [Bytes]), scriptError := (ctor Option.none [Bytes])})}) : (Wk * Bool))); (let facts : Facts := (project final facts); (record Facts {slots := (LexLeanStd.Order::reverseList [Nat] (project facts slots)), tokens := (LexLeanStd.Order::reverseList [Bytes] (project facts tokens)), formRefs := (LexLeanStd.Order::reverseList [(Bytes * (Bytes * Bytes))] (project facts formRefs)), selfForms := (LexLeanStd.Order::reverseList [Bytes] (project facts selfForms)), operatorNames := (LexLeanStd.Order::reverseList [Bytes] (project facts operatorNames)), mathOnly := (project facts mathOnly), scriptError := (project facts scriptError)}))),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

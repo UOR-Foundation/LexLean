@@ -13,6 +13,7 @@ use lexlean::production::lower::{linked_modules, lower_root, roots, Lowered};
 use serde_json::Value as Json;
 
 mod calculus_check;
+mod content_id;
 pub mod perf;
 
 use crate::production_export as harness;
@@ -21,7 +22,14 @@ use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support::{self, P};
 
+mod cli_output;
+mod diagnostics;
 mod gnaf_validate;
+mod lexicon_lre;
+mod lexicon_lse;
+mod lock_text;
+mod manifest_text;
+mod project_text;
 mod runtime_validate;
 mod rust_assemble;
 mod rust_bodies;
@@ -38,6 +46,8 @@ mod structural_grammar;
 mod surface_doc;
 mod surface_generic;
 mod surface_lex;
+mod surface_module;
+mod surface_tooling;
 mod tooling_latex;
 
 /// The module the first component lives in.
@@ -2465,6 +2475,16 @@ fn case(id: &str) {
         "BS-22" => surface_lex::case(),
         "BS-23" => surface_doc::case(),
         "BS-24" => surface_generic::case(),
+        "BS-27" => surface_tooling::case(),
+        "BS-25" => lexicon_lse::case(),
+        "BS-26" => lexicon_lre::case(),
+        "BS-28" => surface_module::case(),
+        "BS-29" => diagnostics::case(),
+        "BS-30" => cli_output::case(),
+        "BS-31" => lock_text::case(),
+        "BS-32" => content_id::case(),
+        "BS-33" => project_text::case(),
+        "BS-34" => manifest_text::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

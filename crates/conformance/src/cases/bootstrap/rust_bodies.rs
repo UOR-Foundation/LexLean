@@ -57,7 +57,7 @@ const BASE_NODES: usize = 150;
 const MUTANT_DRAWS: usize = 3_000;
 const VECTORS: usize = 157;
 const VECTORS_WITHIN: usize = 156;
-const EVALUATOR_MUTANTS: usize = 272;
+const EVALUATOR_MUTANTS: usize = 283;
 
 /// A program with what the roots are given and the oracle's items.
 pub(super) struct Vector {
@@ -618,11 +618,18 @@ pub(super) fn case() {
         mutated.len(),
         started.elapsed()
     );
-    assert_eq!(
-        (all.len(), within.len(), mutated.len()),
-        (VECTORS, VECTORS_WITHIN, EVALUATOR_MUTANTS),
-        "the vectors, those the evaluator is given, and the mutants"
+    crate::counts!(
+        "BS-11",
+        "the vectors, those the evaluator is given, and the mutants",
+        {
+            VECTORS: all.len(),
+            VECTORS_WITHIN: within.len(),
+            EVALUATOR_MUTANTS: mutated.len(),
+        }
     );
+    if crate::counts::stop_before_runs("BS-11") {
+        return;
+    }
     let checked = support::checked_project(&project);
     let uses = super::lower(&checked, &project, TYPING, "useTrees");
     let moves = super::lower(&checked, &project, MOVES, "applyMoves");

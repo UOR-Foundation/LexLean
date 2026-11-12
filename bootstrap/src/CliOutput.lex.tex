@@ -1,0 +1,151 @@
+\begin{lexlean}{CliOutput}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Diagnostics}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Palette,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: boldRed, type: Bytes},
+    {name: bold, type: Bytes},
+    {name: cyan, type: Bytes},
+    {name: reset, type: Bytes}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: paletteOf,
+  parameters: [color : Bool],
+  result: Palette,
+  body: (if color then (record Palette {boldRed := 0x1b5b313b33316d, bold := 0x1b5b316d, cyan := 0x1b5b33366d, reset := 0x1b5b306d}) else (record Palette {boldRed := 0x, bold := 0x, cyan := 0x, reset := 0x})),
+  executable: true
+}
+
+definition{
+  name: place,
+  parameters: [span : Diagnostics::Span],
+  result: Bytes,
+  body: (cat (cat (cat (cat (project span path) (lit ":")) (LexLeanStd.Numeral::decimal (project span lineStart))) (lit ":")) (LexLeanStd.Numeral::decimal (project span columnStart))),
+  executable: true
+}
+
+definition{
+  name: lines,
+  parameters: [prefix : Bytes, items : (List Bytes)],
+  result: Bytes,
+  body: (prim list_fold (fun [prefix] (acc : Bytes) (item : Bytes) => (cat acc (cat (cat prefix item) 0x0a))) 0x items : Bytes),
+  executable: true
+}
+
+definition{
+  name: labelLines,
+  parameters: [items : (List Diagnostics::Label)],
+  result: Bytes,
+  body: (prim list_fold (fun (acc : Bytes) (item : Diagnostics::Label) => (cat acc (cat (cat (cat (cat (lit "  label: ") (project item message)) (lit " (")) (place (project item span))) (cat (lit ")") 0x0a)))) 0x items : Bytes),
+  executable: true
+}
+
+definition{
+  name: noteMessages,
+  parameters: [items : (List Diagnostics::Note)],
+  result: (List Bytes),
+  body: (LexLeanStd.Order::reverseList [Bytes] (prim list_fold (fun (acc : (List Bytes)) (item : Diagnostics::Note) => (cons (project item message) acc)) (nil Bytes) items : (List Bytes))),
+  executable: true
+}
+
+definition{
+  name: humanOne,
+  parameters: [colors : Palette, given : Diagnostics::Diagnostic],
+  result: Bytes,
+  body: (let head : Bytes := (cat (cat (cat (cat (cat (cat (cat (project colors boldRed) (lit "error")) (project colors reset)) (lit "[")) (project given code)) (lit "]: ")) (cat (project colors bold) (project given message))) (project colors reset)); (let located : Bytes := (match (project given primary)
+    | Option.some span => (cat (cat (cat (cat (cat 0x0a (lit "  ")) (project colors cyan)) (lit "-->")) (project colors reset)) (cat (lit " ") (place span)))
+    | Option.none => 0x); (cat (cat (cat (cat (cat (cat head located) 0x0a) (labelLines (project given labels))) (lines (lit "  note: ") (noteMessages (project given notes)))) (lines (lit "  help: ") (project given help))) (lines (lit "  cause: ") (project given causes))))),
+  executable: true
+}
+
+definition{
+  name: humanDiagnostics,
+  parameters: [items : (List Diagnostics::Diagnostic), color : Bool],
+  result: Bytes,
+  body: (let colors : Palette := (paletteOf color); (prim list_fold (fun [colors] (acc : Bytes) (item : Diagnostics::Diagnostic) => (cat acc (humanOne colors item))) 0x items : Bytes)),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: jsonStep,
+  parameters: [state : (Bool * (Option Bytes)), argument : Bytes],
+  result: (Bool * (Option Bytes)),
+  body: (if (first state) then state else (if (prim equal argument (lit "--diagnostic-format=json") : Bool) then (true, (ctor Option.some [Bytes] argument)) else (match (second state)
+    | Option.some previous => (if (if (prim equal previous (lit "--diagnostic-format") : Bool) then (prim equal argument (lit "json") : Bool) else false) then (true, (ctor Option.some [Bytes] argument)) else (false, (ctor Option.some [Bytes] argument)))
+    | Option.none => (false, (ctor Option.some [Bytes] argument))))),
+  executable: true
+}
+
+definition{
+  name: afterFirst,
+  parameters: [arguments : (List Bytes)],
+  result: (List Bytes),
+  body: (match arguments | List.nil => (nil Bytes) | List.cons program rest => rest),
+  executable: true
+}
+
+definition{
+  name: wantsJson,
+  parameters: [arguments : (List Bytes)],
+  result: Bool,
+  body: (first (prim list_fold (fun (state : (Bool * (Option Bytes))) (argument : Bytes) => (jsonStep state argument)) (false, (ctor Option.none [Bytes])) (afterFirst arguments) : (Bool * (Option Bytes)))),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: commandNames,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "init") (cons (lit "lock") (cons (lit "check") (cons (lit "build") (cons (lit "verify") (cons (lit "fmt") (cons (lit "migrate") (cons (lit "clean") (cons (lit "explain") (cons (lit "production") (nil Bytes))))))))))),
+  executable: true
+}
+
+definition{
+  name: isCommand,
+  parameters: [argument : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [argument] (found : Bool) (known : Bytes) => (if found then true else (prim equal argument known : Bool))) false (commandNames) : Bool),
+  executable: true
+}
+
+definition{
+  name: namedCommand,
+  parameters: [arguments : (List Bytes)],
+  result: Bytes,
+  body: (match (prim list_fold (fun (found : (Option Bytes)) (argument : Bytes) => (match found
+      | Option.some known => found
+      | Option.none => (if (isCommand argument) then (ctor Option.some [Bytes] argument) else (ctor Option.none [Bytes])))) (ctor Option.none [Bytes]) (afterFirst arguments) : (Option Bytes))
+    | Option.some known => known
+    | Option.none => 0x),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
