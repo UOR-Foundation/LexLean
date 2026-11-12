@@ -27,8 +27,12 @@ workspace carried at those versions without a tag.
   names only the executable it ran, so a part that ran another `lake`,
   `lexlean`, or `rustc` was accepted before. `VR-23` plants another `lake`
   address in a shard's output, and on unix a join whose own `lake` differs by
-  one byte. Published directories, attestations, and `expected/verify` are
-  unchanged.
+  one byte. The bootstrap export's custody record becomes
+  `lexlean/ci-bootstrap-export/2`: it also names the SHA-256 of the pinned
+  `lake`, `lean`, and `leanchecker` and the address of the `rustc` that built
+  the exporting binary, and a leg whose own differ refuses the export (`RP-14`
+  plants another `leanchecker` and another `rustc`). Published directories,
+  attestations, and `expected/verify` are unchanged.
 - A one-pass writer for the counts of the bootstrap count cases, #92.
   Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
   `BS-15` records every count it checks in `target/count-report/` instead of
