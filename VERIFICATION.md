@@ -11857,8 +11857,8 @@ passes.
 ### the semantic terms and proofs are source (BS-69)
 
 `BS-69` holds the two production roots of `LexLeanBoot.SemanticTerms`
-(`bootstrap/src/SemanticTerms.lex.tex`) to `lexlean::ir::semantic`: `termText`
-to the canonical JSON of the serde form of `SemanticTerm` and `proofText` to
+(`bootstrap/src/SemanticTerms.lex.tex`) to `lexlean::ir::semantic`: `semanticTermText`
+to the canonical JSON of the serde form of `SemanticTerm` and `semanticProofText` to
 that of `SemanticProof`, as `DocumentModule::to_json` embeds a semantic module.
 The module declares the 42 term forms and the 13 proof forms of SPEC.md §17.11
 and §17.12 as inductives over the types of `SemanticTypes` (`BS-68`). Arguments,
@@ -11888,9 +11888,9 @@ passes.
 
 `BS-70` holds the two production roots of `LexLeanBoot.SemanticDecls`
 (`bootstrap/src/SemanticDecls.lex.tex`) to `lexlean::ir::semantic`:
-`declarationText` to the canonical JSON of the serde form of
+`semanticDeclarationText` to the canonical JSON of the serde form of
 `SemanticDeclaration` for structures, classes, instances, inductives,
-definitions, and theorems, and `moduleText` to that of `SemanticModule`, as
+definitions, and theorems, and `semanticModuleText` to that of `SemanticModule`, as
 `DocumentModule::to_json` embeds a semantic module. The module declares the six
 ordinary declaration kinds of SPEC.md §17.11 and §17.12 as one inductive over
 the terms and proofs of `SemanticTerms` (`BS-69`) and the types of
@@ -11898,7 +11898,7 @@ the terms and proofs of `SemanticTerms` (`BS-69`) and the types of
 recursive argument, axioms, executable flag, mutual group, termination, and
 production, and an inductive's mutual group, are left out exactly where the
 oracle's serde attributes skip them. Every module of the `bootstrap/` project and
-of the standard library declares only these kinds, so `moduleText` writes the
+of the standard library declares only these kinds, so `semanticModuleText` writes the
 semantic modules of LexLean's own sources. Both roots admit exactly
 `allocation`, `overflow`, and `recursion`. The oracle is the existing public code
 of `semantic.rs` and its serde derivations; no Rust outside the case changes.
@@ -11957,7 +11957,7 @@ with exactly its declared effects, and `lexlean fmt --check` passes.
 `reasoningDeclarationText` to the canonical JSON of the serde form of the
 logic, inference rule, verifier, reasoner, tokenizer, context window, text
 generator, and text classifier variants of `SemanticDeclaration`, and
-`semanticModuleText` to that of `SemanticModule`, as `DocumentModule::to_json`
+`wholeSemanticModuleText` to that of `SemanticModule`, as `DocumentModule::to_json`
 embeds a semantic module. The module declares the eleven types those
 declarations hold and the declarations themselves, each as one inductive with
 one writer, over the uses, binders, and states of `SemanticModels` (`BS-71`), the
@@ -11974,7 +11974,7 @@ The case holds `reasoningDeclarationText` to the oracle on 150 examples whose
 step's digits choose every variant at every depth, each optional member present
 and absent and each list empty and not, on every distinct such declaration of
 every committed semantic module that links, and on seeded examples; and
-`semanticModuleText` on every distinct semantic module of every committed
+`wholeSemanticModuleText` on every distinct semantic module of every committed
 project that links, the evaluator taking those whose JSON is at most 262,144
 bytes and the rendered package all of them. Each planted defect misspells one
 serialized kind or closed name, and the first example that holds it detects it;

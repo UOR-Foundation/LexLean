@@ -20,7 +20,7 @@ workspace carried at those versions without a tag.
 - The declarations of reasoning and text components, and semantic modules of every
   kind, as language-1.2 source, eighth slice of the typed IR (SPEC.md §17.23, §17.12,
   `BS-72`, #269; no new diagnostic code, no change to the language-1.2 identity).
-  `reasoningDeclarationText` and `semanticModuleText` of `SemanticReasoning` return the
+  `reasoningDeclarationText` and `wholeSemanticModuleText` of `SemanticReasoning` return the
   canonical JSON of the serde form of those declarations and of `SemanticModule`, for
   every committed semantic module. The register is 501 IDs.
 - The declarations of artifacts, contracts, realizations, evidence, and models as
@@ -32,14 +32,14 @@ workspace carried at those versions without a tag.
 - The ordinary declarations of the semantic module language and its modules as
   language-1.2 source, sixth slice of the typed IR (SPEC.md §17.23, §17.11, §17.12,
   `BS-70`, #269; no new diagnostic code, no change to the language-1.2 identity).
-  `declarationText` and `moduleText` of `SemanticDecls` return the canonical JSON of
+  `semanticDeclarationText` and `semanticModuleText` of `SemanticDecls` return the canonical JSON of
   the serde form of `SemanticDeclaration` and `SemanticModule`, the latter for every
   module of the `bootstrap/` project and the standard library, and admit `recursion`.
   The register is 499 IDs.
 - The closed terms and proofs of the semantic module language as language-1.2 source,
   fifth slice of the typed IR (SPEC.md §17.23, §17.11, §17.12, `BS-69`, #269; no new
-  diagnostic code, no change to the language-1.2 identity). `termText` and
-  `proofText` of `SemanticTerms` return the canonical JSON of the serde form of
+  diagnostic code, no change to the language-1.2 identity). `semanticTermText` and
+  `semanticProofText` of `SemanticTerms` return the canonical JSON of the serde form of
   `SemanticTerm` and `SemanticProof`, and admit `recursion`. The register is 498 IDs.
 - The closed types of the semantic module language, its primitives, and its integer
   families as language-1.2 source, fourth slice of the typed IR (SPEC.md §17.23, §17.11,

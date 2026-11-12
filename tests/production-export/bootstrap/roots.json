@@ -618,7 +618,7 @@
     },
     {
       "name": "semantic_term_text",
-      "root": "LexLeanBoot.SemanticTerms.termText",
+      "root": "LexLeanBoot.SemanticTerms.semanticTermText",
       "targets": [
         "rust-std"
       ],
@@ -626,7 +626,7 @@
     },
     {
       "name": "semantic_proof_text",
-      "root": "LexLeanBoot.SemanticTerms.proofText",
+      "root": "LexLeanBoot.SemanticTerms.semanticProofText",
       "targets": [
         "rust-std"
       ],
@@ -634,7 +634,7 @@
     },
     {
       "name": "semantic_declaration_text",
-      "root": "LexLeanBoot.SemanticDecls.declarationText",
+      "root": "LexLeanBoot.SemanticDecls.semanticDeclarationText",
       "targets": [
         "rust-std"
       ],
@@ -642,7 +642,7 @@
     },
     {
       "name": "semantic_module_text",
-      "root": "LexLeanBoot.SemanticDecls.moduleText",
+      "root": "LexLeanBoot.SemanticDecls.semanticModuleText",
       "targets": [
         "rust-std"
       ],
@@ -666,7 +666,7 @@
     },
     {
       "name": "whole_semantic_module_text",
-      "root": "LexLeanBoot.SemanticReasoning.semanticModuleText",
+      "root": "LexLeanBoot.SemanticReasoning.wholeSemanticModuleText",
       "targets": [
         "rust-std"
       ],

@@ -33,8 +33,11 @@ use crate::support::{self, repo_root};
 const MODULE: &str = "LexLeanBoot.SemanticTerms";
 const SOURCE: &str = "bootstrap/src/SemanticTerms.lex.tex";
 const ROOTS: [(&str, &[&str]); 2] = [
-    ("termText", &["allocation", "overflow", "recursion"]),
-    ("proofText", &["allocation", "overflow", "recursion"]),
+    ("semanticTermText", &["allocation", "overflow", "recursion"]),
+    (
+        "semanticProofText",
+        &["allocation", "overflow", "recursion"],
+    ),
 ];
 
 /// The most a part of a certificate of a root may be, as the row states.

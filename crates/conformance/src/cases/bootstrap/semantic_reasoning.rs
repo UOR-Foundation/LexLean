@@ -49,7 +49,7 @@ const ROOTS: [(&str, &[&str]); 2] = [
         &["allocation", "overflow", "recursion"],
     ),
     (
-        "semanticModuleText",
+        "wholeSemanticModuleText",
         &["allocation", "overflow", "recursion"],
     ),
 ];

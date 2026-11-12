@@ -437,7 +437,7 @@ definition{
 }
 
 definition{
-  name: semanticModuleText,
+  name: wholeSemanticModuleText,
   parameters: [spec : Bytes, declarations : (List AnyDeclaration)],
   result: Bytes,
   body: (LexLeanStd.Json::writeJson (objectOf (cons ((lit "spec"), (ctor LexLeanStd.Json::Json.JStr spec)) (cons ((lit "declarations"), (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (declared : AnyDeclaration) => (cons (anyDeclarationJson declared) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [AnyDeclaration] declarations) : (List LexLeanStd.Json::Json))))) (nil (Bytes * LexLeanStd.Json::Json)))))),
