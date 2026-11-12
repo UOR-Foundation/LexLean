@@ -1,0 +1,303 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Render}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{RForm}: \texttt{(ByteArray, ByteArray, ByteArray)}.\par
+\noindent Constructor \texttt{RSelfForm}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{RSlot}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{RSeq}: \texttt{(Render)}.\par
+\noindent Constructor \texttt{RSpace}: \texttt{()}.\par
+\noindent Constructor \texttt{RToken}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{RGroup}: \texttt{(Render)}.\par
+\noindent Constructor \texttt{RParen}: \texttt{(Render)}.\par
+\noindent Constructor \texttt{RBracket}: \texttt{(Render)}.\par
+\noindent Constructor \texttt{RSub}: \texttt{(Render, Render)}.\par
+\noindent Constructor \texttt{RSup}: \texttt{(Render, Render)}.\par
+\noindent Constructor \texttt{RFrac}: \texttt{(Render, Render)}.\par
+\noindent Constructor \texttt{ROperatorName}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{RNil}: \texttt{()}.\par
+\noindent Constructor \texttt{RItem}: \texttt{(Render, Render)}.\par
+\subsection*{\texttt{RWork}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{RVisit}: \texttt{(LexLeanBoot.LexiconLse.Node)}.\par
+\noindent Constructor \texttt{RBuild}: \texttt{(ByteArray, Nat)}.\par
+\subsection*{\texttt{Rv}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{work}: \texttt{List (RWork)}.\par
+\noindent Field \texttt{values}: \texttt{List (Render)}.\par
+\noindent Field \texttt{error}: \texttt{Option (LexLeanBoot.LexiconLse.Failure)}.\par
+\subsection*{\texttt{Facts}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{slots}: \texttt{List (Nat)}.\par
+\noindent Field \texttt{tokens}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{formRefs}: \texttt{List ((Prod (ByteArray) ((Prod (ByteArray) (ByteArray)))))}.\par
+\noindent Field \texttt{selfForms}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{operatorNames}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{mathOnly}: \texttt{Option (ByteArray)}.\par
+\noindent Field \texttt{scriptError}: \texttt{Option (ByteArray)}.\par
+\subsection*{\texttt{Wk}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{stack}: \texttt{List (Render)}.\par
+\noindent Field \texttt{facts}: \texttt{Facts}.\par
+\subsection*{\texttt{scanOperatorName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (n : Nat) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(if (Nat.blt (position) (n)) then (let value : Nat := LexLeanBoot.LexiconLse.byteNum (subject) (position); (if (if LexLeanBoot.LexiconLse.isAlnumNum (value) then true else (Nat.beq (value) (95))) then Option.some ((position + 1)) else Option.none)) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isOperatorName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(n, text)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (text) : Nat); (if (Nat.beq (n) (0)) then false else (if LexLeanBoot.LexiconLse.isAlphaNum (LexLeanBoot.LexiconLse.byteNum (text) (0)) then (Nat.beq (((LexLeanCollections.iterateUntil ((fun (position : Nat) => scanOperatorName (text) (n) (position))) (n) (1) : (Prod (Nat) (Bool)))).1) (n)) else false)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{scanTokenId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : ByteArray) (n : Nat) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(if (Nat.blt (position) (n)) then (let value : Nat := LexLeanBoot.LexiconLse.byteNum (subject) (position); (if (if LexLeanBoot.LexiconLse.isLowerNum (value) then true else (if LexLeanBoot.LexiconLse.isDigitNum (value) then true else (Nat.beq (value) (45)))) then Option.some ((position + 1)) else Option.none)) else Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isTokenId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(n, text)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (text) : Nat); (if (Nat.beq (n) (0)) then false else (if LexLeanBoot.LexiconLse.isLowerNum (LexLeanBoot.LexiconLse.byteNum (text) (0)) then (Nat.beq (((LexLeanCollections.iterateUntil ((fun (position : Nat) => scanTokenId (text) (n) (position))) (n) (1) : (Prod (Nat) (Bool)))).1) (n)) else false)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isFormId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{isTokenId (text)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{rvFail}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rv) (failure : LexLeanBoot.LexiconLse.Failure)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rv}.\par
+\noindent Definition: \texttt{(\{ work := (st).work, values := (st).values, error := Option.some (failure) \} : Rv)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rvPush}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rv) (rest : List (RWork)) (value : Render)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rv}.\par
+\noindent Definition: \texttt{(\{ work := rest, values := (value :: (st).values), error := Option.none \} : Rv)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{pushVisitsR}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (LexLeanBoot.LexiconLse.Node)) (work : List (RWork))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (RWork)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : List (RWork)) (item : LexLeanBoot.LexiconLse.Node) => (RWork.RVisit (item) :: acc))) (work) (LexLeanStd.Order.reverseList (LexLeanBoot.LexiconLse.Node) (items)) : List (RWork))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{takeRenders}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(values : List (Render)) (count : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (List (Render)) (List (Render)))}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterateUntil ((fun (state : (Prod (List (Render)) (List (Render)))) => (match (state).2 with | List.nil => Option.none | List.cons top rest => Option.some (((top :: (state).1), rest))))) (count) ((([] : List (Render)), values)) : (Prod ((Prod (List (Render)) (List (Render)))) (Bool)))).1}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{renderChain}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Render))}.\par
+\noindent Closure 1: binds \texttt{(chain, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Render}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (chain : Render) (item : Render) => Render.RItem (item) (chain))) (Render.RNil) (LexLeanStd.Order.reverseList (Render) (items)) : Render)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{visitForm}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rv) (rest : List (RWork)) (arguments : List (LexLeanBoot.LexiconLse.Node)) (fuel : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rv}.\par
+\noindent Definition: \texttt{(if (Nat.beq ((LexLeanRuntime.length (arguments) : Nat)) (2)) then (match LexLeanBoot.LexiconLse.atomOf (LexLeanBoot.LexiconLse.nodeAt (arguments) (0)) (LexLeanBoot.LexiconLse.lit ("a qualified ID")) (fuel) with | Except.ok spelled => (match LexLeanBoot.LexiconLse.qualifiedId (spelled) with | Except.ok parts => (match LexLeanBoot.LexiconLse.atomOf (LexLeanBoot.LexiconLse.nodeAt (arguments) (1)) (LexLeanBoot.LexiconLse.lit ("a form ID")) (fuel) with | Except.ok form => (if isFormId (form) then rvPush (st) (rest) (Render.RForm ((parts).1) ((parts).2) (form)) else rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.quoted (form)) (LexLeanBoot.LexiconLse.lit (" is not a form ID"))))) | Except.error failure => rvFail (st) (failure)) | Except.error failure => rvFail (st) (failure)) | Except.error failure => rvFail (st) (failure)) else rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("a form reference is `(form qualified-id form-id)`"))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{visitNamed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rv) (rest : List (RWork)) (arguments : List (LexLeanBoot.LexiconLse.Node)) (fuel : Nat) (what : ByteArray) (shape : ByteArray) (kind : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rv}.\par
+\noindent Definition: \texttt{(if (Nat.beq ((LexLeanRuntime.length (arguments) : Nat)) (1)) then (match LexLeanBoot.LexiconLse.atomOf (LexLeanBoot.LexiconLse.nodeAt (arguments) (0)) (what) (fuel) with | Except.ok text => (if (Nat.beq (kind) (0)) then (if isFormId (text) then rvPush (st) (rest) (Render.RSelfForm (text)) else rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.quoted (text)) (LexLeanBoot.LexiconLse.lit (" is not a form ID"))))) else (if (Nat.beq (kind) (1)) then (if isTokenId (text) then rvPush (st) (rest) (Render.RToken (text)) else rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.quoted (text)) (LexLeanBoot.LexiconLse.lit (" is not a renderer-token ID"))))) else (if isOperatorName (text) then rvPush (st) (rest) (Render.ROperatorName (text)) else rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.quoted (text)) (LexLeanBoot.LexiconLse.lit (" is not an operator name"))))))) | Except.error failure => rvFail (st) (failure)) else rvFail (st) (LexLeanBoot.LexiconLse.failed (shape)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{visitSlot}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rv) (rest : List (RWork)) (arguments : List (LexLeanBoot.LexiconLse.Node)) (fuel : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rv}.\par
+\noindent Definition: \texttt{(if (Nat.beq ((LexLeanRuntime.length (arguments) : Nat)) (1)) then (match LexLeanBoot.LexiconLse.atomOf (LexLeanBoot.LexiconLse.nodeAt (arguments) (0)) (LexLeanBoot.LexiconLse.lit ("a slot index")) (fuel) with | Except.ok digits => (match LexLeanBoot.LexiconLse.decimalFault (digits) with | Option.some \_ => rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.quoted (digits)) (LexLeanBoot.LexiconLse.lit (" is not a slot index")))) | Option.none => (let value : Nat := LexLeanBoot.LexiconLse.decimalValue (digits); (if (Nat.blt (4294967295) (value)) then rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.quoted (digits)) (LexLeanBoot.LexiconLse.lit (" is not a slot index")))) else rvPush (st) (rest) (Render.RSlot (value))))) | Except.error failure => rvFail (st) (failure)) else rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("a slot is `(slot decimal)`"))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isUnary}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(head : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("group")) : Bool) then true else (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("paren")) : Bool) then true else (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("bracket")) : Bool)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isBinary}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(head : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("sub")) : Bool) then true else (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("sup")) : Bool) then true else (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("frac")) : Bool)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{visitHead}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rv) (rest : List (RWork)) (head : ByteArray) (arguments : List (LexLeanBoot.LexiconLse.Node)) (fuel : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rv}.\par
+\noindent Definition: \texttt{(let argc : Nat := (LexLeanRuntime.length (arguments) : Nat); (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("form")) : Bool) then visitForm (st) (rest) (arguments) (fuel) else (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("self-form")) : Bool) then visitNamed (st) (rest) (arguments) (fuel) (LexLeanBoot.LexiconLse.lit ("a form ID")) (LexLeanBoot.LexiconLse.lit ("a self form is `(self-form form-id)`")) (0) else (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("slot")) : Bool) then visitSlot (st) (rest) (arguments) (fuel) else (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("space")) : Bool) then (if (Nat.beq (argc) (0)) then rvPush (st) (rest) (Render.RSpace) else rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("`(space)` takes no operand")))) else (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("token")) : Bool) then visitNamed (st) (rest) (arguments) (fuel) (LexLeanBoot.LexiconLse.lit ("a renderer-token ID")) (LexLeanBoot.LexiconLse.lit ("a token is `(token renderer-token-id)`")) (1) else (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("operator-name")) : Bool) then visitNamed (st) (rest) (arguments) (fuel) (LexLeanBoot.LexiconLse.lit ("an operator name")) (LexLeanBoot.LexiconLse.lit ("an operator name is `(operator-name identifier)`")) (2) else (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("seq")) : Bool) then (if (Nat.beq (argc) (0)) then rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("`seq` has at least one item"))) else (\{ work := pushVisitsR (arguments) ((RWork.RBuild (head) (argc) :: rest)), values := (st).values, error := Option.none \} : Rv)) else (if isUnary (head) then (if (Nat.beq (argc) (1)) then (\{ work := (RWork.RVisit (LexLeanBoot.LexiconLse.nodeAt (arguments) (0)) :: (RWork.RBuild (head) (1) :: rest)), values := (st).values, error := Option.none \} : Rv) else rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.quoted (head)) (LexLeanBoot.LexiconLse.lit (" takes exactly one operand"))))) else (if isBinary (head) then (if (Nat.beq (argc) (2)) then (\{ work := (RWork.RVisit (LexLeanBoot.LexiconLse.nodeAt (arguments) (0)) :: (RWork.RVisit (LexLeanBoot.LexiconLse.nodeAt (arguments) (1)) :: (RWork.RBuild (head) (2) :: rest))), values := (st).values, error := Option.none \} : Rv) else rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.quoted (head)) (LexLeanBoot.LexiconLse.lit (" takes exactly two operands"))))) else rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.quoted (head)) (LexLeanBoot.LexiconLse.lit (" is not an LRE form"))))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{rvVisit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rv) (rest : List (RWork)) (node : LexLeanBoot.LexiconLse.Node) (fuel : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rv}.\par
+\noindent Definition: \texttt{(match node with | LexLeanBoot.LexiconLse.Node.NList chain => (match LexLeanBoot.LexiconLse.itemsOf (chain) (fuel) with | List.nil => rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("expected an LRE form"))) | List.cons headNode arguments => (match headNode with | LexLeanBoot.LexiconLse.Node.NAtom head => visitHead (st) (rest) (head) (arguments) (fuel) | LexLeanBoot.LexiconLse.Node.NList \_ => rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("expected an LRE form"))) | LexLeanBoot.LexiconLse.Node.NNil => rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("expected an LRE form"))) | LexLeanBoot.LexiconLse.Node.NItem \_ \_ => rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("expected an LRE form"))))) | LexLeanBoot.LexiconLse.Node.NAtom \_ => rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.lit ("expected `(`, found ")) (LexLeanBoot.LexiconLse.describe (node)))) | LexLeanBoot.LexiconLse.Node.NNil => rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.lit ("expected `(`, found ")) (LexLeanBoot.LexiconLse.describe (node)))) | LexLeanBoot.LexiconLse.Node.NItem \_ \_ => rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.lit ("expected `(`, found ")) (LexLeanBoot.LexiconLse.describe (node)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{wrapOne}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(head : ByteArray) (inner : Render)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Render}.\par
+\noindent Definition: \texttt{(if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("group")) : Bool) then Render.RGroup (inner) else (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("paren")) : Bool) then Render.RParen (inner) else Render.RBracket (inner)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wrapTwo}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(head : ByteArray) (left : Render) (right : Render)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Render}.\par
+\noindent Definition: \texttt{(if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("sub")) : Bool) then Render.RSub (left) (right) else (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("sup")) : Bool) then Render.RSup (left) (right) else Render.RFrac (left) (right)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rvBuild}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rv) (rest : List (RWork)) (head : ByteArray) (count : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rv}.\par
+\noindent Definition: \texttt{(let taken : (Prod (List (Render)) (List (Render))) := takeRenders ((st).values) (count); (let parts : List (Render) := (taken).1; (if (LexLeanRuntime.equal (head) (LexLeanBoot.LexiconLse.lit ("seq")) : Bool) then rvPush ((\{ work := rest, values := (taken).2, error := Option.none \} : Rv)) (rest) (Render.RSeq (renderChain (parts))) else (if isUnary (head) then (match parts with | List.nil => rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("missing operand"))) | List.cons inner \_ => rvPush ((\{ work := rest, values := (taken).2, error := Option.none \} : Rv)) (rest) (wrapOne (head) (inner))) else (match parts with | List.nil => rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("missing operand"))) | List.cons left more => (match more with | List.nil => rvFail (st) (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("missing operand"))) | List.cons right \_ => rvPush ((\{ work := rest, values := (taken).2, error := Option.none \} : Rv)) (rest) (wrapTwo (head) (left) (right))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rvStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Nat) (st : Rv)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Rv)}.\par
+\noindent Definition: \texttt{(match (st).error with | Option.some \_ => Option.none | Option.none => (match (st).work with | List.nil => Option.none | List.cons item rest => (match item with | RWork.RVisit node => Option.some (rvVisit (st) (rest) (node) (fuel)) | RWork.RBuild head count => Option.some (rvBuild (st) (rest) (head) (count)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{renderOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(root : LexLeanBoot.LexiconLse.Node) (fuel : Nat)}.\par
+\noindent Closure 1: binds \texttt{(st)}, captures \texttt{(fuel)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (LexLeanBoot.LexiconLse.Failure) (Render)}.\par
+\noindent Definition: \texttt{(let final : Rv := ((LexLeanCollections.iterateUntil ((fun (st : Rv) => rvStep (fuel) (st))) (((LexLeanRuntime.multiply (fuel) (2) : Nat) + 2)) ((\{ work := (RWork.RVisit (root) :: ([] : List (RWork))), values := ([] : List (Render)), error := Option.none \} : Rv)) : (Prod (Rv) (Bool)))).1; (match (final).error with | Option.some failure => Except.error (failure) | Option.none => (match (final).values with | List.nil => Except.error (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("malformed render expression"))) | List.cons value more => (match more with | List.nil => Except.ok (value) | List.cons \_ \_ => Except.error (LexLeanBoot.LexiconLse.failed (LexLeanBoot.LexiconLse.lit ("malformed render expression")))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{parseLre}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray) (maxDepth : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Except (LexLeanBoot.LexiconLse.Failure) (Render)}.\par
+\noindent Definition: \texttt{(match LexLeanBoot.LexiconLse.tokenize (text) with | Except.error failure => Except.error (failure) | Except.ok toks => (match LexLeanBoot.LexiconLse.readTree (toks) (maxDepth) with | Except.error failure => Except.error (failure) | Except.ok root => renderOf (root) ((LexLeanRuntime.length (toks) : Nat))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{renderItems}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(chain : Render) (fuel : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Render)}.\par
+\noindent Definition: \texttt{LexLeanStd.Order.reverseList (Render) ((((LexLeanCollections.iterateUntil ((fun (state : (Prod (Render) (List (Render)))) => (match (state).1 with | Render.RItem head tail => Option.some ((tail, (head :: (state).2))) | Render.RNil => Option.none | Render.RForm \_ \_ \_ => Option.none | Render.RSelfForm \_ => Option.none | Render.RSlot \_ => Option.none | Render.RSeq \_ => Option.none | Render.RSpace => Option.none | Render.RToken \_ => Option.none | Render.RGroup \_ => Option.none | Render.RParen \_ => Option.none | Render.RBracket \_ => Option.none | Render.RSub \_ \_ => Option.none | Render.RSup \_ \_ => Option.none | Render.RFrac \_ \_ => Option.none | Render.ROperatorName \_ => Option.none))) ((fuel + 1)) ((chain, ([] : List (Render)))) : (Prod ((Prod (Render) (List (Render)))) (Bool)))).1).2)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{nothingStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Nat) (state : (Prod (List (Render)) (Nat)))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (List (Render)) (Nat)))}.\par
+\noindent Definition: \texttt{(if (Nat.beq ((state).2) (1)) then Option.none else (match (state).1 with | List.nil => Option.none | List.cons top rest => (match top with | Render.RSpace => Option.some ((rest, 0)) | Render.RSeq items => Option.some (((LexLeanCollections.listFold ((fun (acc : List (Render)) (item : Render) => (item :: acc))) (rest) (renderItems (items) (fuel)) : List (Render)), 0)) | Render.RForm \_ \_ \_ => Option.some ((rest, 1)) | Render.RSelfForm \_ => Option.some ((rest, 1)) | Render.RSlot \_ => Option.some ((rest, 1)) | Render.RToken \_ => Option.some ((rest, 1)) | Render.RGroup \_ => Option.some ((rest, 1)) | Render.RParen \_ => Option.some ((rest, 1)) | Render.RBracket \_ => Option.some ((rest, 1)) | Render.RSub \_ \_ => Option.some ((rest, 1)) | Render.RSup \_ \_ => Option.some ((rest, 1)) | Render.RFrac \_ \_ => Option.some ((rest, 1)) | Render.ROperatorName \_ => Option.some ((rest, 1)) | Render.RNil => Option.some ((rest, 1)) | Render.RItem \_ \_ => Option.some ((rest, 1)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rendersNothing}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(render : Render) (fuel : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(fuel)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.beq ((((LexLeanCollections.iterateUntil ((fun (state : (Prod (List (Render)) (Nat))) => nothingStep (fuel) (state))) ((fuel + 1)) (((render :: ([] : List (Render))), 0)) : (Prod ((Prod (List (Render)) (Nat))) (Bool)))).1).2) (0))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isScript}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(render : Render)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match render with | Render.RSub \_ \_ => true | Render.RSup \_ \_ => true | Render.RFrac \_ \_ => false | Render.RForm \_ \_ \_ => false | Render.RSelfForm \_ => false | Render.RSlot \_ => false | Render.RSeq \_ => false | Render.RSpace => false | Render.RToken \_ => false | Render.RGroup \_ => false | Render.RParen \_ => false | Render.RBracket \_ => false | Render.ROperatorName \_ => false | Render.RNil => false | Render.RItem \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{operandProblem}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(name : ByteArray) (operand : Render) (fuel : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(if rendersNothing (operand) (fuel) then Option.some (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.quoted (name)) (LexLeanBoot.LexiconLse.lit (" operand renders nothing"))) else (if (if (LexLeanRuntime.equal (name) (LexLeanBoot.LexiconLse.lit ("frac")) : Bool) then false else isScript (operand)) then Option.some (LexLeanBoot.LexiconLse.cat (LexLeanBoot.LexiconLse.quoted (name)) (LexLeanBoot.LexiconLse.lit (" operand is a bare script; wrap nested scripts in `(group ...)`"))) else Option.none))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{scriptProblem}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(name : ByteArray) (left : Render) (right : Render) (fuel : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match operandProblem (name) (left) (fuel) with | Option.some problem => Option.some (problem) | Option.none => operandProblem (name) (right) (fuel))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{withFacts}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(stack : List (Render)) (facts : Facts)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Wk)}.\par
+\noindent Definition: \texttt{Option.some ((\{ stack := stack, facts := facts \} : Wk))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{firstSome}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(current : Option (ByteArray)) (candidate : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match current with | Option.some \_ => current | Option.none => Option.some (candidate))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{firstProblem}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(current : Option (ByteArray)) (candidate : Option (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match current with | Option.some \_ => current | Option.none => candidate)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{binaryFacts}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(facts : Facts) (name : ByteArray) (left : Render) (right : Render) (fuel : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Facts}.\par
+\noindent Definition: \texttt{(\{ slots := (facts).slots, tokens := (facts).tokens, formRefs := (facts).formRefs, selfForms := (facts).selfForms, operatorNames := (facts).operatorNames, mathOnly := firstSome ((facts).mathOnly) (name), scriptError := firstProblem ((facts).scriptError) (scriptProblem (name) (left) (right) (fuel)) \} : Facts)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wkStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Nat) (st : Wk)}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Wk)}.\par
+\noindent Definition: \texttt{(match (st).stack with | List.nil => Option.none | List.cons top rest => (let facts : Facts := (st).facts; (match top with | Render.RForm p e f => withFacts (rest) ((\{ slots := (facts).slots, tokens := (facts).tokens, formRefs := ((p, (e, f)) :: (facts).formRefs), selfForms := (facts).selfForms, operatorNames := (facts).operatorNames, mathOnly := (facts).mathOnly, scriptError := (facts).scriptError \} : Facts)) | Render.RSelfForm f => withFacts (rest) ((\{ slots := (facts).slots, tokens := (facts).tokens, formRefs := (facts).formRefs, selfForms := (f :: (facts).selfForms), operatorNames := (facts).operatorNames, mathOnly := (facts).mathOnly, scriptError := (facts).scriptError \} : Facts)) | Render.RSlot n => withFacts (rest) ((\{ slots := (n :: (facts).slots), tokens := (facts).tokens, formRefs := (facts).formRefs, selfForms := (facts).selfForms, operatorNames := (facts).operatorNames, mathOnly := (facts).mathOnly, scriptError := (facts).scriptError \} : Facts)) | Render.RSeq items => withFacts ((LexLeanCollections.listFold ((fun (acc : List (Render)) (item : Render) => (item :: acc))) (rest) (LexLeanStd.Order.reverseList (Render) (renderItems (items) (fuel))) : List (Render))) (facts) | Render.RSpace => withFacts (rest) (facts) | Render.RToken t => withFacts (rest) ((\{ slots := (facts).slots, tokens := (t :: (facts).tokens), formRefs := (facts).formRefs, selfForms := (facts).selfForms, operatorNames := (facts).operatorNames, mathOnly := (facts).mathOnly, scriptError := (facts).scriptError \} : Facts)) | Render.RGroup inner => withFacts ((inner :: rest)) (facts) | Render.RParen inner => withFacts ((inner :: rest)) (facts) | Render.RBracket inner => withFacts ((inner :: rest)) (facts) | Render.RSub a b => withFacts ((a :: (b :: rest))) (binaryFacts (facts) (LexLeanBoot.LexiconLse.lit ("sub")) (a) (b) (fuel)) | Render.RSup a b => withFacts ((a :: (b :: rest))) (binaryFacts (facts) (LexLeanBoot.LexiconLse.lit ("sup")) (a) (b) (fuel)) | Render.RFrac a b => withFacts ((a :: (b :: rest))) (binaryFacts (facts) (LexLeanBoot.LexiconLse.lit ("frac")) (a) (b) (fuel)) | Render.ROperatorName n => withFacts (rest) ((\{ slots := (facts).slots, tokens := (facts).tokens, formRefs := (facts).formRefs, selfForms := (facts).selfForms, operatorNames := (n :: (facts).operatorNames), mathOnly := firstSome ((facts).mathOnly) (LexLeanBoot.LexiconLse.lit ("operator-name")), scriptError := (facts).scriptError \} : Facts)) | Render.RNil => withFacts (rest) (facts) | Render.RItem \_ \_ => withFacts (rest) (facts))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{renderFacts}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(render : Render) (nodes : Nat)}.\par
+\noindent Closure 1: binds \texttt{(st)}, captures \texttt{(nodes)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Facts}.\par
+\noindent Definition: \texttt{(let final : Wk := ((LexLeanCollections.iterateUntil ((fun (st : Wk) => wkStep (nodes) (st))) ((nodes + 1)) ((\{ stack := (render :: ([] : List (Render))), facts := (\{ slots := ([] : List (Nat)), tokens := ([] : List (ByteArray)), formRefs := ([] : List ((Prod (ByteArray) ((Prod (ByteArray) (ByteArray)))))), selfForms := ([] : List (ByteArray)), operatorNames := ([] : List (ByteArray)), mathOnly := Option.none, scriptError := Option.none \} : Facts) \} : Wk)) : (Prod (Wk) (Bool)))).1; (let facts : Facts := (final).facts; (\{ slots := LexLeanStd.Order.reverseList (Nat) ((facts).slots), tokens := LexLeanStd.Order.reverseList (ByteArray) ((facts).tokens), formRefs := LexLeanStd.Order.reverseList ((Prod (ByteArray) ((Prod (ByteArray) (ByteArray))))) ((facts).formRefs), selfForms := LexLeanStd.Order.reverseList (ByteArray) ((facts).selfForms), operatorNames := LexLeanStd.Order.reverseList (ByteArray) ((facts).operatorNames), mathOnly := (facts).mathOnly, scriptError := (facts).scriptError \} : Facts)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

@@ -1,0 +1,126 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Palette}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{boldRed}: \texttt{ByteArray}.\par
+\noindent Field \texttt{bold}: \texttt{ByteArray}.\par
+\noindent Field \texttt{cyan}: \texttt{ByteArray}.\par
+\noindent Field \texttt{reset}: \texttt{ByteArray}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (left) (right) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{paletteOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(color : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Palette}.\par
+\noindent Definition: \texttt{(if color then (\{ boldRed := ByteArray.mk \#[27, 91, 49, 59, 51, 49, 109], bold := ByteArray.mk \#[27, 91, 49, 109], cyan := ByteArray.mk \#[27, 91, 51, 54, 109], reset := ByteArray.mk \#[27, 91, 48, 109] \} : Palette) else (\{ boldRed := ByteArray.mk \#[], bold := ByteArray.mk \#[], cyan := ByteArray.mk \#[], reset := ByteArray.mk \#[] \} : Palette))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{place}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(span : LexLeanBoot.Diagnostics.Span)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (cat (cat ((span).path) (lit (":"))) (LexLeanStd.Numeral.decimal ((span).lineStart))) (lit (":"))) (LexLeanStd.Numeral.decimal ((span).columnStart))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lines}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(<U+00AB>prefix<U+00BB> : ByteArray) (items : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{(prefix)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : ByteArray) (item : ByteArray) => cat (acc) (cat (cat (<U+00AB>prefix<U+00BB>) (item)) (ByteArray.mk \#[10])))) (ByteArray.mk \#[]) (items) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{labelLines}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (LexLeanBoot.Diagnostics.Label))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : ByteArray) (item : LexLeanBoot.Diagnostics.Label) => cat (acc) (cat (cat (cat (cat (lit ("  label: ")) ((item).message)) (lit (" ("))) (place ((item).span))) (cat (lit (")")) (ByteArray.mk \#[10]))))) (ByteArray.mk \#[]) (items) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{noteMessages}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (LexLeanBoot.Diagnostics.Note))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{LexLeanStd.Order.reverseList (ByteArray) ((LexLeanCollections.listFold ((fun (acc : List (ByteArray)) (item : LexLeanBoot.Diagnostics.Note) => ((item).message :: acc))) (([] : List (ByteArray))) (items) : List (ByteArray)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{humanOne}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(colors : Palette) (given : LexLeanBoot.Diagnostics.Diagnostic)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let head : ByteArray := cat (cat (cat (cat (cat (cat (cat ((colors).boldRed) (lit ("error"))) ((colors).reset)) (lit ("["))) ((given).code)) (lit ("]: "))) (cat ((colors).bold) ((given).message))) ((colors).reset); (let located : ByteArray := (match (given).primary with | Option.some span => cat (cat (cat (cat (cat (ByteArray.mk \#[10]) (lit ("  "))) ((colors).cyan)) (lit ("-->"))) ((colors).reset)) (cat (lit (" ")) (place (span))) | Option.none => ByteArray.mk \#[]); cat (cat (cat (cat (cat (cat (head) (located)) (ByteArray.mk \#[10])) (labelLines ((given).labels))) (lines (lit ("  note: ")) (noteMessages ((given).notes)))) (lines (lit ("  help: ")) ((given).help))) (lines (lit ("  cause: ")) ((given).causes))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{humanDiagnostics}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (LexLeanBoot.Diagnostics.Diagnostic)) (color : Bool)}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{(colors)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let colors : Palette := paletteOf (color); (LexLeanCollections.listFold ((fun (acc : ByteArray) (item : LexLeanBoot.Diagnostics.Diagnostic) => cat (acc) (humanOne (colors) (item)))) (ByteArray.mk \#[]) (items) : ByteArray))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{jsonStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : (Prod (Bool) (Option (ByteArray)))) (argument : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Bool) (Option (ByteArray)))}.\par
+\noindent Definition: \texttt{(if (state).1 then state else (if (LexLeanRuntime.equal (argument) (lit ("--diagnostic-format=json")) : Bool) then (true, Option.some (argument)) else (match (state).2 with | Option.some previous => (if (if (LexLeanRuntime.equal (previous) (lit ("--diagnostic-format")) : Bool) then (LexLeanRuntime.equal (argument) (lit ("json")) : Bool) else false) then (true, Option.some (argument)) else (false, Option.some (argument))) | Option.none => (false, Option.some (argument)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{afterFirst}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(arguments : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(match arguments with | List.nil => ([] : List (ByteArray)) | List.cons \_ rest => rest)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wantsJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(arguments : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(state, argument)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{((LexLeanCollections.listFold ((fun (state : (Prod (Bool) (Option (ByteArray)))) (argument : ByteArray) => jsonStep (state) (argument))) ((false, Option.none)) (afterFirst (arguments)) : (Prod (Bool) (Option (ByteArray))))).1}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{commandNames}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(lit ("init") :: (lit ("lock") :: (lit ("check") :: (lit ("build") :: (lit ("verify") :: (lit ("fmt") :: (lit ("migrate") :: (lit ("clean") :: (lit ("explain") :: (lit ("production") :: ([] : List (ByteArray))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isCommand}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(argument : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, known)}, captures \texttt{(argument)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (known : ByteArray) => (if found then true else (LexLeanRuntime.equal (argument) (known) : Bool)))) (false) (commandNames) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{namedCommand}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(arguments : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(found, argument)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match (LexLeanCollections.listFold ((fun (found : Option (ByteArray)) (argument : ByteArray) => (match found with | Option.some \_ => found | Option.none => (if isCommand (argument) then Option.some (argument) else Option.none)))) (Option.none) (afterFirst (arguments)) : Option (ByteArray)) with | Option.some known => known | Option.none => ByteArray.mk \#[])}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

@@ -1,0 +1,150 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{FileRow}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{kind}: \texttt{ByteArray}.\par
+\noindent Field \texttt{location}: \texttt{ByteArray}.\par
+\noindent Field \texttt{byteLength}: \texttt{Nat}.\par
+\noindent Field \texttt{digest}: \texttt{ByteArray}.\par
+\subsection*{\texttt{ModuleRow}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{moduleName}: \texttt{ByteArray}.\par
+\noindent Field \texttt{leanModule}: \texttt{ByteArray}.\par
+\noindent Field \texttt{sourcePath}: \texttt{ByteArray}.\par
+\noindent Field \texttt{origin}: \texttt{Option (ByteArray)}.\par
+\subsection*{\texttt{BuildManifest}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{language}: \texttt{ByteArray}.\par
+\noindent Field \texttt{compilerVersion}: \texttt{ByteArray}.\par
+\noindent Field \texttt{semanticsId}: \texttt{ByteArray}.\par
+\noindent Field \texttt{projectName}: \texttt{ByteArray}.\par
+\noindent Field \texttt{sourceId}: \texttt{ByteArray}.\par
+\noindent Field \texttt{semanticId}: \texttt{ByteArray}.\par
+\noindent Field \texttt{buildId}: \texttt{ByteArray}.\par
+\noindent Field \texttt{selection}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{modules}: \texttt{List (ModuleRow)}.\par
+\noindent Field \texttt{inputs}: \texttt{List (FileRow)}.\par
+\noindent Field \texttt{outputs}: \texttt{List (FileRow)}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (left) (right) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{jsonText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JStr (value)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{jsonDigest}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(digest : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{jsonText (LexLeanStd.Numeral.hex (digest))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{member}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (value : LexLeanStd.Json.Json) (rest : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JMember (lit (key)) (value) (rest)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{textArray}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(values : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JArr ((LexLeanCollections.listFold ((fun (acc : LexLeanStd.Json.Json) (item : ByteArray) => LexLeanStd.Json.Json.JItem (jsonText (item)) (acc))) (LexLeanStd.Json.Json.JNil) (LexLeanStd.Order.reverseList (ByteArray) (values)) : LexLeanStd.Json.Json))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bigEndian}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Nat) (width : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterate ((fun (state : (Prod (Nat) (ByteArray))) => ((LexLeanRuntime.quotient ((state).1) (256) (0) : Nat), cat (LexLeanStd.Numeral.pick (LexLeanStd.Numeral.byteValues) ((LexLeanRuntime.remainder ((state).1) (256) (0) : Nat))) ((state).2)))) (width) ((value, ByteArray.mk \#[])) : (Prod (Nat) (ByteArray)))).2}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{escapedKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (LexLeanStd.Text.joinWith (LexLeanStd.Text.splitOn (text) ((0 : UInt8))) (ByteArray.mk \#[0, 1])) (ByteArray.mk \#[0, 0])}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rowKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(row : FileRow)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (cat (escapedKey ((row).kind)) (escapedKey ((row).location))) (bigEndian ((row).byteLength) (8))) ((row).digest)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rowsSorted}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (FileRow))}.\par
+\noindent Closure 1: binds \texttt{(acc, entry)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(acc, row)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (FileRow)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : List (FileRow)) (entry : (Prod (ByteArray) (FileRow))) => ((entry).2 :: acc))) (([] : List (FileRow))) (LexLeanStd.Order.reverseList ((Prod (ByteArray) (FileRow))) (LexLeanStd.Order.sortByKey (FileRow) (LexLeanStd.Order.reverseList ((Prod (ByteArray) (FileRow))) ((LexLeanCollections.listFold ((fun (acc : List ((Prod (ByteArray) (FileRow)))) (row : FileRow) => ((rowKey (row), row) :: acc))) (([] : List ((Prod (ByteArray) (FileRow))))) (rows) : List ((Prod (ByteArray) (FileRow)))))))) : List (FileRow))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{rowJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(row : FileRow)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JObj (member ("kind") (jsonText ((row).kind)) (member ("path") (jsonText ((row).location)) (member ("byte\_length") (LexLeanStd.Json.Json.JInt (false) ((row).byteLength)) (member ("sha256") (jsonDigest ((row).digest)) (LexLeanStd.Json.Json.JNil)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{rowsJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (FileRow))}.\par
+\noindent Closure 1: binds \texttt{(acc, row)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JArr ((LexLeanCollections.listFold ((fun (acc : LexLeanStd.Json.Json) (row : FileRow) => LexLeanStd.Json.Json.JItem (rowJson (row)) (acc))) (LexLeanStd.Json.Json.JNil) (LexLeanStd.Order.reverseList (FileRow) (rowsSorted (rows))) : LexLeanStd.Json.Json))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{moduleJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entry : ModuleRow)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(let tail : LexLeanStd.Json.Json := (match (entry).origin with | Option.some named => member ("origin") (jsonText (named)) (LexLeanStd.Json.Json.JNil) | Option.none => LexLeanStd.Json.Json.JNil); LexLeanStd.Json.Json.JObj (member ("module") (jsonText ((entry).moduleName)) (member ("lean\_module") (jsonText ((entry).leanModule)) (member ("source\_path") (jsonText ((entry).sourcePath)) (tail)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{modulesJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (ModuleRow))}.\par
+\noindent Closure 1: binds \texttt{(acc, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JArr ((LexLeanCollections.listFold ((fun (acc : LexLeanStd.Json.Json) (entry : ModuleRow) => LexLeanStd.Json.Json.JItem (moduleJson (entry)) (acc))) (LexLeanStd.Json.Json.JNil) (LexLeanStd.Order.reverseList (ModuleRow) (rows)) : LexLeanStd.Json.Json))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{manifestJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(manifest : BuildManifest)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JObj (member ("spec") (jsonText (lit ("lexlean/build-manifest/1"))) (member ("compiler") (LexLeanStd.Json.Json.JObj (member ("version") (jsonText ((manifest).compilerVersion)) (member ("semantics\_id") (jsonDigest ((manifest).semanticsId)) (LexLeanStd.Json.Json.JNil)))) (member ("language") (jsonText ((manifest).language)) (member ("project") (jsonText ((manifest).projectName)) (member ("source\_id") (jsonDigest ((manifest).sourceId)) (member ("semantic\_id") (jsonDigest ((manifest).semanticId)) (member ("build\_id") (jsonDigest ((manifest).buildId)) (member ("lean\_toolchain") (jsonText (lit ("leanprover/lean4:v4.32.1"))) (member ("selection") (textArray ((manifest).selection)) (member ("modules") (modulesJson ((manifest).modules)) (member ("inputs") (rowsJson ((manifest).inputs)) (member ("outputs") (rowsJson ((manifest).outputs)) (LexLeanStd.Json.Json.JNil)))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{buildManifest}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(manifest : BuildManifest)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJsonFile (manifestJson (manifest))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

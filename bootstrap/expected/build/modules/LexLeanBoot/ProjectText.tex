@@ -1,0 +1,183 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{LexiconSource}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{builtin}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{path}: \texttt{(ByteArray, ByteArray)}.\par
+\noindent Constructor \texttt{git}: \texttt{(ByteArray, ByteArray, ByteArray, ByteArray)}.\par
+\subsection*{\texttt{ArtifactSource}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{digest}: \texttt{ByteArray}.\par
+\noindent Field \texttt{location}: \texttt{ByteArray}.\par
+\subsection*{\texttt{SourcePackage}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{packageName}: \texttt{ByteArray}.\par
+\noindent Field \texttt{version}: \texttt{ByteArray}.\par
+\noindent Field \texttt{location}: \texttt{ByteArray}.\par
+\subsection*{\texttt{Limits}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{maxFileBytes}: \texttt{Nat}.\par
+\noindent Field \texttt{maxTotalSourceBytes}: \texttt{Nat}.\par
+\noindent Field \texttt{maxPrimitiveAtoms}: \texttt{Nat}.\par
+\noindent Field \texttt{maxTokenLatticeEdges}: \texttt{Nat}.\par
+\noindent Field \texttt{maxParseStates}: \texttt{Nat}.\par
+\noindent Field \texttt{maxIrNodes}: \texttt{Nat}.\par
+\noindent Field \texttt{maxScopeDepth}: \texttt{Nat}.\par
+\noindent Field \texttt{maxImportDepth}: \texttt{Nat}.\par
+\noindent Field \texttt{maxDiagnostics}: \texttt{Nat}.\par
+\noindent Field \texttt{maxChildOutputBytes}: \texttt{Nat}.\par
+\noindent Field \texttt{childTimeoutMs}: \texttt{Nat}.\par
+\subsection*{\texttt{PdfProvider}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{program}: \texttt{ByteArray}.\par
+\noindent Field \texttt{programSha256}: \texttt{ByteArray}.\par
+\noindent Field \texttt{versionArgv}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{versionStdoutSha256}: \texttt{ByteArray}.\par
+\noindent Field \texttt{compileArgv}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{output}: \texttt{ByteArray}.\par
+\noindent Field \texttt{resources}: \texttt{List (ByteArray)}.\par
+\subsection*{\texttt{ProjectConfig}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{projectName}: \texttt{ByteArray}.\par
+\noindent Field \texttt{language}: \texttt{ByteArray}.\par
+\noindent Field \texttt{modulePrefix}: \texttt{ByteArray}.\par
+\noindent Field \texttt{sourceRoots}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{entrypoints}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{buildRoot}: \texttt{ByteArray}.\par
+\noindent Field \texttt{lockfile}: \texttt{ByteArray}.\par
+\noindent Field \texttt{leanWorkspace}: \texttt{ByteArray}.\par
+\noindent Field \texttt{lexiconSources}: \texttt{List (LexiconSource)}.\par
+\noindent Field \texttt{artifactSources}: \texttt{List (ArtifactSource)}.\par
+\noindent Field \texttt{sourcePackages}: \texttt{List (SourcePackage)}.\par
+\noindent Field \texttt{limits}: \texttt{Limits}.\par
+\noindent Field \texttt{pdf}: \texttt{Option (PdfProvider)}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (left) (right) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{stringLine}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (value : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanBoot.LockText.stringLine (lit (key)) (value)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{arrayLine}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (values : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanBoot.LockText.line (lit (key)) (LexLeanBoot.LockText.tomlArray (values))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{digestLine}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (digest : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanBoot.LockText.digestLine (lit (key)) (digest)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{numberLine}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (value : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanBoot.LockText.line (lit (key)) (LexLeanStd.Numeral.decimal (value))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{header}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(table : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanBoot.LockText.header (lit (table))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{packageOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(source : LexiconSource)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match source with | LexiconSource.builtin named => named | LexiconSource.path named \_ => named | LexiconSource.git named \_ \_ \_ => named)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{sourcesSorted}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (LexiconSource))}.\par
+\noindent Closure 1: binds \texttt{(acc, entry)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(acc, row)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (LexiconSource)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : List (LexiconSource)) (entry : (Prod (ByteArray) (LexiconSource))) => ((entry).2 :: acc))) (([] : List (LexiconSource))) (LexLeanStd.Order.reverseList ((Prod (ByteArray) (LexiconSource))) (LexLeanStd.Order.sortByKey (LexiconSource) (LexLeanStd.Order.reverseList ((Prod (ByteArray) (LexiconSource))) ((LexLeanCollections.listFold ((fun (acc : List ((Prod (ByteArray) (LexiconSource)))) (row : LexiconSource) => ((packageOf (row), row) :: acc))) (([] : List ((Prod (ByteArray) (LexiconSource))))) (rows) : List ((Prod (ByteArray) (LexiconSource)))))))) : List (LexiconSource))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{sourceText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(source : LexiconSource)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (header ("[[lexicon\_source]]")) ((match source with | LexiconSource.builtin named => cat (stringLine ("package") (named)) (stringLine ("kind") (lit ("builtin"))) | LexiconSource.path named location => cat (cat (stringLine ("package") (named)) (stringLine ("kind") (lit ("path")))) (stringLine ("path") (location)) | LexiconSource.git named url revision subdirectory => cat (cat (cat (cat (stringLine ("package") (named)) (stringLine ("kind") (lit ("git")))) (stringLine ("url") (url))) (stringLine ("revision") (revision))) (stringLine ("subdirectory") (subdirectory))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{sourcesText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (LexiconSource))}.\par
+\noindent Closure 1: binds \texttt{(acc, row)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match rows with | List.nil => cat (lit ("lexicon\_source = []")) (ByteArray.mk \#[10]) | List.cons \_ \_ => (LexLeanCollections.listFold ((fun (acc : ByteArray) (row : LexiconSource) => cat (acc) (sourceText (row)))) (ByteArray.mk \#[]) (sourcesSorted (rows)) : ByteArray))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{artifactText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(artifact : ArtifactSource)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (header ("[[artifact\_source]]")) (digestLine ("sha256") ((artifact).digest))) (stringLine ("path") ((artifact).location))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{packageText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(member : SourcePackage)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (cat (cat (header ("[[source\_package]]")) (stringLine ("package") ((member).packageName))) (stringLine ("version") ((member).version))) (stringLine ("kind") (lit ("path")))) (stringLine ("path") ((member).location))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{limitsText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(given : Limits)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (cat (cat (cat (cat (cat (cat (cat (cat (cat (header ("[limits]")) (numberLine ("max\_file\_bytes") ((given).maxFileBytes))) (numberLine ("max\_total\_source\_bytes") ((given).maxTotalSourceBytes))) (numberLine ("max\_primitive\_atoms") ((given).maxPrimitiveAtoms))) (numberLine ("max\_token\_lattice\_edges") ((given).maxTokenLatticeEdges))) (numberLine ("max\_parse\_states") ((given).maxParseStates))) (numberLine ("max\_ir\_nodes") ((given).maxIrNodes))) (numberLine ("max\_scope\_depth") ((given).maxScopeDepth))) (numberLine ("max\_import\_depth") ((given).maxImportDepth))) (numberLine ("max\_diagnostics") ((given).maxDiagnostics))) (numberLine ("max\_child\_output\_bytes") ((given).maxChildOutputBytes))) (numberLine ("child\_timeout\_ms") ((given).childTimeoutMs))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{pdfText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(provider : PdfProvider)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (cat (cat (cat (cat (cat (cat (header ("[pdf]")) (stringLine ("mode") (lit ("external")))) (stringLine ("program") ((provider).program))) (digestLine ("program\_sha256") ((provider).programSha256))) (arrayLine ("version\_argv") ((provider).versionArgv))) (digestLine ("version\_stdout\_sha256") ((provider).versionStdoutSha256))) (arrayLine ("compile\_argv") ((provider).compileArgv))) (stringLine ("output") ((provider).output))) (arrayLine ("resources") ((provider).resources))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{canonicalProject}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(config : ProjectConfig)}.\par
+\noindent Closure 1: binds \texttt{(acc, row)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(acc, row)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let head : ByteArray := cat (cat (cat (cat (cat (cat (cat (cat (cat (stringLine ("spec") (lit ("lexlean/project/1"))) (stringLine ("name") ((config).projectName))) (stringLine ("language") ((config).language))) (stringLine ("module\_prefix") ((config).modulePrefix))) (arrayLine ("source\_roots") ((config).sourceRoots))) (arrayLine ("entrypoints") ((config).entrypoints))) (stringLine ("build\_root") ((config).buildRoot))) (stringLine ("lockfile") ((config).lockfile))) (stringLine ("lean\_workspace") ((config).leanWorkspace))) (stringLine ("lean\_toolchain") (LexLeanBoot.LockText.leanToolchain)); (let artifacts : ByteArray := (LexLeanCollections.listFold ((fun (acc : ByteArray) (row : ArtifactSource) => cat (acc) (artifactText (row)))) (ByteArray.mk \#[]) ((config).artifactSources) : ByteArray); (let packages : ByteArray := (LexLeanCollections.listFold ((fun (acc : ByteArray) (row : SourcePackage) => cat (acc) (packageText (row)))) (ByteArray.mk \#[]) ((config).sourcePackages) : ByteArray); (let tail : ByteArray := (match (config).pdf with | Option.some provider => pdfText (provider) | Option.none => ByteArray.mk \#[]); cat (cat (cat (cat (cat (head) (sourcesText ((config).lexiconSources))) (artifacts)) (packages)) (limitsText ((config).limits))) (tail)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{configSha256}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(config : ProjectConfig)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Sha256.sha256Hex (canonicalProject (config))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}
