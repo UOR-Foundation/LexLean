@@ -118,7 +118,6 @@ definition{
   parameters: [entries : (List (Bytes * SemanticTypes::SemanticType))],
   result: LexLeanStd.Json::Json,
   body: (SemanticTerms::paramsJson entries),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -145,7 +144,6 @@ definition{
   parameters: [constructors : (List (Bytes * SemanticTypes::SemanticType))],
   result: LexLeanStd.Json::Json,
   body: (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (entry : (Bytes * SemanticTypes::SemanticType)) => (cons (ctor LexLeanStd.Json::Json.JObj (member "name" (jtext (first entry)) (member "fields" (ctor LexLeanStd.Json::Json.JArr (SemanticTypes::typeJson (second entry))) (jnil)))) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [(Bytes * SemanticTypes::SemanticType)] constructors) : (List LexLeanStd.Json::Json)))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -159,7 +157,6 @@ definition{
   body: (match termination
     | Option.some evidenced => (member "termination" (ctor LexLeanStd.Json::Json.JObj (member "measure" (SemanticTerms::termJson (first evidenced)) (member "evidence" (SemanticTerms::membersJson (second evidenced)) (jnil)))) rest)
     | Option.none => rest),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -184,7 +181,6 @@ definition{
     | SDecl.DInductive named typeParameters parameters constructors grouped => (kinded "inductive" (member "name" (jtext named) (member "type_parameters" (SemanticTerms::namesJson typeParameters) (member "parameters" (SemanticTerms::paramsJson parameters) (member "constructors" (constructorsJson constructors) (textWhenSome "mutual" grouped (jnil)))))))
     | SDecl.DDefinition named typeParameters parameters outcome recursiveArg body axiomNames isExecutable grouped terminating produced => (kinded "definition" (member "name" (jtext named) (namesWhenAny "type_parameters" typeParameters (member "parameters" (SemanticTerms::paramsJson parameters) (member "result" (SemanticTypes::typeJson outcome) (textWhenSome "recursive_argument" recursiveArg (member "body" (SemanticTerms::termJson body) (namesWhenAny "axioms" axiomNames (if isExecutable then (member "executable" (ctor LexLeanStd.Json::Json.JBool true) (textWhenSome "mutual" grouped (terminationJson terminating (productionJson produced (jnil))))) else (textWhenSome "mutual" grouped (terminationJson terminating (productionJson produced (jnil)))))))))))))
     | SDecl.DTheorem named typeParameters parameters statement proof axiomNames => (kinded "theorem" (member "name" (jtext named) (namesWhenAny "type_parameters" typeParameters (member "parameters" (SemanticTerms::paramsJson parameters) (member "statement" (SemanticTerms::termJson statement) (member "proof" (SemanticTerms::proofJson proof) (namesWhenAny "axioms" axiomNames (jnil))))))))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
