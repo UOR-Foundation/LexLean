@@ -419,6 +419,16 @@ pub(crate) fn group_members(group: i32) -> Option<Vec<Member>> {
     Some(members)
 }
 
+/// WASI starts no process (spawning one is refused there), so there is never
+/// a leader to end; being asked to end one is a failure, never success
+/// (SPEC.md §24.6).
+#[cfg(target_os = "wasi")]
+pub(crate) fn end_leader(id: u32) -> GroupEnd {
+    GroupEnd::Failed(format!(
+        "process {id} cannot be ended: this host starts no process"
+    ))
+}
+
 /// End the tree rooted at `id` on windows, and report a `taskkill` that
 /// failed like a group that could not be ended (the one place a tree is
 /// ended; see the unix function of the same name).

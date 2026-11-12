@@ -255,15 +255,24 @@ fn embedded_digest(keep: impl Fn(&str) -> bool) -> Sha256Digest {
     let workers = std::thread::available_parallelism()
         .map_or(1, usize::from)
         .min(8);
+    let read = || loop {
+        let at = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        let Some((path, bytes)) = selected.get(at) else {
+            break;
+        };
+        let _ = slots[at].set(identity_bytes(path, bytes));
+    };
     std::thread::scope(|scope| {
         for _ in 0..workers {
-            scope.spawn(|| loop {
-                let at = next.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
-                let Some((path, bytes)) = selected.get(at) else {
-                    break;
-                };
-                let _ = slots[at].set(identity_bytes(path, bytes));
-            });
+            // A host without threads (WASI) reads every file on this one, as
+            // `identity_bytes` does; the rows, and so the digest, are the same.
+            if std::thread::Builder::new()
+                .spawn_scoped(scope, read)
+                .is_err()
+            {
+                read();
+                break;
+            }
         }
     });
     let rows: Vec<(&str, std::borrow::Cow<'static, [u8]>)> = selected

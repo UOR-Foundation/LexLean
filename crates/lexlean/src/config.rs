@@ -56,7 +56,16 @@ const COMPILE_STACK_BYTES_PER_SCOPE: usize = 64 * 1024;
 /// a resource reservation, not a language limit: nesting beyond what it
 /// hosts is refused as `LLS8002` naming both the configured and the
 /// effective bound, never by exhausting the stack.
+#[cfg(not(target_os = "wasi"))]
 const MAX_COMPILE_STACK_BYTES: usize = 1024 * 1024 * 1024;
+
+/// On WASI the pipeline runs on the executable's one stack, so the plan hosts
+/// no more than that stack holds and deeper input is `LLS8002` there too
+/// (§8.3); an embedder links its module with at least this stack.
+#[cfg(target_os = "wasi")]
+const MAX_COMPILE_STACK_BYTES: usize = WASI_STACK_BYTES;
+
+include!("wasi_stack.rs");
 
 impl Limits {
     /// Size the compile thread's stack from `max_scope_depth` with checked

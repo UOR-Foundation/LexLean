@@ -300,6 +300,11 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install the pinned Rust toolchain
         run: rustup toolchain install
+      # CL-25 builds the executable for WASI with the pinned toolchain and runs
+      # it under the runner's Node (§8.3); the target is added here rather than
+      # in rust-toolchain.toml, which the export custody records byte for byte.
+      - name: Add the WASI target of the pinned toolchain
+        run: rustup target add wasm32-wasip1
       - uses: taiki-e/install-action@b6b84cf49ebfe0176417bdce007c624f0db37f20 # v2.86.2
         with:
           tool: just,cargo-deny

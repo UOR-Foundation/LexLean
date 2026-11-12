@@ -321,7 +321,7 @@ pub fn discover(root: &Utf8Path) -> Vec<Utf8PathBuf> {
 
 /// Copy a tree preserving symlinks as symlinks (a fixture may deliberately
 /// contain one, SPEC.md §28.5 "a path symlink").
-fn copy_tree_preserving_links(from: &Path, to: &Path) -> Result<(), String> {
+pub(crate) fn copy_tree_preserving_links(from: &Path, to: &Path) -> Result<(), String> {
     for entry in walkdir::WalkDir::new(from)
         .follow_links(false)
         .into_iter()

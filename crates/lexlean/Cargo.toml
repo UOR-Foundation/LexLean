@@ -19,8 +19,6 @@ categories.workspace = true
 [dependencies]
 camino = { workspace = true }
 clap = { workspace = true }
-fs4 = { workspace = true }
-same-file = { workspace = true }
 semver = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -38,6 +36,17 @@ walkdir = { workspace = true }
 [target.'cfg(unix)'.dependencies]
 rustix = { workspace = true }
 signal-hook = { workspace = true }
+
+# WASI has no file lock, so `fs4` does not build there, and `same-file` builds
+# but refuses every file at run time. WASI does report a file's device and
+# inode through `stat`, which `rustix` reads without unsafe code, so the
+# identity check of §25.1 holds there too (§8.3).
+[target.'cfg(not(target_os = "wasi"))'.dependencies]
+fs4 = { workspace = true }
+same-file = { workspace = true }
+
+[target.'cfg(target_os = "wasi")'.dependencies]
+rustix = { workspace = true, features = ["fs"] }
 
 [dev-dependencies]
 proptest = { workspace = true }
