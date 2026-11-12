@@ -42,6 +42,10 @@ const CERTIFICATE_BUDGET: u64 = 3_145_728;
 /// Seeded terms and proofs under the evaluator, and under rustc.
 const EVALUATOR_SEEDED: usize = 120;
 const RUSTC_SEEDED: usize = 600;
+/// The committed terms the evaluator takes: the first of them, in canonical
+/// order, whose JSON is at most this long; rustc takes every one.
+const EVALUATOR_COMMITTED: usize = 3_000;
+const EVALUATOR_BYTES: usize = 2_048;
 
 // ---------------------------------------------------------------- the sorts
 
@@ -596,6 +600,14 @@ impl Input {
         match self {
             Self::Term(_) => 0,
             Self::Proof(_) => 1,
+        }
+    }
+
+    /// The length of the input's canonical JSON.
+    fn size(&self) -> usize {
+        match self {
+            Self::Term(value) => canonical(&**value).len(),
+            Self::Proof(value) => canonical(&**value).len(),
         }
     }
 
@@ -1324,8 +1336,8 @@ const PLANTS: &[Plant] = &[
     },
     Plant {
         label: "an assignment names its field as a name",
-        site: "(member \"field\" (ctor LexLeanStd.Json::Json.JStr field)",
-        replacement: "(member \"name\" (ctor LexLeanStd.Json::Json.JStr field)",
+        site: "(member \"field\" (ctor LexLeanStd.Json::Json.JStr field) (member \"value\" (termJson assigned)",
+        replacement: "(member \"name\" (ctor LexLeanStd.Json::Json.JStr field) (member \"value\" (termJson assigned)",
         vector: "a record with type arguments",
     },
     Plant {
@@ -1578,7 +1590,13 @@ pub(super) fn case() {
     let named_inputs: Vec<Input> = vectors.iter().map(|vector| vector.input.clone()).collect();
     if normative {
         let mut inputs = named_inputs.clone();
-        inputs.extend(corpus.iter().cloned());
+        inputs.extend(
+            corpus
+                .iter()
+                .filter(|input| input.size() <= EVALUATOR_BYTES)
+                .take(EVALUATOR_COMMITTED)
+                .cloned(),
+        );
         inputs.extend(evaluator_seeded);
         for (index, runs) in split(&inputs).iter().enumerate() {
             let root = ROOTS[index].0;
