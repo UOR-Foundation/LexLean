@@ -317,7 +317,12 @@ fn committed() -> Vec<Identity> {
     projects_under(repo_root().as_std_path(), &mut dirs);
     let mut out = Vec::new();
     for dir in &dirs {
+        // A tooling fixture is linked as the compiler links the tooling
+        // projects it embeds (SPEC.md §17.20).
         let project = match lexlean::project::Project::load(&dir.join("lexlean.toml")) {
+            Ok(project) if dir.components().any(|part| part.as_str() == "tooling") => {
+                project.with_tooling()
+            }
             Ok(project) => project,
             Err(error) => {
                 eprintln!("BS-67: {dir}: not loaded: {error:?}");
