@@ -150,7 +150,6 @@ definition{
   parameters: [named : Bytes, typed : SemanticTypes::SemanticType],
   result: LexLeanStd.Json::Json,
   body: (ctor LexLeanStd.Json::Json.JObj (member "name" (ctor LexLeanStd.Json::Json.JStr named) (member "type" (SemanticTypes::typeJson typed) (ctor LexLeanStd.Json::Json.JNil)))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -167,7 +166,6 @@ definition{
   parameters: [entries : (List (Bytes * SemanticTypes::SemanticType))],
   result: LexLeanStd.Json::Json,
   body: (ctor LexLeanStd.Json::Json.JArr (chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (entry : (Bytes * SemanticTypes::SemanticType)) => (cons (paramJson (first entry) (second entry)) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [(Bytes * SemanticTypes::SemanticType)] entries) : (List LexLeanStd.Json::Json)))),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -222,7 +220,6 @@ definition{
     | SemanticTypes::SemanticType.SSet part0 => rest
     | SemanticTypes::SemanticType.SNil => rest
     | SemanticTypes::SemanticType.SItem part0 part1 => (member key (ctor LexLeanStd.Json::Json.JArr (SemanticTypes::typeJson types)) rest)),
-  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -279,7 +276,6 @@ definition{
     | STerm.KBranch owner named bound body tail => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JObj (member "constructor" (memberJson owner named) (member "binders" (namesJson bound) (member "body" (termJson body) (ctor LexLeanStd.Json::Json.JNil))))) (termJson tail))
     | STerm.KEntry key entry tail => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JObj (member "key" (termJson key) (member "value" (termJson entry) (ctor LexLeanStd.Json::Json.JNil)))) (termJson tail))
     | STerm.KEdge source target tail => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JObj (member "source" (termJson source) (member "target" (termJson target) (ctor LexLeanStd.Json::Json.JNil)))) (termJson tail))),
-  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: term
 }
@@ -322,7 +318,6 @@ definition{
     | SProof.QItem head tail => (ctor LexLeanStd.Json::Json.JItem (proofJson head) (proofJson tail))
     | SProof.QBranch built bound proved tail => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JObj (member "constructor" (ctor LexLeanStd.Json::Json.JStr built) (member "binders" (namesJson bound) (member "proof" (proofJson proved) (ctor LexLeanStd.Json::Json.JNil))))) (proofJson tail))
     | SProof.QMember typed bound statement branches tail => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JObj (member "type" (SemanticTypes::typeJson typed) (member "binder" (ctor LexLeanStd.Json::Json.JStr bound) (member "statement" (termJson statement) (member "branches" (ctor LexLeanStd.Json::Json.JArr (proofJson branches)) (ctor LexLeanStd.Json::Json.JNil)))))) (proofJson tail))),
-  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: proof
 }

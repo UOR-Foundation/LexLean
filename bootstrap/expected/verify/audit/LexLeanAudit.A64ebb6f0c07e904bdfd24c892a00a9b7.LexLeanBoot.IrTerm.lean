@@ -1,0 +1,36 @@
+module
+import LexLeanBoot.IrTerm
+#print axioms LexLeanBoot.IrTerm.CoreRef
+#print axioms LexLeanBoot.IrTerm.GlobalRef
+#print axioms LexLeanBoot.IrTerm.Renumber
+#print axioms LexLeanBoot.IrTerm.Resolved
+#print axioms LexLeanBoot.IrTerm.Term
+#print axioms LexLeanBoot.IrTerm.appJson
+#print axioms LexLeanBoot.IrTerm.bind
+#print axioms LexLeanBoot.IrTerm.binderJson
+#print axioms LexLeanBoot.IrTerm.canonicalKey
+#print axioms LexLeanBoot.IrTerm.capped
+#print axioms LexLeanBoot.IrTerm.comparing
+#print axioms LexLeanBoot.IrTerm.coreName
+#print axioms LexLeanBoot.IrTerm.eqKey
+#print axioms LexLeanBoot.IrTerm.fresh
+#print axioms LexLeanBoot.IrTerm.globalJson
+#print axioms LexLeanBoot.IrTerm.globalTermJson
+#print axioms LexLeanBoot.IrTerm.hashing
+#print axioms LexLeanBoot.IrTerm.implicitJson
+#print axioms LexLeanBoot.IrTerm.jnat
+#print axioms LexLeanBoot.IrTerm.jtext
+#print axioms LexLeanBoot.IrTerm.larger
+#print axioms LexLeanBoot.IrTerm.lit
+#print axioms LexLeanBoot.IrTerm.localJson
+#print axioms LexLeanBoot.IrTerm.lookupLocal
+#print axioms LexLeanBoot.IrTerm.member
+#print axioms LexLeanBoot.IrTerm.modeName
+#print axioms LexLeanBoot.IrTerm.noLevels
+#print axioms LexLeanBoot.IrTerm.nodeCount
+#print axioms LexLeanBoot.IrTerm.resolve
+#print axioms LexLeanBoot.IrTerm.termDepth
+#print axioms LexLeanBoot.IrTerm.termJson
+#print axioms LexLeanBoot.IrTerm.termText
+#print axioms LexLeanBoot.IrTerm.universeJson
+#print axioms LexLeanBoot.IrTerm.withoutSpellings
