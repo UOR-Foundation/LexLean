@@ -189,7 +189,7 @@ pub(super) fn example_artifact_schema(step: usize) -> ArtifactSchema {
                 Vec::new()
             } else {
                 (rest..rest + 2)
-                    .map(|next| u64::try_from(next).expect("a rest") + 1)
+                    .map(|next| u64::try_from(next).expect("a step") + 1)
                     .collect()
             },
         },
@@ -201,7 +201,7 @@ pub(super) fn enc_model_binder(value: &ModelBinder) -> Value {
     adt(
         "ModelBinder",
         "ModelBinderOf",
-        vec![text(&value.name), enc_type(&value.r#type)],
+        vec![text((&value.name)), enc_type((&value.r#type))],
     )
 }
 
@@ -221,9 +221,9 @@ pub(super) fn enc_contract_state(value: &ContractState) -> Value {
         "ContractState",
         "ContractStateOf",
         vec![
-            text(&value.name),
-            text(&value.next),
-            enc_type(&value.r#type),
+            text((&value.name)),
+            text((&value.next)),
+            enc_type((&value.r#type)),
         ],
     )
 }
@@ -263,10 +263,10 @@ pub(super) fn enc_contract_validator(value: &ContractValidator) -> Value {
         "ContractValidator",
         "ContractValidatorOf",
         vec![
-            enc_contract_predicate(&value.predicate),
-            enc_member(&value.validator),
-            enc_member(&value.sound),
-            option(&value.complete.as_ref().map(|item| enc_member(item))),
+            enc_contract_predicate((&value.predicate)),
+            enc_member((&value.validator)),
+            enc_member((&value.sound)),
+            option((&value.complete).as_ref().map(|item| enc_member(item))),
         ],
     )
 }
@@ -294,10 +294,9 @@ pub(super) fn enc_model_use(value: &ModelUse) -> Value {
         "ModelUse",
         "ModelUseOf",
         vec![
-            enc_member(&value.member),
+            enc_member((&value.member)),
             list(
-                &value
-                    .type_arguments
+                (&value.type_arguments)
                     .iter()
                     .map(|item| enc_type(item))
                     .collect(),
@@ -317,7 +316,7 @@ pub(super) fn example_model_use(step: usize) -> ModelUse {
         } else {
             (step..step + 2)
                 .map(|next| {
-                    if step % 2 == 0 {
+                    if next % 2 == 0 {
                         SemanticType::Nat
                     } else {
                         SemanticType::Bytes
@@ -333,9 +332,9 @@ pub(super) fn enc_realization_state(value: &RealizationState) -> Value {
         "RealizationState",
         "RealizationStateOf",
         vec![
-            text(&value.name),
-            enc_type(&value.r#type),
-            enc_term(&value.initial),
+            text((&value.name)),
+            enc_type((&value.r#type)),
+            enc_term((&value.initial)),
         ],
     )
 }
@@ -359,9 +358,9 @@ pub(super) fn enc_realization_rule(value: &RealizationRule) -> Value {
         "RealizationRule",
         "RealizationRuleOf",
         vec![
-            text(&value.name),
-            enc_term(&value.guard),
-            enc_term(&value.action),
+            text((&value.name)),
+            enc_term((&value.guard)),
+            enc_term((&value.action)),
         ],
     )
 }
@@ -442,8 +441,8 @@ pub(super) fn example_neural_layer(step: usize) -> NeuralLayer {
     let rest = step / 3;
     match step % 3 {
         0 => NeuralLayer::Dense {
-            inputs: u64::try_from(rest).expect("a rest") + 1,
-            outputs: u64::try_from(rest).expect("a rest") + 1,
+            inputs: u64::try_from(rest).expect("a step") + 1,
+            outputs: u64::try_from(rest).expect("a step") + 1,
             weights: MemberRef {
                 module: (rest % 2 == 0).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
@@ -455,7 +454,7 @@ pub(super) fn example_neural_layer(step: usize) -> NeuralLayer {
         },
         1 => NeuralLayer::Relu,
         _ => NeuralLayer::Requantize {
-            shift: u64::try_from(rest).expect("a rest") + 1,
+            shift: u64::try_from(rest).expect("a step") + 1,
             minimum: format!("s{rest}"),
             maximum: format!("s{rest}"),
         },
@@ -487,7 +486,7 @@ pub(super) fn example_neural_decoder(step: usize) -> NeuralDecoder {
             } else {
                 (rest..rest + 2)
                     .map(|next| SemanticTerm::Nat {
-                        value: rest.to_string(),
+                        value: next.to_string(),
                     })
                     .collect()
             },
@@ -710,7 +709,7 @@ pub(super) fn example_realization_descriptor(step: usize) -> RealizationDescript
             features: SemanticTerm::Nat {
                 value: rest.to_string(),
             },
-            width: u64::try_from(rest).expect("a rest") + 1,
+            width: u64::try_from(rest).expect("a step") + 1,
             width_evidence: MemberRef {
                 module: (rest % 2 == 0).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
@@ -728,7 +727,7 @@ pub(super) fn example_realization_descriptor(step: usize) -> RealizationDescript
             } else {
                 (rest..rest + 2)
                     .map(|next| SemanticTerm::Nat {
-                        value: rest.to_string(),
+                        value: next.to_string(),
                     })
                     .collect()
             },
@@ -738,7 +737,7 @@ pub(super) fn example_realization_descriptor(step: usize) -> RealizationDescript
             encoder: SemanticTerm::Nat {
                 value: rest.to_string(),
             },
-            width: u64::try_from(rest).expect("a rest") + 1,
+            width: u64::try_from(rest).expect("a step") + 1,
             width_evidence: MemberRef {
                 module: (rest % 2 == 0).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
@@ -819,8 +818,8 @@ pub(super) fn example_evidence_claim(step: usize) -> EvidenceClaim {
                 module: (rest % 2 == 0).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
             },
-            examples: u64::try_from(rest).expect("a rest") + 1,
-            agreements: u64::try_from(rest).expect("a rest") + 1,
+            examples: u64::try_from(rest).expect("a step") + 1,
+            agreements: u64::try_from(rest).expect("a step") + 1,
             theorem: MemberRef {
                 module: (rest % 2 == 0).then(|| "M".to_owned()),
                 name: format!("m{rest}"),
@@ -984,7 +983,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             name: format!("s{rest}"),
             role: example_artifact_role(rest),
             sha256: format!("s{rest}"),
-            length: u64::try_from(rest).expect("a rest") + 1,
+            length: u64::try_from(rest).expect("a step") + 1,
             schema: example_artifact_schema(rest),
             r#type: if rest % 2 == 0 {
                 SemanticType::Nat
@@ -994,7 +993,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
         1 => SemanticDeclaration::Contract {
@@ -1002,7 +1001,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             type_parameters: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
             input: example_model_binder(rest),
             output: example_model_binder(rest),
@@ -1029,7 +1028,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
         2 => SemanticDeclaration::Realization {
@@ -1037,7 +1036,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             type_parameters: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
             input: example_model_binder(rest),
             output: if rest % 2 == 0 {
@@ -1051,7 +1050,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
         3 => SemanticDeclaration::Evidence {
@@ -1059,7 +1058,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             type_parameters: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
             contract: example_model_use(rest),
             realization: example_model_use(rest),
@@ -1073,7 +1072,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
         _ => SemanticDeclaration::Model {
@@ -1081,7 +1080,7 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             type_parameters: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
             contract: example_model_use(rest),
             realization: example_model_use(rest),
@@ -1097,15 +1096,15 @@ pub(super) fn example_model_declaration(step: usize) -> SemanticDeclaration {
             } else {
                 (rest..rest + 2)
                     .map(|next| MemberRef {
-                        module: (rest % 2 == 0).then(|| "M".to_owned()),
-                        name: format!("m{rest}"),
+                        module: (next % 2 == 0).then(|| "M".to_owned()),
+                        name: format!("m{next}"),
                     })
                     .collect()
             },
             axioms: if rest % 3 == 2 {
                 Vec::new()
             } else {
-                (rest..rest + 2).map(|next| format!("s{rest}")).collect()
+                (rest..rest + 2).map(|next| format!("s{next}")).collect()
             },
         },
     }
