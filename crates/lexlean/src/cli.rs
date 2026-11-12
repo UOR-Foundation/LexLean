@@ -286,6 +286,21 @@ fn palette(mode: ColorMode) -> &'static Palette {
     }
 }
 
+/// The human diagnostic text of a failure as `run` writes it to stderr
+/// (§20.6), with color or without; the oracle of the bootstrap's `BS-30`.
+#[doc(hidden)]
+#[must_use]
+pub fn human_diagnostics_text(error: &LexLeanError, color: bool) -> String {
+    let mut out: Vec<u8> = Vec::new();
+    let colors = if color {
+        &Palette::COLOR
+    } else {
+        &Palette::PLAIN
+    };
+    print_human_diagnostics(&mut out, error, colors);
+    String::from_utf8(out).unwrap_or_default()
+}
+
 fn print_human_diagnostics(stderr: &mut dyn Write, error: &LexLeanError, colors: &Palette) {
     for diagnostic in &error.diagnostics {
         let _ = write!(
@@ -369,7 +384,9 @@ pub fn explain_text(requested: &str) -> Option<String> {
 
 /// Pre-scan argv for `--diagnostic-format json` (§20.6), so even a usage
 /// error is reported inside the one JSON result object.
-fn wants_json(arguments: &[String]) -> bool {
+#[doc(hidden)]
+#[must_use]
+pub fn wants_json(arguments: &[String]) -> bool {
     let mut previous: Option<&str> = None;
     for argument in arguments.iter().skip(1) {
         if argument == "--diagnostic-format=json" {
@@ -385,7 +402,9 @@ fn wants_json(arguments: &[String]) -> bool {
 
 /// The subcommand named on argv, when any, for the JSON `command` field
 /// of a usage failure.
-fn named_command(arguments: &[String]) -> &'static str {
+#[doc(hidden)]
+#[must_use]
+pub fn named_command(arguments: &[String]) -> &'static str {
     arguments
         .iter()
         .skip(1)

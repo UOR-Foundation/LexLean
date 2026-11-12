@@ -65,9 +65,9 @@ const ROOTS: [&str; 2] = ["functionShells", "assembleItems"];
 
 /// The programs the evaluator is given: those of at most this many nodes.
 const EVALUATOR_NODES: usize = 300;
-const VECTORS: usize = 360;
-const VECTORS_WITHIN: usize = 296;
-const EVALUATOR_MUTANTS: usize = 539;
+const VECTORS: usize = 385;
+const VECTORS_WITHIN: usize = 300;
+const EVALUATOR_MUTANTS: usize = 548;
 
 /// What a host that did more than thread the counter would get wrong: the
 /// case runs the composition with each of these and requires the comparison
@@ -351,11 +351,18 @@ pub(super) fn case() {
         mutated.len(),
         started.elapsed()
     );
-    assert_eq!(
-        (all.len(), within.len(), mutated.len()),
-        (VECTORS, VECTORS_WITHIN, EVALUATOR_MUTANTS),
-        "the vectors, those the evaluator is given, and the mutants"
+    crate::counts!(
+        "BS-14",
+        "the vectors, those the evaluator is given, and the mutants",
+        {
+            VECTORS: all.len(),
+            VECTORS_WITHIN: within.len(),
+            EVALUATOR_MUTANTS: mutated.len(),
+        }
     );
+    if crate::counts::stop_before_runs("BS-14") {
+        return;
+    }
     let checked = support::checked_project(&project);
     let moves = super::lower(&checked, &project, MOVES, "applyMoves");
     let roots = Roots::of(&project);

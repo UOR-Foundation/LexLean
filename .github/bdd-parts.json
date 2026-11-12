@@ -25,6 +25,9 @@
     "bootstrap-surface-doc": [
       "BS-23"
     ],
+    "bootstrap-surface-tooling": [
+      "BS-27"
+    ],
     "bootstrap-surface-generic": [
       "BS-24"
     ],
@@ -34,8 +37,17 @@
     "bootstrap-gnaf": [
       "BS-16"
     ],
+    "bootstrap-lexicon-lre": [
+      "BS-26"
+    ],
+    "bootstrap-lexicon-lse": [
+      "BS-25"
+    ],
     "bootstrap-lower": [
       "BS-07"
+    ],
+    "bootstrap-surface-module": [
+      "BS-28"
     ],
     "bootstrap-moves": [
       "BS-08"
@@ -48,6 +60,12 @@
     ],
     "bootstrap-terms": [
       "BS-10"
+    ],
+    "bootstrap-lock-text": [
+      "BS-31"
+    ],
+    "bootstrap-project-text": [
+      "BS-33"
     ],
     "bootstrap-tooling-latex": [
       "BS-20"
@@ -262,6 +280,18 @@
       "SP-29",
       "SP-32",
       "SP-33"
+    ],
+    "bootstrap-diagnostics": [
+      "BS-29"
+    ],
+    "bootstrap-cli-output": [
+      "BS-30"
+    ],
+    "bootstrap-content-id": [
+      "BS-32"
+    ],
+    "bootstrap-manifest-text": [
+      "BS-34"
     ]
   },
   "targets": {

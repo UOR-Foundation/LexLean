@@ -1,0 +1,1136 @@
+\begin{lexlean}{LexiconLse}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Tok,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TOpen, fields: []},
+    {name: TClose, fields: []},
+    {name: TAtom, fields: [Bytes]}
+  ]
+}
+
+structure{
+  name: Failure,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: kind, type: Nat}, {name: message, type: Bytes}]
+}
+
+inductive{
+  name: Node,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: NAtom, fields: [Bytes]},
+    {name: NList, fields: [Node]},
+    {name: NNil, fields: []},
+    {name: NItem, fields: [Node, Node]}
+  ]
+}
+
+inductive{
+  name: Universe,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: UNum, fields: [Nat]},
+    {name: UVar, fields: [Bytes]},
+    {name: USucc, fields: [Universe]},
+    {name: UMax, fields: [Universe]},
+    {name: UIMax, fields: [Universe, Universe]},
+    {name: UNil, fields: []},
+    {name: UItem, fields: [Universe, Universe]}
+  ]
+}
+
+inductive{
+  name: Lse,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: LSortProp, fields: []},
+    {name: LSortType, fields: [Universe]},
+    {name: LConst, fields: [Bytes, Bytes, Universe]},
+    {name: LLocal, fields: [Bytes]},
+    {name: LApp, fields: [Lse, Lse]},
+    {name: LPi, fields: [Lse, Lse]},
+    {name: LLam, fields: [Lse, Lse]},
+    {name: LLet, fields: [Bytes, Lse, Lse, Lse]},
+    {name: LNat, fields: [Bytes]},
+    {name: LNil, fields: []},
+    {name: LArg, fields: [Lse, Lse]},
+    {name: LBinder, fields: [Nat, Bytes, Lse, Lse]}
+  ]
+}
+
+inductive{
+  name: Work,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: WVisit, fields: [Node]}, {name: WBuild, fields: [Node]}]
+}
+
+inductive{
+  name: UWork,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: UVisit, fields: [Node]}, {name: UBuild, fields: [Bytes, Nat]}]
+}
+
+structure{
+  name: Tk,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: start, type: Nat},
+    {name: inAtom, type: Bool},
+    {name: toks, type: (List Tok)},
+    {name: error, type: (Option Failure)}
+  ]
+}
+
+structure{
+  name: Rt,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: stack, type: (List (List Node))},
+    {name: root, type: (Option Node)},
+    {name: error, type: (Option Failure)},
+    {name: done, type: Bool}
+  ]
+}
+
+structure{
+  name: Cv,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: work, type: (List Work)},
+    {name: values, type: (List Lse)},
+    {name: error, type: (Option Failure)}
+  ]
+}
+
+structure{
+  name: Uv,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: work, type: (List UWork)},
+    {name: values, type: (List Universe)},
+    {name: error, type: (Option Failure)}
+  ]
+}
+
+structure{
+  name: Header,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: mode, type: Nat}, {name: name, type: Bytes}, {name: ty, type: Node}]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: quoted,
+  parameters: [text : Bytes],
+  result: Bytes,
+  body: (cat (cat (lit "`") text) (lit "`")),
+  executable: true
+}
+
+definition{
+  name: failed,
+  parameters: [message : Bytes],
+  result: Failure,
+  body: (record Failure {kind := 0, message := message}),
+  executable: true
+}
+
+definition{
+  name: byteNum,
+  parameters: [subject : Bytes, position : Nat],
+  result: Nat,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (prim to_nat byte : Nat)
+    | Option.none => 256),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isLowerNum,
+  parameters: [value : Nat],
+  result: Bool,
+  body: (if (value <? 97) then false else (value <=? 122)),
+  executable: true
+}
+
+definition{
+  name: isAlphaNum,
+  parameters: [value : Nat],
+  result: Bool,
+  body: (if (isLowerNum value) then true else (if (value <? 65) then false else (value <=? 90))),
+  executable: true
+}
+
+definition{
+  name: isDigitNum,
+  parameters: [value : Nat],
+  result: Bool,
+  body: (if (value <? 48) then false else (value <=? 57)),
+  executable: true
+}
+
+definition{
+  name: isAlnumNum,
+  parameters: [value : Nat],
+  result: Bool,
+  body: (if (isAlphaNum value) then true else (isDigitNum value)),
+  executable: true
+}
+
+definition{
+  name: scanIdentifier,
+  parameters: [subject : Bytes, n : Nat, position : Nat],
+  result: (Option Nat),
+  body: (if (position <? n) then (if (isAlnumNum (byteNum subject position)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isLseIdentifier,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let n : Nat := (prim length text : Nat); (if (n =? 0) then false else (if (isAlphaNum (byteNum text 0)) then ((first (prim iterate_until (fun [n, text] (position : Nat) => (scanIdentifier text n position)) n 1 : (Nat * Bool))) =? n) else false))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+structure{
+  name: Sg,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: segStart, type: Bool},
+    {name: firstSeg, type: Bool},
+    {name: ok, type: Bool}
+  ]
+}
+
+definition{
+  name: sgStop,
+  parameters: [st : Sg],
+  result: (Option Sg),
+  body: (ctor Option.some [Sg] (record Sg {pos := (project st pos), segStart := (project st segStart), firstSeg := (project st firstSeg), ok := false})),
+  executable: true
+}
+
+definition{
+  name: sgStep,
+  parameters: [st : Sg, segStart : Bool, firstSeg : Bool],
+  result: (Option Sg),
+  body: (ctor Option.some [Sg] (record Sg {pos := ((project st pos) + 1), segStart := segStart, firstSeg := firstSeg, ok := true})),
+  executable: true
+}
+
+definition{
+  name: idStep,
+  parameters: [subject : Bytes, n : Nat, hyphenFirst : Bool, st : Sg],
+  result: (Option Sg),
+  body: (if (project st ok) then (if ((project st pos) <? n) then (let value : Nat := (byteNum subject (project st pos)); (if (value =? 46) then (if (project st segStart) then (sgStop st) else (sgStep st true false)) else (if (project st segStart) then (if (isLowerNum value) then (sgStep st false (project st firstSeg)) else (sgStop st)) else (if (if (isLowerNum value) then true else (isDigitNum value)) then (sgStep st false (project st firstSeg)) else (if (if (value =? 45) then (if hyphenFirst then true else (if (project st firstSeg) then false else true)) else false) then (sgStep st false (project st firstSeg)) else (sgStop st)))))) else (ctor Option.none [Sg])) else (ctor Option.none [Sg])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: idScan,
+  parameters: [text : Bytes, hyphenFirst : Bool],
+  result: Bool,
+  body: (let n : Nat := (prim length text : Nat); (let final : Sg := (first (prim iterate_until (fun [hyphenFirst, n, text] (st : Sg) => (idStep text n hyphenFirst st)) (n + 1) (record Sg {pos := 0, segStart := true, firstSeg := true, ok := true}) : (Sg * Bool))); (if (project final ok) then (if (project final segStart) then false else true) else false))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isPackageId,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (idScan text false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isEntryId,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (idScan text true),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scanDigits,
+  parameters: [subject : Bytes, n : Nat, position : Nat],
+  result: (Option Nat),
+  body: (if (position <? n) then (if (isDigitNum (byteNum subject position)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: allDigits,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let n : Nat := (prim length text : Nat); ((first (prim iterate_until (fun [n, text] (position : Nat) => (scanDigits text n position)) (n + 1) 0 : (Nat * Bool))) =? n)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: decimalFault,
+  parameters: [text : Bytes],
+  result: (Option Failure),
+  body: (let n : Nat := (prim length text : Nat); (if (if (n =? 0) then true else (if (allDigits text) then false else true)) then (ctor Option.some [Failure] (failed (cat (quoted text) (lit " is not a decimal")))) else (if (if (1 <? n) then ((byteNum text 0) =? 48) else false) then (ctor Option.some [Failure] (failed (cat (quoted text) (lit " has a redundant leading zero")))) else (if (if (20 <? n) then true else (if (n =? 20) then (prim equal (prim compare_bytes text (lit "18446744073709551615") : Ordering) (prim compare_bytes 0x01 0x : Ordering) : Bool) else false)) then (ctor Option.some [Failure] (failed (cat (quoted text) (lit " does not fit 64 bits")))) else (ctor Option.none [Failure]))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: decimalValue,
+  parameters: [text : Bytes],
+  result: Nat,
+  body: (match (LexLeanStd.Numeral::parseDecimal text)
+    | Option.some value => value
+    | Option.none => 0),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tkFlush,
+  parameters: [text : Bytes, st : Tk],
+  result: (List Tok),
+  body: (if (project st inAtom) then (cons (ctor Tok.TAtom (LexLeanStd.Text::sliceOr text (project st start) (prim subtract (project st pos) (project st start) : Nat))) (project st toks)) else (project st toks)),
+  executable: true
+}
+
+definition{
+  name: tkStep,
+  parameters: [text : Bytes, n : Nat, st : Tk],
+  result: (Option Tk),
+  body: (match (project st error)
+    | Option.some stopped => (ctor Option.none [Tk])
+    | Option.none => (let position : Nat := (project st pos); (if (position <? n) then (let value : Nat := (byteNum text position); (if (value =? 40) then (ctor Option.some [Tk] (record Tk {pos := (position + 1), start := (project st start), inAtom := false, toks := (cons (ctor Tok.TOpen) (tkFlush text st)), error := (ctor Option.none [Failure])})) else (if (value =? 41) then (ctor Option.some [Tk] (record Tk {pos := (position + 1), start := (project st start), inAtom := false, toks := (cons (ctor Tok.TClose) (tkFlush text st)), error := (ctor Option.none [Failure])})) else (if (if (value =? 32) then true else (value =? 10)) then (ctor Option.some [Tk] (record Tk {pos := (position + 1), start := (project st start), inAtom := false, toks := (tkFlush text st), error := (ctor Option.none [Failure])})) else (if (if (value <? 32) then true else (value =? 127)) then (ctor Option.some [Tk] (record Tk {pos := position, start := (project st start), inAtom := (project st inAtom), toks := (project st toks), error := (ctor Option.some [Failure] (failed (lit "whitespace is one or more ASCII spaces or LF")))})) else (if (project st inAtom) then (ctor Option.some [Tk] (record Tk {pos := (position + 1), start := (project st start), inAtom := true, toks := (project st toks), error := (ctor Option.none [Failure])})) else (ctor Option.some [Tk] (record Tk {pos := (position + 1), start := position, inAtom := true, toks := (project st toks), error := (ctor Option.none [Failure])})))))))) else (ctor Option.none [Tk])))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tokenize,
+  parameters: [text : Bytes],
+  result: (Result (List Tok) Failure),
+  body: (let n : Nat := (prim length text : Nat); (let final : Tk := (first (prim iterate_until (fun [n, text] (st : Tk) => (tkStep text n st)) (n + 1) (record Tk {pos := 0, start := 0, inAtom := false, toks := (nil Tok), error := (ctor Option.none [Failure])}) : (Tk * Bool))); (match (project final error)
+    | Option.some failure => (ctor Result.error [(List Tok), Failure] failure)
+    | Option.none => (ctor Result.ok [(List Tok), Failure] (LexLeanStd.Order::reverseList [Tok] (tkFlush text final)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: chainOf,
+  parameters: [items : (List Node)],
+  result: Node,
+  body: (prim list_fold (fun (chain : Node) (item : Node) => (ctor Node.NItem item chain)) (ctor Node.NNil) items : Node),
+  executable: true
+}
+
+definition{
+  name: rtFail,
+  parameters: [st : Rt, failure : Failure],
+  result: Rt,
+  body: (record Rt {pos := (project st pos), stack := (project st stack), root := (project st root), error := (ctor Option.some [Failure] failure), done := false}),
+  executable: true
+}
+
+definition{
+  name: rtPlace,
+  parameters: [st : Rt, node : Node, stack : (List (List Node))],
+  result: Rt,
+  body: (match stack
+    | List.nil => (record Rt {pos := ((project st pos) + 1), stack := (nil (List Node)), root := (ctor Option.some [Node] node), error := (ctor Option.none [Failure]), done := false})
+    | List.cons parent more => (record Rt {pos := ((project st pos) + 1), stack := (cons (cons node parent) more), root := (project st root), error := (ctor Option.none [Failure]), done := false})),
+  executable: true
+}
+
+definition{
+  name: rtToken,
+  parameters: [maxDepth : Nat, st : Rt, tok : Tok],
+  result: Rt,
+  body: (match tok
+    | Tok.TOpen => (if ((prim length (project st stack) : Nat) <? maxDepth) then (record Rt {pos := ((project st pos) + 1), stack := (cons (nil Node) (project st stack)), root := (project st root), error := (ctor Option.none [Failure]), done := false}) else (rtFail st (record Failure {kind := 1, message := (cat (lit "max_scope_depth exceeded: configured ") (LexLeanStd.Numeral::decimal maxDepth))})))
+    | Tok.TClose => (match (project st stack)
+      | List.nil => (rtFail st (failed (lit "unbalanced `)`")))
+      | List.cons top rest => (rtPlace st (ctor Node.NList (chainOf top)) rest))
+    | Tok.TAtom text => (rtPlace st (ctor Node.NAtom text) (project st stack))),
+  executable: true
+}
+
+definition{
+  name: rtStep,
+  parameters: [toks : (List Tok), maxDepth : Nat, st : Rt],
+  result: (Option Rt),
+  body: (match (project st error)
+    | Option.some stopped => (ctor Option.none [Rt])
+    | Option.none => (if (project st done) then (ctor Option.none [Rt]) else (match (prim index toks (project st pos) : (Option Tok))
+      | Option.none => (match (project st stack)
+        | List.nil => (match (project st root)
+          | Option.some found => (ctor Option.some [Rt] (record Rt {pos := (project st pos), stack := (nil (List Node)), root := (project st root), error := (ctor Option.none [Failure]), done := true}))
+          | Option.none => (ctor Option.some [Rt] (rtFail st (failed (lit "unexpected end of expression")))))
+        | List.cons top rest => (ctor Option.some [Rt] (rtFail st (failed (lit "unexpected end of expression")))))
+      | Option.some tok => (match (project st root)
+        | Option.some found => (ctor Option.some [Rt] (rtFail st (failed (lit "trailing tokens after the expression"))))
+        | Option.none => (ctor Option.some [Rt] (rtToken maxDepth st tok)))))),
+  executable: true
+}
+
+definition{
+  name: readTree,
+  parameters: [toks : (List Tok), maxDepth : Nat],
+  result: (Result Node Failure),
+  body: (let final : Rt := (first (prim iterate_until (fun [maxDepth, toks] (st : Rt) => (rtStep toks maxDepth st)) ((prim length toks : Nat) + 2) (record Rt {pos := 0, stack := (nil (List Node)), root := (ctor Option.none [Node]), error := (ctor Option.none [Failure]), done := false}) : (Rt * Bool))); (match (project final error)
+    | Option.some failure => (ctor Result.error [Node, Failure] failure)
+    | Option.none => (match (project final root)
+      | Option.some node => (ctor Result.ok [Node, Failure] node)
+      | Option.none => (ctor Result.error [Node, Failure] (failed (lit "unexpected end of expression")))))),
+  executable: true
+}
+
+definition{
+  name: itemStep,
+  parameters: [state : (Node * (List Node))],
+  result: (Option (Node * (List Node))),
+  body: (match (first state)
+    | Node.NAtom text => (ctor Option.none [(Node * (List Node))])
+    | Node.NList inner => (ctor Option.none [(Node * (List Node))])
+    | Node.NNil => (ctor Option.none [(Node * (List Node))])
+    | Node.NItem head tail => (ctor Option.some [(Node * (List Node))] (tail, (cons head (second state))))),
+  executable: true
+}
+
+definition{
+  name: itemsOf,
+  parameters: [chain : Node, fuel : Nat],
+  result: (List Node),
+  body: (LexLeanStd.Order::reverseList [Node] (second (first (prim iterate_until (fun (state : (Node * (List Node))) => (itemStep state)) (fuel + 1) (chain, (nil Node)) : ((Node * (List Node)) * Bool))))),
+  executable: true
+}
+
+definition{
+  name: describe,
+  parameters: [node : Node],
+  result: Bytes,
+  body: (match node
+    | Node.NAtom text => (quoted text)
+    | Node.NList chain => (match chain
+      | Node.NItem head tail => (match head
+        | Node.NAtom text => (cat (cat (lit "`(") text) (lit " ...)`"))
+        | Node.NList inner => (lit "a list")
+        | Node.NNil => (lit "a list")
+        | Node.NItem h t => (lit "a list"))
+      | Node.NAtom text => (lit "a list")
+      | Node.NList inner => (lit "a list")
+      | Node.NNil => (lit "a list"))
+    | Node.NNil => (lit "a list")
+    | Node.NItem head tail => (lit "a list")),
+  executable: true
+}
+
+definition{
+  name: nodeAt,
+  parameters: [items : (List Node), position : Nat],
+  result: Node,
+  body: (match (prim index items position : (Option Node))
+    | Option.some node => node
+    | Option.none => (ctor Node.NNil)),
+  executable: true
+}
+
+definition{
+  name: atomOf,
+  parameters: [node : Node, what : Bytes, fuel : Nat],
+  result: (Result Bytes Failure),
+  body: (match node
+    | Node.NAtom text => (ctor Result.ok [Bytes, Failure] text)
+    | Node.NList inner => (ctor Result.error [Bytes, Failure] (failed (cat (cat (cat (lit "expected ") what) (lit ", found ")) (describe node))))
+    | Node.NNil => (ctor Result.error [Bytes, Failure] (failed (cat (cat (cat (lit "expected ") what) (lit ", found ")) (describe node))))
+    | Node.NItem head tail => (ctor Result.error [Bytes, Failure] (failed (cat (cat (cat (lit "expected ") what) (lit ", found ")) (describe node))))),
+  executable: true
+}
+
+definition{
+  name: qualifiedId,
+  parameters: [text : Bytes],
+  result: (Result (Bytes * Bytes) Failure),
+  body: (match (LexLeanStd.Text::find text (lit "::"))
+    | Option.none => (ctor Result.error [(Bytes * Bytes), Failure] (failed (cat (quoted text) (lit " is not a qualified `package::entry` ID"))))
+    | Option.some cut => (let package : Bytes := (LexLeanStd.Text::sliceOr text 0 cut); (let entry : Bytes := (LexLeanStd.Text::sliceOr text (cut + 2) (prim subtract (prim length text : Nat) (cut + 2) : Nat)); (if (isPackageId package) then (if (isEntryId entry) then (ctor Result.ok [(Bytes * Bytes), Failure] (package, entry)) else (ctor Result.error [(Bytes * Bytes), Failure] (failed (cat (quoted entry) (lit " is not a valid local entry ID"))))) else (ctor Result.error [(Bytes * Bytes), Failure] (failed (cat (quoted package) (lit " is not a valid package ID")))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: uvFail,
+  parameters: [st : Uv, failure : Failure],
+  result: Uv,
+  body: (record Uv {work := (project st work), values := (project st values), error := (ctor Option.some [Failure] failure)}),
+  executable: true
+}
+
+definition{
+  name: pushVisitsU,
+  parameters: [items : (List Node), work : (List UWork)],
+  result: (List UWork),
+  body: (prim list_fold (fun (acc : (List UWork)) (item : Node) => (cons (ctor UWork.UVisit item) acc)) work (LexLeanStd.Order::reverseList [Node] items) : (List UWork)),
+  executable: true
+}
+
+definition{
+  name: takeUniverses,
+  parameters: [values : (List Universe), count : Nat],
+  result: ((List Universe) * (List Universe)),
+  body: (first (prim iterate_until (fun (state : ((List Universe) * (List Universe))) => (match (second state)
+    | List.nil => (ctor Option.none [((List Universe) * (List Universe))])
+    | List.cons top rest => (ctor Option.some [((List Universe) * (List Universe))] ((cons top (first state)), rest)))) count ((nil Universe), values) : (((List Universe) * (List Universe)) * Bool))),
+  executable: true
+}
+
+definition{
+  name: universeChain,
+  parameters: [items : (List Universe)],
+  result: Universe,
+  body: (prim list_fold (fun (chain : Universe) (item : Universe) => (ctor Universe.UItem item chain)) (ctor Universe.UNil) (LexLeanStd.Order::reverseList [Universe] items) : Universe),
+  executable: true
+}
+
+definition{
+  name: uvVisit,
+  parameters: [fuel : Nat, st : Uv, rest : (List UWork), node : Node],
+  result: Uv,
+  body: (match node
+    | Node.NAtom text => (if (allDigits text) then (match (decimalFault text)
+      | Option.some failure => (uvFail st failure)
+      | Option.none => (record Uv {work := rest, values := (cons (ctor Universe.UNum (decimalValue text)) (project st values)), error := (ctor Option.none [Failure])})) else (if (isLseIdentifier text) then (record Uv {work := rest, values := (cons (ctor Universe.UVar text) (project st values)), error := (ctor Option.none [Failure])}) else (uvFail st (failed (cat (quoted text) (lit " is not a universe"))))))
+    | Node.NList chain => (let items : (List Node) := (itemsOf chain fuel); (match items
+      | List.nil => (uvFail st (failed (lit "expected a universe form")))
+      | List.cons headNode arguments => (match headNode
+        | Node.NAtom head => (let argc : Nat := (prim length arguments : Nat); (let known : Bool := (if (prim equal head (lit "succ") : Bool) then true else (if (prim equal head (lit "max") : Bool) then true else (prim equal head (lit "imax") : Bool))); (let fits : Bool := (if (prim equal head (lit "succ") : Bool) then (argc =? 1) else (if (prim equal head (lit "max") : Bool) then (2 <=? argc) else (if (prim equal head (lit "imax") : Bool) then (argc =? 2) else false))); (if fits then (record Uv {work := (pushVisitsU arguments (cons (ctor UWork.UBuild head argc) rest)), values := (project st values), error := (ctor Option.none [Failure])}) else (if known then (uvFail st (failed (cat (cat (lit "`(") head) (lit " ...)` has the wrong arity")))) else (uvFail st (failed (cat (quoted head) (lit " is not a universe form")))))))))
+        | Node.NList inner => (uvFail st (failed (lit "expected a universe form")))
+        | Node.NNil => (uvFail st (failed (lit "expected a universe form")))
+        | Node.NItem h t => (uvFail st (failed (lit "expected a universe form"))))))
+    | Node.NNil => (uvFail st (failed (lit "expected a universe form")))
+    | Node.NItem head tail => (uvFail st (failed (lit "expected a universe form")))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: uvBuild,
+  parameters: [st : Uv, rest : (List UWork), head : Bytes, count : Nat],
+  result: Uv,
+  body: (let taken : ((List Universe) * (List Universe)) := (takeUniverses (project st values) count); (let parts : (List Universe) := (first taken); (let built : Universe := (if (prim equal head (lit "succ") : Bool) then (match parts
+    | List.nil => (ctor Universe.UNil)
+    | List.cons a more => (ctor Universe.USucc a)) else (if (prim equal head (lit "imax") : Bool) then (match parts
+    | List.nil => (ctor Universe.UNil)
+    | List.cons a more => (match more
+      | List.nil => (ctor Universe.UNil)
+      | List.cons b tail => (ctor Universe.UIMax a b))) else (ctor Universe.UMax (universeChain parts)))); (record Uv {work := rest, values := (cons built (second taken)), error := (ctor Option.none [Failure])})))),
+  executable: true
+}
+
+definition{
+  name: uvStep,
+  parameters: [fuel : Nat, st : Uv],
+  result: (Option Uv),
+  body: (match (project st error)
+    | Option.some stopped => (ctor Option.none [Uv])
+    | Option.none => (match (project st work)
+      | List.nil => (ctor Option.none [Uv])
+      | List.cons item rest => (match item
+        | UWork.UVisit node => (ctor Option.some [Uv] (uvVisit fuel st rest node))
+        | UWork.UBuild head count => (ctor Option.some [Uv] (uvBuild st rest head count))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: universeOf,
+  parameters: [node : Node, fuel : Nat],
+  result: (Result Universe Failure),
+  body: (let final : Uv := (first (prim iterate_until (fun [fuel] (st : Uv) => (uvStep fuel st)) ((prim multiply fuel 2 : Nat) + 2) (record Uv {work := (cons (ctor UWork.UVisit node) (nil UWork)), values := (nil Universe), error := (ctor Option.none [Failure])}) : (Uv * Bool))); (match (project final error)
+    | Option.some failure => (ctor Result.error [Universe, Failure] failure)
+    | Option.none => (match (project final values)
+      | List.nil => (ctor Result.error [Universe, Failure] (failed (lit "expected a universe")))
+      | List.cons top more => (ctor Result.ok [Universe, Failure] top)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: universesOf,
+  parameters: [items : (List Node), fuel : Nat],
+  result: (Result Universe Failure),
+  body: (match (prim list_fold (fun [fuel] (acc : (Result (List Universe) Failure)) (item : Node) => (match acc
+      | Result.ok kept => (match (universeOf item fuel)
+        | Result.ok level => (ctor Result.ok [(List Universe), Failure] (cons level kept))
+        | Result.error failure => (ctor Result.error [(List Universe), Failure] failure))
+      | Result.error failure => (ctor Result.error [(List Universe), Failure] failure))) (ctor Result.ok [(List Universe), Failure] (nil Universe)) items : (Result (List Universe) Failure))
+    | Result.ok reversed => (ctor Result.ok [Universe, Failure] (universeChain (LexLeanStd.Order::reverseList [Universe] reversed)))
+    | Result.error failure => (ctor Result.error [Universe, Failure] failure)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: sortError,
+  parameters: [],
+  result: Failure,
+  body: (failed (lit "a sort is `(sort prop)` or `(sort (type u))`")),
+  executable: true
+}
+
+definition{
+  name: leafSort,
+  parameters: [arguments : (List Node), fuel : Nat],
+  result: (Result Lse Failure),
+  body: (if ((prim length arguments : Nat) =? 1) then (match (nodeAt arguments 0)
+    | Node.NAtom text => (if (prim equal text (lit "prop") : Bool) then (ctor Result.ok [Lse, Failure] (ctor Lse.LSortProp)) else (ctor Result.error [Lse, Failure] (sortError)))
+    | Node.NList inner => (let items : (List Node) := (itemsOf inner fuel); (if ((prim length items : Nat) =? 2) then (match (nodeAt items 0)
+      | Node.NAtom keyword => (if (prim equal keyword (lit "type") : Bool) then (match (universeOf (nodeAt items 1) fuel)
+        | Result.ok level => (ctor Result.ok [Lse, Failure] (ctor Lse.LSortType level))
+        | Result.error failure => (ctor Result.error [Lse, Failure] failure)) else (ctor Result.error [Lse, Failure] (sortError)))
+      | Node.NList deeper => (ctor Result.error [Lse, Failure] (sortError))
+      | Node.NNil => (ctor Result.error [Lse, Failure] (sortError))
+      | Node.NItem h t => (ctor Result.error [Lse, Failure] (sortError))) else (ctor Result.error [Lse, Failure] (sortError))))
+    | Node.NNil => (ctor Result.error [Lse, Failure] (sortError))
+    | Node.NItem h t => (ctor Result.error [Lse, Failure] (sortError))) else (ctor Result.error [Lse, Failure] (sortError))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: constError,
+  parameters: [],
+  result: Failure,
+  body: (failed (lit "a const is `(const qualified-id [universes])`")),
+  executable: true
+}
+
+definition{
+  name: leafConst,
+  parameters: [arguments : (List Node), fuel : Nat],
+  result: (Result Lse Failure),
+  body: (let argc : Nat := (prim length arguments : Nat); (match (nodeAt arguments 0)
+    | Node.NAtom spelled => (if (argc =? 1) then (match (qualifiedId spelled)
+      | Result.ok parts => (ctor Result.ok [Lse, Failure] (ctor Lse.LConst (first parts) (second parts) (ctor Universe.UNil)))
+      | Result.error failure => (ctor Result.error [Lse, Failure] failure)) else (if (argc =? 2) then (match (nodeAt arguments 1)
+      | Node.NList universes => (let items : (List Node) := (itemsOf universes fuel); (match items
+        | List.nil => (ctor Result.error [Lse, Failure] (constError))
+        | List.cons h t => (match (qualifiedId spelled)
+          | Result.ok parts => (match (universesOf items fuel)
+            | Result.ok chain => (ctor Result.ok [Lse, Failure] (ctor Lse.LConst (first parts) (second parts) chain))
+            | Result.error failure => (ctor Result.error [Lse, Failure] failure))
+          | Result.error failure => (ctor Result.error [Lse, Failure] failure))))
+      | Node.NAtom text => (ctor Result.error [Lse, Failure] (constError))
+      | Node.NNil => (ctor Result.error [Lse, Failure] (constError))
+      | Node.NItem h t => (ctor Result.error [Lse, Failure] (constError))) else (ctor Result.error [Lse, Failure] (constError))))
+    | Node.NList inner => (ctor Result.error [Lse, Failure] (constError))
+    | Node.NNil => (ctor Result.error [Lse, Failure] (constError))
+    | Node.NItem h t => (ctor Result.error [Lse, Failure] (constError)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: leafLocal,
+  parameters: [arguments : (List Node)],
+  result: (Result Lse Failure),
+  body: (if ((prim length arguments : Nat) =? 1) then (match (nodeAt arguments 0)
+    | Node.NAtom name => (if (isLseIdentifier name) then (ctor Result.ok [Lse, Failure] (ctor Lse.LLocal name)) else (ctor Result.error [Lse, Failure] (failed (cat (quoted name) (lit " is not a valid local ID")))))
+    | Node.NList inner => (ctor Result.error [Lse, Failure] (failed (lit "a local is `(local id)`")))
+    | Node.NNil => (ctor Result.error [Lse, Failure] (failed (lit "a local is `(local id)`")))
+    | Node.NItem h t => (ctor Result.error [Lse, Failure] (failed (lit "a local is `(local id)`")))) else (ctor Result.error [Lse, Failure] (failed (lit "a local is `(local id)`")))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: leafNat,
+  parameters: [arguments : (List Node)],
+  result: (Result Lse Failure),
+  body: (if ((prim length arguments : Nat) =? 1) then (match (nodeAt arguments 0)
+    | Node.NAtom digits => (match (decimalFault digits)
+      | Option.some failure => (ctor Result.error [Lse, Failure] failure)
+      | Option.none => (ctor Result.ok [Lse, Failure] (ctor Lse.LNat digits)))
+    | Node.NList inner => (ctor Result.error [Lse, Failure] (failed (lit "a nat is `(nat decimal)`")))
+    | Node.NNil => (ctor Result.error [Lse, Failure] (failed (lit "a nat is `(nat decimal)`")))
+    | Node.NItem h t => (ctor Result.error [Lse, Failure] (failed (lit "a nat is `(nat decimal)`")))) else (ctor Result.error [Lse, Failure] (failed (lit "a nat is `(nat decimal)`")))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: leafOf,
+  parameters: [head : Bytes, arguments : (List Node), fuel : Nat],
+  result: (Result Lse Failure),
+  body: (if (prim equal head (lit "sort") : Bool) then (leafSort arguments fuel) else (if (prim equal head (lit "const") : Bool) then (leafConst arguments fuel) else (if (prim equal head (lit "local") : Bool) then (leafLocal arguments) else (if (prim equal head (lit "nat") : Bool) then (leafNat arguments) else (ctor Result.error [Lse, Failure] (failed (cat (quoted head) (lit " is not an LSE form")))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: binderMode,
+  parameters: [text : Bytes],
+  result: (Option Nat),
+  body: (if (prim equal text (lit "explicit") : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal text (lit "implicit") : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal text (lit "instance") : Bool) then (ctor Option.some [Nat] 2) else (ctor Option.none [Nat])))),
+  executable: true
+}
+
+definition{
+  name: binderHeader,
+  parameters: [node : Node, fuel : Nat],
+  result: (Result Header Failure),
+  body: (match node
+    | Node.NList chain => (let items : (List Node) := (itemsOf chain fuel); (if ((prim length items : Nat) =? 3) then (match (atomOf (nodeAt items 0) (lit "a binder mode") fuel)
+      | Result.ok modeWord => (match (binderMode modeWord)
+        | Option.some mode => (match (atomOf (nodeAt items 1) (lit "a local ID") fuel)
+          | Result.ok name => (if (isLseIdentifier name) then (ctor Result.ok [Header, Failure] (record Header {mode := mode, name := name, ty := (nodeAt items 2)})) else (ctor Result.error [Header, Failure] (failed (cat (quoted name) (lit " is not a valid local ID")))))
+          | Result.error failure => (ctor Result.error [Header, Failure] failure))
+        | Option.none => (ctor Result.error [Header, Failure] (failed (cat (quoted modeWord) (lit " is not a binder mode")))))
+      | Result.error failure => (ctor Result.error [Header, Failure] failure)) else (ctor Result.error [Header, Failure] (failed (lit "a binder is `(mode name type)`")))))
+    | Node.NAtom text => (ctor Result.error [Header, Failure] (failed (cat (lit "expected a binder, found ") (describe node))))
+    | Node.NNil => (ctor Result.error [Header, Failure] (failed (cat (lit "expected a binder, found ") (describe node))))
+    | Node.NItem head tail => (ctor Result.error [Header, Failure] (failed (cat (lit "expected a binder, found ") (describe node))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: cvFail,
+  parameters: [st : Cv, failure : Failure],
+  result: Cv,
+  body: (record Cv {work := (project st work), values := (project st values), error := (ctor Option.some [Failure] failure)}),
+  executable: true
+}
+
+definition{
+  name: pushVisits,
+  parameters: [items : (List Node), work : (List Work)],
+  result: (List Work),
+  body: (prim list_fold (fun (acc : (List Work)) (item : Node) => (cons (ctor Work.WVisit item) acc)) work (LexLeanStd.Order::reverseList [Node] items) : (List Work)),
+  executable: true
+}
+
+definition{
+  name: binderVisits,
+  parameters: [binders : (List Node), work : (List Work), fuel : Nat],
+  result: (Result (List Work) Failure),
+  body: (prim list_fold (fun [fuel] (acc : (Result (List Work) Failure)) (binder : Node) => (match acc
+    | Result.ok pending => (match (binderHeader binder fuel)
+      | Result.ok header => (ctor Result.ok [(List Work), Failure] (cons (ctor Work.WVisit (project header ty)) pending))
+      | Result.error failure => (ctor Result.error [(List Work), Failure] failure))
+    | Result.error failure => (ctor Result.error [(List Work), Failure] failure))) (ctor Result.ok [(List Work), Failure] work) (LexLeanStd.Order::reverseList [Node] binders) : (Result (List Work) Failure)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isBinderForm,
+  parameters: [head : Bytes],
+  result: Bool,
+  body: (if (prim equal head (lit "pi") : Bool) then true else (prim equal head (lit "lam") : Bool)),
+  executable: true
+}
+
+definition{
+  name: isLeafForm,
+  parameters: [head : Bytes],
+  result: Bool,
+  body: (if (prim equal head (lit "sort") : Bool) then true else (if (prim equal head (lit "const") : Bool) then true else (if (prim equal head (lit "local") : Bool) then true else (prim equal head (lit "nat") : Bool)))),
+  executable: true
+}
+
+definition{
+  name: visitBinderForm,
+  parameters: [
+    st : Cv,
+    rest : (List Work),
+    node : Node,
+    head : Bytes,
+    arguments : (List Node),
+    fuel : Nat
+  ],
+  result: Cv,
+  body: (if ((prim length arguments : Nat) =? 2) then (match (nodeAt arguments 0)
+    | Node.NList binderChain => (let binders : (List Node) := (itemsOf binderChain fuel); (match binders
+      | List.nil => (cvFail st (failed (cat (quoted head) (lit " has at least one binder"))))
+      | List.cons firstBinder more => (match (binderVisits binders (cons (ctor Work.WVisit (nodeAt arguments 1)) (cons (ctor Work.WBuild node) rest)) fuel)
+        | Result.ok work => (record Cv {work := work, values := (project st values), error := (ctor Option.none [Failure])})
+        | Result.error failure => (cvFail st failure))))
+    | Node.NAtom text => (cvFail st (failed (lit "expected a binder list")))
+    | Node.NNil => (cvFail st (failed (lit "expected a binder list")))
+    | Node.NItem h t => (cvFail st (failed (lit "expected a binder list")))) else (cvFail st (failed (cat (cat (cat (cat (lit "`") head) (lit "` is `(")) head) (lit " (binders...) body)`"))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: visitLet,
+  parameters: [st : Cv, rest : (List Work), node : Node, arguments : (List Node), fuel : Nat],
+  result: Cv,
+  body: (if ((prim length arguments : Nat) =? 4) then (match (atomOf (nodeAt arguments 0) (lit "a local ID") fuel)
+    | Result.ok name => (if (isLseIdentifier name) then (record Cv {work := (cons (ctor Work.WVisit (nodeAt arguments 1)) (cons (ctor Work.WVisit (nodeAt arguments 2)) (cons (ctor Work.WVisit (nodeAt arguments 3)) (cons (ctor Work.WBuild node) rest)))), values := (project st values), error := (ctor Option.none [Failure])}) else (cvFail st (failed (cat (quoted name) (lit " is not a valid local ID")))))
+    | Result.error failure => (cvFail st failure)) else (cvFail st (failed (lit "`let` is `(let name type value body)`")))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: visitForm,
+  parameters: [
+    st : Cv,
+    rest : (List Work),
+    node : Node,
+    head : Bytes,
+    arguments : (List Node),
+    fuel : Nat
+  ],
+  result: Cv,
+  body: (if (isLeafForm head) then (match (leafOf head arguments fuel)
+    | Result.ok value => (record Cv {work := rest, values := (cons value (project st values)), error := (ctor Option.none [Failure])})
+    | Result.error failure => (cvFail st failure)) else (if (prim equal head (lit "app") : Bool) then (if ((prim length arguments : Nat) <? 2) then (cvFail st (failed (lit "`app` has at least a function and one argument"))) else (record Cv {work := (pushVisits arguments (cons (ctor Work.WBuild node) rest)), values := (project st values), error := (ctor Option.none [Failure])})) else (if (isBinderForm head) then (visitBinderForm st rest node head arguments fuel) else (if (prim equal head (lit "let") : Bool) then (visitLet st rest node arguments fuel) else (cvFail st (failed (cat (quoted head) (lit " is not an LSE form")))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: cvVisit,
+  parameters: [st : Cv, rest : (List Work), node : Node, fuel : Nat],
+  result: Cv,
+  body: (match node
+    | Node.NList chain => (match (itemsOf chain fuel)
+      | List.nil => (cvFail st (failed (lit "expected an LSE form")))
+      | List.cons headNode arguments => (match headNode
+        | Node.NAtom head => (visitForm st rest node head arguments fuel)
+        | Node.NList inner => (cvFail st (failed (lit "expected an LSE form")))
+        | Node.NNil => (cvFail st (failed (lit "expected an LSE form")))
+        | Node.NItem h t => (cvFail st (failed (lit "expected an LSE form")))))
+    | Node.NAtom text => (cvFail st (failed (cat (lit "expected `(`, found ") (describe node))))
+    | Node.NNil => (cvFail st (failed (cat (lit "expected `(`, found ") (describe node))))
+    | Node.NItem head tail => (cvFail st (failed (cat (lit "expected `(`, found ") (describe node))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: takeValues,
+  parameters: [values : (List Lse), count : Nat],
+  result: ((List Lse) * (List Lse)),
+  body: (first (prim iterate_until (fun (state : ((List Lse) * (List Lse))) => (match (second state)
+    | List.nil => (ctor Option.none [((List Lse) * (List Lse))])
+    | List.cons top rest => (ctor Option.some [((List Lse) * (List Lse))] ((cons top (first state)), rest)))) count ((nil Lse), values) : (((List Lse) * (List Lse)) * Bool))),
+  executable: true
+}
+
+definition{
+  name: argChain,
+  parameters: [items : (List Lse)],
+  result: Lse,
+  body: (prim list_fold (fun (chain : Lse) (item : Lse) => (ctor Lse.LArg item chain)) (ctor Lse.LNil) (LexLeanStd.Order::reverseList [Lse] items) : Lse),
+  executable: true
+}
+
+definition{
+  name: binderChainOf,
+  parameters: [binders : (List Node), types : (List Lse), fuel : Nat],
+  result: Lse,
+  body: (second (prim list_fold (fun [fuel] (state : ((List Lse) * Lse)) (binder : Node) => (match (first state)
+    | List.nil => state
+    | List.cons ty more => (match (binderHeader binder fuel)
+      | Result.ok header => (more, (ctor Lse.LBinder (project header mode) (project header name) ty (second state)))
+      | Result.error failure => (more, (second state))))) ((LexLeanStd.Order::reverseList [Lse] types), (ctor Lse.LNil)) (LexLeanStd.Order::reverseList [Node] binders) : ((List Lse) * Lse))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: cvBuild,
+  parameters: [st : Cv, rest : (List Work), node : Node, fuel : Nat],
+  result: Cv,
+  body: (match node
+    | Node.NList chain => (let items : (List Node) := (itemsOf chain fuel); (match items
+      | List.nil => (cvFail st (failed (lit "expected a list")))
+      | List.cons headNode arguments => (match headNode
+        | Node.NAtom head => (if (prim equal head (lit "app") : Bool) then (let taken : ((List Lse) * (List Lse)) := (takeValues (project st values) (prim length arguments : Nat)); (match (first taken)
+          | List.nil => (cvFail st (failed (lit "missing function")))
+          | List.cons function parts => (record Cv {work := rest, values := (cons (ctor Lse.LApp function (argChain parts)) (second taken)), error := (ctor Option.none [Failure])}))) else (if (isBinderForm head) then (match (nodeAt arguments 0)
+          | Node.NList binderChain => (let binders : (List Node) := (itemsOf binderChain fuel); (let taken : ((List Lse) * (List Lse)) := (takeValues (project st values) ((prim length binders : Nat) + 1)); (match (LexLeanStd.Order::reverseList [Lse] (first taken))
+            | List.nil => (cvFail st (failed (lit "missing body")))
+            | List.cons body typesReversed => (let bound : Lse := (binderChainOf binders (LexLeanStd.Order::reverseList [Lse] typesReversed) fuel); (record Cv {work := rest, values := (cons (if (prim equal head (lit "pi") : Bool) then (ctor Lse.LPi bound body) else (ctor Lse.LLam bound body)) (second taken)), error := (ctor Option.none [Failure])})))))
+          | Node.NAtom text => (cvFail st (failed (lit "expected a binder list")))
+          | Node.NNil => (cvFail st (failed (lit "expected a binder list")))
+          | Node.NItem h t => (cvFail st (failed (lit "expected a binder list")))) else (let taken : ((List Lse) * (List Lse)) := (takeValues (project st values) 3); (match (first taken)
+          | List.nil => (cvFail st (failed (lit "missing type")))
+          | List.cons ty afterTy => (match afterTy
+            | List.nil => (cvFail st (failed (lit "missing value")))
+            | List.cons value afterValue => (match afterValue
+              | List.nil => (cvFail st (failed (lit "missing body")))
+              | List.cons body more => (match (atomOf (nodeAt arguments 0) (lit "a local ID") fuel)
+                | Result.ok name => (record Cv {work := rest, values := (cons (ctor Lse.LLet name ty value body) (second taken)), error := (ctor Option.none [Failure])})
+                | Result.error failure => (cvFail st failure))))))))
+        | Node.NList inner => (cvFail st (failed (lit "expected a form, found a list")))
+        | Node.NNil => (cvFail st (failed (lit "expected a form, found a list")))
+        | Node.NItem h t => (cvFail st (failed (lit "expected a form, found a list"))))))
+    | Node.NAtom text => (cvFail st (failed (lit "expected a list")))
+    | Node.NNil => (cvFail st (failed (lit "expected a list")))
+    | Node.NItem head tail => (cvFail st (failed (lit "expected a list")))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: cvStep,
+  parameters: [fuel : Nat, st : Cv],
+  result: (Option Cv),
+  body: (match (project st error)
+    | Option.some stopped => (ctor Option.none [Cv])
+    | Option.none => (match (project st work)
+      | List.nil => (ctor Option.none [Cv])
+      | List.cons item rest => (match item
+        | Work.WVisit node => (ctor Option.some [Cv] (cvVisit st rest node fuel))
+        | Work.WBuild node => (ctor Option.some [Cv] (cvBuild st rest node fuel))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: lseOf,
+  parameters: [root : Node, fuel : Nat],
+  result: (Result Lse Failure),
+  body: (let final : Cv := (first (prim iterate_until (fun [fuel] (st : Cv) => (cvStep fuel st)) ((prim multiply fuel 2 : Nat) + 2) (record Cv {work := (cons (ctor Work.WVisit root) (nil Work)), values := (nil Lse), error := (ctor Option.none [Failure])}) : (Cv * Bool))); (match (project final error)
+    | Option.some failure => (ctor Result.error [Lse, Failure] failure)
+    | Option.none => (match (project final values)
+      | List.nil => (ctor Result.error [Lse, Failure] (failed (lit "malformed expression")))
+      | List.cons value more => (match more
+        | List.nil => (ctor Result.ok [Lse, Failure] value)
+        | List.cons another rest => (ctor Result.error [Lse, Failure] (failed (lit "malformed expression"))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parseLse,
+  parameters: [text : Bytes, maxDepth : Nat],
+  result: (Result Lse Failure),
+  body: (match (tokenize text)
+    | Result.error failure => (ctor Result.error [Lse, Failure] failure)
+    | Result.ok toks => (match (readTree toks maxDepth)
+      | Result.error failure => (ctor Result.error [Lse, Failure] failure)
+      | Result.ok root => (lseOf root (prim length toks : Nat)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: modeText,
+  parameters: [mode : Nat],
+  result: Bytes,
+  body: (if (mode =? 1) then (lit "implicit") else (if (mode =? 2) then (lit "instance") else (lit "explicit"))),
+  executable: true
+}
+
+definition{
+  name: fresh,
+  parameters: [name : Bytes, rename : Bool, counter : Nat],
+  result: (Bytes * Nat),
+  body: (if rename then ((cat (lit "x") (LexLeanStd.Numeral::decimal counter)), (counter + 1)) else (name, counter)),
+  executable: true
+}
+
+definition{
+  name: lookup,
+  parameters: [scope : (List (Bytes * Bytes)), name : Bytes],
+  result: Bytes,
+  body: (match (prim list_fold (fun [name] (found : (Option Bytes)) (entry : (Bytes * Bytes)) => (match found
+      | Option.some shown => found
+      | Option.none => (if (prim equal (first entry) name : Bool) then (ctor Option.some [Bytes] (second entry)) else (ctor Option.none [Bytes])))) (ctor Option.none [Bytes]) scope : (Option Bytes))
+    | Option.some shown => shown
+    | Option.none => name),
+  executable: true
+}
+
+definition{
+  name: universeText,
+  parameters: [level : Universe],
+  result: Bytes,
+  body: (match level
+    | Universe.UNum value => (LexLeanStd.Numeral::decimal value)
+    | Universe.UVar name => name
+    | Universe.USucc inner => (cat (cat (lit "(succ ") (universeText inner)) (lit ")"))
+    | Universe.UMax items => (cat (cat (lit "(max") (universeItems items)) (lit ")"))
+    | Universe.UIMax left right => (cat (cat (cat (cat (lit "(imax ") (universeText left)) (lit " ")) (universeText right)) (lit ")"))
+    | Universe.UNil => 0x
+    | Universe.UItem head tail => 0x),
+  executable: true,
+  mutual: Level,
+  recursive_argument: level
+}
+
+definition{
+  name: universeItems,
+  parameters: [items : Universe],
+  result: Bytes,
+  body: (match items
+    | Universe.UNum value => 0x
+    | Universe.UVar name => 0x
+    | Universe.USucc inner => 0x
+    | Universe.UMax inner => 0x
+    | Universe.UIMax left right => 0x
+    | Universe.UNil => 0x
+    | Universe.UItem head tail => (cat (cat (lit " ") (universeText head)) (universeItems tail))),
+  executable: true,
+  mutual: Level,
+  recursive_argument: items
+}
+
+definition{
+  name: constText,
+  parameters: [package : Bytes, entry : Bytes, universes : Universe],
+  result: Bytes,
+  body: (let heading : Bytes := (cat (cat (cat (lit "(const ") package) (lit "::")) entry); (match universes
+    | Universe.UNil => (cat heading (lit ")"))
+    | Universe.UItem head tail => (let listed : Bytes := (universeItems universes); (cat (cat (cat heading (lit " (")) (LexLeanStd.Text::sliceOr listed 1 (prim subtract (prim length listed : Nat) 1 : Nat))) (lit "))")))
+    | Universe.UNum value => (cat heading (lit ")"))
+    | Universe.UVar name => (cat heading (lit ")"))
+    | Universe.USucc inner => (cat heading (lit ")"))
+    | Universe.UMax inner => (cat heading (lit ")"))
+    | Universe.UIMax left right => (cat heading (lit ")")))),
+  executable: true
+}
+
+definition{
+  name: showExpr,
+  parameters: [value : Lse, rename : Bool, scope : (List (Bytes * Bytes)), counter : Nat],
+  result: (Bytes * Nat),
+  body: (match value
+    | Lse.LSortProp => ((lit "(sort prop)"), counter)
+    | Lse.LSortType level => ((cat (cat (lit "(sort (type ") (universeText level)) (lit "))")), counter)
+    | Lse.LConst package entry universes => ((constText package entry universes), counter)
+    | Lse.LLocal name => ((cat (cat (lit "(local ") (if rename then (lookup scope name) else name)) (lit ")")), counter)
+    | Lse.LApp function arguments => (let shownFunction : (Bytes * Nat) := (showExpr function rename scope counter); (let shownArguments : (Bytes * Nat) := (showArgs arguments rename scope (second shownFunction)); ((cat (cat (cat (lit "(app ") (first shownFunction)) (first shownArguments)) (lit ")")), (second shownArguments))))
+    | Lse.LPi binders body => (let shownBinders : ((Bytes * (List (Bytes * Bytes))) * Nat) := (showBinders binders rename scope counter); (let shownBody : (Bytes * Nat) := (showExpr body rename (second (first shownBinders)) (second shownBinders)); ((cat (cat (cat (cat (lit "(pi (") (first (first shownBinders))) (lit ") ")) (first shownBody)) (lit ")")), (second shownBody))))
+    | Lse.LLam binders body => (let shownBinders : ((Bytes * (List (Bytes * Bytes))) * Nat) := (showBinders binders rename scope counter); (let shownBody : (Bytes * Nat) := (showExpr body rename (second (first shownBinders)) (second shownBinders)); ((cat (cat (cat (cat (lit "(lam (") (first (first shownBinders))) (lit ") ")) (first shownBody)) (lit ")")), (second shownBody))))
+    | Lse.LLet name ty bound body => (let shownName : (Bytes * Nat) := (fresh name rename counter); (let inner : (List (Bytes * Bytes)) := (cons (name, (first shownName)) scope); (let shownType : (Bytes * Nat) := (showExpr ty rename inner (second shownName)); (let shownValue : (Bytes * Nat) := (showExpr bound rename inner (second shownType)); (let shownBody : (Bytes * Nat) := (showExpr body rename inner (second shownValue)); ((cat (cat (cat (cat (cat (cat (cat (lit "(let ") (first shownName)) (lit " ")) (first shownType)) (lit " ")) (first shownValue)) (lit " ")) (cat (first shownBody) (lit ")"))), (second shownBody)))))))
+    | Lse.LNat digits => ((cat (cat (lit "(nat ") digits) (lit ")")), counter)
+    | Lse.LNil => (0x, counter)
+    | Lse.LArg head tail => (0x, counter)
+    | Lse.LBinder mode name ty rest => (0x, counter)),
+  executable: true,
+  mutual: Show,
+  recursive_argument: value
+}
+
+definition{
+  name: showArgs,
+  parameters: [arguments : Lse, rename : Bool, scope : (List (Bytes * Bytes)), counter : Nat],
+  result: (Bytes * Nat),
+  body: (match arguments
+    | Lse.LArg head tail => (let shownHead : (Bytes * Nat) := (showExpr head rename scope counter); (let shownTail : (Bytes * Nat) := (showArgs tail rename scope (second shownHead)); ((cat (cat (lit " ") (first shownHead)) (first shownTail)), (second shownTail))))
+    | Lse.LNil => (0x, counter)
+    | Lse.LSortProp => (0x, counter)
+    | Lse.LSortType level => (0x, counter)
+    | Lse.LConst package entry universes => (0x, counter)
+    | Lse.LLocal name => (0x, counter)
+    | Lse.LApp function inner => (0x, counter)
+    | Lse.LPi binders body => (0x, counter)
+    | Lse.LLam binders body => (0x, counter)
+    | Lse.LLet name ty bound body => (0x, counter)
+    | Lse.LNat digits => (0x, counter)
+    | Lse.LBinder mode name ty rest => (0x, counter)),
+  executable: true,
+  mutual: Show,
+  recursive_argument: arguments
+}
+
+definition{
+  name: showBinders,
+  parameters: [binders : Lse, rename : Bool, scope : (List (Bytes * Bytes)), counter : Nat],
+  result: ((Bytes * (List (Bytes * Bytes))) * Nat),
+  body: (match binders
+    | Lse.LBinder mode name ty rest => (let shownName : (Bytes * Nat) := (fresh name rename counter); (let shownType : (Bytes * Nat) := (showExpr ty rename scope (second shownName)); (let piece : Bytes := (cat (cat (cat (cat (cat (cat (lit "(") (modeText mode)) (lit " ")) (first shownName)) (lit " ")) (first shownType)) (lit ")")); (let inner : (List (Bytes * Bytes)) := (cons (name, (first shownName)) scope); (match rest
+      | Lse.LNil => ((piece, inner), (second shownType))
+      | Lse.LBinder m n t r => (let shownRest : ((Bytes * (List (Bytes * Bytes))) * Nat) := (showBinders rest rename inner (second shownType)); (((cat (cat piece (lit " ")) (first (first shownRest))), (second (first shownRest))), (second shownRest)))
+      | Lse.LSortProp => ((piece, inner), (second shownType))
+      | Lse.LSortType level => ((piece, inner), (second shownType))
+      | Lse.LConst package entry universes => ((piece, inner), (second shownType))
+      | Lse.LLocal other => ((piece, inner), (second shownType))
+      | Lse.LApp function arguments => ((piece, inner), (second shownType))
+      | Lse.LPi bs body => ((piece, inner), (second shownType))
+      | Lse.LLam bs body => ((piece, inner), (second shownType))
+      | Lse.LLet n t v body => ((piece, inner), (second shownType))
+      | Lse.LNat digits => ((piece, inner), (second shownType))
+      | Lse.LArg head tail => ((piece, inner), (second shownType)))))))
+    | Lse.LNil => ((0x, scope), counter)
+    | Lse.LSortProp => ((0x, scope), counter)
+    | Lse.LSortType level => ((0x, scope), counter)
+    | Lse.LConst package entry universes => ((0x, scope), counter)
+    | Lse.LLocal name => ((0x, scope), counter)
+    | Lse.LApp function arguments => ((0x, scope), counter)
+    | Lse.LPi bs body => ((0x, scope), counter)
+    | Lse.LLam bs body => ((0x, scope), counter)
+    | Lse.LLet name ty bound body => ((0x, scope), counter)
+    | Lse.LNat digits => ((0x, scope), counter)
+    | Lse.LArg head tail => ((0x, scope), counter)),
+  executable: true,
+  mutual: Show,
+  recursive_argument: binders
+}
+
+definition{
+  name: printLse,
+  parameters: [value : Lse, rename : Bool],
+  result: Bytes,
+  body: (first (showExpr value rename (nil (Bytes * Bytes)) 0)),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

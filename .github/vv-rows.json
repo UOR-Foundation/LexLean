@@ -63,6 +63,33 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-lexicon-lre",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lexicon-lre",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-lexicon-lse",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lexicon-lse",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-project-text",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-project-text",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-bootstrap-tooling-latex",
     "recipes": "bdd",
     "examples_part": "",
@@ -171,6 +198,15 @@
     "hints": ""
   },
   {
+    "part": "bdd-bootstrap-surface-tooling",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-surface-tooling",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
     "part": "bdd-bootstrap-surface-generic",
     "recipes": "bdd",
     "examples_part": "",
@@ -265,6 +301,60 @@
     "recipes": "bdd",
     "examples_part": "",
     "bdd_part": "verification",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-surface-module",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-surface-module",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-diagnostics",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-diagnostics",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-cli-output",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-cli-output",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-lock-text",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lock-text",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-content-id",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-content-id",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-manifest-text",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-manifest-text",
     "width": "",
     "memory_kib": "",
     "hints": ""

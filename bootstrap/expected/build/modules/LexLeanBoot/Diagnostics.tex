@@ -1,0 +1,248 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Span}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{path}: \texttt{ByteArray}.\par
+\noindent Field \texttt{byteStart}: \texttt{Nat}.\par
+\noindent Field \texttt{byteEnd}: \texttt{Nat}.\par
+\noindent Field \texttt{lineStart}: \texttt{Nat}.\par
+\noindent Field \texttt{columnStart}: \texttt{Nat}.\par
+\noindent Field \texttt{lineEnd}: \texttt{Nat}.\par
+\noindent Field \texttt{columnEnd}: \texttt{Nat}.\par
+\subsection*{\texttt{Label}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{message}: \texttt{ByteArray}.\par
+\noindent Field \texttt{span}: \texttt{Span}.\par
+\subsection*{\texttt{Note}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{message}: \texttt{ByteArray}.\par
+\noindent Field \texttt{span}: \texttt{Option (Span)}.\par
+\subsection*{\texttt{Diagnostic}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{code}: \texttt{ByteArray}.\par
+\noindent Field \texttt{message}: \texttt{ByteArray}.\par
+\noindent Field \texttt{primary}: \texttt{Option (Span)}.\par
+\noindent Field \texttt{labels}: \texttt{List (Label)}.\par
+\noindent Field \texttt{notes}: \texttt{List (Note)}.\par
+\noindent Field \texttt{help}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{causes}: \texttt{List (ByteArray)}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (left) (right) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{jsonString}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.escapeString (text)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{num}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Numeral.decimal (value)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{field}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : ByteArray) (shown : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (jsonString (key)) (lit (":"))) (shown)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{objectOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fields : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (lit ("\{")) (LexLeanStd.Text.joinWith (fields) (lit (",")))) (lit ("\}"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{arrayOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (lit ("[")) (LexLeanStd.Text.joinWith (items) (lit (",")))) (lit ("]"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{spanText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(span : Span)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{objectOf ((field (lit ("byte\_end")) (num ((span).byteEnd)) :: (field (lit ("byte\_start")) (num ((span).byteStart)) :: (field (lit ("column\_end")) (num ((span).columnEnd)) :: (field (lit ("column\_start")) (num ((span).columnStart)) :: (field (lit ("line\_end")) (num ((span).lineEnd)) :: (field (lit ("line\_start")) (num ((span).lineStart)) :: (field (lit ("path")) (jsonString ((span).path)) :: ([] : List (ByteArray))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{labelText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(label : Label)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{objectOf ((field (lit ("message")) (jsonString ((label).message)) :: (field (lit ("span")) (spanText ((label).span)) :: ([] : List (ByteArray)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{noteText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(note : Note)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match (note).span with | Option.some span => objectOf ((field (lit ("message")) (jsonString ((note).message)) :: (field (lit ("span")) (spanText (span)) :: ([] : List (ByteArray))))) | Option.none => objectOf ((field (lit ("message")) (jsonString ((note).message)) :: ([] : List (ByteArray)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{strings}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{arrayOf ((LexLeanCollections.listFold ((fun (acc : List (ByteArray)) (item : ByteArray) => (jsonString (item) :: acc))) (([] : List (ByteArray))) (LexLeanStd.Order.reverseList (ByteArray) (items)) : List (ByteArray)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{labelsText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Label))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{arrayOf ((LexLeanCollections.listFold ((fun (acc : List (ByteArray)) (item : Label) => (labelText (item) :: acc))) (([] : List (ByteArray))) (LexLeanStd.Order.reverseList (Label) (items)) : List (ByteArray)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{notesText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Note))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{arrayOf ((LexLeanCollections.listFold ((fun (acc : List (ByteArray)) (item : Note) => (noteText (item) :: acc))) (([] : List (ByteArray))) (LexLeanStd.Order.reverseList (Note) (items)) : List (ByteArray)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{diagnosticText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(given : Diagnostic)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let tail : List (ByteArray) := (field (lit ("severity")) (jsonString (lit ("error"))) :: (field (lit ("spec")) (jsonString (lit ("lexlean/diagnostic/1"))) :: ([] : List (ByteArray)))); (let located : List (ByteArray) := (match (given).primary with | Option.some span => (field (lit ("primary")) (spanText (span)) :: tail) | Option.none => tail); objectOf ((field (lit ("causes")) (strings ((given).causes)) :: (field (lit ("code")) (jsonString ((given).code)) :: (field (lit ("help")) (strings ((given).help)) :: (field (lit ("labels")) (labelsText ((given).labels)) :: (field (lit ("message")) (jsonString ((given).message)) :: (field (lit ("notes")) (notesText ((given).notes)) :: located)))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{byteText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Numeral.pick (LexLeanStd.Numeral.byteValues) (value)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{beStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : (Prod (Nat) ((Prod (Nat) (ByteArray)))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) ((Prod (Nat) (ByteArray)))))}.\par
+\noindent Definition: \texttt{(if (Nat.beq ((state).1) (0)) then Option.none else Option.some (((LexLeanRuntime.subtract ((state).1) (1) : Nat), ((LexLeanRuntime.quotient (((state).2).1) (256) (0) : Nat), cat (byteText ((LexLeanRuntime.remainder (((state).2).1) (256) (0) : Nat))) (((state).2).2)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bigEndian}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{((((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) ((Prod (Nat) (ByteArray))))) => beStep (state))) (9) ((8, (value, ByteArray.mk \#[]))) : (Prod ((Prod (Nat) ((Prod (Nat) (ByteArray))))) (Bool)))).1).2).2}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{orderStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray) (n : Nat) (state : (Prod (Nat) (ByteArray)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) (ByteArray)))}.\par
+\noindent Definition: \texttt{(let position : Nat := (state).1; (if (Nat.blt (position) (n)) then (match LexLeanStd.Text.byteAt (path) (position) with | Option.some byte => (if (LexLeanRuntime.equal (byte) ((0 : UInt8)) : Bool) then Option.some (((position + 1), cat ((state).2) (ByteArray.mk \#[0, 1]))) else Option.some (((position + 1), cat ((state).2) (byteText ((toNat (byte) : Nat)))))) | Option.none => Option.none) else Option.none))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{orderedPath}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(n, path)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let n : Nat := (LexLeanRuntime.length (path) : Nat); cat ((((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) (ByteArray))) => orderStep (path) (n) (state))) ((n + 1)) ((0, ByteArray.mk \#[])) : (Prod ((Prod (Nat) (ByteArray))) (Bool)))).1).2) (ByteArray.mk \#[0, 0]))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{sortKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(given : Diagnostic)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let place : (Prod (ByteArray) (Nat)) := (match (given).primary with | Option.some span => ((span).path, (span).byteStart) | Option.none => (ByteArray.mk \#[], 0)); cat (cat (cat (orderedPath ((place).1)) (bigEndian ((place).2))) ((given).code)) ((given).message))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{keyed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(given : Diagnostic)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (ByteArray) (Diagnostic))}.\par
+\noindent Definition: \texttt{(sortKey (given), given)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{sortDiagnostics}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Diagnostic))}.\par
+\noindent Closure 1: binds \texttt{(acc, entry)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{List (Diagnostic)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : List (Diagnostic)) (entry : (Prod (ByteArray) (Diagnostic))) => ((entry).2 :: acc))) (([] : List (Diagnostic))) (LexLeanStd.Order.reverseList ((Prod (ByteArray) (Diagnostic))) (LexLeanStd.Order.sortByKey (Diagnostic) (LexLeanStd.Order.reverseList ((Prod (ByteArray) (Diagnostic))) ((LexLeanCollections.listFold ((fun (acc : List ((Prod (ByteArray) (Diagnostic)))) (item : Diagnostic) => (keyed (item) :: acc))) (([] : List ((Prod (ByteArray) (Diagnostic))))) (items) : List ((Prod (ByteArray) (Diagnostic)))))))) : List (Diagnostic))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isEnvironmentCode}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(code : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, listed)}, captures \texttt{(code)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (listed : ByteArray) => (if found then true else (LexLeanRuntime.equal (code) (listed) : Bool)))) (false) ((lit ("LLB6004") :: (lit ("LLV7001") :: (lit ("LLV7007") :: (lit ("LLV7008") :: (lit ("LLV7009") :: (lit ("LLV7010") :: (lit ("LLV7012") :: (lit ("LLV7014") :: (lit ("LLV7017") :: (lit ("LLV7018") :: ([] : List (ByteArray))))))))))))) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{codeExit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(code : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if isEnvironmentCode (code) then 3 else (match LexLeanStd.Text.byteAt (code) (2) with | Option.some letter => (let value : Nat := (toNat (letter) : Nat); (if (Nat.beq (value) (67)) then 2 else (if (Nat.beq (value) (83)) then 4 else (if (Nat.beq (value) (73)) then 70 else 1)))) | Option.none => 1))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{worstExit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Diagnostic)) (empty : Nat)}.\par
+\noindent Closure 1: binds \texttt{(worst, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match items with | List.nil => empty | List.cons \_ \_ => (LexLeanCollections.listFold ((fun (worst : Nat) (item : Diagnostic) => (let rank : Nat := codeExit ((item).code); (if (Nat.blt (worst) (rank)) then rank else worst)))) (0) (items) : Nat))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{takeStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : (Prod (Nat) ((Prod (List (Diagnostic)) (List (Diagnostic))))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (Nat) ((Prod (List (Diagnostic)) (List (Diagnostic))))))}.\par
+\noindent Definition: \texttt{(if (Nat.beq ((state).1) (0)) then Option.none else (match ((state).2).1 with | List.nil => Option.none | List.cons head rest => Option.some (((LexLeanRuntime.subtract ((state).1) (1) : Nat), (rest, (head :: ((state).2).2))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{firstOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Diagnostic)) (count : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Diagnostic)}.\par
+\noindent Definition: \texttt{LexLeanStd.Order.reverseList (Diagnostic) (((((LexLeanCollections.iterateUntil ((fun (state : (Prod (Nat) ((Prod (List (Diagnostic)) (List (Diagnostic)))))) => takeStep (state))) ((count + 1)) ((count, (items, ([] : List (Diagnostic))))) : (Prod ((Prod (Nat) ((Prod (List (Diagnostic)) (List (Diagnostic)))))) (Bool)))).1).2).2)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{exceeded}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(phase : ByteArray) (limit : Nat) (observed : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Diagnostic}.\par
+\noindent Definition: \texttt{(\{ code := lit ("LLS8002"), message := cat (cat (cat (cat (cat (cat (cat (cat (lit ("max\_diagnostics exceeded in phase ")) (phase)) (lit (": configured "))) (num (limit))) (lit (", observed "))) (num (observed))) (lit ("; the first "))) (num (limit))) (lit (" diagnostics are reported")), primary := Option.none, labels := ([] : List (Label)), notes := ([] : List (Note)), help := ([] : List (ByteArray)), causes := ([] : List (ByteArray)) \} : Diagnostic)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reportDiagnostics}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Diagnostic)) (limit : Nat) (phase : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{(Prod (Nat) (List (Diagnostic)))}.\par
+\noindent Definition: \texttt{(let sorted : List (Diagnostic) := sortDiagnostics (items); (let observed : Nat := (LexLeanRuntime.length (items) : Nat); (if (Nat.ble (observed) (limit)) then (worstExit (sorted) (70), sorted) else (let kept : List (Diagnostic) := LexLeanStd.Order.reverseList (Diagnostic) ((exceeded (phase) (limit) (observed) :: LexLeanStd.Order.reverseList (Diagnostic) (firstOf (sorted) (limit)))); (worstExit (kept) (70), kept)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

@@ -13,6 +13,7 @@ pub mod calculus;
 pub mod cases;
 pub mod certification;
 pub mod certification_library;
+pub mod counts;
 pub mod differential;
 pub mod evidence;
 pub mod fixtures;

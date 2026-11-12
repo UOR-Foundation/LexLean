@@ -1,0 +1,116 @@
+\begin{lexlean}{SurfaceModule}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{AxiomOutput}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Located,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: kind, type: Nat},
+    {name: bodyStart, type: Nat},
+    {name: bodyStop, type: Nat},
+    {name: data, type: (Option (Nat * Nat))}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: environment,
+  parameters: [kind : Nat],
+  result: Bytes,
+  body: (if (kind =? 0) then (lit "semanticmodule") else (if (kind =? 1) then (lit "toolingmodule") else (lit "coremodule"))),
+  executable: true
+}
+
+definition{
+  name: control,
+  parameters: [kind : Nat],
+  result: Bytes,
+  body: (if (kind =? 0) then (lit "\\semanticdata") else (if (kind =? 1) then (lit "\\toolingdata") else (lit "\\coredata"))),
+  executable: true
+}
+
+definition{
+  name: beginMarker,
+  parameters: [kind : Nat],
+  result: Bytes,
+  body: (prim append (prim append (lit "\\begin{") (environment kind) : Bytes) (lit "}") : Bytes),
+  executable: true
+}
+
+definition{
+  name: endMarker,
+  parameters: [kind : Nat],
+  result: Bytes,
+  body: (prim append (prim append (lit "\\end{") (environment kind) : Bytes) (lit "}") : Bytes),
+  executable: true
+}
+
+definition{
+  name: lastAt,
+  parameters: [subject : Bytes, needle : Bytes],
+  result: (Option Nat),
+  body: (let total : Nat := (prim length subject : Nat); (let size : Nat := (prim length needle : Nat); (if (total <? size) then (ctor Option.none [Nat]) else (let position : Nat := (first (prim iterate_until (fun [needle, subject] (position : Nat) => (AxiomOutput::lastStep subject needle position)) (total + 1) (prim subtract total size : Nat) : (Nat * Bool))); (if (LexLeanStd.Text::matchAt subject needle position) then (ctor Option.some [Nat] position) else (ctor Option.none [Nat])))))),
+  executable: true
+}
+
+definition{
+  name: tail,
+  parameters: [subject : Bytes, offset : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr subject offset (prim subtract (prim length subject : Nat) offset : Nat)),
+  executable: true
+}
+
+definition{
+  name: dataRange,
+  parameters: [text : Bytes, kind : Nat, start : Nat, stop : Nat],
+  result: (Option (Nat * Nat)),
+  body: (let region : Bytes := (LexLeanStd.Text::sliceOr text start (prim subtract stop start : Nat)); (let lead : Nat := (AxiomOutput::skipWhite region); (let tag : Bytes := (control kind); (if (LexLeanStd.Text::startsWith (tail region lead) tag) then (let afterTag : Nat := (lead + (prim length tag : Nat)); (let brace : Nat := (afterTag + (AxiomOutput::skipWhite (tail region afterTag))); (if (LexLeanStd.Text::startsWith (tail region brace) (lit "{")) then (let inside : Bytes := (tail region (brace + 1)); (let trimmedStop : Nat := (AxiomOutput::dropWhiteEnd inside 0); (if (if (0 <? trimmedStop) then (LexLeanStd.Text::matchAt inside (lit "}") (prim subtract trimmedStop 1 : Nat)) else false) then (ctor Option.some [(Nat * Nat)] (((start + brace) + 1), (((start + brace) + 1) + (prim subtract trimmedStop 1 : Nat)))) else (ctor Option.none [(Nat * Nat)])))) else (ctor Option.none [(Nat * Nat)])))) else (ctor Option.none [(Nat * Nat)]))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tryKind,
+  parameters: [text : Bytes, kind : Nat],
+  result: (Nat * (Option Located)),
+  body: (let marker : Bytes := (beginMarker kind); (match (LexLeanStd.Text::find text marker)
+    | Option.none => (0, (ctor Option.none [Located]))
+    | Option.some found => (let start : Nat := (found + (prim length marker : Nat)); (match (lastAt text (endMarker kind))
+      | Option.none => (1, (ctor Option.none [Located]))
+      | Option.some stop => (if (stop <? start) then (1, (ctor Option.none [Located])) else (2, (ctor Option.some [Located] (record Located {kind := kind, bodyStart := start, bodyStop := stop, data := (dataRange text kind start stop)})))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: locateFrom,
+  parameters: [text : Bytes, kind : Nat],
+  result: (Option Located),
+  body: (let tried : (Nat * (Option Located)) := (tryKind text kind); (if ((first tried) =? 0) then (ctor Option.none [Located]) else (second tried))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: locateModule,
+  parameters: [text : Bytes],
+  result: (Option Located),
+  body: (let semantic : (Nat * (Option Located)) := (tryKind text 0); (if ((first semantic) =? 0) then (let tooling : (Nat * (Option Located)) := (tryKind text 1); (if ((first tooling) =? 0) then (locateFrom text 2) else (second tooling))) else (second semantic))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

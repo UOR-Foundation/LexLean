@@ -12,6 +12,7 @@ use camino::Utf8PathBuf;
 mod audit;
 mod ci;
 mod codegen;
+mod counts;
 mod release_manifest;
 mod spec_links;
 
@@ -36,6 +37,7 @@ fn main() -> ExitCode {
         "check-calculus" => check_calculus(&root, write),
         "check-production-export" => check_production_export(write),
         "check-package" => check_package(&root),
+        "counts" => counts::counts(&root, write),
         "check-test-inventory" => ci::check_test_inventory(&root),
         "bdd" => ci::bdd(&root),
         "ci-summary" => ci::ci_summary(&root, &std::env::args().skip(2).collect::<Vec<_>>()),
@@ -58,6 +60,8 @@ fn main() -> ExitCode {
                  check-calculus          §17.14-§17.16: the compiler project's modules, the target and\n\
                                          GNAF fixtures, the Rust packages, and configuration equal\n\
                                          their generator\n\
+                 counts                  §17.23: write the counts a bootstrap case reported under\n\
+                                         LEXLEAN_COUNTS=fast|report into its constants and statements\n\
                  check-production-export §24.7: the consumer's exported packages equal the committed\n\
                                          packages under tests/production-export\n\
                  check-package          §30.3, RP-12: package lexlean crate, verify offline build & identity\n\
