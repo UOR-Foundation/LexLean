@@ -2411,12 +2411,17 @@ pub struct AuxiliaryModule {
     pub commands: Vec<AuxiliaryCommand>,
 }
 
+/// The sole read-only search-path command admitted in an interface probe.
+pub const SEARCH_PATH_REPORT_COMMAND: &str = r#"#eval do let ps ← Lean.searchPathRef.get; IO.println ((Lean.Json.mkObj [("lexlean_search_path", Lean.toJson (ps.map System.FilePath.toString))]).compress)"#;
+
 /// One command of an [`AuxiliaryModule`]: a closed set, each rendered one
 /// line.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum AuxiliaryCommand {
     /// `set_option autoImplicit false`.
     NoAutoImplicit,
+    /// Emit the actual Lean search path as one escaped, closed JSON packet.
+    SearchPathReport,
     /// `universe` and the named universe variables.
     Universe(Vec<String>),
     /// `example : <type> := <constant>`: the type as the backend's printer
@@ -2475,6 +2480,7 @@ impl AuxiliaryModule {
             lines.push(line);
             match command {
                 AuxiliaryCommand::NoAutoImplicit => text.push_str("set_option autoImplicit false"),
+                AuxiliaryCommand::SearchPathReport => text.push_str(SEARCH_PATH_REPORT_COMMAND),
                 AuxiliaryCommand::Universe(names) => {
                     text.push_str("universe ");
                     text.push_str(&names.join(" "));
@@ -2556,7 +2562,7 @@ pub fn probe_module(
     closure: &Closure,
 ) -> Result<ProbeModule, Diagnostic> {
     let name = format!("LexLeanProbe.P{semantic_hex32}");
-    let mut imports: BTreeSet<String> = BTreeSet::new();
+    let mut imports: BTreeSet<String> = ["Lean".to_owned()].into_iter().collect();
     for external in externals.values() {
         imports.insert(external.lean_module.clone());
     }
@@ -2600,6 +2606,7 @@ pub fn probe_module(
         entries.push((index, entry));
         commands.push(example);
     }
+    commands.push(AuxiliaryCommand::SearchPathReport);
     let (text, command_lines) = AuxiliaryModule {
         imports: imports.into_iter().collect(),
         commands,

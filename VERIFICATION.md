@@ -13915,3 +13915,471 @@ repository gate have not run here. This branch is source preparation for a draft
 PR, with existing generated records untouched; its source changes are not
 qualified by those preceding records. Coordinate the single identity/writer wave
 with the release owner before readiness, merge or downstream SDK adoption.
+
+## Single-kernel replay binding source preparation (VR-28, #391)
+
+This bounded phase prepares the record and association guard on
+`0a01df682426cc54b63363e2eec7195cd8a8f318`. The register row, matching
+scenario and named case were committed first in `4140e8883`. Exact
+`conformance_vr_28` then failed with exit 101 because the existing process
+parser refused `olean` as an unknown field.
+
+`ChildRecord` now carries an optional typed binding: a required main
+`.olean` SHA-256 and optional `.olean.server` and `.olean.private` digests.
+Omission means absence under the existing canonical JSON rules; an empty
+file has a present SHA-256 and differs from absence. A private part without
+its server part is refused. Both strict process schemas admit the same
+closed object. The existing shard record serializer/parser transports it;
+there is no additional receipt file, digest recipe, or audit framework.
+
+Focused evidence under the shared validation lock, with two Cargo jobs and
+incremental compilation disabled:
+
+| Check | Observed |
+| --- | --- |
+| Exact `conformance_vr_28`, existing parser | Refused the new binding, exit 101 |
+| Exact `conformance_vr_28`, binding and pure guard | Passed; malformed/unknown fields, invalid digests, orphan private parts, missing/failed/duplicate replay, different module/argv, substituted main/server/private bytes, absent versus present empty companions, staged mismatches, and the certificate tail are exercised |
+| Existing partition unit tests | 3 passed; the round-trip now preserves all three part digests through the existing export/import transport |
+| Clippy for lexlean and repo-conformance, all targets/features, warnings denied | Passed |
+
+This validates the platform-independent record and pure association check.
+The helper is separate from existing toolchain/output gates and does not
+replace them. No skip flag, compilation/replay capture, or publication
+call site was changed in this phase; no full VR-28 acceptance is claimed.
+The real false-declaration replay, actual-input capture, shard substitution,
+width invariance, gateway/Atlas measurements, and complete gate evidence
+remain integration requirements. No model, identity or artifact writer ran.
+Both schema changes affect every language identity partition, so the
+committed identities and generated artifacts require one coordinated writer
+wave on the reviewed integration head.
+
+The pinned Lean sources establish two input details that call-site work
+must preserve. `LeanChecker.lean`'s `replayFromImports` loads the exported
+part, the server part when present, and then the private part when present;
+`Lean.Environment.readModuleDataParts` reads these distinct files. A main-only
+digest would not bind the checked declarations. Its CLI also enumerates a
+target module prefix: accepted names such as `A` and `A.B` can make a replay
+process check descendants too. Removing the in-process pass does not imply
+globally exactly-once declaration replay, and this work does not replace or
+modify the pinned checker.
+
+Actual resolution also depends on Lake's augmented search path and Lean's
+first package-root rule, rather than the first existing full module path.
+A proposed narrow preflight query uses bare `lake env`, through the existing
+bounded runner, and decodes only raw `LEAN_PATH` before normalization. No
+full environment dump belongs in tool output or canonical evidence. The
+query emits unescaped `NAME=VALUE` lines, while current path rules do not
+forbid newlines. Duplicate-row rejection alone therefore does not establish
+unambiguous decoding for every accepted path; that design point requires
+review before capture and skip flags are connected.
+
+The next source-only integration replaces that ambiguous proposed query
+with the existing always-run external-interface probe. Its closed,
+parameter-free command reports `Lean.searchPathRef` as compact escaped JSON.
+The bounded runner decodes the raw packet before normalization and retains
+its complete normalized form in the process record. Known prefixes use the
+existing replacements; other absolute roots receive packet-local ordinal
+aliases, preserving order and equality without colliding with relative
+entries. The fixed packet's final audit validates whole decoded roots;
+other stdout and every stderr retain their existing checks.
+
+The preservation olean directory is created empty before this probe and
+shares its supplied search-path context with project and certificate
+compilation/replay. Actual resolution follows the observed first package
+root even when that root lacks the requested full file. Compilation records
+capture the main/server/private tuple; replay captures the selected tuple,
+compares it with staged output, and checks that it remains unchanged after
+success. This source delta includes pure regression cases for escaped and
+newline-containing roots, relative roots containing ` /segment`, aliases,
+noise and shape refusal, missing-file shadowing, and companion changes.
+Focused validation subsequently ran under the shared phase lock with two
+Cargo jobs and incremental compilation disabled. The four new path/binding
+units, probe-only source-audit unit, three existing partition units, and
+correct-root exact VR-28 passed. Independent review exposed two refusal
+gaps, both corrected: source-literal exactness now belongs to a fixed
+catalogue independent of the live renderer constant, and the packet uses a
+tiny closed typed decoder that rejects duplicate decoded keys, including
+escaped key spellings. The appended-action mutation witness and literal plus
+escaped duplicate-key refusal tests passed. Focused lexlean/repo-conformance
+Clippy passed with warnings denied; final formatting and diff checks passed.
+
+The first conformance invocation linked a shared `repo-model` artifact whose
+compiled root belonged to another worktree; its result was discarded. A
+package-only offline clean and rebuild established this worktree's root
+before authoritative conformance runs. Those runs first stopped at the
+expected stale example lock. Only `examples/nat-add-zero/lexlean.lock` was
+then temporarily refreshed with the freshly built official CLI:
+`lexlean --project examples/nat-add-zero/lexlean.toml lock`. Original bytes
+were saved outside the checkout and restored after each phase. The saved
+and restored SHA-256 was
+`f7ca13c5a1597c9059e3aded8e5d8609c6f4cb3cf8feb53856a55b5621e7c2e2`;
+the final temporary refresh was
+`a0ec39419c4b76922e33f454a7f81989aced1f4ca1baf31be68220f240772cb8`.
+No helper constructor, expectations, or product pins were changed.
+
+Actual pinned Lean first rejected the report's untyped `p.toString`
+lambda. The final closed command uses `ps.map System.FilePath.toString`.
+With that ordinary type fix, unchanged exact VR-04 passed in 4.05 seconds
+and VR-07 passed in 4.42 seconds, including its existing warning/noise
+plants. These are focused correctness results, not performance savings.
+Skip flags remain disabled, and the final publication-guard call site
+remains an integration obligation. No full gate, identity regeneration,
+product artifact writer, or full VR-28 acceptance is claimed.
+
+The next unpublished source phase wires the flag only at the generated
+project-module compilation and certificate A/B/E compilation call sites.
+The preservation environment uses the same compile helper with the flag
+explicitly false; its audit also keeps the flag false. Runtime, text-law,
+probe, extraction, and project axiom-audit call sites are unchanged.
+Certificate oleans now survive until the final scratch-cleanup stage.
+After local and imported records and the certificate tail are assembled,
+one publication guard freshly captures every project's and certificate's
+staged main/server/private tuple and requires its matching compile/replay
+binding. Expected-name coverage refuses a wholly omitted compilation or
+certificate tail; the existing diagnostic paths still classify failed
+project and certificate replays before that guard.
+
+Additional source plants extend the existing VR-28 case and shard round-trip
+unit: missing compilation, missing certificate staged tuples, dropped whole
+certificate tail, removed flag, shard replay-record substitution/removal,
+and a companion replaced after import. These edits have not been compiled
+or executed while the Host writer owns the shared phase lock. No measurement,
+full acceptance, publication, or regenerated product identity is claimed.
+
+VR-28's next unexecuted regression source now exercises a real kernel-false
+artifact. A scratch Lean file uses ordinary `Lean.addDecl` with a theorem
+whose type is `False` and value is `True.intro`, retaining its body through
+`forceExpose`; it contains no module header. The same source must fail the
+unflagged compile and pass the flagged compile. The bounded runner captures
+the actual companion tuple, then the real pinned checker must reject that
+artifact and name its planted declaration. This uses neither an unchecked
+API nor a production source-audit allowance.
+
+The pipeline plant reuses the existing test toolchain wrapper mechanism,
+replacing only Lake's test wrapper. After source audit it substitutes that
+scratch source into the eligible project compilation, delegates to real
+Lean, and requires the real compile to exit zero with the skip flag present.
+It records the actual checker invocation, requires its path to resolve to
+the real pinned checker, and expects LLV7003 naming the planted declaration
+with no verified publication. Existing Lean-backed and POSIX host helpers
+remain unchanged. This new regression source has not yet been compiled or
+executed while the Host writer owns the shared lock.
+
+The admitted focused phase then executed these source changes. All three
+partition units passed, including the actual shard round-trip binding and
+missing/substituted replay or changed companion refusal plants. Correct-root
+exact VR-28 passed in 5.53 seconds. Its direct witness assertions establish
+unflagged kernel refusal, flagged real-Lean compilation success, capture of
+the produced main/server/private tuple, and real pinned-checker refusal naming
+`VR28KernelFalse.bad`. The pipeline assertions establish a flagged real-Lean
+compile exit of zero, invocation of the real pinned checker, LLV7003 naming
+the planted declaration, and no verified publication after post-audit
+substitution. The test wrapper uses the already preflighted, quoted Lake
+path and the existing POSIX-backed host gate; no production audit exemption,
+fake checker, or helper bypass was introduced.
+
+The first real attempt exposed a test-source monad error: `run_elab` expects
+`TermElabM`, while the explicit command-elaborator lift returned
+`CommandElabM`. The corrected witness uses ordinary `run_elab do` and the
+standard lift of `Lean.addDecl`; the theorem and its expected outcomes were
+unchanged. Clippy also required a borrowed singleton slice instead of a
+clone. After those ordinary fixes, focused lexlean/repo-conformance Clippy
+with warnings denied, formatting, and diff checks passed. The shared phase
+lock was released before the Host writer resumed; frozen Host binaries were
+untouched. Existing model-helper provenance was already this worktree;
+an unnecessary small package-only rebuild in this phase added no evidence
+and is not a repeated validation requirement. No committed example lock,
+product identity, or generated artifact changed. Positive production
+certificate acceptance and diagnostic fixtures, shard/join width invariance,
+controlled measurements, coordinated identities/artifacts, and the full gate
+remain required; these focused results are not complete VR-28 acceptance.
+
+A further source-only certificate audit refreshed issue #391 and the remote
+feature head at `f655d0b158`; no competing source owner was recorded. Existing
+SP-05 already shares a real production export and the real A/B/E mutation
+fixtures, so no duplicate certificate verify is added. The audit found a
+concrete diagnostic gap: `failing_declaration` recognized the core decoder's
+compile refusal but not Lean replay's declaration envelope, and `lean_error`
+required the word `error`, discarding replay's kernel type-mismatch detail.
+Pinned `Lean/Replay.lean:136` throws `while replaying declaration '<name>':`
+with the kernel exception; the executable supplies `uncaught exception:`.
+
+The narrow unexecuted fix recognizes that envelope, preserves the existing
+compile formatting and summary bounds, and recovers the refused certificate
+declaration. New pure units cover replay detail/declaration/bounds and retain
+unrelated-output refusal; the existing compile-summary regression remains.
+SP-05's existing positive export gains A/B/E flagged-compile and successful
+same-module complete-tuple replay assertions. Its existing three rejection
+executions gain real replay/kernel-message and exact fixture declaration/root
+assertions, in addition to unchanged LLV7013/7015/7016 and no-publication
+checks. This source has not been formatted, compiled or executed while Host
+owns the shared lock. No pins, fixture expectations, writers, measurements or
+full-gate acceptance change; real final-guard/shard-width and regeneration
+obligations remain pending.
+
+The admitted certificate follow-up completed on 2026-11-04 at 01:41:17 UTC.
+The three exact diagnostic units passed together (3 passed, 223 filtered
+out), including the existing compile-summary control. Exact SP-05 then
+passed once in 990.888 seconds (1 passed, 469 filtered out). Its shared real
+production export established that each A/B/E certificate compile carries
+`-Ddebug.skipKernelTC=true`, succeeds, and has one successful same-module
+replay with an equal complete main/server/private artifact-parts tuple.
+The three real A/B/E rejection fixtures retained LLV7013/LLV7015/LLV7016,
+respectively, and now assert the replay envelope, kernel detail and exact
+certificate declaration/root. The heartbeat, resource and drift controls
+also retained LLV7013, LLS8002 and LLV7014. All six retain their existing
+no-verified-publication assertions; no checker, source-audit, fixture or
+publication guard was weakened and no extra positive export was added.
+
+The first queued attempt used a wrong module filter; a continuation then
+stopped before tests because stable libtest rejected `--fail-fast`. The
+corrected stable run passed the three units before ENOSPC stopped lock
+backup, leaving SP-05 unrun. A subsequent SP-05 group failed because the
+official temporary lock commands created ignored `.lexlean/.lock` helper
+directories that the strict fixture loader correctly refused; that failed
+group is not positive acceptance evidence. The retry archived those proven
+owned empty helpers, recorded all seven helpers absent before its commands,
+and archived each newly created helper immediately after its lock command,
+before fixture loading. The fixture loader and expectations were unchanged.
+
+The passing run used frozen binaries and checked the actual linked model,
+support and bootstrap-fixture roots against this worktree before and after;
+all frozen hashes and the reviewed four-file source diff stayed unchanged.
+Seven official temporary lock refreshes supplied the changed source identity
+for this focused run; all seven original lock byte hashes were restored.
+Focused lexlean/repo-conformance Clippy with all targets/features and warnings
+denied, workspace formatting, and diff checks passed. Evidence is retained
+in `/workspace/work/vr28-cert-stable/diagnostic-units.log` and
+`/workspace/work/vr28-cert-sp05-retry/` (results, provenance and SP-05 log).
+No product pin, generated expectation or all-language identity wave changed.
+These results discharge the focused certificate assertions only; real final
+guard/shard-join and width invariance, gateway/Atlas measurements,
+coordinated regeneration and the full gate remain required.
+
+
+## VR-28 real join and width assertion follow-up (source only)
+
+Unexecuted source atop `ec6ba36fe` extends the existing VR-21 width-1/width-3
+results and VR-23 whole/shard/join results with typed complete-part replay
+binding and kernel-scope assertions. It adds no positive verification run.
+VR-23 copies its actual successful shard outputs for replay main/server/private
+substitutions, missing bindings and failed replay;
+original outputs and existing controls remain intact. Optional companion
+presence is read from the actual record, never assumed. A deliberately inserted
+companion is a substitution, not an observation about the original artifact.
+Failed imported replay is expected at existing record assembly (LLV7003);
+record-only tuple substitutions target
+the final binding guard. Every failed part must leave no published files.
+
+No formatting, compilation, test, writer or identity update was run for this
+follow-up. The completed real SP-05, diagnostic units and earlier focused
+checks remain historical evidence for their exact source. This follow-up
+requires independent source review and later explicitly admitted validation;
+Atlas/gateway measurements, coordinated identities/artifacts and the full gate
+remain owed. Existing checker prefix rechecks are unchanged; no globally
+exactly-once kernel claim is made.
+
+The unexecuted follow-up was narrowed from six new negative joins to five
+before validation: the newly proposed staged-companion mutation was removed
+because an earlier Lean refusal would not establish extra final-guard evidence.
+Existing actual-byte/path plants and the real positive whole/join staged
+binding checks remain; no pre-existing acceptance assertion was removed.
+The original six-plant patch and its review are preserved externally.
+
+## VR-28 real join and width follow-up: observed functional results
+
+On 2026-11-04, the reviewed five-plant follow-up above was formatted and
+validated on the existing `ec6ba36fe` source preparation. The first build
+attempt is retained in `/workspace/work/vr28-next-acceptance-validation/`:
+its initial harness build succeeded, but its actual root probe found a stale
+linked `repo-model` root. The admitted targeted official model clean ran;
+the repair build then failed linking both the conformance test and Cargo's
+automatically selected `bootstrap_perf` binary, with linker bus errors.
+Free disk space was low, but the cause of those bus errors was not proved.
+No fixture lock or test execution was reached by that attempt.
+
+Root separately retired two completely clean completed integration checkouts
+through official Git worktree removal, retaining their commits, named refs,
+restoration commands and evidence; this changed capacity, not build profiles,
+source or cached proof policy. The receipt is retained in
+`/workspace/work/completed-checkout-retirement-20261104/receipt.json`.
+The admitted continuation reused the already formatted source without a
+second formatting pass. Its Cargo-selected harness and actual linked model,
+support and bootstrap-fixture roots matched this worktree; all 905 selected
+embedded input paths and bytes and the errors table matched. The final test
+executable was atomically transferred from its selected target path into the
+phase's fresh frozen path, preserving its device, inode, byte count and hash,
+and recording the original target's absence. The frozen CLI was reused;
+no CLI or xtask executable was rebuilt for the continuation.
+
+One exact harness group ran `conformance_vr_21` and `conformance_vr_23`
+serially: 2 passed, 0 failed, 468 filtered out, in 279.03 seconds. VR-21
+retained its real peano-arithmetic width-1/width-3 comparisons, scheduling and
+failure controls, and production width-1/width-2 comparisons. VR-23 retained
+the real whole/shard/join byte-tree and attestation equality and its original
+negative controls. Five additional negative joins used separate copies of
+those actual successful shard outputs: same-name main, server and private
+replay-tuple substitutions and a missing binding reached the final binding
+guard and refused with LLI9001; a failed imported replay was refused earlier
+at record assembly with LLV7003. Every failed part checked no publication.
+Optional companion presence came from actual records; deliberately inserted
+companions were plants, not claims about the original files. No extra
+positive verification was added by this follow-up.
+
+Exactly two original example locks, peano-arithmetic and production, were
+saved, temporarily refreshed by the frozen official CLI, and restored byte
+for byte. Only newly created owned helper directories, absent from the
+preinventory and containing exactly one empty regular advisory guard, were
+archived outside the fixtures. Frozen hashes and selected linked roots were
+checked before and after the group; all 905 input bytes and both restored
+locks were independently rehashed at the terminal boundary. After the group
+passed, focused conformance-target Clippy with warnings denied, workspace
+format checking and whitespace checking all passed. No completed SP-05,
+diagnostic unit or kernel-false case was repeated. The tested Rust source
+remained unchanged after formatting; this later entry records those results.
+
+Evidence is retained in
+`/workspace/work/vr28-next-acceptance-continuation/`, including the original
+results (SHA-256 `4d552fbd80c863f02568ca1d2a23c3158c3d4dab2ea7029c4f9e2c1c92f6588b`),
+selected Cargo events, root/embedded provenance, frozen transfer receipt,
+case logs, original locks and helper archives. This establishes provisional
+functional results on this source preparation with prior product pins,
+not final identity acceptance. Gateway and Atlas measurements, actual Atlas
+publication-binding/invariance evidence, coordinated all-language identities
+and generated artifacts, and the complete changed-head gate remain required.
+The pinned checker's prefix rechecks remain; no globally exactly-once kernel
+claim is made. No product writer, pin change, full gate, commit or push ran
+as part of this focused continuation or this evidence append.
+
+## VR-28 controlled public gateway pair: measured evidence
+
+On 2026-11-04, one new controlled pair completed on the source preparation
+`104f755ae9b525df0765af08a13c68bfa715b577`, compared with unchanged pre-skip
+`ed1deb0cbe26aa2330a464224fb01e7df2739920`. The public corpus was
+`UOR-Foundation/lexlean-mcp` at
+`991ab332608727306977c9850da6be182ab80071`, with MCP at
+`c53816e24e16051b60fb6557b5d8ac456330c569` and PrismPM at
+`706fb746100c1d220841d93820a035d07beb5323`. Its complete materialized input
+manifest contains 323 files (SHA-256
+`4b0632d0c3d209e335387e74b52ab6d3cc0c2d30b0a8c809a4053160d110a60f`).
+Both fresh copies retained all 11 configured entrypoints and their 58-module
+closure. The four production roots were
+`LexLeanMcpGateway.DraftAdmission.admitRun`,
+`LexLeanMcpGateway.DraftAdmission.admitDraftRun`,
+`LexLeanMcpGateway.Gateway.gatewayRun` and `LexLeanMcpGateway.Nfc.nfcRun`.
+No `--all` expansion, narrowed selection or root substitution was used.
+This public corpus is not asserted to be the author's historical WSL checkout.
+
+The independently frozen baseline CLI had SHA-256
+`3f72ffca8949262d50a1466660daa768d5d756017b6d0ecbead0cc66c8dcacdb`;
+the candidate CLI had SHA-256
+`be50848d74ef98b4888bea67e29779076ca5d28426e69085dd54123ab4daa374`.
+Each ran the supported `lexlean --project <fresh-copy>/gateway/lexlean.toml
+lock` once, then `lexlean --project <fresh-copy>/gateway/lexlean.toml verify`
+once. Both locks completed before either verification. There was no extra
+standalone check, build, warmup or repeated verification. Baseline ran first,
+candidate second, on the same host and pinned Lean 4.32.1, at width 1 without
+hints or a memory-budget override. Each used fresh project, build, verification
+and telemetry directories; no proof or verification artifact crossed runs.
+Global OS and toolchain caches were left unchanged within the pair, so the
+sequential order and cache effects remain limitations.
+
+| Observed seconds | Pre-skip ed1 | Candidate 104 |
+| --- | ---: | ---: |
+| Complete CLI verification wall | 1,863.117 | 1,243.365 |
+| Available waited-child CPU, user plus system | 2,176.786 | 1,475.059 |
+| Certificate generation stage | 153.742 | 153.209 |
+| Project elaboration stage | 237.961 | 154.454 |
+| Project replay stage | 146.720 | 146.105 |
+| Extraction stage | 41.317 | 40.303 |
+| Certificate stage | 1,258.461 | 724.466 |
+
+The wall observations use an outer monotonic clock. CPU is the available OS
+waited-child accounting, not an assertion about total machine CPU. Raw I/O
+operation, page-fault and context-switch counters and existing stage/process
+RSS, swap and wall telemetry are retained. The table selects component stages; outer CLI wall time also includes work
+outside the internal verifier interval.
+The pair observed 619.752 seconds (33.264%) lower wall time for the candidate.
+This measures the net implementation including required binding, final guard,
+rehash and retention costs; it is not flag-only attribution, a general or
+statistical performance estimate, or reproduction of the original WSL timing.
+
+Both complete verifications succeeded. Independent inspection found equal
+official locks, source/semantic/build IDs, all 2,732 declaration policy and
+observation rows, toolchain/workspace records, preservation records and selected
+roots. Attestation identities differ, as expected for different executable and
+process records; raw absolute-path artifact equality was not assumed. Each run
+retained 230 process records and 233 genuine process telemetry events, with
+successful begin/end and publication traces. These are observed counts, not
+new fixed-count acceptance predicates.
+
+The candidate's 70 flagged compiles are exactly the 58 project modules plus
+12 A/B/E modules. Each binds to a unique successful same-module replay with
+its complete captured artifact parts. Project bindings have main, server and
+private digests; the certificate bindings have main and genuinely absent
+companions. Absence was not replaced with an empty-file digest. Runtime,
+support, probe, extraction and audit compiles remain unflagged. All 323 original
+inputs, both copied source sets and both independent frozen CLIs were preserved;
+only each scratch copy's supported official lock was refreshed. Newly owned
+empty advisory guards were archived outside the project copies.
+
+Original failed-build and empty-index attempts and their receipts remain
+unchanged. The baseline build's selected cache aliases were subsequently
+retired separately by an admitted official package-only Cargo clean; that
+later capacity receipt is distinct from the immutable build/freeze snapshot.
+Neither frozen binary changed. No cleanup, profile change or retry occurred
+during the measured pair; the lowest coarse observed free space was 106 MiB.
+
+Terminal result `/workspace/work/vr28-public-controlled-pair/results.json`
+has SHA-256
+`e5591ab5646ff2f2367df6c2c7f85784b2e6bc2c13401601d4d4ff1d061b1b42`;
+independent actual review
+`/workspace/work/vr28-stage3-independent-review/actual-review.json` has SHA-256
+`5a074c61c36e6cfeb9f4a3796245bd385f4537238c565e34af175b33a6147eab`.
+Successful artifacts, raw telemetry and resource counters are retained beside
+the terminal result. The reviewed public statement is
+[#391 comment 6632959624](https://github.com/UOR-Foundation/LexLean/issues/391#issuecomment-6632959624).
+
+These are provisional preparation identities and measured gateway evidence,
+not final acceptance. Actual Atlas publication binding/invariance and
+measurements, coordinated all-language identities and artifacts, and the
+complete final-head gate remain open. Existing checker prefix rechecks remain;
+no globally exactly-once claim is made. Recording this evidence changed no implementation, pin or product and
+repeated no conformance case. No test, build, product writer or CI run was
+performed for this evidence append. This work is not included in the separate #393/#390 wave.
+
+## VR-28 reconciliation with the current patch-release line (#391)
+
+The source preparation at `494fc28a9fb571b20d8a0b9d738d631a0dbe7373`
+is merged with accepted `release/v0.4` at
+`5dccf9e5ba20d91d81f4f702f46a79e8b363bfb6`. Both histories are retained,
+including the actual #394 landing. The only content conflict was the
+append-only verification history: the entire accepted file was retained,
+followed by the exact VR-28 evidence suffix from the common ancestor
+`0a01df682426cc54b63363e2eec7195cd8a8f318`.
+
+The added VR-28 row brings the register to 484. The specification's total,
+the spec-links census, and the README count and verification range are
+updated together. An independent source review found no remaining blocker
+to draft publication after that correction. It checked the complete-part
+bindings, final publication guard, unchanged in-process checks for runtime
+and support modules, both schemas, shard transport, closed probe packet,
+and retained Host/policy diagnostic handling.
+
+On Linux x86-64 with the pinned Rust 1.97.1:
+
+- `cargo fmt --all -- --check` passed on the final source.
+- `cargo check --locked -p lexlean -p repo-conformance --all-targets`
+  passed in 95 seconds before the documentation/census-only corrections.
+- A separate static cross-check found 484 unique and matching register,
+  specification, scenario, and named-test IDs, with byte-equal claim
+  statements. Both changed attestation schemas parse as JSON.
+- `git diff --check --cached` passed.
+
+This is source integration evidence, not acceptance of the changed schema
+identities or verification artifacts. No Lean execution, benchmark,
+production export, identity/product writer, or full gate was run for this
+reconciliation. The controlled gateway comparison above retains its exact
+historical scope and was not repeated. Current all-language locks and
+products, model documents, Atlas publication/binding/width evidence, and one
+complete final-head gate remain required before readiness or merge.

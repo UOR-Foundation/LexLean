@@ -280,6 +280,34 @@ pub fn audit(text: &str, allow_print_axioms: bool) -> Result<(), String> {
     audit_with_options(text, allow_print_axioms, false)
 }
 
+/// Audit an interface probe with exactly its fixed read-only path report.
+/// Every other token retains the ordinary generated-source restrictions.
+///
+/// # Errors
+/// A missing/duplicate report or any unsanctioned generated source.
+pub fn audit_probe(text: &str) -> Result<(), String> {
+    let report = crate::backend::lean::SEARCH_PATH_REPORT_COMMAND;
+    let mut count = 0;
+    let retained = text
+        .split('\n')
+        .map(|line| {
+            if line == report {
+                count += 1;
+                ""
+            } else {
+                line
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("\n");
+    if count != 1 {
+        return Err(
+            "an interface probe must contain exactly its closed search-path report".to_owned(),
+        );
+    }
+    audit(&retained, false)
+}
+
 /// Audit a generated native-core module.  Its fixed decoder and canonical
 /// semantic payload use strings as data; the closed core schema excludes
 /// backend source text before this narrowly selected audit runs.
@@ -405,5 +433,22 @@ mod tests {
         ] {
             assert!(audit_semantic(forbidden).is_err(), "{forbidden:?}");
         }
+    }
+}
+
+#[cfg(test)]
+mod probe_report_tests {
+    use super::audit_probe;
+    use crate::backend::lean::SEARCH_PATH_REPORT_COMMAND;
+
+    #[test]
+    fn only_one_exact_closed_probe_command_is_allowed() {
+        let source =
+            format!("import Lean\nset_option autoImplicit false\n{SEARCH_PATH_REPORT_COMMAND}\n");
+        audit_probe(&source).unwrap();
+        assert!(audit_probe("import Lean\n").is_err());
+        assert!(audit_probe(&format!("{source}{SEARCH_PATH_REPORT_COMMAND}\n")).is_err());
+        assert!(audit_probe(&source.replace("ps.map", "ps.reverse.map")).is_err());
+        assert!(audit_probe(&format!("{source}#eval IO.println 1\n")).is_err());
     }
 }

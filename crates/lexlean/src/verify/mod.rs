@@ -1204,7 +1204,7 @@ pub fn run_part(
             return Err(fail(internal(format!("`{}`: {reason}", module.name))));
         }
     }
-    if let Err(reason) = generated_source_audit(&probe.text, false) {
+    if let Err(reason) = source_audit::audit_probe(&probe.text) {
         return Err(fail(internal(format!("probe module: {reason}"))));
     }
     for audit in &audit_modules {
@@ -1308,7 +1308,16 @@ pub fn run_part(
         )?;
     }
     release_non_diagnostic_buffers(build);
-    let lean_path_env = format!("{olean_root}");
+    // One supplied context for probe, project, and preservation processes.
+    // This directory is empty until the existing certificate phase populates it.
+    let preserve_oleans = staging_utf8.join("preserve-oleans");
+    std::fs::create_dir_all(preserve_oleans.as_std_path())
+        .map_err(|error| fail(internal(format!("staging preservation oleans: {error}"))))?;
+    let lean_path_env =
+        std::env::join_paths([preserve_oleans.as_std_path(), olean_root.as_std_path()])
+            .map_err(|error| fail(internal(format!("the verification search path: {error}"))))?
+            .to_string_lossy()
+            .into_owned();
     // The records of this run's processes, by what they are and the module
     // or audit member they are of, and the records of the remaining stages
     // in the order they ran. The attestation lists them in the canonical
@@ -1368,7 +1377,7 @@ pub fn run_part(
     let probe_source = staging_utf8
         .join("probe")
         .join(format!("{probe_name}.lean"));
-    let probe_record = run_child(
+    let (probe_record, search_path) = child::run_probe(
         &ChildSpec {
             tool: "lean",
             module: Some(probe_name.clone()),
@@ -1414,7 +1423,12 @@ pub fn run_part(
         }
         return Err(fail(diagnostic));
     }
-    require_silent(&probe_record, "the external-interface probe", false).map_err(fail)?;
+    require_silent(&probe_record, "the external-interface probe", true).map_err(fail)?;
+    let search_path = search_path.ok_or_else(|| {
+        fail(internal(
+            "a successful interface probe has no decoded search path",
+        ))
+    })?;
     write_staged(
         staging.path(),
         "probe/process.json",
@@ -1687,6 +1701,7 @@ pub fn run_part(
                         argv: vec![
                             "env".to_owned(),
                             "lean".to_owned(),
+                            "-Ddebug.skipKernelTC=true".to_owned(),
                             "-R".to_owned(),
                             src_root.to_string(),
                             "-o".to_owned(),
@@ -1711,7 +1726,7 @@ pub fn run_part(
                 })
             },
             |module_index, result| {
-                let record = result.map_err(fail)?;
+                let mut record = result.map_err(fail)?;
                 let module_name = lean_names[module_index].clone();
                 if record.exit_code != 0 {
                     // Lean reports compile errors on stdout under `lake env
@@ -1745,6 +1760,7 @@ pub fn run_part(
                         format!("`{module_name}` produced no olean"),
                     )));
                 }
+                record.olean = Some(leanchecker::capture_olean_parts(&olean).map_err(fail)?);
                 write_staged(
                     staging.path(),
                     &format!("process/lean/{module_name}.json"),
@@ -1804,13 +1820,17 @@ pub fn run_part(
         &|module_index: usize| lean_names[module_index].clone(),
         &|module_index: usize| {
             let module_name = &lean_names[module_index];
-            leanchecker::replay_module(
+            leanchecker::replay_bound_module(
                 &toolchain,
                 module_name,
                 &lean_path_env,
                 &workspace_root,
                 &limits,
                 &normalizer,
+                leanchecker::ReplayInput {
+                    search_path: &search_path,
+                    staged: &olean_root.join(format!("{}.olean", module_name.replace('.', "/"))),
+                },
             )
             // A replay failure is about this module, so it points at the
             // module's source rather than at the project manifest (§20.1).
@@ -2386,6 +2406,7 @@ pub fn run_part(
     // and certified; the certificates compile beside the shipped library and
     // calculus modules, are replayed, and their axioms audited exactly.
     let mut preservation_row: Option<Json> = None;
+    let mut certificate_artifacts = BTreeMap::new();
     if !production_reports.is_empty() {
         use crate::production::preserve;
         // Lean's first error, from its severity on: the location before it
@@ -2482,12 +2503,7 @@ pub fn run_part(
             .collect();
         let stage = preserve::stage(&generated_modules, &staged_certificates).map_err(fail)?;
         let preserve_src = staging_utf8.join("preserve-src");
-        let preserve_oleans = staging_utf8.join("preserve-oleans");
-        let preserve_path =
-            std::env::join_paths([preserve_oleans.as_std_path(), olean_root.as_std_path()])
-                .map_err(|error| fail(internal(format!("the preservation search path: {error}"))))?
-                .to_string_lossy()
-                .into_owned();
+        let preserve_path = lean_path_env.clone();
         for file in stage
             .environment
             .iter()
@@ -2500,7 +2516,7 @@ pub fn run_part(
                 file.text.as_bytes(),
             )?;
         }
-        let compile = |file: &preserve::StagedFile, output: bool| {
+        let compile = |file: &preserve::StagedFile, output: bool, skip_kernel: bool| {
             let source = preserve_src.join(&file.path);
             let mut argv = vec![
                 "env".to_owned(),
@@ -2508,6 +2524,9 @@ pub fn run_part(
                 "-R".to_owned(),
                 preserve_src.to_string(),
             ];
+            if skip_kernel {
+                argv.push("-Ddebug.skipKernelTC=true".to_owned());
+            }
             if output {
                 let olean = preserve_oleans.join(file.path.replace(".lean", ".olean"));
                 if let Some(parent) = olean.parent() {
@@ -2546,7 +2565,7 @@ pub fn run_part(
             {
                 continue;
             }
-            let record = compile(file, true).map_err(fail)?;
+            let record = compile(file, true, false).map_err(fail)?;
             if record.exit_code != 0
                 || !record.stdout.trim().is_empty()
                 || !record.stderr.trim().is_empty()
@@ -2578,7 +2597,7 @@ pub fn run_part(
             tail_records.push(record);
         }
         for file in &stage.certificates {
-            let record = compile(file, true).map_err(fail)?;
+            let mut record = compile(file, true, true).map_err(fail)?;
             if record.exit_code != 0
                 || !record.stdout.trim().is_empty()
                 || !record.stderr.trim().is_empty()
@@ -2591,19 +2610,26 @@ pub fn run_part(
                     &file.text,
                 )));
             }
+            let compiled_olean = preserve_oleans.join(file.path.replace(".lean", ".olean"));
+            certificate_artifacts.insert(file.module.clone(), compiled_olean.clone());
+            record.olean = Some(leanchecker::capture_olean_parts(&compiled_olean).map_err(fail)?);
             write_staged(
                 staging.path(),
                 &format!("process/preserve/{}.json", file.module),
                 &record.to_json().to_file_bytes(),
             )?;
             tail_records.push(record);
-            let replay = leanchecker::run_leanchecker(
+            let replay = leanchecker::run_bound_leanchecker(
                 &toolchain,
                 &file.module,
                 &preserve_path,
                 &workspace_root,
                 &limits,
                 &normalizer,
+                leanchecker::ReplayInput {
+                    search_path: &search_path,
+                    staged: &compiled_olean,
+                },
             )
             .map_err(fail)?;
             if replay.exit_code != 0 {
@@ -2622,7 +2648,7 @@ pub fn run_part(
             )?;
             tail_records.push(replay);
         }
-        let audit_record = compile(&stage.audit, false).map_err(fail)?;
+        let audit_record = compile(&stage.audit, false, false).map_err(fail)?;
         let audit_output = format!("{}{}", audit_record.stdout, audit_record.stderr);
         if audit_record.exit_code != 0 {
             if let Some(exhausted) = resource_death(
@@ -2696,7 +2722,6 @@ pub fn run_part(
             ("sha256", Json::Str(Sha256Digest::of(&bytes).to_hex())),
         ]));
         let _ = std::fs::remove_dir_all(preserve_src.as_std_path());
-        let _ = std::fs::remove_dir_all(preserve_oleans.as_std_path());
     }
 
     stages.enter("pdf");
@@ -2862,12 +2887,40 @@ pub fn run_part(
             "a part of the run recorded `{stray}`, which no module of the project owns"
         ))));
     }
+    // One publication guard, after all local/imported records and the
+    // certificate tail have joined, while every staged artifact still exists.
+    let mut staged_artifacts = BTreeMap::new();
+    for module in &build.modules {
+        let main = olean_root.join(format!("{}.olean", module.lean_module.replace('.', "/")));
+        staged_artifacts.insert(
+            module.lean_module.clone(),
+            leanchecker::capture_olean_parts(&main).map_err(fail)?,
+        );
+    }
+    for (module, main) in &certificate_artifacts {
+        staged_artifacts.insert(
+            module.clone(),
+            leanchecker::capture_olean_parts(main).map_err(fail)?,
+        );
+    }
+    leanchecker::check_replay_bindings(
+        &process_records,
+        &staged_artifacts,
+        &certificate_artifacts.keys().cloned().collect(),
+    )
+    .map_err(fail)?;
+
     // Stage 14: no unexpected absolute paths in successful output (§22.7),
     // over every process record.
     for record in &process_records {
-        if normalizer.has_unexpected_absolute_path(&record.stdout)
-            || normalizer.has_unexpected_absolute_path(&record.stderr)
-        {
+        let unexpected_stdout =
+            if record.tool == "lean" && record.module.as_deref() == Some(probe_name.as_str()) {
+                leanchecker::audit_search_path_packet(record.stdout.as_bytes()).map_err(fail)?;
+                false
+            } else {
+                normalizer.has_unexpected_absolute_path(&record.stdout)
+            };
+        if unexpected_stdout || normalizer.has_unexpected_absolute_path(&record.stderr) {
             return Err(fail(Diagnostic::new(
                 code!("LLV7006"),
                 format!(
@@ -2889,6 +2942,7 @@ pub fn run_part(
     // are removed once every consumer — later modules, the replay, and the
     // audit — has run).
     let _ = std::fs::remove_dir_all(src_root.as_std_path());
+    let _ = std::fs::remove_dir_all(preserve_oleans.as_std_path());
     for entry in walkdir::WalkDir::new(olean_root.as_std_path())
         .into_iter()
         .flatten()
@@ -3206,11 +3260,22 @@ fn lean_error(output: &str) -> String {
     const LINES: usize = 12;
     const BYTES: usize = 1500;
     let lines: Vec<&str> = output.lines().collect();
-    let Some(start) = lines.iter().position(|line| line.contains("error")) else {
+    let replay = |line: &str| {
+        line.starts_with("uncaught exception: while replaying declaration '") && line.contains("':")
+    };
+    let Some(start) = lines
+        .iter()
+        .position(|line| replay(line) || line.contains("error"))
+    else {
         return "no error was reported".to_owned();
     };
     let first = lines[start];
-    let mut out = first[first.find("error").unwrap_or(0)..].trim().to_owned();
+    let offset = if replay(first) {
+        0
+    } else {
+        first.find("error").unwrap_or(0)
+    };
+    let mut out = first[offset..].trim().to_owned();
     for line in lines[start + 1..].iter().take(LINES - 1) {
         out.push('\n');
         out.push_str(line.trim_end());
@@ -3361,5 +3426,36 @@ mod resource_tests {
         assert!(text.contains("has type"));
         assert!(text.len() <= 1600);
         assert_eq!(lean_error("fine"), "no error was reported");
+    }
+}
+
+#[cfg(test)]
+mod replay_error_tests {
+    #[test]
+    fn replay_exception_keeps_its_declaration_and_bounded_kernel_detail() {
+        // Pinned Lean/Replay.lean:136, with the executable's exception prefix.
+        let first =
+            "uncaught exception: while replaying declaration 'LexLeanPreserve.Cexample.R0.root':";
+        let output = format!(
+            "{first}\n(kernel) application type mismatch\n{}",
+            "  é continuation\n".repeat(500)
+        );
+        let summary = super::lean_error(&output);
+        assert!(summary.starts_with(first), "{summary}");
+        assert!(summary.contains("(kernel) application type mismatch"));
+        assert!(summary.lines().count() <= 12);
+        assert!(summary.len() <= 1504);
+        let wide = format!("{first}\n(kernel) {}\n", "é".repeat(1800));
+        let bounded = super::lean_error(&wide);
+        assert!(bounded.ends_with(" ..."));
+        assert!(bounded.len() <= 1504);
+        assert_eq!(
+            super::lean_error("x.lean:2:3: error: compile refusal\n  detail\n"),
+            "error: compile refusal\n  detail"
+        );
+        assert_eq!(
+            super::lean_error("uncaught exception: unrelated failure"),
+            "no error was reported"
+        );
     }
 }

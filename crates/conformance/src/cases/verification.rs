@@ -105,6 +105,12 @@ pub(crate) fn run(id: &str) {
         return;
     }
     match id {
+        "VR-28" => {
+            binding_record_round_trip();
+            if support::lean_backed(id) {
+                kernel_false_replay_regression();
+            }
+        }
         // §22.1: every stage runs; no suppression option exists.
         "VR-01" => {
             let fixture = support::verified();
@@ -265,7 +271,11 @@ pub(crate) fn run(id: &str) {
                 "the probe elaborates: {}{}",
                 record.stdout, record.stderr
             );
-            assert!(record.stdout.trim().is_empty() && record.stderr.trim().is_empty());
+            let packet: serde_json::Value = serde_json::from_str(&record.stdout)
+                .expect("the probe emits its closed search-path packet");
+            assert_eq!(packet.as_object().expect("packet object").len(), 1);
+            assert!(packet["lexlean_search_path"].is_array());
+            assert!(record.stderr.trim().is_empty());
             assert_eq!(probe.lines.len(), 3, "one example line per probed entry");
 
             // A mismatching interface fails and the failing Lean line is
@@ -1394,4 +1404,356 @@ fn run_platform_independent(id: &str) {
             // meaningful without the toolchain; the host gate reported that.
         }
     }
+}
+
+/// The platform-independent record half of VR-28.
+fn binding_record_round_trip() {
+    use lexlean::artifact::canonical_json::Json;
+    use lexlean::artifact::content_id::Sha256Digest;
+    use lexlean::verify::child::ChildRecord;
+
+    let digest = |bytes: &[u8]| Json::Str(Sha256Digest::of(bytes).to_hex());
+    let json = Json::object(vec![
+        ("tool", Json::Str("lean".to_owned())),
+        ("module", Json::Str("Demo.M".to_owned())),
+        (
+            "argv",
+            Json::Arr(vec![
+                Json::Str("env".to_owned()),
+                Json::Str("lean".to_owned()),
+            ]),
+        ),
+        ("exit_code", Json::Int(0)),
+        ("stdout", Json::Str(String::new())),
+        ("stderr", Json::Str(String::new())),
+        ("stdout_sha256", digest(b"")),
+        ("stderr_sha256", digest(b"")),
+        ("executable_sha256", digest(b"lean")),
+        (
+            "olean",
+            Json::object(vec![("main", digest(b"compiled main"))]),
+        ),
+    ]);
+    let record =
+        ChildRecord::from_json(&json).expect("a complete olean binding is a process record");
+    assert_eq!(
+        record.to_json().to_file_bytes(),
+        json.to_file_bytes(),
+        "the binding survives the same shard record serialization"
+    );
+    let Json::Obj(mut legacy_fields) = json.clone() else {
+        unreachable!()
+    };
+    legacy_fields.remove("olean");
+    let legacy = Json::Obj(legacy_fields);
+    assert_eq!(
+        ChildRecord::from_json(&legacy)
+            .expect("unbound process records remain readable")
+            .to_json(),
+        legacy
+    );
+    let changed = |binding: Json| {
+        let Json::Obj(mut fields) = json.clone() else {
+            unreachable!()
+        };
+        fields.insert("olean".to_owned(), binding);
+        Json::Obj(fields)
+    };
+    for malformed in [
+        Json::Arr(Vec::new()),
+        Json::object(Vec::new()),
+        Json::object(vec![("main", Json::Str("0".repeat(63)))]),
+        Json::object(vec![("main", digest(b"main")), ("server", Json::Int(0))]),
+        Json::object(vec![
+            ("main", digest(b"main")),
+            ("private", digest(b"orphan")),
+        ]),
+        Json::object(vec![("main", digest(b"main")), ("extra", digest(b"extra"))]),
+    ] {
+        assert!(
+            ChildRecord::from_json(&changed(malformed)).is_err(),
+            "a malformed binding is refused"
+        );
+    }
+    replay_binding_guard_plants(record);
+}
+
+fn replay_binding_guard_plants(mut compile: lexlean::verify::child::ChildRecord) {
+    use lexlean::artifact::content_id::Sha256Digest;
+    use lexlean::verify::child::OLeanParts;
+    use lexlean::verify::leanchecker::check_replay_bindings;
+    use std::collections::{BTreeMap, BTreeSet};
+
+    let module = "Demo.M".to_owned();
+    let parts = OLeanParts {
+        main: Sha256Digest::of(b"main"),
+        server: Some(Sha256Digest::of(b"server")),
+        private: Some(Sha256Digest::of(b"private")),
+    };
+    compile
+        .argv
+        .extend(["-D".to_owned(), "debug.skipKernelTC=true".to_owned()]);
+    compile.olean = Some(parts.clone());
+    let mut replay = compile.clone();
+    replay.tool = "leanchecker".to_owned();
+    replay.executable_sha256 = Sha256Digest::of(b"leanchecker");
+    replay.argv = vec![
+        "env".to_owned(),
+        "$TOOLCHAIN/bin/leanchecker".to_owned(),
+        module.clone(),
+    ];
+    let staged: BTreeMap<_, _> = [(module.clone(), parts.clone())].into_iter().collect();
+    let no_certificates = BTreeSet::new();
+    let check = |records: &[lexlean::verify::child::ChildRecord], published: &BTreeMap<_, _>| {
+        check_replay_bindings(records, published, &no_certificates)
+    };
+    check(&[compile.clone(), replay.clone()], &staged).expect("same module and complete bytes");
+    let certificates = [module.clone()].into_iter().collect();
+    check_replay_bindings(&[compile.clone(), replay.clone()], &staged, &certificates)
+        .expect("certificate tail binds staged artifacts before scratch cleanup");
+    check_replay_bindings(
+        &[compile.clone(), replay.clone()],
+        &BTreeMap::new(),
+        &certificates,
+    )
+    .expect_err("a certificate without its staged tuple refuses publication");
+    let refuse = |records: &[lexlean::verify::child::ChildRecord], published: &BTreeMap<_, _>| {
+        let error = check(records, published).expect_err("a binding hole refuses publication");
+        assert_eq!(error.code.as_str(), "LLI9001");
+    };
+    refuse(&[], &staged);
+    let mut unflagged = compile.clone();
+    unflagged
+        .argv
+        .retain(|arg| arg != "-D" && arg != "debug.skipKernelTC=true");
+    refuse(&[unflagged, replay.clone()], &staged);
+    check_replay_bindings(&[], &BTreeMap::new(), &certificates)
+        .expect_err("dropping the complete certificate tail refuses publication");
+    refuse(std::slice::from_ref(&compile), &staged);
+    refuse(&[compile.clone(), replay.clone(), replay.clone()], &staged);
+    refuse(&[compile.clone(), compile.clone(), replay.clone()], &staged);
+    for part in 0..3 {
+        let mut substituted = replay.clone();
+        let binding = substituted.olean.as_mut().expect("bound");
+        match part {
+            0 => binding.main = Sha256Digest::of(b"another main"),
+            1 => binding.server = Some(Sha256Digest::of(b"another server")),
+            2 => binding.private = Some(Sha256Digest::of(b"another private")),
+            _ => unreachable!(),
+        }
+        refuse(&[compile.clone(), substituted], &staged);
+    }
+    for missing in [true, false] {
+        let mut c = compile.clone();
+        let mut r = replay.clone();
+        if missing {
+            c.olean = None;
+        } else {
+            r.olean = None;
+        }
+        refuse(&[c, r], &staged);
+    }
+    let mut failed = replay.clone();
+    failed.exit_code = 1;
+    refuse(&[compile.clone(), failed], &staged);
+    let mut wrong_argument = replay.clone();
+    wrong_argument.argv[2] = "Demo.Other".to_owned();
+    refuse(&[compile.clone(), wrong_argument], &staged);
+    let mut wrong_tool = replay.clone();
+    wrong_tool.tool = "lean".to_owned();
+    refuse(&[compile.clone(), wrong_tool], &staged);
+    let mut another_name = replay.clone();
+    another_name.module = Some("Demo.Other".to_owned());
+    refuse(&[compile.clone(), another_name], &staged);
+    refuse(&[compile.clone(), replay.clone()], &BTreeMap::new());
+    let mut changed_staged = staged.clone();
+    changed_staged.get_mut(&module).expect("staged").private = None;
+    refuse(&[compile.clone(), replay.clone()], &changed_staged);
+    let mut omitted = compile.clone();
+    let mut omitted_replay = replay.clone();
+    omitted.olean.as_mut().expect("bound").private = None;
+    omitted_replay.olean.as_mut().expect("bound").private = None;
+    refuse(&[omitted, omitted_replay], &staged);
+    let absent = OLeanParts {
+        main: parts.main,
+        server: None,
+        private: None,
+    };
+    let empty_server = OLeanParts {
+        server: Some(Sha256Digest::of(b"")),
+        ..absent.clone()
+    };
+    assert_ne!(empty_server, absent, "empty bytes are present, not absent");
+    let mut no_server_compile = compile.clone();
+    let mut no_server_replay = replay.clone();
+    no_server_compile.olean = Some(absent.clone());
+    no_server_replay.olean = Some(absent);
+    let empty_staged = [(module, empty_server)].into_iter().collect();
+    refuse(&[no_server_compile, no_server_replay], &empty_staged);
+    let mut orphan = compile.clone();
+    orphan.olean.as_mut().expect("bound").server = None;
+    refuse(&[orphan, replay], &staged);
+}
+
+/// Exercise ordinary `Lean.addDecl`, rather than a source elaboration error.
+/// The source is test-only and never receives a generated-source exemption.
+fn kernel_false_replay_regression() {
+    use lexlean::verify::child::{self, ChildHome, ChildSpec, Normalizer};
+    use lexlean::verify::{leanchecker, toolchain};
+    let project = P::example();
+    project.relock();
+    let limits = support::limits_of(&project);
+    let guard = support::env_shared();
+    let tools = toolchain::preflight(&limits).expect("real pinned toolchain");
+    let scratch = project.root.join("kernel-false");
+    std::fs::create_dir_all(&scratch).expect("scratch");
+    let source = scratch.join("VR28KernelFalse.lean");
+    // No module header: keep theorem bodies. forceExpose also explicitly
+    // retains this ordinary addDecl theorem's body for the real checker.
+    let witness = r#"import Lean
+run_elab do
+  Lean.addDecl (.thmDecl { name := `VR28KernelFalse.bad, levelParams := [], type := Lean.mkConst ``False, value := Lean.mkConst ``True.intro }) true
+"#;
+    std::fs::write(&source, witness).expect("witness source");
+    let main = scratch.join("VR28KernelFalse.olean");
+    let normalizer = Normalizer::new(&scratch, &project.root, &project.root, &tools.root);
+    let bin = tools.root.join("bin");
+    let compile = |skip: bool| {
+        let mut argv = vec!["env".to_owned(), tools.lean.path.to_string()];
+        if skip {
+            argv.push("-Ddebug.skipKernelTC=true".to_owned());
+        }
+        argv.extend(["-o".to_owned(), main.to_string(), source.to_string()]);
+        child::run(
+            &ChildSpec {
+                tool: "lean",
+                module: Some("VR28KernelFalse".to_owned()),
+                program: &tools.lake.path,
+                executable_sha256: tools.lean.sha256,
+                argv,
+                cwd: &project.root,
+                extra_env: Vec::new(),
+                home: ChildHome::Toolchain {
+                    toolchain_bin: &bin,
+                },
+            },
+            &limits,
+            &normalizer,
+        )
+        .expect("bounded real Lean")
+    };
+    let checked = compile(false);
+    assert_ne!(
+        checked.exit_code, 0,
+        "the ordinary kernel rejects False with True.intro"
+    );
+    let skipped = compile(true);
+    assert_eq!(
+        skipped.exit_code, 0,
+        "the skip flag must produce the actual bad artifact: {}{}",
+        skipped.stdout, skipped.stderr
+    );
+    assert!(skipped
+        .argv
+        .iter()
+        .any(|arg| arg == "-Ddebug.skipKernelTC=true"));
+    let actual = leanchecker::capture_olean_parts(&main).expect("actual complete tuple");
+    let replay = leanchecker::run_bound_leanchecker(
+        &tools,
+        "VR28KernelFalse",
+        scratch.as_str(),
+        &project.root,
+        &limits,
+        &normalizer,
+        leanchecker::ReplayInput {
+            search_path: std::slice::from_ref(&scratch),
+            staged: &main,
+        },
+    )
+    .expect("real pinned checker ran");
+    assert_ne!(
+        replay.exit_code, 0,
+        "the real kernel checker must reject that artifact"
+    );
+    let rejection = format!("{}{}", replay.stdout, replay.stderr);
+    assert!(
+        rejection.contains("VR28KernelFalse.bad"),
+        "the checker rejects the planted declaration, rather than missing its input: {rejection}"
+    );
+    assert_eq!(replay.executable_sha256, tools.leanchecker.sha256);
+    assert_eq!(replay.olean, Some(actual));
+    assert_eq!(replay.argv[2], "VR28KernelFalse");
+    drop(guard);
+
+    if !support::posix_shell_backed("VR-28") {
+        return;
+    }
+    // Reuse the existing test wrapper transport, changing only lake. Both
+    // Lean and leanchecker remain symlinks to the real pinned executables.
+    let quote = |value: &str| format!("'{}'", value.replace('\'', "'\\''"));
+    let flag_seen = scratch.join("flag-seen");
+    let compile_status = scratch.join("compile-status");
+    let checker_seen = scratch.join("checker-seen");
+    let script = format!(
+        r#"#!/bin/sh
+real={real_lake}
+if [ "$1" = env ] && [ "$2" = lean ]; then
+  for argument in "$@"; do
+    case "$argument" in
+      */lean-src/LexLeanExample/Main.lean)
+        case " $* " in
+          *" -Ddebug.skipKernelTC=true "*) printf '%s\n' yes > {flag_seen} ;;
+          *) exit 97 ;;
+        esac
+        cat {source} > "$argument"
+        "$real" "$@"
+        status=$?
+        printf '%s\n' "$status" > {compile_status}
+        exit "$status"
+        ;;
+    esac
+  done
+fi
+if [ "$1" = env ] && [ "$3" = LexLeanExample.Main ]; then
+  case "$2" in */leanchecker) printf '%s\n' "$2" > {checker_seen} ;; esac
+fi
+exec "$real" "$@"
+"#,
+        real_lake = quote(tools.lake.path.as_str()),
+        flag_seen = quote(flag_seen.as_str()),
+        source = quote(source.as_str()),
+        compile_status = quote(compile_status.as_str()),
+        checker_seen = quote(checker_seen.as_str())
+    );
+    let wrapped = support::fake_toolchain(&[("lake", &script)]);
+    let wrapped_home = wrapped.path().to_str().expect("utf8 fake home");
+    support::with_env(&[("ELAN_HOME", Some(wrapped_home))], || {
+        let rejected = project.verify_fails_with("LLV7003");
+        assert!(
+            format!("{rejected}").contains("VR28KernelFalse.bad"),
+            "the pipeline rejects the actual planted declaration: {rejected}"
+        );
+        assert_eq!(
+            std::fs::read_to_string(&flag_seen)
+                .expect("eligible flag seen")
+                .trim(),
+            "yes"
+        );
+        assert_eq!(
+            std::fs::read_to_string(&compile_status)
+                .expect("real Lean compiled bad artifact")
+                .trim(),
+            "0"
+        );
+        let checker =
+            std::fs::read_to_string(&checker_seen).expect("actual pipeline invoked checker");
+        assert_eq!(
+            std::fs::canonicalize(checker.trim()).expect("checker path"),
+            std::fs::canonicalize(tools.leanchecker.path.as_std_path()).expect("real checker")
+        );
+        assert!(
+            support::file_set(&project.root.join(".lexlean/verified")).is_empty(),
+            "kernel-false artifact publishes nothing"
+        );
+    });
 }

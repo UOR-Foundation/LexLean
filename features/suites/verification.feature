@@ -26,11 +26,12 @@ Feature: verification
     And no argv contains `update`, `build` or `fetch`
 
   @VR-04 @build
-  Scenario: Every used external interface is elaborated in the unique reserved probe module.
+  Scenario: Every used external interface is elaborated in the unique reserved probe module, which emits only its closed escaped effective-search-path report.
     Given the verified nat-add-zero example and its semantic ID
     When the reserved probe and audit module names are derived from that semantic ID
     Then the probe/ directory contains exactly one .lean file named after the reserved probe module
     And the probe module name differs from the audit module name
+    And successful probe output is solely the closed escaped effective-search-path report
 
   @VR-05 @build
   Scenario: Generated modules compile in topological order and produce one required olean each.
@@ -168,3 +169,12 @@ Feature: verification
     Then the join publishes a verified directory byte-identical to the whole verification's, with the same attestation identity
     And a shard whose plan elaborates a module before its imports, and a join that is handed one shard too few, are refused
     And a join reading a replay record whose executable digest is not its own leanchecker's is refused
+
+  @VR-28 @build
+  Scenario: Generated project modules and certificates A, B, and E omit the in-process kernel check only when a successful pinned same-run replay binds the same module and complete olean parts; one publication guard covers local and imported records, the certificate tail, and staged project artifacts, while runtime, support, probe, extraction, and audit modules retain their in-process checks.
+    Given generated project and certificate modules, their same-run process records, and the staged olean artifacts
+    When their compile and replay bindings are checked before publication
+    Then each flagged compile has one successful pinned replay for the same module and identical main, server, and private olean parts
+    And absent companions differ from present bytes, and malformed, missing, failed, or substituted bindings are refused
+    And imported shard records and the certificate tail obey the same guard and staged project hashes agree
+    And runtime, support, probe, extraction, and audit compilations keep the in-process kernel check
