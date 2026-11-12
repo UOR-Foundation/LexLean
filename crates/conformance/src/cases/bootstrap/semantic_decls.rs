@@ -582,7 +582,8 @@ fn drawn_declaration(seeded: &mut Seeded) -> SemanticDeclaration {
             name: drawn_name(seeded),
             class: reference(None, "C"),
             arguments: (0..seeded.below(3)).map(|_| drawn_type(seeded)).collect(),
-            priority: *seeded.pick(&[0, 1, 100, u64::MAX]),
+            // The canonical JSON domain ends at `i64::MAX`.
+            priority: *seeded.pick(&[0, 1, 100, 9_223_372_036_854_775_807]),
             fields: (0..seeded.below(3))
                 .map(|_| SemanticAssignment {
                     field: drawn_name(seeded),
