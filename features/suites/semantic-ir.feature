@@ -266,3 +266,10 @@ Feature: semantic-ir
     When the project is linked, built, and verified by the pinned Lean, its formatted source and its LaTeX are read back, and each planted project is linked
     Then the generated Lean induces over the recursor the pinned Lean generates for the type, with the goals in the order of its minor premises, and the theorem verifies with exactly the axioms `propext` and `Quot.sound` and the formatter writes the proof unchanged
     And each planted project is refused as LLT4001 naming the misuse, and no backend output is written
+
+  @SM-38 @build
+  Scenario: A language-1.2 build publishes, for every semantic module, a declaration ID for each declaration and a statement ID for each theorem: the declaration ID is a framed SHA-256 of the declaration's canonical JSON and of the declaration IDs of the project declarations it references, with declarations that reference one another hashed as one group, and the statement ID omits the theorem's proof; changing one literal of one definition changes the declaration IDs of exactly that definition and of the declarations that reach it by reference, changing a theorem's proof alone leaves its statement ID unchanged, adding or reordering independent declarations changes no ID, the IDs equal their recomputation from the specified framed inputs, the file validates against `api/schemas/declarations.schema.json`, and a language-1.0 or 1.1 build publishes none.
+    Given a language-1.2 project whose definitions reference one another, with a mutual pair of inductive types, a definition nothing references, and a theorem over one definition
+    When the project is built, its declarations file is read, and copies are built with one literal changed, with the theorem's proof changed, and with a declaration added and the declarations reordered
+    Then the IDs equal their recomputation from the framed inputs, the file validates against its schema, and exactly the changed definition and the declarations that reach it change ID
+    And the theorem's statement ID survives the change of its proof, and a language-1.0 build publishes no declarations file

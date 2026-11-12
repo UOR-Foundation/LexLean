@@ -21,6 +21,15 @@ workspace carried at those versions without a tag.
   every input a committed build oracle records still hashes to its recorded digest, every lock
   passes `lexlean lock --check`, and every committed export package names this compiler's
   semantics and its project's committed semantic ID. Stale generated files fail in minutes.
+- Declaration IDs (SPEC.md §21.9, `SM-38`; no new diagnostic code, no change to
+  any compiler-semantics ID). A language-1.2 build publishes
+  `declarations/<module>.json` (`lexlean/declarations/1`, schema
+  `api/schemas/declarations.schema.json`) with a declaration ID for every
+  declaration of a semantic module, a framed SHA-256 over its canonical JSON
+  and the IDs of the project declarations it references, with each group of
+  declarations that reference one another hashed as one, and a statement ID
+  for every theorem that omits its proof. Builds of languages 1.0 and 1.1 are
+  unchanged. The register is 483 IDs.
 - `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
   initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
   `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
