@@ -39,6 +39,11 @@ walkdir = { workspace = true }
 rustix = { workspace = true }
 signal-hook = { workspace = true }
 
+# The build script records the address of the `rustc` that compiles this crate
+# (SPEC.md §22.11): the SHA-256 of its executable and driver library.
+[build-dependencies]
+sha2 = { workspace = true }
+
 [dev-dependencies]
 proptest = { workspace = true }
 

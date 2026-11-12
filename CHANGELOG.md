@@ -17,6 +17,18 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Every part of a verification names its toolchain by address (SPEC.md
+  §22.11, §9.4). A shard writes `toolchain.json` (`lexlean/verify-toolchain/1`)
+  beside its output: the SHA-256 of the `lean`, `lake`, and `leanchecker` its
+  preflight hashed, of the running `lexlean`, and the address of the `rustc`
+  that compiled it (its executable and `rustc_driver` library, which the build
+  script hashes). A part that reads another refuses it (`LLI9001`, naming the
+  part, the tool, and both addresses) unless all five equal its own. A record
+  names only the executable it ran, so a part that ran another `lake`,
+  `lexlean`, or `rustc` was accepted before. `VR-23` plants another `lake`
+  address in a shard's output, and on unix a join whose own `lake` differs by
+  one byte. Published directories, attestations, and `expected/verify` are
+  unchanged.
 - A one-pass writer for the counts of the bootstrap count cases, #92.
   Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
   `BS-15` records every count it checks in `target/count-report/` instead of
