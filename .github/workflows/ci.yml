@@ -150,7 +150,14 @@ jobs:
       - name: Test the Intel construction and inventory checks
         env:
           PYTHONDONTWRITEBYTECODE: "1"
-        run: python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'
+        run: |
+          python3 -m unittest discover -s .github/scripts -p 'test_intel_host_tests.py'
+          python3 -m unittest discover -s .github/scripts -p 'test_host_lanes.py'
+      # Stale generated files fail here in minutes, before the expensive
+      # roots: every input a committed build oracle records, every lock, and
+      # every committed export package must be current (§9.4). No Lean.
+      - name: Check that the committed generated files are current
+        run: cargo xtask check-freshness
       - name: Run the honesty part of the acceptance gate
         shell: bash
         run: |
@@ -169,6 +176,87 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
+  # The bootstrap production export, once for the run (SPEC.md §9.4). Every
+  # bootstrap case compares the packages of that export with the committed
+  # packages, and exporting verifies the whole bootstrap project, which took
+  # 20 to 37 minutes of every part that ran it. This job runs it once, at the
+  # profile of the `examples` leg, requires its packages to equal the
+  # committed ones, and uploads the bundle with a custody record that binds it
+  # to the repository, the run and its attempt, the commit and its tree, the
+  # toolchain pins and the toolchains that ran, and the bundle's digest. A leg
+  # takes it through `.github/scripts/take-bootstrap-export.sh` when one of
+  # its cases first needs it, and the harness checks the record against the
+  # leg's own run and checkout and replays the bundle before the case reads
+  # it. The legs start when honesty passes, as before, and wait only at that
+  # point; the artifact is read by this run alone.
+  bootstrap-export:
+    name: bootstrap export
+    needs: [plan, honesty]
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      LEXLEAN_CI_TELEMETRY: ${{ github.workspace }}/ci-evidence
+      # The resource profile of the examples leg (§22.11); operational only.
+      LEXLEAN_VERIFY_WIDTH: "2"
+      LEXLEAN_VERIFY_MEMORY_KIB: "12582912"
+      LEXLEAN_VERIFY_HINTS: ${{ github.workspace }}/.github/verify-hints.json
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Install elan and the pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - name: Reserve bounded overflow memory for the export
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo chmod 600 "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo mkswap "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo swapon "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo sysctl vm.swappiness=10
+          swapon --show
+      - name: Export the bootstrap project once for the run
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p ci-evidence
+          sample_resources() {
+            set +e
+            while true; do
+              avail=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
+              swap=$(awk '/^SwapTotal:/ {t=$2} /^SwapFree:/ {f=$2} END {print t-f}' /proc/meminfo)
+              top=$( (ps -eo rss= --sort=-rss || true) | awk 'NR==1 {print $1}')
+              printf '%s\t%s\t%s\t%s\n' "$(date +%s.%N | cut -c1-14)" "$avail" "$swap" "${top:-0}"
+              sleep 5
+            done
+          }
+          sample_resources > ci-evidence/resources.tsv &
+          sample_pid=$!
+          trap 'kill "$sample_pid" 2>/dev/null || true; wait "$sample_pid" 2>/dev/null || true' EXIT
+          cargo xtask export-bootstrap --output "$RUNNER_TEMP/bootstrap-export" 2>&1 | tee ci-evidence/vv.txt
+      - name: Summarize the run's timing and memory
+        if: ${{ !cancelled() }}
+        run: cargo xtask ci-summary --evidence ci-evidence
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: bootstrap-export
+          path: ${{ runner.temp }}/bootstrap-export
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 1
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: acceptance-gate-evidence-bootstrap-export
+          path: ci-evidence
+          if-no-files-found: error
+          retention-days: 14
+
   vv:
     name: just vv (${{ matrix.part }})
     needs: [plan, honesty]
@@ -181,6 +269,11 @@ jobs:
       matrix:
         include: ${{ fromJSON(needs.plan.outputs.fanout) }}
     runs-on: ubuntu-24.04
+    # `actions: read` lets a leg list and download this run's artifacts: the
+    # bootstrap export, which its fetcher takes when a case needs it.
+    permissions:
+      contents: read
+      actions: read
     # Complete proof coverage is intentionally the long pole. GitHub-hosted
     # jobs permit six hours; a shorter local-style timeout would turn complete
     # proof coverage into a CI failure mode.
@@ -227,9 +320,23 @@ jobs:
           swapon --show
       - name: Run the normative acceptance gate
         shell: bash
+        env:
+          # In a run that is the whole gate, the `bootstrap export` job exports
+          # the bootstrap project for every leg (§9.4): the fetcher takes the
+          # run's artifact when a case first asks for it, and the harness
+          # checks its custody record before any case reads it. Otherwise no
+          # job exports it once, and a case exports it itself.
+          FULL_GATE: ${{ needs.plan.outputs.full }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           mkdir -p ci-evidence
+          take_pid=
+          if [ "$FULL_GATE" = true ]; then
+            export LEXLEAN_BOOTSTRAP_EXPORT="$RUNNER_TEMP/bootstrap-export"
+            .github/scripts/take-bootstrap-export.sh "$LEXLEAN_BOOTSTRAP_EXPORT" > ci-evidence/take-bootstrap-export.txt 2>&1 &
+            take_pid=$!
+          fi
           monitor_resources() {
             while true; do
               date -u +'%Y-%m-%dT%H:%M:%SZ'
@@ -255,7 +362,7 @@ jobs:
           monitor_pid=$!
           sample_resources > ci-evidence/resources.tsv &
           sample_pid=$!
-          trap 'kill "$monitor_pid" "$sample_pid" 2>/dev/null || true; wait "$monitor_pid" "$sample_pid" 2>/dev/null || true' EXIT
+          trap 'kill "$monitor_pid" "$sample_pid" $take_pid 2>/dev/null || true; wait "$monitor_pid" "$sample_pid" $take_pid 2>/dev/null || true' EXIT
           just --timestamp --timestamp-format '%s%.3f' ${{ matrix.recipes }} 2>&1 | tee ci-evidence/vv.txt
           # The end of the leg's last recipe, as `vv` prints its own at the end
           # of the whole gate (`repo_conformance::evidence::PART_PASSED_LINE`).
@@ -1021,9 +1128,10 @@ jobs:
   # reports which ones it skipped; on Linux x86-64 the same gate makes the
   # toolchain mandatory, so nothing passes vacuously where it matters.
   #
-  # The three hosts below keep their original single invocation. Intel's
-  # conformance execution is partitioned below after one construction; its
-  # final aggregate retains the fourth supported-host status (issue #449).
+  # The two hosts below keep their original single invocation. Windows runs
+  # as lanes below, each building for itself, and Intel's conformance
+  # execution is partitioned below after one construction; each aggregate
+  # retains its supported-host status (issue #449).
   # There is no separate build step here: `cargo test` with the same `--locked
   # --workspace --all-features` builds, in the same profile, the library and the
   # binary of `lexlean` (its integration tests run the binary) before it runs a
@@ -1040,7 +1148,6 @@ jobs:
         include:
           - { os: ubuntu-24.04-arm, target: aarch64-unknown-linux-gnu }
           - { os: macos-15, target: aarch64-apple-darwin }
-          - { os: windows-2022, target: x86_64-pc-windows-msvc }
     runs-on: ${{ matrix.os }}
     # Keep the existing bound; scheduling changes do not extend it.
     timeout-minutes: 240
@@ -1161,3 +1268,72 @@ jobs:
           path: ${{ runner.temp }}/intel-evidence
           if-no-files-found: error
           retention-days: 14
+
+  # Windows x86-64 as lanes of one run (§8.3): its one `cargo test` took 106
+  # to 126 minutes, the longest job of the gate, almost all of it the
+  # conformance harness. Each lane is its own clean checkout and build; the
+  # conformance lanes run the cases of the Intel lanes' partition
+  # (`.github/intel-host-lanes.json`), and `producer` runs every other test
+  # and doctest of the workspace. Each lane records what the host listed and
+  # what ran, and the join requires every lane of this run and commit, lanes
+  # that are disjoint, and an execution equal to the host's whole listing,
+  # before the host's context passes.
+  windows-part:
+    name: Windows tests (${{ matrix.lane }})
+    needs: [plan, honesty]
+    if: ${{ needs.plan.outputs.full == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        lane: [producer, lower, print, validate, moves]
+    runs-on: windows-2022
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: The runner is the host this leg claims
+        shell: bash
+        run: |
+          set -euo pipefail
+          host="$(rustc -vV | sed -n 's/^host: //p')"
+          if [ "$host" != x86_64-pc-windows-msvc ]; then
+            echo "::error::windows-2022 is $host, not x86_64-pc-windows-msvc (SPEC.md §8.3)"
+            exit 1
+          fi
+          echo "$host"
+      - name: Execute this lane and record its inventory
+        shell: bash
+        run: python .github/scripts/host_lanes.py execute --target x86_64-pc-windows-msvc --lane ${{ matrix.lane }} --output "$RUNNER_TEMP/host-lane"
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ always() }}
+        with:
+          name: host-x86_64-pc-windows-msvc-${{ matrix.lane }}
+          path: ${{ runner.temp }}/host-lane
+          if-no-files-found: error
+          retention-days: 14
+
+  # The Windows host status: every lane's receipt, joined. It runs even after
+  # a failure, so a missing lane reads as a failure and never as success.
+  windows-join:
+    name: build and non-Lean tests (x86_64-pc-windows-msvc)
+    needs: [plan, windows-part]
+    if: ${{ always() && needs.plan.outputs.full == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: host-x86_64-pc-windows-msvc-*
+          path: ${{ runner.temp }}/host-lanes
+      - name: Verify every lane and the complete Windows inventory
+        run: python3 .github/scripts/host_lanes.py join --target x86_64-pc-windows-msvc --artifacts "$RUNNER_TEMP/host-lanes"
+      - name: All Windows lanes succeeded
+        if: ${{ always() }}
+        shell: bash
+        env:
+          PART_RESULT: ${{ needs.windows-part.result }}
+        run: |
+          set -euo pipefail
+          test "$PART_RESULT" = success

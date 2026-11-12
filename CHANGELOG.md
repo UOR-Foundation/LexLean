@@ -49,6 +49,20 @@ workspace carried at those versions without a tag.
   `SurfaceTooling` return what `surface::tooling::print_module`,
   `parse_module`, and `declaration_spans` return; the printer admits
   `recursion` and the other two do not. The register is 484 IDs.
+- `cargo xtask check-freshness` (SPEC.md §9.4), run in the honesty job before the expensive roots:
+  every input a committed build oracle records still hashes to its recorded digest, every lock
+  passes `lexlean lock --check`, and every committed export package names this compiler's
+  semantics and its project's committed semantic ID. Stale generated files fail in minutes.
+- CI exports the bootstrap project once per run (SPEC.md §9.4): the `bootstrap export` job
+  runs `cargo xtask export-bootstrap` at the `examples` leg's profile, requires the committed
+  packages, and uploads the bundle with a custody record (`lexlean/ci-bootstrap-export/1`); a
+  leg takes it when a case first needs it, and the harness checks the record against its own
+  run and checkout and replays the bundle. No bootstrap part verifies the bootstrap project.
+- CI runs the Windows x86-64 host's tests as five lanes of one run (SPEC.md §8.3): the four
+  conformance lanes of `.github/intel-host-lanes.json` and a `producer` lane with every other test
+  and doctest. A join on `ubuntu-24.04` keeps the context `build and non-Lean tests
+  (x86_64-pc-windows-msvc)` and passes only when the lanes' executed tests equal the host's
+  listing, each once. The single Windows job took 106-126 minutes.
 - Declaration IDs (SPEC.md §21.9, `SM-38`; no new diagnostic code, no change to
   any compiler-semantics ID). A language-1.2 build publishes
   `declarations/<module>.json` (`lexlean/declarations/1`, schema
@@ -58,6 +72,16 @@ workspace carried at those versions without a tag.
   declarations that reference one another hashed as one, and a statement ID
   for every theorem that omits its proof. Builds of languages 1.0 and 1.1 are
   unchanged. The register is 483 IDs.
+- The evaluator differential of the `BS` cases runs its corpus on every processor of the host:
+  the calling thread and helpers from one budget the process shares, each taking the next run.
+  The verdict and the disagreements it reports are the sequential ones; each `bdd-bootstrap-*`
+  part of the gate is a single case, so three of a runner's four processors were idle.
+- `regenerate.yml` (SPEC.md §9.4): a push to `regenerate/<name>`, or a dispatch, runs the write recipes on runners, the production
+  export, the verification records and the other oracles as three parallel jobs, and returns one
+  reviewed patch, so that a change which moves committed output is no longer regenerated on a
+  workstation.
+  A fourth job then writes the moved counts of the bootstrap count cases, the model documents,
+  and the stack bound of each recursive package that lacks one, so the patch is the whole landing.
 - `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
   initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
   `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
