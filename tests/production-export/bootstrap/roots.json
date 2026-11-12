@@ -631,6 +631,22 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "semantic_declaration_text",
+      "root": "LexLeanBoot.SemanticDecls.declarationText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "semantic_module_text",
+      "root": "LexLeanBoot.SemanticDecls.moduleText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }
