@@ -17,6 +17,12 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The linked term IR in its canonical JSON as language-1.2 source, first slice of the
+  typed IR (SPEC.md §17.23, §17.3, §17.9, `BS-65`, #269; no new diagnostic code, no
+  change to the language-1.2 identity). `termText`, `canonicalKey`, `eqKey`,
+  `nodeCount`, and `termDepth` of `IrTerm` return what `Term::to_json`,
+  `canonical_key`, `eq_key`, `node_count`, and `depth` return, and admit
+  `recursion`. The register is 494 IDs.
 - A one-pass writer for the counts of the bootstrap count cases, #92.
   Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
   `BS-15` records every count it checks in `target/count-report/` instead of

@@ -55,3 +55,6 @@ writers it uses, and the standard library's `Numeral`, `Order`, and `Sha256`, an
 canonical project manifest of SPEC.md §10.1 and its digest.
 `src/ManifestText.lex.tex` (SPEC.md §17.23, `BS-34`) imports the standard library's `Json`,
 `Numeral`, `Order`, and `Text`, and writes the build manifest of SPEC.md §21.6.
+`src/IrTerm.lex.tex` (SPEC.md §17.23, `BS-65`) imports `LexiconLse` (`BS-25`), whose universes
+and binder modes it uses, and the standard library's `Json`, `Numeral`, and `Order`, and writes
+the canonical JSON of a linked term of SPEC.md §17.9.

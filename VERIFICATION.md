@@ -11695,6 +11695,45 @@ produces the three packages and measures the row of `print_tooling_module` in
 `tests/stack-bounds.json` (`PD-08`). The branch is stacked on `BS-24` and lands
 after it.
 
+### the term IR is source (BS-65)
+
+`BS-65` holds the five production roots of `LexLeanBoot.IrTerm`
+(`bootstrap/src/IrTerm.lex.tex`) to `lexlean::ir::term`: `termText` to
+`Term::to_json` under the hashing renumbering written canonically,
+`canonicalKey` to `Term::canonical_key`, `eqKey` to `Term::eq_key`, `nodeCount`
+to `Term::node_count`, and `termDepth` to `Term::depth`. The module declares the
+core references, the four kinds of global reference, and the closed term IR of
+SPEC.md §17.3 as inductives, and reuses the universes and binder modes of
+`LexiconLse` (`BS-25`), as the oracle reuses `lexicon::lse`. A list of terms or
+of binders is a chain of cells of `Term` itself and a `let` carries the fields
+of its binder, so that each root is one structural recursion over one inductive;
+the renumbering is an association table threaded through that recursion, which
+binds each binder after its type and a `let` binder after its value, numbers a
+free local on first use under hashing, and keeps it verbatim under comparison.
+The JSON is written with the standard library's `writeJson`, which orders the
+keys; the key strips every `s` member, as the oracle does. Numbers beyond `i64`
+saturate as the oracle's do. Every root admits exactly `allocation`, `overflow`,
+and `recursion`. The oracle is the existing public code of `term.rs`; no Rust
+outside the case changes.
+
+The case holds each root to the oracle on hand-built terms that reach every
+constructor, every kind of global and every core constructor, rebound ids, free
+locals before bound ones, a binder in its own type, a `let` over free locals,
+binder modes, omitted implicit binders, universes with `max` and `imax`, numbers
+beyond `i64`, and escapes in a spelling; on every distinct term of the linked IR
+of the committed projects that declare document environments
+(`examples/list-induction`, `nat-add-zero`, `peano-arithmetic`,
+`propositional-logic`, and the fixture projects of `tests/fixtures` that check),
+each declaration's parameters also bound over its statement as one term; and on
+seeded terms. Each planted defect names the root and the vector that catch it,
+and the case asserts that the site of each plant occurs once. The row's
+statement carries no counts.
+
+Measured with the compiler binary of this tree's compiler sources: `lexlean
+check` of the `bootstrap/` project passes, with each of the five roots eligible
+for `rust-std` with exactly its declared effects, and `lexlean fmt --check`
+passes.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
