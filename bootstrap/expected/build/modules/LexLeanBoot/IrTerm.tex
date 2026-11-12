@@ -1,0 +1,251 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{CoreRef}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{CEq}: \texttt{()}.\par
+\noindent Constructor \texttt{CAnd}: \texttt{()}.\par
+\noindent Constructor \texttt{COr}: \texttt{()}.\par
+\noindent Constructor \texttt{CNot}: \texttt{()}.\par
+\noindent Constructor \texttt{CIff}: \texttt{()}.\par
+\noindent Constructor \texttt{CExists}: \texttt{()}.\par
+\noindent Constructor \texttt{CExistsUnique}: \texttt{()}.\par
+\subsection*{\texttt{GlobalRef}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{GCore}: \texttt{(CoreRef)}.\par
+\noindent Constructor \texttt{GExternal}: \texttt{(ByteArray, ByteArray, ByteArray, ByteArray, ByteArray)}.\par
+\noindent Constructor \texttt{GDocument}: \texttt{(ByteArray, ByteArray, ByteArray)}.\par
+\noindent Constructor \texttt{GDefined}: \texttt{(ByteArray, ByteArray, ByteArray)}.\par
+\subsection*{\texttt{Term}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{TSort}: \texttt{(LexLeanBoot.LexiconLse.Universe)}.\par
+\noindent Constructor \texttt{TLocal}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{TGlobal}: \texttt{(GlobalRef, LexLeanBoot.LexiconLse.Universe)}.\par
+\noindent Constructor \texttt{TApp}: \texttt{(Term, Term, List (Nat))}.\par
+\noindent Constructor \texttt{TPi}: \texttt{(Term, Term)}.\par
+\noindent Constructor \texttt{TLam}: \texttt{(Term, Term)}.\par
+\noindent Constructor \texttt{TLet}: \texttt{(Nat, Nat, ByteArray, Term, Term, Term)}.\par
+\noindent Constructor \texttt{TNat}: \texttt{(ByteArray, Term)}.\par
+\noindent Constructor \texttt{TNil}: \texttt{()}.\par
+\noindent Constructor \texttt{TItem}: \texttt{(Term, Term)}.\par
+\noindent Constructor \texttt{TBind}: \texttt{(Nat, Nat, ByteArray, Term, Term)}.\par
+\subsection*{\texttt{Renumber}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{table}: \texttt{List ((Prod (Nat) (Nat)))}.\par
+\noindent Field \texttt{next}: \texttt{Nat}.\par
+\noindent Field \texttt{keepFree}: \texttt{Bool}.\par
+\subsection*{\texttt{Resolved}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{RBound}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{RFree}: \texttt{(Nat)}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{jtext}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JStr (lit (literal))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{member}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (entry : LexLeanStd.Json.Json) (rest : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JMember (lit (key)) (entry) (rest)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{capped}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if (Nat.ble (number) (9223372036854775807)) then number else 9223372036854775807)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{jnat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(number : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JInt (false) (capped (number))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{coreName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(core : CoreRef)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match core with | CoreRef.CEq => lit ("eq") | CoreRef.CAnd => lit ("and") | CoreRef.COr => lit ("or") | CoreRef.CNot => lit ("not") | CoreRef.CIff => lit ("iff") | CoreRef.CExists => lit ("exists") | CoreRef.CExistsUnique => lit ("exists-unique"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{universeJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(level : LexLeanBoot.LexiconLse.Universe)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match level with | LexLeanBoot.LexiconLse.Universe.UNum number => LexLeanStd.Json.Json.JObj (member ("num") (jnat (number)) (LexLeanStd.Json.Json.JNil)) | LexLeanBoot.LexiconLse.Universe.UVar named => LexLeanStd.Json.Json.JObj (member ("var") (LexLeanStd.Json.Json.JStr (named)) (LexLeanStd.Json.Json.JNil)) | LexLeanBoot.LexiconLse.Universe.USucc inner => LexLeanStd.Json.Json.JObj (member ("succ") (universeJson (inner)) (LexLeanStd.Json.Json.JNil)) | LexLeanBoot.LexiconLse.Universe.UMax levels => LexLeanStd.Json.Json.JObj (member ("max") (LexLeanStd.Json.Json.JArr (universeJson (levels))) (LexLeanStd.Json.Json.JNil)) | LexLeanBoot.LexiconLse.Universe.UIMax left right => LexLeanStd.Json.Json.JObj (member ("imax") (LexLeanStd.Json.Json.JArr (LexLeanStd.Json.Json.JItem (universeJson (left)) (LexLeanStd.Json.Json.JItem (universeJson (right)) (LexLeanStd.Json.Json.JNil)))) (LexLeanStd.Json.Json.JNil)) | LexLeanBoot.LexiconLse.Universe.UNil => LexLeanStd.Json.Json.JNil | LexLeanBoot.LexiconLse.Universe.UItem head tail => LexLeanStd.Json.Json.JItem (universeJson (head)) (universeJson (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{noLevels}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(levels : LexLeanBoot.LexiconLse.Universe)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match levels with | LexLeanBoot.LexiconLse.Universe.UNil => true | LexLeanBoot.LexiconLse.Universe.UNum \_ => false | LexLeanBoot.LexiconLse.Universe.UVar \_ => false | LexLeanBoot.LexiconLse.Universe.USucc \_ => false | LexLeanBoot.LexiconLse.Universe.UMax \_ => false | LexLeanBoot.LexiconLse.Universe.UIMax \_ \_ => false | LexLeanBoot.LexiconLse.Universe.UItem \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{globalJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(global : GlobalRef)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match global with | GlobalRef.GCore core => LexLeanStd.Json.Json.JObj (member ("kind") (jtext ("core")) (member ("name") (LexLeanStd.Json.Json.JStr (coreName (core))) (LexLeanStd.Json.Json.JNil))) | GlobalRef.GExternal \_ entry leanModule leanName signature => LexLeanStd.Json.Json.JObj (member ("kind") (jtext ("external")) (member ("entry") (LexLeanStd.Json.Json.JStr (entry)) (member ("lean\_module") (LexLeanStd.Json.Json.JStr (leanModule)) (member ("lean\_name") (LexLeanStd.Json.Json.JStr (leanName)) (member ("signature\_sha256") (LexLeanStd.Json.Json.JStr (LexLeanStd.Numeral.hex (signature))) (LexLeanStd.Json.Json.JNil)))))) | GlobalRef.GDocument sourceModule component leanName => LexLeanStd.Json.Json.JObj (member ("kind") (jtext ("document")) (member ("module") (LexLeanStd.Json.Json.JStr (sourceModule)) (member ("component") (LexLeanStd.Json.Json.JStr (component)) (member ("lean\_name") (LexLeanStd.Json.Json.JStr (leanName)) (LexLeanStd.Json.Json.JNil))))) | GlobalRef.GDefined \_ entry signature => LexLeanStd.Json.Json.JObj (member ("kind") (jtext ("defined")) (member ("entry") (LexLeanStd.Json.Json.JStr (entry)) (member ("signature\_sha256") (LexLeanStd.Json.Json.JStr (LexLeanStd.Numeral.hex (signature))) (LexLeanStd.Json.Json.JNil)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{lookupLocal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(table : List ((Prod (Nat) (Nat)))) (localId : Nat)}.\par
+\noindent Closure 1: binds \texttt{(found, entry)}, captures \texttt{(localId)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (Nat)) (entry : (Prod (Nat) (Nat))) => (if (Nat.beq ((entry).1) (localId)) then Option.some ((entry).2) else found))) (Option.none) (table) : Option (Nat))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{fresh}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : Renumber) (localId : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (Renumber))}.\par
+\noindent Definition: \texttt{((state).next, (\{ table := ((localId, (state).next) :: (state).table), next := ((state).next + 1), keepFree := (state).keepFree \} : Renumber))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : Renumber) (localId : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (Renumber))}.\par
+\noindent Definition: \texttt{(match lookupLocal ((state).table) (localId) with | Option.some index => (index, state) | Option.none => fresh (state) (localId))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{resolve}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : Renumber) (localId : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Resolved) (Renumber))}.\par
+\noindent Definition: \texttt{(match lookupLocal ((state).table) (localId) with | Option.some index => (Resolved.RBound (index), state) | Option.none => (if (state).keepFree then (Resolved.RFree (localId), state) else (let bound : (Prod (Nat) (Renumber)) := fresh (state) (localId); (Resolved.RBound ((bound).1), (bound).2))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hashing}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Renumber}.\par
+\noindent Definition: \texttt{(\{ table := ([] : List ((Prod (Nat) (Nat)))), next := 0, keepFree := false \} : Renumber)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{comparing}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Renumber}.\par
+\noindent Definition: \texttt{(\{ table := ([] : List ((Prod (Nat) (Nat)))), next := 0, keepFree := true \} : Renumber)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{localJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(resolved : Resolved)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match resolved with | Resolved.RBound index => LexLeanStd.Json.Json.JObj (member ("k") (jtext ("local")) (member ("id") (jnat (index)) (LexLeanStd.Json.Json.JNil))) | Resolved.RFree localId => LexLeanStd.Json.Json.JObj (member ("k") (jtext ("local")) (member ("free") (jnat (localId)) (LexLeanStd.Json.Json.JNil))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{modeName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(mode : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JStr (LexLeanBoot.LexiconLse.modeText (mode))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{binderJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(index : Nat) (mode : Nat) (spelling : ByteArray) (typed : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JObj (member ("id") (jnat (index)) (member ("m") (modeName (mode)) (member ("s") (LexLeanStd.Json.Json.JStr (spelling)) (member ("t") (typed) (LexLeanStd.Json.Json.JNil)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{implicitJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(implicits : List (Nat))}.\par
+\noindent Closure 1: binds \texttt{(acc, index)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (acc : LexLeanStd.Json.Json) (index : Nat) => LexLeanStd.Json.Json.JItem (jnat (index)) (acc))) (LexLeanStd.Json.Json.JNil) (LexLeanStd.Order.reverseList (Nat) (implicits)) : LexLeanStd.Json.Json)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{appJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(function : LexLeanStd.Json.Json) (arguments : LexLeanStd.Json.Json) (implicits : List (Nat))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(let tail : LexLeanStd.Json.Json := (match implicits with | List.nil => LexLeanStd.Json.Json.JNil | List.cons \_ \_ => member ("i") (LexLeanStd.Json.Json.JArr (implicitJson (implicits))) (LexLeanStd.Json.Json.JNil)); LexLeanStd.Json.Json.JObj (member ("k") (jtext ("app")) (member ("f") (function) (member ("a") (LexLeanStd.Json.Json.JArr (arguments)) (tail)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{globalTermJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(global : GlobalRef) (levels : LexLeanBoot.LexiconLse.Universe)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(let tail : LexLeanStd.Json.Json := (if noLevels (levels) then LexLeanStd.Json.Json.JNil else member ("u") (LexLeanStd.Json.Json.JArr (universeJson (levels))) (LexLeanStd.Json.Json.JNil)); LexLeanStd.Json.Json.JObj (member ("k") (jtext ("global")) (member ("g") (globalJson (global)) (tail))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{termJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(term : Term) (state : Renumber)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (LexLeanStd.Json.Json) (Renumber))}.\par
+\noindent Definition: \texttt{(match term with | Term.TSort level => (LexLeanStd.Json.Json.JObj (member ("k") (jtext ("sort")) (member ("u") (universeJson (level)) (LexLeanStd.Json.Json.JNil))), state) | Term.TLocal localId => (let resolved : (Prod (Resolved) (Renumber)) := resolve (state) (localId); (localJson ((resolved).1), (resolved).2)) | Term.TGlobal global levels => (globalTermJson (global) (levels), state) | Term.TApp function arguments implicits => (let head : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (function) (state); (let args : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (arguments) ((head).2); (appJson ((head).1) ((args).1) (implicits), (args).2))) | Term.TPi binders body => (let bound : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (binders) (state); (let inner : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (body) ((bound).2); (LexLeanStd.Json.Json.JObj (member ("k") (jtext ("pi")) (member ("b") (LexLeanStd.Json.Json.JArr ((bound).1)) (member ("v") ((inner).1) (LexLeanStd.Json.Json.JNil)))), (inner).2))) | Term.TLam binders body => (let bound : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (binders) (state); (let inner : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (body) ((bound).2); (LexLeanStd.Json.Json.JObj (member ("k") (jtext ("lam")) (member ("b") (LexLeanStd.Json.Json.JArr ((bound).1)) (member ("v") ((inner).1) (LexLeanStd.Json.Json.JNil)))), (inner).2))) | Term.TLet localId mode spelling typed bound body => (let typeJson : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (typed) (state); (let valueJson : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (bound) ((typeJson).2); (let index : (Prod (Nat) (Renumber)) := bind ((valueJson).2) (localId); (let inner : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (body) ((index).2); (LexLeanStd.Json.Json.JObj (member ("k") (jtext ("let")) (member ("b") (binderJson ((index).1) (mode) (spelling) ((typeJson).1)) (member ("x") ((valueJson).1) (member ("v") ((inner).1) (LexLeanStd.Json.Json.JNil))))), (inner).2))))) | Term.TNat decimal expected => (let inner : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (expected) (state); (LexLeanStd.Json.Json.JObj (member ("k") (jtext ("nat")) (member ("d") (LexLeanStd.Json.Json.JStr (decimal)) (member ("t") ((inner).1) (LexLeanStd.Json.Json.JNil)))), (inner).2)) | Term.TNil => (LexLeanStd.Json.Json.JNil, state) | Term.TItem head tail => (let first\_ : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (head) (state); (let rest : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (tail) ((first\_).2); (LexLeanStd.Json.Json.JItem ((first\_).1) ((rest).1), (rest).2))) | Term.TBind localId mode spelling typed tail => (let typeJson : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (typed) (state); (let index : (Prod (Nat) (Renumber)) := bind ((typeJson).2) (localId); (let rest : (Prod (LexLeanStd.Json.Json) (Renumber)) := termJson (tail) ((index).2); (LexLeanStd.Json.Json.JItem (binderJson ((index).1) (mode) (spelling) ((typeJson).1)) ((rest).1), (rest).2)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{withoutSpellings}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | LexLeanStd.Json.Json.JBool flag => LexLeanStd.Json.Json.JBool (flag) | LexLeanStd.Json.Json.JInt negative magnitude => LexLeanStd.Json.Json.JInt (negative) (magnitude) | LexLeanStd.Json.Json.JStr text => LexLeanStd.Json.Json.JStr (text) | LexLeanStd.Json.Json.JArr items => LexLeanStd.Json.Json.JArr (withoutSpellings (items)) | LexLeanStd.Json.Json.JObj members => LexLeanStd.Json.Json.JObj (withoutSpellings (members)) | LexLeanStd.Json.Json.JNil => LexLeanStd.Json.Json.JNil | LexLeanStd.Json.Json.JItem element rest => LexLeanStd.Json.Json.JItem (withoutSpellings (element)) (withoutSpellings (rest)) | LexLeanStd.Json.Json.JMember key inner rest => (if (LexLeanRuntime.equal (key) (lit ("s")) : Bool) then withoutSpellings (rest) else LexLeanStd.Json.Json.JMember (key) (withoutSpellings (inner)) (withoutSpellings (rest))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{termText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(term : Term)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJson ((termJson (term) (hashing)).1)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{canonicalKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(term : Term)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJson (withoutSpellings ((termJson (term) (hashing)).1))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{eqKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(term : Term)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJson (withoutSpellings ((termJson (term) (comparing)).1))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{nodeCount}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(term : Term)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match term with | Term.TSort \_ => 1 | Term.TLocal \_ => 1 | Term.TGlobal \_ \_ => 1 | Term.TApp function arguments \_ => ((1 + nodeCount (function)) + nodeCount (arguments)) | Term.TPi binders body => ((1 + nodeCount (binders)) + nodeCount (body)) | Term.TLam binders body => ((1 + nodeCount (binders)) + nodeCount (body)) | Term.TLet \_ \_ \_ typed bound body => (((1 + nodeCount (typed)) + nodeCount (bound)) + nodeCount (body)) | Term.TNat \_ expected => (1 + nodeCount (expected)) | Term.TNil => 0 | Term.TItem head tail => (nodeCount (head) + nodeCount (tail)) | Term.TBind \_ \_ \_ typed tail => (nodeCount (typed) + nodeCount (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{larger}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Nat) (right : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if (Nat.blt (left) (right)) then right else left)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{termDepth}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(term : Term)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match term with | Term.TSort \_ => 1 | Term.TLocal \_ => 1 | Term.TGlobal \_ \_ => 1 | Term.TApp function arguments \_ => (1 + larger (termDepth (function)) (termDepth (arguments))) | Term.TPi binders body => (1 + larger (termDepth (binders)) (termDepth (body))) | Term.TLam binders body => (1 + larger (termDepth (binders)) (termDepth (body))) | Term.TLet \_ \_ \_ typed bound body => (1 + larger (larger (termDepth (typed)) (termDepth (bound))) (termDepth (body))) | Term.TNat \_ expected => (1 + termDepth (expected)) | Term.TNil => 0 | Term.TItem head tail => larger (termDepth (head)) (termDepth (tail)) | Term.TBind \_ \_ \_ typed tail => larger (termDepth (typed)) (termDepth (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}
