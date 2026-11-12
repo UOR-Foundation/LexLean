@@ -2821,6 +2821,8 @@ backend runs.
 | collection primitives | `lexlean/semantic-module/2` | The `primitive` operations `map_insert`, `map_remove`, `map_lookup`, `map_contains`, `map_size`, `map_keys`, `map_values`, `map_entries`, `map_fold`, `set_insert`, `set_remove`, `set_contains`, `set_size`, `set_elements`, `set_union`, `set_intersection`, `set_difference`, `set_fold`, `list_fold`, `iterate`, `iterate_until`, `graph_successors`, `graph_reachable`, and `graph_topological`, under the collection rules below. |
 | `less_than` primitive | `lexlean/semantic-module/2` | `{"kind":"primitive","operation":"less_than","arguments":[a,b],"result":{"kind":"bool"}}` over two values of one ordered key type (rule 1 under *Collections and state threading*): `true` exactly when `a` precedes `b` in that type's fixed order. It lowers to `LexLeanCollections.lessThan`. |
 | `to_int`, `to_nat` primitives | `lexlean/semantic-module/2` | `{"kind":"primitive","operation":"to_int","arguments":[v],"result":{"kind":"int"}}` over any fixed-width integer `v` (`int8`..`int64`, `uint8`..`uint64`), and `{"kind":"primitive","operation":"to_nat","arguments":[v],"result":{"kind":"nat"}}` over any unsigned fixed-width integer `v` (`uint8`..`uint64`), under the widening-conversion rules below. |
+| `array` type | `lexlean/semantic-module/2` | `{"kind":"array","element":T}`, a sequence of values of one fixed-width integer type `T`, lowered to the pinned Lean's `Array (T)`, under the array rules below. |
+| array primitives | `lexlean/semantic-module/2` | The `primitive` operations `array_from_list`, `array_to_list`, and `array_set`, and `length` and `index` applied to an array, under the array rules below. |
 | `artifact` declaration | `lexlean/semantic-module/2` | A typed constant decoded from content-addressed project bytes, under the model rules below. |
 | `contract` declaration | `lexlean/semantic-module/2` | Typed input, output, and optional state interfaces, proposition-valued predicates, and their runtime validators, under the model rules below. |
 | `realization` declaration | `lexlean/semantic-module/2` | A deterministic, rule, statistical, neural, or composite denotation of an interface, under the model rules below. |
@@ -3243,7 +3245,7 @@ Termination evidence is semantic data, never tactic or backend text; no
    namespace `LexLeanCollections` (*Runtime modules* below).
 
 **Runtime modules.** The runtime of language 1.2 is LexLean source, not text
-of the backend: five native core modules (§17.10) of the embedded project
+of the backend: six native core modules (§17.10) of the embedded project
 `language/runtime-1.2/library/` (module prefix `LexLeanRuntime`, registry
 `language/runtime-1.2/library.toml`, tag `lexlean/runtime-library/1`), whose
 Lean the compiler generates like any other core module's:
@@ -3252,14 +3254,19 @@ fixed-width arithmetic, byte strings, and decimal text the primitives apply),
 `LexLeanRuntime.Collections` (namespace `LexLeanCollections`, rule 6),
 `LexLeanRuntime.Models` (namespace `LexLeanModels`, rule 12 of the model
 rules), and `LexLeanRuntime.Reasoning` (namespace `LexLeanReasoning`, rule 11
-of the reasoning rules; it imports the first two), and `LexLeanRuntime.Laws`
-(namespace `LexLeanLaws`, *Fold laws* below; it imports the first two). A
+of the reasoning rules; it imports the first two), `LexLeanRuntime.Laws`
+(namespace `LexLeanLaws`, *Fold laws* below; it imports the first two), and
+`LexLeanRuntime.Arrays` (namespace `LexLeanArrays`, *Arrays* below; it
+imports the first). A
 generated language-1.2
 module publicly imports, after `Init` and before its own imports, exactly the
 runtime modules it uses: `Portable` when it applies a primitive or has a
 reasoning declaration, `Collections` under rule 6, `Models` when it has a
-model declaration, `Reasoning` when it has a reasoning declaration, and
-`Laws` when it has a `linear_arithmetic` or `law` proof; it carries no runtime
+model declaration, `Reasoning` when it has a reasoning declaration,
+`Laws` when it has a `linear_arithmetic` proof or a `law` proof of a law the
+laws module states, and `Arrays` (and `Portable`) when it writes the array
+type, applies an array primitive, or has a `law` proof of an array law; it
+carries no runtime
 text. Every declaration of a runtime module pins its exact
 axioms; a verification that needs a runtime module compiles it before the
 project's modules, replays it with `leanchecker`, audits each of its
@@ -3302,9 +3309,13 @@ rules are LexLean's own; the diagnostic each linking failure raises is
    `lexlean/runtime-laws/1`) names what the compiler uses of the module:
    the ordered rewrite set of `linear_arithmetic`, and the laws a `law`
    proof applies, each with its explicit type parameters, its parameter
-   types in the semantic schema, and its number of premises. It states no
+   types in the semantic schema, and its number of premises. A law of
+   another runtime module names that module in its row (the array laws name
+   `LexLeanRuntime.Arrays`), and a module with a `law` proof imports the
+   module that states its law. It states no
    law. The runtime build refuses a registry that names a declaration the
-   module does not have or registers a law twice.
+   module does not have, in the module its row names, or registers a law
+   twice.
 3. **Bridges.** `less_than` on `Nat`, `Int`, and every fixed-width type is
    `decide` of the order of mathematical values; `quotient` and `remainder`
    on `Nat` and `Int` are an `if` on a zero divisor around `/` and `%`, or
@@ -4083,6 +4094,95 @@ reaches a model only as the tokens `encodeText` makes of it.
 
 `examples/models` carries the vocabulary the conformance cases tokenize; the
 end-to-end text-model example is not part of this release.
+
+#### Arrays (language 1.2)
+
+An array is a sequence of fixed-width integers that is read and written by
+position. These rules are LexLean's own and are checked in linking; the
+diagnostic each failure raises is `LLT4001`, a statement Lean does not accept
+is `LLV7002`, and a production root that reaches an array is `LLT4005`.
+
+1. **The type.** `{"kind":"array","element":T}` is admitted exactly when `T`
+   is one of `Int8`, `Int16`, `Int32`, `Int64`, `UInt8`, `UInt16`, `UInt32`,
+   and `UInt64`. Any other element (a natural number, a mathematical integer,
+   a Boolean, a container, a document type, a type parameter, another array)
+   is refused, so an array is always a flat sequence of machine integers. The
+   type has no readable form in the notation (§17.21.4): it is written
+   generically, `array{element: Int8}`, so that no document type named
+   `Array` changes its spelling. The canonical document names it
+   `Array (T)`.
+2. **The value.** The value of an array is the list of its elements, in
+   order: two arrays are equal exactly when their lists are. Generated Lean
+   represents `array T` as the pinned Lean's own `Array (T)`, written
+   `_root_.Array` so that no declaration of the document can capture the
+   name and no document name is reserved for it. An array has no literal and
+   cannot be the scrutinee of a `match`: it is made from a list and read by
+   position.
+3. **Operations.** `length` of an array is the number of its elements, a
+   `Nat`. `index` of an array and a `Nat` offset is `Option T`: the element
+   at the offset, or none at or past the length. `array_from_list` of a
+   `List T` is the array of its elements, and `array_to_list` is the list of
+   an array's elements; each is the inverse of the other. `array_set` of an
+   array, a `Nat` offset, and a `T` is the array with the element at the
+   offset replaced; at or past the length it is the array unchanged. The
+   write is total, as removal of an absent key is the identity (rule 4 under
+   *Collections and state threading*), so every law about it is an equation
+   and a write never produces an `Option` to take apart. A bounds-checked
+   write is the document's own conditional on `offset < length`.
+4. **Loops.** A loop over an array is an ordinary definition: structural
+   recursion on a natural-number fuel that carries the position, or
+   well-founded recursion with evidence (*Recursion* above). No form of
+   iteration is particular to arrays, and none is unbounded.
+5. **Runtime.** A module that writes the array type or applies an array
+   primitive imports the runtime module `LexLeanRuntime.Arrays` (*Runtime
+   modules* above), namespace `LexLeanArrays`, which imports `Portable` and
+   declares: the instances through which the portable `length` and `index`
+   resolve on an array (`Array.size`, and the pinned Lean's optional
+   indexing); `fromList`, `toList`, and `set` (`List.toArray`,
+   `Array.toList`, and `Array.setIfInBounds`); and the laws of rule 6. A
+   module that only measures or indexes an array another module made names
+   no array construct, and reaches the instances through that module's
+   public import. Generated Lean names the namespace from the root,
+   `_root_.LexLeanArrays`.
+6. **Laws.** The registry (*Fold laws*, rule 2) names nine array laws, each
+   with one explicit type parameter, the element type, and no premise;
+   `LexLeanRuntime.Arrays` states them, and none depends on an axiom other
+   than `propext`. For an array `a`, a list `xs`, offsets `i` and `j`, and an
+   element `v`:
+
+   | Law | Statement |
+   | --- | --- |
+   | `array_to_list_from_list` | `array_to_list (array_from_list xs) = xs` |
+   | `array_from_list_to_list` | `array_from_list (array_to_list a) = a` |
+   | `array_length` | `length a = length (array_to_list a)` |
+   | `array_index` | `index a i = index (array_to_list a) i` |
+   | `array_index_beyond` | `length a <= i -> index a i = none` |
+   | `array_set_length` | `length (array_set a i v) = length a` |
+   | `array_set_index_same` | `i < length a -> index (array_set a i v) i = some v` |
+   | `array_set_index_other` | `(i =? j) = false -> index (array_set a i v) j = index a j` |
+   | `array_set_beyond` | `length a <= i -> array_set a i v = a` |
+
+   A `law` proof states one as a theorem of the document, which `simplify`
+   then rewrites with. `array_index` and `array_length` carry a loop over an
+   array to the same loop over the list of its elements, where the
+   list-indexing equations hold by `reflexivity` and the proof is an ordinary
+   induction; `examples/arrays` proves this way that an int8 dot product
+   computed by index equals its definition by recursion on two lists, for
+   all arrays.
+7. **Execution.** Nothing in the meaning of an array depends on how it is
+   stored. The pinned Lean's compiler and runtime index an `Array` in
+   constant time and perform `Array.setIfInBounds` in place when the array is
+   referenced once, copying it otherwise; that is a property of Lean, cited
+   as `LEAN-ARRAY-4-32-1` in `model/authorities.toml` and not established
+   here. A document obtains
+   the in-place write by passing the array along and not keeping the old
+   one, as `examples/arrays` does in its rectification loop.
+8. **Production.** The array type and the three array primitives are
+   `formal-only` in `language/production-1.2.toml` (§17.13): no production
+   target has a realization of an array, so a root whose closure reaches one
+   is refused with `LLT4005`, as a root that reaches a text component is.
+   `length` and `index` keep their `runtime` rows; applied to an array they
+   are refused through the array's type.
 
 #### Widening conversions (language 1.2)
 
@@ -7441,7 +7541,8 @@ not canonical, or a default written out is written generically.
 | `named` | `Name`, `Module::Name`, or `(Name A B)` with arguments |
 
 A document-named type that is spelled like a type of the table is written
-generically.
+generically. The `array` type has no readable form and is always written
+generically, `array{element: T}` (§17.12, *Arrays*, rule 1).
 
 *Terms.* The head words `let if match fun forall nil cons first second not
 apply ctor record project prim ref checked`, the words `then else with`, and
@@ -11703,6 +11804,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-36` | `semantic-ir` | A language-1.2 `cases` proof may split a local of type `Bool` into its two constructors: the proof names the local and gives a branch for `false` and one for `true`, each with no binders, the backend lowers it to `cases` on the local with those two alternatives, the theorem verifies with exactly the axioms its policy states, and the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it; a use in language 1.1, a missing branch, a repeated branch, a branch with a binder, and an `induction` on a Boolean are each refused. | §17.10 |
 | `SM-37` | `semantic-ir` | A language-1.2 theorem may be proved by `nested_induction`, an induction over a nested inductive type of the document, one that holds a member of itself under `List`, `Option`, `Result`, or a product and is in no mutual group: the proof names a parameter of the theorem, states one proposition for each auxiliary member of the type's recursive family in the order the pinned Lean's recursor takes them, and gives a branch for every constructor of the type and of each auxiliary member, each binding the constructor's fields followed by one hypothesis for each field that is a member of the family, in field order; the backend lowers it to `induction` over the recursor the pinned Lean generates for the type, with the propositions as its auxiliary motives and the goals taken in the order of its minor premises, so that a theorem over every value of a type with a constructor that holds a `List` of the type verifies under the pinned Lean 4.32.1 with exactly the axioms `propext` and `Quot.sound`, the set its build observes; the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it, and a use in language 1.1, a local whose type is not a nested inductive of the document or lies in a mutual group, an auxiliary member that is missing, repeated, or out of order, a missing or repeated branch, a branch with the wrong number of binders, a proposition that is not well typed, and an `induction` proof on a nested type are each refused as LLT4001. | §16.9, §17.10, §17.12 |
 | `SM-38` | `semantic-ir` | A language-1.2 build publishes, for every semantic module, a declaration ID for each declaration and a statement ID for each theorem: the declaration ID is a framed SHA-256 of the declaration's canonical JSON and of the declaration IDs of the project declarations it references, with declarations that reference one another hashed as one group, and the statement ID omits the theorem's proof; changing one literal of one definition changes the declaration IDs of exactly that definition and of the declarations that reach it by reference, changing a theorem's proof alone leaves its statement ID unchanged, adding or reordering independent declarations changes no ID, the IDs equal their recomputation from the specified framed inputs, the file validates against `api/schemas/declarations.schema.json`, and a language-1.0 or 1.1 build publishes none. | §21.9 |
+| `SM-39` | `semantic-ir` | Language 1.2 has arrays of one fixed-width integer type: the type lowers to the pinned Lean's `Array`, `length` and `index` apply to an array, and the primitives `array_from_list`, `array_to_list`, and `array_set` convert a list to an array, an array to the list of its elements, and replace one element, leaving the array as it is when the offset is at or past its length; the runtime module `LexLeanRuntime.Arrays` states the two instances, the three primitives, and the laws that relate an array to its list as LexLean source, every row within `propext`, and a `law` proof applies a registered array law and imports the module that states it; the committed arrays example proves, for all arrays, that an int8 dot product computed by index equals its list definition and that an in-place rectification keeps the length, and verifies with exactly the axioms its policies state; a use in language 1.1, an element type that is not a fixed-width integer, an ill-typed primitive, and a pattern match on an array are each refused as LLT4001, a production root whose closure reaches an array is refused as LLT4005, and Lean refuses a loop that skips an element with LLV7002. |
 | `DF-01` | `declarations` | A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry. | §15.7, §18.6 |
 | `DF-02` | `declarations` | A valid term-definition sentence emits one nonrecursive explicitly typed Lean def. | §15.7, §18.6 |
 | `DF-03` | `declarations` | A valid predicate-definition sentence emits one nonrecursive Prop-valued Lean def. | §15.7, §18.6 |
@@ -12077,7 +12179,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 493.
+**Total required capability IDs:** 494.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 
