@@ -36,6 +36,9 @@
     "bootstrap/build_manifest": {
       "debug": 589824
     },
+    "bootstrap/canonical_key": {
+      "debug": 1835008
+    },
     "bootstrap/check_arguments": {
       "debug": 4915200
     },
@@ -47,6 +50,9 @@
     },
     "bootstrap/dead_functions": {
       "debug": 5701632
+    },
+    "bootstrap/eq_key": {
+      "debug": 1835008
     },
     "bootstrap/evaluator": {
       "debug": 21037056
@@ -75,6 +81,9 @@
     "bootstrap/lower_value_at": {
       "debug": 4390912
     },
+    "bootstrap/node_count": {
+      "debug": 1835008
+    },
     "bootstrap/parse_audit_output": {
       "debug": 6291456
     },
@@ -101,6 +110,12 @@
     },
     "bootstrap/succeed_bodies": {
       "debug": 1507328
+    },
+    "bootstrap/term_depth": {
+      "debug": 1835008
+    },
+    "bootstrap/term_text": {
+      "debug": 1835008
     },
     "bootstrap/use_trees": {
       "debug": 1572864
