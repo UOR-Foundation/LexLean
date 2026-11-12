@@ -17,6 +17,14 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The conservative checker of LexLean Semantic Expressions as language-1.2
+  source, the third slice of the lexicon closure (SPEC.md §17.23, §13.7,
+  `BS-52`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `checkSignature` and `checkValue` of `LseTypes` return what
+  `lse::check_signature` and `check_value` return, the zonked type and the
+  literal types or the first error, with what the lookup answers given as a
+  table. Both admit `recursion`, structural over a bound on nesting the host
+  passes.
 - A one-pass writer for the counts of the bootstrap count cases, #92.
   Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
   `BS-15` records every count it checks in `target/count-report/` instead of

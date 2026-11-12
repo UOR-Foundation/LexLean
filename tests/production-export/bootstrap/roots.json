@@ -495,6 +495,22 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "check_signature",
+      "root": "LexLeanBoot.LseTypes.checkSignature",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "check_value",
+      "root": "LexLeanBoot.LseTypes.checkValue",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

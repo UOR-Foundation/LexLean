@@ -1,0 +1,1217 @@
+\begin{lexlean}{LseTypes}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexiconLse}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Fuel,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: FZ, fields: []}, {name: FS, fields: [Fuel]}]
+}
+
+structure{
+  name: CRow,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: package, type: Bytes},
+    {name: entry, type: Bytes},
+    {name: kind, type: Nat},
+    {name: signature, type: LexiconLse::Lse},
+    {name: defined, type: Bool}
+  ]
+}
+
+structure{
+  name: Ck,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: metas, type: (List (Bytes * LexiconLse::Lse))},
+    {name: nextMeta, type: Nat},
+    {name: literals, type: (List Bytes)},
+    {name: freshCounter, type: Nat},
+    {name: exhausted, type: Bool},
+    {name: rows, type: (List CRow)},
+    {name: fallback, type: Nat}
+  ]
+}
+
+structure{
+  name: Bd,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: mode, type: Nat}, {name: name, type: Bytes}, {name: ty, type: LexiconLse::Lse}]
+}
+
+structure{
+  name: Sr,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: out, type: LexiconLse::Lse}, {name: ck, type: Ck}]
+}
+
+structure{
+  name: Sb,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: chain, type: LexiconLse::Lse},
+    {name: renames, type: (List (Bytes * Bytes))},
+    {name: shadowed, type: Bool},
+    {name: ck, type: Ck}
+  ]
+}
+
+structure{
+  name: Ls,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: items, type: (List Bd)}, {name: ck, type: Ck}]
+}
+
+structure{
+  name: Ur,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: error, type: (Option Bytes)}, {name: ck, type: Ck}]
+}
+
+structure{
+  name: Ir,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: ty, type: LexiconLse::Lse},
+    {name: error, type: (Option Bytes)},
+    {name: ck, type: Ck}
+  ]
+}
+
+structure{
+  name: Checked,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: ty, type: LexiconLse::Lse},
+    {name: literals, type: (List (Option LexiconLse::Lse))}
+  ]
+}
+
+structure{
+  name: Fl,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: binders, type: (List Bd)}, {name: body, type: LexiconLse::Lse}]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: shown,
+  parameters: [expr : LexiconLse::Lse],
+  result: Bytes,
+  body: (cat (cat (lit "`") (LexiconLse::printLse expr false)) (lit "`")),
+  executable: true
+}
+
+definition{
+  name: mkFuel,
+  parameters: [depth : Nat],
+  result: Fuel,
+  body: (first (prim iterate_until (fun (rest : Fuel) => (ctor Option.some [Fuel] (ctor Fuel.FS rest))) depth (ctor Fuel.FZ) : (Fuel * Bool))),
+  executable: true
+}
+
+definition{
+  name: isMeta,
+  parameters: [name : Bytes],
+  result: Bool,
+  body: ((LexiconLse::byteNum name 0) =? 63),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: metaOf,
+  parameters: [expr : LexiconLse::Lse],
+  result: (Option Bytes),
+  body: (match expr
+    | LexiconLse::Lse.LLocal name => (if (isMeta name) then (ctor Option.some [Bytes] name) else (ctor Option.none [Bytes]))
+    | LexiconLse::Lse.LSortProp => (ctor Option.none [Bytes])
+    | LexiconLse::Lse.LSortType u => (ctor Option.none [Bytes])
+    | LexiconLse::Lse.LConst p e us => (ctor Option.none [Bytes])
+    | LexiconLse::Lse.LApp g args => (ctor Option.none [Bytes])
+    | LexiconLse::Lse.LPi bs body => (ctor Option.none [Bytes])
+    | LexiconLse::Lse.LLam bs body => (ctor Option.none [Bytes])
+    | LexiconLse::Lse.LLet n t v body => (ctor Option.none [Bytes])
+    | LexiconLse::Lse.LNat digits => (ctor Option.none [Bytes])
+    | LexiconLse::Lse.LNil => (ctor Option.none [Bytes])
+    | LexiconLse::Lse.LArg h t => (ctor Option.none [Bytes])
+    | LexiconLse::Lse.LBinder m n t r => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: kindOf,
+  parameters: [expr : LexiconLse::Lse],
+  result: Nat,
+  body: (match expr
+    | LexiconLse::Lse.LSortProp => 0
+    | LexiconLse::Lse.LSortType u => 1
+    | LexiconLse::Lse.LConst p e us => 2
+    | LexiconLse::Lse.LLocal name => 3
+    | LexiconLse::Lse.LApp g args => 4
+    | LexiconLse::Lse.LPi bs body => 5
+    | LexiconLse::Lse.LLam bs body => 6
+    | LexiconLse::Lse.LLet n t v body => 7
+    | LexiconLse::Lse.LNat digits => 8
+    | LexiconLse::Lse.LNil => 9
+    | LexiconLse::Lse.LArg h t => 9
+    | LexiconLse::Lse.LBinder m n t r => 9),
+  executable: true
+}
+
+definition{
+  name: atomKey,
+  parameters: [expr : LexiconLse::Lse],
+  result: Bytes,
+  body: (match expr
+    | LexiconLse::Lse.LConst p e us => (cat (cat p (lit "::")) e)
+    | LexiconLse::Lse.LLocal name => name
+    | LexiconLse::Lse.LNat digits => digits
+    | LexiconLse::Lse.LSortProp => 0x
+    | LexiconLse::Lse.LSortType u => 0x
+    | LexiconLse::Lse.LApp g args => 0x
+    | LexiconLse::Lse.LPi bs body => 0x
+    | LexiconLse::Lse.LLam bs body => 0x
+    | LexiconLse::Lse.LLet n t v body => 0x
+    | LexiconLse::Lse.LNil => 0x
+    | LexiconLse::Lse.LArg h t => 0x
+    | LexiconLse::Lse.LBinder m n t r => 0x),
+  executable: true
+}
+
+definition{
+  name: ckWith,
+  parameters: [
+    st : Ck,
+    metas : (List (Bytes * LexiconLse::Lse)),
+    nextMeta : Nat,
+    literals : (List Bytes),
+    freshCounter : Nat,
+    exhausted : Bool
+  ],
+  result: Ck,
+  body: (record Ck {metas := metas, nextMeta := nextMeta, literals := literals, freshCounter := freshCounter, exhausted := exhausted, rows := (project st rows), fallback := (project st fallback)}),
+  executable: true
+}
+
+definition{
+  name: ckExhaust,
+  parameters: [st : Ck],
+  result: Ck,
+  body: (ckWith st (project st metas) (project st nextMeta) (project st literals) (project st freshCounter) true),
+  executable: true
+}
+
+definition{
+  name: ckSolve,
+  parameters: [st : Ck, name : Bytes, solution : LexiconLse::Lse],
+  result: Ck,
+  body: (ckWith st (cons (name, solution) (project st metas)) (project st nextMeta) (project st literals) (project st freshCounter) (project st exhausted)),
+  executable: true
+}
+
+definition{
+  name: freshMeta,
+  parameters: [st : Ck],
+  result: Sr,
+  body: (record Sr {out := (ctor LexiconLse::Lse.LLocal (cat (lit "?") (LexLeanStd.Numeral::decimal (project st nextMeta)))), ck := (ckWith st (project st metas) ((project st nextMeta) + 1) (project st literals) (project st freshCounter) (project st exhausted))}),
+  executable: true
+}
+
+definition{
+  name: literalMeta,
+  parameters: [st : Ck],
+  result: Sr,
+  body: (let made : Sr := (freshMeta st); (let after : Ck := (project made ck); (record Sr {out := (project made out), ck := (ckWith after (project after metas) (project after nextMeta) (cons (cat (lit "?") (LexLeanStd.Numeral::decimal (project st nextMeta))) (project after literals)) (project after freshCounter) (project after exhausted))}))),
+  executable: true
+}
+
+definition{
+  name: freshLocal,
+  parameters: [st : Ck, base : Bytes],
+  result: (Bytes * Ck),
+  body: (let counter : Nat := ((project st freshCounter) + 1); ((cat (cat base 0x23) (LexLeanStd.Numeral::decimal counter)), (ckWith st (project st metas) (project st nextMeta) (project st literals) counter (project st exhausted)))),
+  executable: true
+}
+
+definition{
+  name: solvedOf,
+  parameters: [metas : (List (Bytes * LexiconLse::Lse)), name : Bytes],
+  result: (Option LexiconLse::Lse),
+  body: (prim list_fold (fun [name] (found : (Option LexiconLse::Lse)) (row : (Bytes * LexiconLse::Lse)) => (match found
+    | Option.some kept => found
+    | Option.none => (if (prim equal (first row) name : Bool) then (ctor Option.some [LexiconLse::Lse] (second row)) else (ctor Option.none [LexiconLse::Lse])))) (ctor Option.none [LexiconLse::Lse]) metas : (Option LexiconLse::Lse)),
+  executable: true
+}
+
+definition{
+  name: lookupRow,
+  parameters: [st : Ck, package : Bytes, entry : Bytes],
+  result: (Nat * Bool),
+  body: (match (prim list_fold (fun [entry, package] (found : (Option CRow)) (row : CRow) => (match found
+      | Option.some kept => found
+      | Option.none => (if (if (prim equal (project row package) package : Bool) then (prim equal (project row entry) entry : Bool) else false) then (ctor Option.some [CRow] row) else (ctor Option.none [CRow])))) (ctor Option.none [CRow]) (project st rows) : (Option CRow))
+    | Option.some row => ((project row kind), (project row defined))
+    | Option.none => ((project st fallback), false)),
+  executable: true
+}
+
+definition{
+  name: signatureOf,
+  parameters: [st : Ck, package : Bytes, entry : Bytes],
+  result: LexiconLse::Lse,
+  body: (match (prim list_fold (fun [entry, package] (found : (Option CRow)) (row : CRow) => (match found
+      | Option.some kept => found
+      | Option.none => (if (if (prim equal (project row package) package : Bool) then (prim equal (project row entry) entry : Bool) else false) then (ctor Option.some [CRow] row) else (ctor Option.none [CRow])))) (ctor Option.none [CRow]) (project st rows) : (Option CRow))
+    | Option.some row => (project row signature)
+    | Option.none => (ctor LexiconLse::Lse.LSortProp)),
+  executable: true
+}
+
+definition{
+  name: unfoldsConst,
+  parameters: [st : Ck, package : Bytes, entry : Bytes],
+  result: Bool,
+  body: (let found : (Nat * Bool) := (lookupRow st package entry); (if ((first found) =? 1) then true else (if ((first found) =? 3) then (second found) else false))),
+  executable: true
+}
+
+definition{
+  name: mayUnfold,
+  parameters: [fuel : Fuel, st : Ck, expr : LexiconLse::Lse],
+  result: Bool,
+  body: (match fuel
+    | Fuel.FZ => false
+    | Fuel.FS f => (match expr
+      | LexiconLse::Lse.LConst p e us => (unfoldsConst st p e)
+      | LexiconLse::Lse.LApp g args => (mayUnfold f st g)
+      | LexiconLse::Lse.LSortProp => false
+      | LexiconLse::Lse.LSortType u => false
+      | LexiconLse::Lse.LLocal name => false
+      | LexiconLse::Lse.LPi bs body => false
+      | LexiconLse::Lse.LLam bs body => false
+      | LexiconLse::Lse.LLet n t v body => false
+      | LexiconLse::Lse.LNat digits => false
+      | LexiconLse::Lse.LNil => false
+      | LexiconLse::Lse.LArg h t => false
+      | LexiconLse::Lse.LBinder m n t r => false)),
+  executable: true,
+  recursive_argument: fuel
+}
+
+definition{
+  name: both,
+  parameters: [left : (Option LexiconLse::Lse), right : (Option LexiconLse::Lse)],
+  result: (Option (LexiconLse::Lse * LexiconLse::Lse)),
+  body: (match left
+    | Option.none => (ctor Option.none [(LexiconLse::Lse * LexiconLse::Lse)])
+    | Option.some l => (match right
+      | Option.none => (ctor Option.none [(LexiconLse::Lse * LexiconLse::Lse)])
+      | Option.some r => (ctor Option.some [(LexiconLse::Lse * LexiconLse::Lse)] (l, r)))),
+  executable: true
+}
+
+definition{
+  name: zonk,
+  parameters: [fuel : Fuel, metas : (List (Bytes * LexiconLse::Lse)), expr : LexiconLse::Lse],
+  result: (Option LexiconLse::Lse),
+  body: (match fuel
+    | Fuel.FZ => (ctor Option.none [LexiconLse::Lse])
+    | Fuel.FS f => (match expr
+      | LexiconLse::Lse.LLocal name => (if (isMeta name) then (match (solvedOf metas name)
+        | Option.some solution => (zonk f metas solution)
+        | Option.none => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LLocal name))) else (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LLocal name)))
+      | LexiconLse::Lse.LApp g args => (match (both (zonk f metas g) (zonk f metas args))
+        | Option.some zs => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LApp (first zs) (second zs)))
+        | Option.none => (ctor Option.none [LexiconLse::Lse]))
+      | LexiconLse::Lse.LArg h t => (match (both (zonk f metas h) (zonk f metas t))
+        | Option.some zs => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LArg (first zs) (second zs)))
+        | Option.none => (ctor Option.none [LexiconLse::Lse]))
+      | LexiconLse::Lse.LPi bs body => (match (both (zonk f metas bs) (zonk f metas body))
+        | Option.some zs => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LPi (first zs) (second zs)))
+        | Option.none => (ctor Option.none [LexiconLse::Lse]))
+      | LexiconLse::Lse.LLam bs body => (match (both (zonk f metas bs) (zonk f metas body))
+        | Option.some zs => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LLam (first zs) (second zs)))
+        | Option.none => (ctor Option.none [LexiconLse::Lse]))
+      | LexiconLse::Lse.LBinder m n t r => (match (both (zonk f metas t) (zonk f metas r))
+        | Option.some zs => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LBinder m n (first zs) (second zs)))
+        | Option.none => (ctor Option.none [LexiconLse::Lse]))
+      | LexiconLse::Lse.LLet n t v body => (match (both (zonk f metas t) (zonk f metas v))
+        | Option.some zs => (match (zonk f metas body)
+          | Option.some zbody => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LLet n (first zs) (second zs) zbody))
+          | Option.none => (ctor Option.none [LexiconLse::Lse]))
+        | Option.none => (ctor Option.none [LexiconLse::Lse]))
+      | LexiconLse::Lse.LSortProp => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LSortProp))
+      | LexiconLse::Lse.LSortType u => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LSortType u))
+      | LexiconLse::Lse.LConst p e us => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LConst p e us))
+      | LexiconLse::Lse.LNat digits => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LNat digits))
+      | LexiconLse::Lse.LNil => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LNil)))),
+  executable: true,
+  recursive_argument: fuel
+}
+
+definition{
+  name: zonkSt,
+  parameters: [fuel : Fuel, st : Ck, expr : LexiconLse::Lse],
+  result: Sr,
+  body: (match (zonk fuel (project st metas) expr)
+    | Option.some done => (record Sr {out := done, ck := st})
+    | Option.none => (record Sr {out := expr, ck := (ckExhaust st)})),
+  executable: true
+}
+
+definition{
+  name: unionOf,
+  parameters: [left : (Option (List Bytes)), right : (Option (List Bytes))],
+  result: (Option (List Bytes)),
+  body: (match left
+    | Option.none => (ctor Option.none [(List Bytes)])
+    | Option.some l => (match right
+      | Option.none => (ctor Option.none [(List Bytes)])
+      | Option.some r => (ctor Option.some [(List Bytes)] (prim list_fold (fun (acc : (List Bytes)) (item : Bytes) => (cons item acc)) r l : (List Bytes))))),
+  executable: true
+}
+
+definition{
+  name: boundIn,
+  parameters: [names : (List Bytes), wanted : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [wanted] (found : Bool) (item : Bytes) => (if found then true else (prim equal item wanted : Bool))) false names : Bool),
+  executable: true
+}
+
+definition{
+  name: freeLocals,
+  parameters: [fuel : Fuel, expr : LexiconLse::Lse, bound : (List Bytes)],
+  result: (Option (List Bytes)),
+  body: (match fuel
+    | Fuel.FZ => (ctor Option.none [(List Bytes)])
+    | Fuel.FS f => (match expr
+      | LexiconLse::Lse.LLocal name => (if (boundIn bound name) then (ctor Option.some [(List Bytes)] (nil Bytes)) else (ctor Option.some [(List Bytes)] (cons name (nil Bytes))))
+      | LexiconLse::Lse.LApp g args => (unionOf (freeLocals f g bound) (freeLocals f args bound))
+      | LexiconLse::Lse.LArg h t => (unionOf (freeLocals f h bound) (freeLocals f t bound))
+      | LexiconLse::Lse.LPi bs body => (freeBinders f bs bound body)
+      | LexiconLse::Lse.LLam bs body => (freeBinders f bs bound body)
+      | LexiconLse::Lse.LLet n t v body => (unionOf (unionOf (freeLocals f t bound) (freeLocals f v bound)) (freeLocals f body (cons n bound)))
+      | LexiconLse::Lse.LSortProp => (ctor Option.some [(List Bytes)] (nil Bytes))
+      | LexiconLse::Lse.LSortType u => (ctor Option.some [(List Bytes)] (nil Bytes))
+      | LexiconLse::Lse.LConst p e us => (ctor Option.some [(List Bytes)] (nil Bytes))
+      | LexiconLse::Lse.LNat digits => (ctor Option.some [(List Bytes)] (nil Bytes))
+      | LexiconLse::Lse.LNil => (ctor Option.some [(List Bytes)] (nil Bytes))
+      | LexiconLse::Lse.LBinder m n t r => (ctor Option.some [(List Bytes)] (nil Bytes)))),
+  executable: true,
+  mutual: Free,
+  recursive_argument: fuel
+}
+
+definition{
+  name: freeBinders,
+  parameters: [fuel : Fuel, chain : LexiconLse::Lse, bound : (List Bytes), body : LexiconLse::Lse],
+  result: (Option (List Bytes)),
+  body: (match fuel
+    | Fuel.FZ => (ctor Option.none [(List Bytes)])
+    | Fuel.FS f => (match chain
+      | LexiconLse::Lse.LBinder m n t r => (unionOf (freeLocals f t bound) (freeBinders f r (cons n bound) body))
+      | LexiconLse::Lse.LNil => (freeLocals f body bound)
+      | LexiconLse::Lse.LSortProp => (freeLocals f body bound)
+      | LexiconLse::Lse.LSortType u => (freeLocals f body bound)
+      | LexiconLse::Lse.LConst p e us => (freeLocals f body bound)
+      | LexiconLse::Lse.LLocal name => (freeLocals f body bound)
+      | LexiconLse::Lse.LApp g args => (freeLocals f body bound)
+      | LexiconLse::Lse.LPi bs inner => (freeLocals f body bound)
+      | LexiconLse::Lse.LLam bs inner => (freeLocals f body bound)
+      | LexiconLse::Lse.LLet n t v inner => (freeLocals f body bound)
+      | LexiconLse::Lse.LNat digits => (freeLocals f body bound)
+      | LexiconLse::Lse.LArg h t => (freeLocals f body bound))),
+  executable: true,
+  mutual: Free,
+  recursive_argument: fuel
+}
+
+definition{
+  name: hasUnsolved,
+  parameters: [fuel : Fuel, st : Ck, expr : LexiconLse::Lse],
+  result: (Bool * Ck),
+  body: (let zonked : Sr := (zonkSt fuel st expr); (match (freeLocals fuel (project zonked out) (nil Bytes))
+    | Option.some names => ((prim list_fold (fun (found : Bool) (name : Bytes) => (if found then true else (isMeta name))) false names : Bool), (project zonked ck))
+    | Option.none => (true, (ckExhaust (project zonked ck))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: substIn,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    expr : LexiconLse::Lse,
+    name : Bytes,
+    replacement : LexiconLse::Lse,
+    avoid : (List Bytes)
+  ],
+  result: Sr,
+  body: (match fuel
+    | Fuel.FZ => (record Sr {out := expr, ck := (ckExhaust st)})
+    | Fuel.FS f => (match expr
+      | LexiconLse::Lse.LLocal lname => (if (prim equal lname name : Bool) then (record Sr {out := replacement, ck := st}) else (record Sr {out := (ctor LexiconLse::Lse.LLocal lname), ck := st}))
+      | LexiconLse::Lse.LApp g args => (let sg : Sr := (substIn f st g name replacement avoid); (let sa : Sr := (substIn f (project sg ck) args name replacement avoid); (record Sr {out := (ctor LexiconLse::Lse.LApp (project sg out) (project sa out)), ck := (project sa ck)})))
+      | LexiconLse::Lse.LArg h t => (let sh : Sr := (substIn f st h name replacement avoid); (let stl : Sr := (substIn f (project sh ck) t name replacement avoid); (record Sr {out := (ctor LexiconLse::Lse.LArg (project sh out) (project stl out)), ck := (project stl ck)})))
+      | LexiconLse::Lse.LPi bs body => (let sb : Sb := (substChain f st bs name replacement avoid (nil (Bytes * Bytes)) false); (let sbody : Sr := (substBody f sb body name replacement avoid); (record Sr {out := (ctor LexiconLse::Lse.LPi (project sb chain) (project sbody out)), ck := (project sbody ck)})))
+      | LexiconLse::Lse.LLam bs body => (let sb : Sb := (substChain f st bs name replacement avoid (nil (Bytes * Bytes)) false); (let sbody : Sr := (substBody f sb body name replacement avoid); (record Sr {out := (ctor LexiconLse::Lse.LLam (project sb chain) (project sbody out)), ck := (project sbody ck)})))
+      | LexiconLse::Lse.LLet bound t v body => (let stt : Sr := (substIn f st t name replacement avoid); (let sv : Sr := (substIn f (project stt ck) v name replacement avoid); (if (prim equal bound name : Bool) then (record Sr {out := (ctor LexiconLse::Lse.LLet bound (project stt out) (project sv out) body), ck := (project sv ck)}) else (if (boundIn avoid bound) then (let named : (Bytes * Ck) := (freshLocal (project sv ck) bound); (let renamed : Sr := (substIn f (second named) body bound (ctor LexiconLse::Lse.LLocal (first named)) (nil Bytes)); (let sbody : Sr := (substIn f (project renamed ck) (project renamed out) name replacement avoid); (record Sr {out := (ctor LexiconLse::Lse.LLet (first named) (project stt out) (project sv out) (project sbody out)), ck := (project sbody ck)})))) else (let sbody : Sr := (substIn f (project sv ck) body name replacement avoid); (record Sr {out := (ctor LexiconLse::Lse.LLet bound (project stt out) (project sv out) (project sbody out)), ck := (project sbody ck)}))))))
+      | LexiconLse::Lse.LBinder m n t r => (record Sr {out := (ctor LexiconLse::Lse.LBinder m n t r), ck := st})
+      | LexiconLse::Lse.LSortProp => (record Sr {out := (ctor LexiconLse::Lse.LSortProp), ck := st})
+      | LexiconLse::Lse.LSortType u => (record Sr {out := (ctor LexiconLse::Lse.LSortType u), ck := st})
+      | LexiconLse::Lse.LConst p e us => (record Sr {out := (ctor LexiconLse::Lse.LConst p e us), ck := st})
+      | LexiconLse::Lse.LNat digits => (record Sr {out := (ctor LexiconLse::Lse.LNat digits), ck := st})
+      | LexiconLse::Lse.LNil => (record Sr {out := (ctor LexiconLse::Lse.LNil), ck := st}))),
+  executable: true,
+  mutual: Subst,
+  recursive_argument: fuel
+}
+
+definition{
+  name: substChain,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    chain : LexiconLse::Lse,
+    name : Bytes,
+    replacement : LexiconLse::Lse,
+    avoid : (List Bytes),
+    renames : (List (Bytes * Bytes)),
+    shadowed : Bool
+  ],
+  result: Sb,
+  body: (match fuel
+    | Fuel.FZ => (record Sb {chain := chain, renames := renames, shadowed := shadowed, ck := (ckExhaust st)})
+    | Fuel.FS f => (match chain
+      | LexiconLse::Lse.LBinder m n t r => (let renamedTy : Sr := (substBody f (record Sb {chain := chain, renames := renames, shadowed := shadowed, ck := st}) t name replacement avoid); (let substituted : Sr := renamedTy; (if (prim equal n name : Bool) then (let rest : Sb := (substChain f (project substituted ck) r name replacement avoid renames true); (record Sb {chain := (ctor LexiconLse::Lse.LBinder m n (project substituted out) (project rest chain)), renames := (project rest renames), shadowed := (project rest shadowed), ck := (project rest ck)})) else (if (boundIn avoid n) then (let named : (Bytes * Ck) := (freshLocal (project substituted ck) n); (let rest : Sb := (substChain f (second named) r name replacement avoid (cons (n, (first named)) renames) shadowed); (record Sb {chain := (ctor LexiconLse::Lse.LBinder m (first named) (project substituted out) (project rest chain)), renames := (project rest renames), shadowed := (project rest shadowed), ck := (project rest ck)}))) else (let rest : Sb := (substChain f (project substituted ck) r name replacement avoid renames shadowed); (record Sb {chain := (ctor LexiconLse::Lse.LBinder m n (project substituted out) (project rest chain)), renames := (project rest renames), shadowed := (project rest shadowed), ck := (project rest ck)}))))))
+      | LexiconLse::Lse.LNil => (record Sb {chain := (ctor LexiconLse::Lse.LNil), renames := renames, shadowed := shadowed, ck := st})
+      | LexiconLse::Lse.LSortProp => (record Sb {chain := (ctor LexiconLse::Lse.LNil), renames := renames, shadowed := shadowed, ck := st})
+      | LexiconLse::Lse.LSortType u => (record Sb {chain := (ctor LexiconLse::Lse.LNil), renames := renames, shadowed := shadowed, ck := st})
+      | LexiconLse::Lse.LConst p e us => (record Sb {chain := (ctor LexiconLse::Lse.LNil), renames := renames, shadowed := shadowed, ck := st})
+      | LexiconLse::Lse.LLocal lname => (record Sb {chain := (ctor LexiconLse::Lse.LNil), renames := renames, shadowed := shadowed, ck := st})
+      | LexiconLse::Lse.LApp g args => (record Sb {chain := (ctor LexiconLse::Lse.LNil), renames := renames, shadowed := shadowed, ck := st})
+      | LexiconLse::Lse.LPi bs body => (record Sb {chain := (ctor LexiconLse::Lse.LNil), renames := renames, shadowed := shadowed, ck := st})
+      | LexiconLse::Lse.LLam bs body => (record Sb {chain := (ctor LexiconLse::Lse.LNil), renames := renames, shadowed := shadowed, ck := st})
+      | LexiconLse::Lse.LLet bound t v body => (record Sb {chain := (ctor LexiconLse::Lse.LNil), renames := renames, shadowed := shadowed, ck := st})
+      | LexiconLse::Lse.LNat digits => (record Sb {chain := (ctor LexiconLse::Lse.LNil), renames := renames, shadowed := shadowed, ck := st})
+      | LexiconLse::Lse.LArg h t => (record Sb {chain := (ctor LexiconLse::Lse.LNil), renames := renames, shadowed := shadowed, ck := st}))),
+  executable: true,
+  mutual: Subst,
+  recursive_argument: fuel
+}
+
+definition{
+  name: substBody,
+  parameters: [
+    fuel : Fuel,
+    sb : Sb,
+    body : LexiconLse::Lse,
+    name : Bytes,
+    replacement : LexiconLse::Lse,
+    avoid : (List Bytes)
+  ],
+  result: Sr,
+  body: (match fuel
+    | Fuel.FZ => (record Sr {out := body, ck := (ckExhaust (project sb ck))})
+    | Fuel.FS f => (let renamedBody : Sr := (applyRenames f (project sb ck) body (LexLeanStd.Order::reverseList [(Bytes * Bytes)] (project sb renames))); (if (project sb shadowed) then renamedBody else (substIn f (project renamedBody ck) (project renamedBody out) name replacement avoid)))),
+  executable: true,
+  mutual: Subst,
+  recursive_argument: fuel
+}
+
+definition{
+  name: applyRenames,
+  parameters: [fuel : Fuel, st : Ck, expr : LexiconLse::Lse, renames : (List (Bytes * Bytes))],
+  result: Sr,
+  body: (match fuel
+    | Fuel.FZ => (record Sr {out := expr, ck := (ckExhaust st)})
+    | Fuel.FS f => (match renames
+      | List.nil => (record Sr {out := expr, ck := st})
+      | List.cons rename rest => (let once : Sr := (substIn f st expr (first rename) (ctor LexiconLse::Lse.LLocal (second rename)) (nil Bytes)); (applyRenames f (project once ck) (project once out) rest)))),
+  executable: true,
+  mutual: Subst,
+  recursive_argument: fuel
+}
+
+definition{
+  name: subst,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    expr : LexiconLse::Lse,
+    name : Bytes,
+    replacement : LexiconLse::Lse
+  ],
+  result: Sr,
+  body: (match (freeLocals fuel replacement (nil Bytes))
+    | Option.some avoid => (substIn fuel st expr name replacement avoid)
+    | Option.none => (record Sr {out := expr, ck := (ckExhaust st)})),
+  executable: true
+}
+
+definition{
+  name: substTypes,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    items : (List Bd),
+    name : Bytes,
+    replacement : LexiconLse::Lse
+  ],
+  result: Ls,
+  body: (match fuel
+    | Fuel.FZ => (record Ls {items := items, ck := (ckExhaust st)})
+    | Fuel.FS f => (match items
+      | List.nil => (record Ls {items := (nil Bd), ck := st})
+      | List.cons item rest => (let changed : Sr := (subst f st (project item ty) name replacement); (let others : Ls := (substTypes f (project changed ck) rest name replacement); (record Ls {items := (cons (record Bd {mode := (project item mode), name := (project item name), ty := (project changed out)}) (project others items)), ck := (project others ck)}))))),
+  executable: true,
+  recursive_argument: fuel
+}
+
+definition{
+  name: chainItems,
+  parameters: [fuel : Fuel, chain : LexiconLse::Lse],
+  result: (List LexiconLse::Lse),
+  body: (match fuel
+    | Fuel.FZ => (nil LexiconLse::Lse)
+    | Fuel.FS f => (match chain
+      | LexiconLse::Lse.LArg h t => (cons h (chainItems f t))
+      | LexiconLse::Lse.LNil => (nil LexiconLse::Lse)
+      | LexiconLse::Lse.LSortProp => (nil LexiconLse::Lse)
+      | LexiconLse::Lse.LSortType u => (nil LexiconLse::Lse)
+      | LexiconLse::Lse.LConst p e us => (nil LexiconLse::Lse)
+      | LexiconLse::Lse.LLocal name => (nil LexiconLse::Lse)
+      | LexiconLse::Lse.LApp g args => (nil LexiconLse::Lse)
+      | LexiconLse::Lse.LPi bs body => (nil LexiconLse::Lse)
+      | LexiconLse::Lse.LLam bs body => (nil LexiconLse::Lse)
+      | LexiconLse::Lse.LLet n t v body => (nil LexiconLse::Lse)
+      | LexiconLse::Lse.LNat digits => (nil LexiconLse::Lse)
+      | LexiconLse::Lse.LBinder m n t r => (nil LexiconLse::Lse))),
+  executable: true,
+  recursive_argument: fuel
+}
+
+definition{
+  name: binderItems,
+  parameters: [fuel : Fuel, chain : LexiconLse::Lse],
+  result: (List Bd),
+  body: (match fuel
+    | Fuel.FZ => (nil Bd)
+    | Fuel.FS f => (match chain
+      | LexiconLse::Lse.LBinder m n t r => (cons (record Bd {mode := m, name := n, ty := t}) (binderItems f r))
+      | LexiconLse::Lse.LNil => (nil Bd)
+      | LexiconLse::Lse.LSortProp => (nil Bd)
+      | LexiconLse::Lse.LSortType u => (nil Bd)
+      | LexiconLse::Lse.LConst p e us => (nil Bd)
+      | LexiconLse::Lse.LLocal name => (nil Bd)
+      | LexiconLse::Lse.LApp g args => (nil Bd)
+      | LexiconLse::Lse.LPi bs body => (nil Bd)
+      | LexiconLse::Lse.LLam bs body => (nil Bd)
+      | LexiconLse::Lse.LLet n t v body => (nil Bd)
+      | LexiconLse::Lse.LNat digits => (nil Bd)
+      | LexiconLse::Lse.LArg h t => (nil Bd))),
+  executable: true,
+  recursive_argument: fuel
+}
+
+definition{
+  name: chainOf,
+  parameters: [items : (List Bd)],
+  result: LexiconLse::Lse,
+  body: (prim list_fold (fun (chain : LexiconLse::Lse) (item : Bd) => (ctor LexiconLse::Lse.LBinder (project item mode) (project item name) (project item ty) chain)) (ctor LexiconLse::Lse.LNil) (LexLeanStd.Order::reverseList [Bd] items) : LexiconLse::Lse),
+  executable: true
+}
+
+definition{
+  name: flattenInto,
+  parameters: [fuel : Fuel, expr : LexiconLse::Lse, pi : Bool],
+  result: Fl,
+  body: (match fuel
+    | Fuel.FZ => (record Fl {binders := (nil Bd), body := expr})
+    | Fuel.FS f => (match expr
+      | LexiconLse::Lse.LPi bs body => (if pi then (let inner : Fl := (flattenInto f body pi); (record Fl {binders := (prim list_fold (fun (acc : (List Bd)) (item : Bd) => (cons item acc)) (project inner binders) (LexLeanStd.Order::reverseList [Bd] (binderItems f bs)) : (List Bd)), body := (project inner body)})) else (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LPi bs body)}))
+      | LexiconLse::Lse.LLam bs body => (if pi then (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LLam bs body)}) else (let inner : Fl := (flattenInto f body pi); (record Fl {binders := (prim list_fold (fun (acc : (List Bd)) (item : Bd) => (cons item acc)) (project inner binders) (LexLeanStd.Order::reverseList [Bd] (binderItems f bs)) : (List Bd)), body := (project inner body)})))
+      | LexiconLse::Lse.LSortProp => (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LSortProp)})
+      | LexiconLse::Lse.LSortType u => (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LSortType u)})
+      | LexiconLse::Lse.LConst p e us => (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LConst p e us)})
+      | LexiconLse::Lse.LLocal name => (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LLocal name)})
+      | LexiconLse::Lse.LApp g args => (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LApp g args)})
+      | LexiconLse::Lse.LLet n t v body => (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LLet n t v body)})
+      | LexiconLse::Lse.LNat digits => (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LNat digits)})
+      | LexiconLse::Lse.LNil => (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LNil)})
+      | LexiconLse::Lse.LArg h t => (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LArg h t)})
+      | LexiconLse::Lse.LBinder m n t r => (record Fl {binders := (nil Bd), body := (ctor LexiconLse::Lse.LBinder m n t r)}))),
+  executable: true,
+  recursive_argument: fuel
+}
+
+definition{
+  name: modeName,
+  parameters: [mode : Nat],
+  result: Bytes,
+  body: (LexiconLse::modeText mode),
+  executable: true
+}
+
+definition{
+  name: rigidClass,
+  parameters: [fuel : Fuel, e : LexiconLse::Lse, a : LexiconLse::Lse],
+  result: Nat,
+  body: (let ke : Nat := (kindOf e); (if (ke =? (kindOf a)) then (if (ke <? 2) then 0 else (if (if (ke =? 2) then true else (if (ke =? 3) then true else (ke =? 8))) then (if (prim equal (atomKey e) (atomKey a) : Bool) then 0 else 3) else (if (ke =? 4) then (match e
+    | LexiconLse::Lse.LApp g xs => (match a
+      | LexiconLse::Lse.LApp h ys => (if ((prim length (chainItems fuel xs) : Nat) =? (prim length (chainItems fuel ys) : Nat)) then 1 else 3)
+      | LexiconLse::Lse.LSortProp => 3
+      | LexiconLse::Lse.LSortType u => 3
+      | LexiconLse::Lse.LConst p q us => 3
+      | LexiconLse::Lse.LLocal name => 3
+      | LexiconLse::Lse.LPi bs body => 3
+      | LexiconLse::Lse.LLam bs body => 3
+      | LexiconLse::Lse.LLet n t v body => 3
+      | LexiconLse::Lse.LNat digits => 3
+      | LexiconLse::Lse.LNil => 3
+      | LexiconLse::Lse.LArg h t => 3
+      | LexiconLse::Lse.LBinder m n t r => 3)
+    | LexiconLse::Lse.LSortProp => 3
+    | LexiconLse::Lse.LSortType u => 3
+    | LexiconLse::Lse.LConst p q us => 3
+    | LexiconLse::Lse.LLocal name => 3
+    | LexiconLse::Lse.LPi bs body => 3
+    | LexiconLse::Lse.LLam bs body => 3
+    | LexiconLse::Lse.LLet n t v body => 3
+    | LexiconLse::Lse.LNat digits => 3
+    | LexiconLse::Lse.LNil => 3
+    | LexiconLse::Lse.LArg h t => 3
+    | LexiconLse::Lse.LBinder m n t r => 3) else (if (if (ke =? 5) then true else (ke =? 6)) then 2 else 3)))) else 3)),
+  executable: true
+}
+
+definition{
+  name: appParts,
+  parameters: [expr : LexiconLse::Lse],
+  result: (LexiconLse::Lse * LexiconLse::Lse),
+  body: (match expr
+    | LexiconLse::Lse.LApp g args => (g, args)
+    | LexiconLse::Lse.LSortProp => ((ctor LexiconLse::Lse.LNil), (ctor LexiconLse::Lse.LNil))
+    | LexiconLse::Lse.LSortType u => ((ctor LexiconLse::Lse.LNil), (ctor LexiconLse::Lse.LNil))
+    | LexiconLse::Lse.LConst p e us => ((ctor LexiconLse::Lse.LNil), (ctor LexiconLse::Lse.LNil))
+    | LexiconLse::Lse.LLocal name => ((ctor LexiconLse::Lse.LNil), (ctor LexiconLse::Lse.LNil))
+    | LexiconLse::Lse.LPi bs body => ((ctor LexiconLse::Lse.LNil), (ctor LexiconLse::Lse.LNil))
+    | LexiconLse::Lse.LLam bs body => ((ctor LexiconLse::Lse.LNil), (ctor LexiconLse::Lse.LNil))
+    | LexiconLse::Lse.LLet n t v body => ((ctor LexiconLse::Lse.LNil), (ctor LexiconLse::Lse.LNil))
+    | LexiconLse::Lse.LNat digits => ((ctor LexiconLse::Lse.LNil), (ctor LexiconLse::Lse.LNil))
+    | LexiconLse::Lse.LNil => ((ctor LexiconLse::Lse.LNil), (ctor LexiconLse::Lse.LNil))
+    | LexiconLse::Lse.LArg h t => ((ctor LexiconLse::Lse.LNil), (ctor LexiconLse::Lse.LNil))
+    | LexiconLse::Lse.LBinder m n t r => ((ctor LexiconLse::Lse.LNil), (ctor LexiconLse::Lse.LNil))),
+  executable: true
+}
+
+definition{
+  name: urOk,
+  parameters: [st : Ck],
+  result: Ur,
+  body: (record Ur {error := (ctor Option.none [Bytes]), ck := st}),
+  executable: true
+}
+
+definition{
+  name: urFail,
+  parameters: [st : Ck, message : Bytes],
+  result: Ur,
+  body: (record Ur {error := (ctor Option.some [Bytes] message), ck := st}),
+  executable: true
+}
+
+definition{
+  name: unify,
+  parameters: [fuel : Fuel, st : Ck, expected : LexiconLse::Lse, actual : LexiconLse::Lse],
+  result: Ur,
+  body: (match fuel
+    | Fuel.FZ => (urOk (ckExhaust st))
+    | Fuel.FS f => (let ze : Sr := (zonkSt f st expected); (let za : Sr := (zonkSt f (project ze ck) actual); (let e : LexiconLse::Lse := (project ze out); (let a : LexiconLse::Lse := (project za out); (let st2 : Ck := (project za ck); (match (metaOf e)
+      | Option.some m => (if (prim equal (atomKey a) m : Bool) then (if ((kindOf a) =? 3) then (urOk st2) else (urOk (ckSolve st2 m a))) else (urOk (ckSolve st2 m a)))
+      | Option.none => (match (metaOf a)
+        | Option.some m => (urOk (ckSolve st2 m e))
+        | Option.none => (unifyRigid f st2 e a))))))))),
+  executable: true,
+  mutual: Unify,
+  recursive_argument: fuel
+}
+
+definition{
+  name: unifyRigid,
+  parameters: [fuel : Fuel, st : Ck, e : LexiconLse::Lse, a : LexiconLse::Lse],
+  result: Ur,
+  body: (match fuel
+    | Fuel.FZ => (urOk (ckExhaust st))
+    | Fuel.FS f => (let cls : Nat := (rigidClass f e a); (if (cls =? 0) then (urOk st) else (if (cls =? 1) then (if (if (mayUnfold f st e) then true else (mayUnfold f st a)) then (urOk st) else (let pe : (LexiconLse::Lse * LexiconLse::Lse) := (appParts e); (let pa : (LexiconLse::Lse * LexiconLse::Lse) := (appParts a); (let head : Ur := (unify f st (first pe) (first pa)); (match (project head error)
+      | Option.some message => head
+      | Option.none => (unifyArgs f (project head ck) (second pe) (second pa))))))) else (if (cls =? 2) then (unifyBinding f st e a) else (if (if (mayUnfold f st e) then true else (mayUnfold f st a)) then (urOk st) else (let ue : (Bool * Ck) := (hasUnsolved f st e); (if (first ue) then (urOk (second ue)) else (let ua : (Bool * Ck) := (hasUnsolved f (second ue) a); (if (first ua) then (urOk (second ua)) else (let txtE : Bytes := (shown e); (let txtA : Bytes := (shown a); (urFail (second ua) (cat (cat (cat (lit "expected ") txtE) (lit ", found ")) txtA)))))))))))))),
+  executable: true,
+  mutual: Unify,
+  recursive_argument: fuel
+}
+
+definition{
+  name: unifyArgs,
+  parameters: [fuel : Fuel, st : Ck, xs : LexiconLse::Lse, ys : LexiconLse::Lse],
+  result: Ur,
+  body: (match fuel
+    | Fuel.FZ => (urOk (ckExhaust st))
+    | Fuel.FS f => (match xs
+      | LexiconLse::Lse.LArg x xt => (match ys
+        | LexiconLse::Lse.LArg y yt => (let once : Ur := (unify f st x y); (match (project once error)
+          | Option.some message => once
+          | Option.none => (unifyArgs f (project once ck) xt yt)))
+        | LexiconLse::Lse.LNil => (urOk st)
+        | LexiconLse::Lse.LSortProp => (urOk st)
+        | LexiconLse::Lse.LSortType u => (urOk st)
+        | LexiconLse::Lse.LConst p e us => (urOk st)
+        | LexiconLse::Lse.LLocal name => (urOk st)
+        | LexiconLse::Lse.LApp g args => (urOk st)
+        | LexiconLse::Lse.LPi bs body => (urOk st)
+        | LexiconLse::Lse.LLam bs body => (urOk st)
+        | LexiconLse::Lse.LLet n t v body => (urOk st)
+        | LexiconLse::Lse.LNat digits => (urOk st)
+        | LexiconLse::Lse.LBinder m n t r => (urOk st))
+      | LexiconLse::Lse.LNil => (urOk st)
+      | LexiconLse::Lse.LSortProp => (urOk st)
+      | LexiconLse::Lse.LSortType u => (urOk st)
+      | LexiconLse::Lse.LConst p e us => (urOk st)
+      | LexiconLse::Lse.LLocal name => (urOk st)
+      | LexiconLse::Lse.LApp g args => (urOk st)
+      | LexiconLse::Lse.LPi bs body => (urOk st)
+      | LexiconLse::Lse.LLam bs body => (urOk st)
+      | LexiconLse::Lse.LLet n t v body => (urOk st)
+      | LexiconLse::Lse.LNat digits => (urOk st)
+      | LexiconLse::Lse.LBinder m n t r => (urOk st))),
+  executable: true,
+  mutual: Unify,
+  recursive_argument: fuel
+}
+
+definition{
+  name: unifyBinding,
+  parameters: [fuel : Fuel, st : Ck, e : LexiconLse::Lse, a : LexiconLse::Lse],
+  result: Ur,
+  body: (match fuel
+    | Fuel.FZ => (urOk (ckExhaust st))
+    | Fuel.FS f => (let pi : Bool := ((kindOf e) =? 5); (let fe : Fl := (flattenInto f e pi); (let fa : Fl := (flattenInto f a pi); (let ne : Nat := (prim length (project fe binders) : Nat); (let na : Nat := (prim length (project fa binders) : Nat); (if (ne =? na) then (unifyPiLoop f st (project fe binders) (project fa binders) (project fa body) (project fe body) e a) else (let txtE : Bytes := (shown e); (let txtA : Bytes := (shown a); (urFail st (cat (cat (cat (cat (cat (cat txtE (lit " binds ")) (LexLeanStd.Numeral::decimal ne)) (lit " arguments but ")) txtA) (lit " binds ")) (LexLeanStd.Numeral::decimal na)))))))))))),
+  executable: true,
+  mutual: Unify,
+  recursive_argument: fuel
+}
+
+definition{
+  name: unifyPiLoop,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    expectedBinders : (List Bd),
+    laterBinders : (List Bd),
+    actualBody : LexiconLse::Lse,
+    expectedBody : LexiconLse::Lse,
+    e : LexiconLse::Lse,
+    a : LexiconLse::Lse
+  ],
+  result: Ur,
+  body: (match fuel
+    | Fuel.FZ => (urOk (ckExhaust st))
+    | Fuel.FS f => (match expectedBinders
+      | List.nil => (unify f st expectedBody actualBody)
+      | List.cons be restE => (match laterBinders
+        | List.nil => (unify f st expectedBody actualBody)
+        | List.cons ba restA => (if ((project be mode) =? (project ba mode)) then (let once : Ur := (unify f st (project be ty) (project ba ty)); (match (project once error)
+          | Option.some message => once
+          | Option.none => (let renamed : LexiconLse::Lse := (ctor LexiconLse::Lse.LLocal (project be name)); (let laterTyped : Ls := (substTypes f (project once ck) restA (project ba name) renamed); (let bodyRenamed : Sr := (subst f (project laterTyped ck) actualBody (project ba name) renamed); (let next : Ur := (unifyPiLoop f (project bodyRenamed ck) restE (project laterTyped items) (project bodyRenamed out) expectedBody e a); (record Ur {error := (project next error), ck := (project next ck)}))))))) else (let txtE : Bytes := (shown e); (let txtA : Bytes := (shown a); (urFail st (cat (cat (cat (cat (cat (cat (cat (cat (cat (cat (cat (lit "binder `") (project be name)) (lit "` is ")) (modeName (project be mode))) (lit " in ")) txtE) (lit " but `")) (project ba name)) (lit "` is ")) (modeName (project ba mode))) (lit " in ")) txtA)))))))),
+  executable: true,
+  mutual: Unify,
+  recursive_argument: fuel
+}
+
+definition{
+  name: irOk,
+  parameters: [ty : LexiconLse::Lse, st : Ck],
+  result: Ir,
+  body: (record Ir {ty := ty, error := (ctor Option.none [Bytes]), ck := st}),
+  executable: true
+}
+
+definition{
+  name: irFail,
+  parameters: [st : Ck, message : Bytes],
+  result: Ir,
+  body: (record Ir {ty := (ctor LexiconLse::Lse.LSortProp), error := (ctor Option.some [Bytes] message), ck := st}),
+  executable: true
+}
+
+definition{
+  name: irMeta,
+  parameters: [st : Ck],
+  result: Ir,
+  body: (let made : Sr := (freshMeta st); (irOk (project made out) (project made ck))),
+  executable: true
+}
+
+definition{
+  name: scopeFind,
+  parameters: [scope : (List (Bytes * LexiconLse::Lse)), name : Bytes],
+  result: (Option LexiconLse::Lse),
+  body: (prim list_fold (fun [name] (found : (Option LexiconLse::Lse)) (row : (Bytes * LexiconLse::Lse)) => (match found
+    | Option.some kept => found
+    | Option.none => (if (prim equal (first row) name : Bool) then (ctor Option.some [LexiconLse::Lse] (second row)) else (ctor Option.none [LexiconLse::Lse])))) (ctor Option.none [LexiconLse::Lse]) scope : (Option LexiconLse::Lse)),
+  executable: true
+}
+
+definition{
+  name: plural,
+  parameters: [count : Nat],
+  result: Bytes,
+  body: (if (count =? 1) then 0x else (lit "s")),
+  executable: true
+}
+
+definition{
+  name: requireSort,
+  parameters: [fuel : Fuel, st : Ck, expr : LexiconLse::Lse, ty : LexiconLse::Lse],
+  result: Ir,
+  body: (let zonked : Sr := (zonkSt fuel st ty); (let z : LexiconLse::Lse := (project zonked out); (let st2 : Ck := (project zonked ck); (let ke : Nat := (kindOf expr); (if (if (ke =? 8) then true else (ke =? 6)) then (let txtExpr : Bytes := (shown expr); (irFail st2 (cat txtExpr (lit " is a term, not a type")))) else (if ((kindOf z) <? 2) then (irOk z st2) else (match (metaOf z)
+    | Option.some m => (irOk z st2)
+    | Option.none => (if (mayUnfold fuel st2 z) then (irOk z st2) else (let txtExpr : Bytes := (shown expr); (let txtZ : Bytes := (shown z); (irFail st2 (cat (cat (cat txtExpr (lit " is not a type: its type is ")) txtZ) 0x)))))))))))),
+  executable: true
+}
+
+definition{
+  name: infer,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    expr : LexiconLse::Lse,
+    scope : (List (Bytes * LexiconLse::Lse))
+  ],
+  result: Ir,
+  body: (match fuel
+    | Fuel.FZ => (irFail (ckExhaust st) 0x)
+    | Fuel.FS f => (match expr
+      | LexiconLse::Lse.LSortProp => (irOk (ctor LexiconLse::Lse.LSortType (ctor LexiconLse::Universe.UNum 1)) st)
+      | LexiconLse::Lse.LSortType u => (irOk (ctor LexiconLse::Lse.LSortType (ctor LexiconLse::Universe.USucc u)) st)
+      | LexiconLse::Lse.LConst p e us => (let found : (Nat * Bool) := (lookupRow st p e); (let k : Nat := (first found); (if (k =? 0) then (irFail st (cat (cat (cat (cat (lit "`") p) (lit "::")) e) (lit "` does not resolve"))) else (if (k =? 1) then (irMeta st) else (if (k =? 2) then (irFail st (cat (cat (cat (cat (lit "`") p) (lit "::")) e) (lit "` has no signature and cannot appear in an expression"))) else (irOk (signatureOf st p e) st))))))
+      | LexiconLse::Lse.LLocal name => (if (isMeta name) then (irMeta st) else (match (scopeFind scope name)
+        | Option.some ty => (irOk ty st)
+        | Option.none => (irFail st (cat (cat (lit "local `") name) (lit "` is not in scope")))))
+      | LexiconLse::Lse.LNat digits => (let made : Sr := (literalMeta st); (irOk (project made out) (project made ck)))
+      | LexiconLse::Lse.LApp g args => (let kg : Nat := (kindOf g); (if (if (kg <? 2) then true else (kg =? 8)) then (let txtExpr : Bytes := (shown expr); (let txtG : Bytes := (shown g); (irFail st (cat (cat (cat txtExpr (lit " applies ")) txtG) (lit ", which is not a function"))))) else (let fnTy : Ir := (infer f st g scope); (match (project fnTy error)
+        | Option.some message => fnTy
+        | Option.none => (let items : (List LexiconLse::Lse) := (chainItems f args); (inferApp f (project fnTy ck) expr g items (prim length items : Nat) (project fnTy ty) 0 scope))))))
+      | LexiconLse::Lse.LPi bs body => (inferBinding f st bs body scope false bs)
+      | LexiconLse::Lse.LLam bs body => (inferBinding f st bs body scope true bs)
+      | LexiconLse::Lse.LLet n t v body => (let declared : Ir := (expectType f st t scope); (match (project declared error)
+        | Option.some message => declared
+        | Option.none => (let bound : Ir := (infer f (project declared ck) v scope); (match (project bound error)
+          | Option.some message => bound
+          | Option.none => (let agreed : Ur := (unify f (project bound ck) t (project bound ty)); (match (project agreed error)
+            | Option.some message => (irFail (project agreed ck) message)
+            | Option.none => (infer f (project agreed ck) body (cons (n, t) scope))))))))
+      | LexiconLse::Lse.LNil => (irOk (ctor LexiconLse::Lse.LSortProp) st)
+      | LexiconLse::Lse.LArg h t => (irOk (ctor LexiconLse::Lse.LSortProp) st)
+      | LexiconLse::Lse.LBinder m n t r => (irOk (ctor LexiconLse::Lse.LSortProp) st))),
+  executable: true,
+  mutual: Infer,
+  recursive_argument: fuel
+}
+
+definition{
+  name: inferBinding,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    chain : LexiconLse::Lse,
+    body : LexiconLse::Lse,
+    scope : (List (Bytes * LexiconLse::Lse)),
+    lam : Bool,
+    binders : LexiconLse::Lse
+  ],
+  result: Ir,
+  body: (match fuel
+    | Fuel.FZ => (irFail (ckExhaust st) 0x)
+    | Fuel.FS f => (match chain
+      | LexiconLse::Lse.LBinder m n t r => (let typedBinder : Ir := (expectType f st t scope); (match (project typedBinder error)
+        | Option.some message => typedBinder
+        | Option.none => (let next : Ir := (inferBinding f (project typedBinder ck) r body (cons (n, t) scope) lam binders); (record Ir {ty := (project next ty), error := (project next error), ck := (project next ck)}))))
+      | LexiconLse::Lse.LNil => (if lam then (let inner : Ir := (infer f st body scope); (match (project inner error)
+        | Option.some message => inner
+        | Option.none => (irOk (ctor LexiconLse::Lse.LPi binders (project inner ty)) (project inner ck)))) else (expectType f st body scope))
+      | LexiconLse::Lse.LSortProp => (expectType f st body scope)
+      | LexiconLse::Lse.LSortType u => (expectType f st body scope)
+      | LexiconLse::Lse.LConst p e us => (expectType f st body scope)
+      | LexiconLse::Lse.LLocal name => (expectType f st body scope)
+      | LexiconLse::Lse.LApp g args => (expectType f st body scope)
+      | LexiconLse::Lse.LPi bs inner => (expectType f st body scope)
+      | LexiconLse::Lse.LLam bs inner => (expectType f st body scope)
+      | LexiconLse::Lse.LLet n t v inner => (expectType f st body scope)
+      | LexiconLse::Lse.LNat digits => (expectType f st body scope)
+      | LexiconLse::Lse.LArg h t => (expectType f st body scope))),
+  executable: true,
+  mutual: Infer,
+  recursive_argument: fuel
+}
+
+definition{
+  name: expectType,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    expr : LexiconLse::Lse,
+    scope : (List (Bytes * LexiconLse::Lse))
+  ],
+  result: Ir,
+  body: (match fuel
+    | Fuel.FZ => (irFail (ckExhaust st) 0x)
+    | Fuel.FS f => (let inferred : Ir := (infer f st expr scope); (match (project inferred error)
+      | Option.some message => inferred
+      | Option.none => (requireSort f (project inferred ck) expr (project inferred ty))))),
+  executable: true,
+  mutual: Infer,
+  recursive_argument: fuel
+}
+
+definition{
+  name: inferRest,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    remaining : (List LexiconLse::Lse),
+    scope : (List (Bytes * LexiconLse::Lse))
+  ],
+  result: Ir,
+  body: (match fuel
+    | Fuel.FZ => (irFail (ckExhaust st) 0x)
+    | Fuel.FS f => (match remaining
+      | List.nil => (irMeta st)
+      | List.cons argument more => (let seen : Ir := (infer f st argument scope); (match (project seen error)
+        | Option.some message => seen
+        | Option.none => (let next : Ir := (inferRest f (project seen ck) more scope); (record Ir {ty := (project next ty), error := (project next error), ck := (project next ck)})))))),
+  executable: true,
+  mutual: Infer,
+  recursive_argument: fuel
+}
+
+definition{
+  name: inferApp,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    expr : LexiconLse::Lse,
+    g : LexiconLse::Lse,
+    remaining : (List LexiconLse::Lse),
+    total : Nat,
+    fty : LexiconLse::Lse,
+    supplied : Nat,
+    scope : (List (Bytes * LexiconLse::Lse))
+  ],
+  result: Ir,
+  body: (match fuel
+    | Fuel.FZ => (irFail (ckExhaust st) 0x)
+    | Fuel.FS f => (match remaining
+      | List.nil => (irOk fty st)
+      | List.cons headArg rest => (let zonked : Sr := (zonkSt f st fty); (let z : LexiconLse::Lse := (project zonked out); (let st2 : Ck := (project zonked ck); (match z
+        | LexiconLse::Lse.LPi bs body => (inferBinders f st2 expr g (binderItems f bs) body remaining total supplied scope)
+        | LexiconLse::Lse.LSortProp => (inferStuck f st2 expr g remaining total supplied z scope)
+        | LexiconLse::Lse.LSortType u => (inferStuck f st2 expr g remaining total supplied z scope)
+        | LexiconLse::Lse.LConst p e us => (inferStuck f st2 expr g remaining total supplied z scope)
+        | LexiconLse::Lse.LLocal name => (inferStuck f st2 expr g remaining total supplied z scope)
+        | LexiconLse::Lse.LApp h args => (inferStuck f st2 expr g remaining total supplied z scope)
+        | LexiconLse::Lse.LLam bs body => (inferStuck f st2 expr g remaining total supplied z scope)
+        | LexiconLse::Lse.LLet n t v body => (inferStuck f st2 expr g remaining total supplied z scope)
+        | LexiconLse::Lse.LNat digits => (inferStuck f st2 expr g remaining total supplied z scope)
+        | LexiconLse::Lse.LNil => (inferStuck f st2 expr g remaining total supplied z scope)
+        | LexiconLse::Lse.LArg h t => (inferStuck f st2 expr g remaining total supplied z scope)
+        | LexiconLse::Lse.LBinder m n t r => (inferStuck f st2 expr g remaining total supplied z scope))))))),
+  executable: true,
+  mutual: Infer,
+  recursive_argument: fuel
+}
+
+definition{
+  name: inferStuck,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    expr : LexiconLse::Lse,
+    g : LexiconLse::Lse,
+    remaining : (List LexiconLse::Lse),
+    total : Nat,
+    supplied : Nat,
+    z : LexiconLse::Lse,
+    scope : (List (Bytes * LexiconLse::Lse))
+  ],
+  result: Ir,
+  body: (match fuel
+    | Fuel.FZ => (irFail (ckExhaust st) 0x)
+    | Fuel.FS f => (match (metaOf z)
+      | Option.some m => (inferRest f st remaining scope)
+      | Option.none => (if (mayUnfold f st z) then (inferRest f st remaining scope) else (let txtExpr : Bytes := (shown expr); (let txtG : Bytes := (shown g); (let txtZ : Bytes := (shown z); (irFail st (cat (cat (cat (cat (cat (cat (cat (cat (cat txtExpr (lit " supplies ")) (LexLeanStd.Numeral::decimal total)) (lit " explicit argument")) (plural total)) (lit " but ")) txtG) (lit " accepts ")) (LexLeanStd.Numeral::decimal supplied)) (cat (cat (lit ": after them its type is ") txtZ) (lit ", not a function")))))))))),
+  executable: true,
+  mutual: Infer,
+  recursive_argument: fuel
+}
+
+definition{
+  name: inferBinders,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    expr : LexiconLse::Lse,
+    g : LexiconLse::Lse,
+    binders : (List Bd),
+    body : LexiconLse::Lse,
+    remaining : (List LexiconLse::Lse),
+    total : Nat,
+    supplied : Nat,
+    scope : (List (Bytes * LexiconLse::Lse))
+  ],
+  result: Ir,
+  body: (match fuel
+    | Fuel.FZ => (irFail (ckExhaust st) 0x)
+    | Fuel.FS f => (match binders
+      | List.nil => (inferApp f st expr g remaining total body supplied scope)
+      | List.cons binder rest => (if ((project binder mode) =? 0) then (match remaining
+        | List.nil => (irOk (ctor LexiconLse::Lse.LPi (chainOf binders) body) st)
+        | List.cons argument more => (let actual : Ir := (infer f st argument scope); (match (project actual error)
+          | Option.some message => actual
+          | Option.none => (let agreed : Ur := (unify f (project actual ck) (project binder ty) (project actual ty)); (match (project agreed error)
+            | Option.some message => (irFail (project agreed ck) message)
+            | Option.none => (inferInstantiate f (project agreed ck) expr g binder argument rest body more total (supplied + 1) scope)))))) else (let made : Sr := (freshMeta st); (inferInstantiate f (project made ck) expr g binder (project made out) rest body remaining total supplied scope))))),
+  executable: true,
+  mutual: Infer,
+  recursive_argument: fuel
+}
+
+definition{
+  name: inferInstantiate,
+  parameters: [
+    fuel : Fuel,
+    st : Ck,
+    expr : LexiconLse::Lse,
+    g : LexiconLse::Lse,
+    binder : Bd,
+    value : LexiconLse::Lse,
+    rest : (List Bd),
+    body : LexiconLse::Lse,
+    remaining : (List LexiconLse::Lse),
+    total : Nat,
+    supplied : Nat,
+    scope : (List (Bytes * LexiconLse::Lse))
+  ],
+  result: Ir,
+  body: (match fuel
+    | Fuel.FZ => (irFail (ckExhaust st) 0x)
+    | Fuel.FS f => (let later : Ls := (substTypes f st rest (project binder name) value); (let newBody : Sr := (subst f (project later ck) body (project binder name) value); (inferBinders f (project newBody ck) expr g (project later items) (project newBody out) remaining total supplied scope)))),
+  executable: true,
+  mutual: Infer,
+  recursive_argument: fuel
+}
+
+definition{
+  name: literalTypes,
+  parameters: [fuel : Fuel, st : Ck, metas : (List Bytes)],
+  result: ((List (Option LexiconLse::Lse)) * Ck),
+  body: (match fuel
+    | Fuel.FZ => ((nil (Option LexiconLse::Lse)), (ckExhaust st))
+    | Fuel.FS f => (match metas
+      | List.nil => ((nil (Option LexiconLse::Lse)), st)
+      | List.cons metaName more => (let solved : Sr := (zonkSt f st (ctor LexiconLse::Lse.LLocal metaName)); (let pending : (Bool * Ck) := (hasUnsolved f (project solved ck) (project solved out)); (let others : ((List (Option LexiconLse::Lse)) * Ck) := (literalTypes f (second pending) more); ((cons (if (first pending) then (ctor Option.none [LexiconLse::Lse]) else (ctor Option.some [LexiconLse::Lse] (project solved out))) (first others)), (second others))))))),
+  executable: true,
+  recursive_argument: fuel
+}
+
+definition{
+  name: finish,
+  parameters: [fuel : Fuel, st : Ck, ty : LexiconLse::Lse],
+  result: (Result Checked Bytes),
+  body: (let zonked : Sr := (zonkSt fuel st ty); (let typed : ((List (Option LexiconLse::Lse)) * Ck) := (literalTypes fuel (project zonked ck) (LexLeanStd.Order::reverseList [Bytes] (project st literals))); (if (project (second typed) exhausted) then (ctor Result.error [Checked, Bytes] (lit "the checker's bound on nesting is exhausted")) else (ctor Result.ok [Checked, Bytes] (record Checked {ty := (project zonked out), literals := (first typed)}))))),
+  executable: true
+}
+
+definition{
+  name: start,
+  parameters: [rows : (List CRow), fallback : Nat],
+  result: Ck,
+  body: (record Ck {metas := (nil (Bytes * LexiconLse::Lse)), nextMeta := 0, literals := (nil Bytes), freshCounter := 0, exhausted := false, rows := rows, fallback := fallback}),
+  executable: true
+}
+
+definition{
+  name: outcome,
+  parameters: [fuel : Fuel, result : Ir],
+  result: (Result Checked Bytes),
+  body: (if (project (project result ck) exhausted) then (ctor Result.error [Checked, Bytes] (lit "the checker's bound on nesting is exhausted")) else (match (project result error)
+    | Option.some message => (ctor Result.error [Checked, Bytes] message)
+    | Option.none => (finish fuel (project result ck) (project result ty)))),
+  executable: true
+}
+
+definition{
+  name: checkSignature,
+  parameters: [signature : LexiconLse::Lse, rows : (List CRow), fallback : Nat, depth : Nat],
+  result: (Result Checked Bytes),
+  body: (let fuel : Fuel := (mkFuel depth); (let typed : Ir := (expectType fuel (start rows fallback) signature (nil (Bytes * LexiconLse::Lse))); (outcome fuel typed))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: checkValue,
+  parameters: [
+    value : LexiconLse::Lse,
+    signature : (Option LexiconLse::Lse),
+    rows : (List CRow),
+    fallback : Nat,
+    depth : Nat
+  ],
+  result: (Result Checked Bytes),
+  body: (let fuel : Fuel := (mkFuel depth); (let inferred : Ir := (infer fuel (start rows fallback) value (nil (Bytes * LexiconLse::Lse))); (match signature
+    | Option.none => (outcome fuel inferred)
+    | Option.some sig => (if (if (project (project inferred ck) exhausted) then true else (match (project inferred error)
+      | Option.some message => true
+      | Option.none => false)) then (outcome fuel inferred) else (let agreed : Ur := (unify fuel (project inferred ck) sig (project inferred ty)); (match (project agreed error)
+      | Option.some message => (let txtValue : Bytes := (shown value); (let txtSig : Bytes := (shown sig); (outcome fuel (irFail (project agreed ck) (cat (cat (cat (cat (cat (lit "defined value ") txtValue) (lit " does not match the signature ")) txtSig) (lit ": ")) message)))))
+      | Option.none => (outcome fuel (irOk (project inferred ty) (project agreed ck))))))))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
