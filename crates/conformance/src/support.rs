@@ -2789,7 +2789,7 @@ pub fn probe_lean(
         &toolchain.root,
     );
     let bin = toolchain.root.join("bin");
-    let record = lexlean::verify::child::run(
+    let (record, _) = lexlean::verify::child::run_probe(
         &lexlean::verify::child::ChildSpec {
             tool: "lean",
             module: Some(probe.name.clone()),

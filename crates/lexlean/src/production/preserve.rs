@@ -1917,6 +1917,14 @@ pub fn record(roots: &[CertifiedRoot]) -> crate::artifact::canonical_json::Json 
 /// rejection concerns.
 #[must_use]
 pub fn failing_declaration(text: &str, output: &str) -> Option<String> {
+    // Pinned Lean/Replay.lean reports the declaration refused by its kernel.
+    if let Some(named) = output.lines().find_map(|line| {
+        let rest = line.strip_prefix("uncaught exception: while replaying declaration '")?;
+        let (name, _) = rest.split_once("':")?;
+        name.rsplit('.').next().map(str::to_owned)
+    }) {
+        return Some(named);
+    }
     // A certificate held as data is added by the decoder, whose message
     // names the declaration the kernel refused.
     if let Some(named) = output.lines().find_map(|line| {
@@ -2137,6 +2145,24 @@ mod group_tests {
         assert!(
             error.contains("`b`") && error.contains("mutual group"),
             "{error}"
+        );
+    }
+}
+
+#[cfg(test)]
+mod replay_declaration_tests {
+    #[test]
+    fn replay_refusal_keeps_the_certificate_declaration() {
+        // Pinned Lean/Replay.lean:136 throws this userError envelope;
+        // Lean's executable reports it with `uncaught exception:`.
+        let output = "uncaught exception: while replaying declaration 'LexLeanPreserve.Cexample.R2.__rel_2':\n(kernel) application type mismatch\n  detail\n";
+        assert_eq!(
+            super::failing_declaration("", output).as_deref(),
+            Some("__rel_2")
+        );
+        assert_eq!(
+            super::failing_declaration("", "uncaught exception: unrelated failure"),
+            None
         );
     }
 }

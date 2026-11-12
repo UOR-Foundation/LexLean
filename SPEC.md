@@ -9622,7 +9622,7 @@ or 1.1 build publishes no declarations file, so their output is unchanged.
 3. deterministic build rendering;
 4. Lean/Lake/leanchecker toolchain preflight;
 5. Lake-workspace lock preflight;
-6. external-interface probe generation and elaboration;
+6. external-interface probe generation and elaboration, including its closed escaped effective-search-path report;
 7. generated-module elaboration and `.olean` production;
 8. separate-process `leanchecker` replay for every generated module;
 9. process-sized axiom-audit module-family generation and execution;
@@ -9670,6 +9670,20 @@ Any nonzero exit, warning, unknown informational message, missing `.olean`, or o
 For each generated module, sorted by full module name, LexLean invokes the pinned `leanchecker` in a separate process with that module prefix.
 
 A zero exit is required. Normalized output is recorded.
+
+Only generated project modules and certificates A, B, and E compile with
+`debug.skipKernelTC=true`; runtime, support, interface-probe, extraction,
+and audit modules retain the in-process kernel check. Compilation and
+successful same-run replay bind the requested module's main, server, and
+private olean parts, with omitted companions distinct from present empty
+files. Before cleanup or publication, one guard joins local and imported
+process records with the certificate tail and freshly captured staged
+tuples. Every eligible module requires exactly one successful flagged
+compilation and matching successful replay; a missing record, substituted
+part, or changed staged tuple refuses publication. Shards transport the
+existing typed process records and artifacts; they do not publish verified
+acceptance themselves. Prefix replays can also check descendant modules,
+so this does not promise globally exactly-once declaration replay.
 
 This replay checks the newly loaded environment through Lean's kernel and is intended to detect environment manipulation. It is explicitly not described as an independent verifier.
 
@@ -9734,6 +9748,17 @@ Before process output is hashed:
    - user home → `$HOME`;
 4. trailing spaces are removed;
 5. blank final lines collapse to one final LF.
+
+The interface probe emits exactly one closed JSON search-path packet. Its
+raw escaped strings are decoded before normalization. Known absolute prefixes
+are normalized as above; remaining absolute roots receive packet-local tokens
+`$LEAN_SEARCH_ROOT_<n>` in first-occurrence order, reusing the token for equal
+roots and preserving entry order and relative roots. Tokens do not collide
+with literal relative entries. The complete normalized packet is re-encoded
+and retained as stdout, whose digest is recorded normally. Only that fixed
+packet uses path-root-aware validation; all other output retains the ordinary
+absolute-path and unexpected-output checks. Raw roots remain operational
+lookup state, not published host paths.
 
 Unexpected absolute paths remaining in successful normalized output fail attestation construction.
 
@@ -11584,7 +11609,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `VR-01` | `verification` | Verification runs every specified stage in order and exposes no stage-suppression option. | §22.1 |
 | `VR-02` | `verification` | Lean, Lake, and leanchecker versions and executable hashes are checked and recorded before use. | §22.2 |
 | `VR-03` | `verification` | Lean execution uses the pinned Lake environment and never updates or fetches workspace dependencies. | §22.2 |
-| `VR-04` | `verification` | Every used external interface is elaborated in the unique reserved probe module. | §18.8, §22.1 |
+| `VR-04` | `verification` | Every used external interface is elaborated in the unique reserved probe module, which emits only its closed escaped effective-search-path report. | §18.8, §22.1 |
 | `VR-05` | `verification` | Generated modules compile in topological order and produce one required olean each. | §22.3 |
 | `VR-06` | `verification` | Verification neither requests nor includes ilean artifacts. | §22.3 |
 | `VR-07` | `verification` | A Lean warning, unknown informational message, overflow, or missing output fails verification. | §20.2, §22.3 |
@@ -11604,6 +11629,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `VR-21` | `verification` | A multi-module project whose imports form nontrivial frontiers verifies at width 1 and at a larger width to byte-identical verified directories and the same attestation identity, observed axiom sets, and policy rows, and no completion order orders a record or changes which failure is reported. | §22.3, §22.4, §22.11 |
 | `VR-22` | `verification` | Performance telemetry is written only to the CI evidence directory the environment names, a verification with telemetry on publishes byte-identical artifacts to one without, and telemetry planted in a verified artifact fails the gate. | §22.12 |
 | `VR-23` | `verification` | A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused. | §9.4, §22.11 |
+| `VR-28` | `verification` | Generated project modules and certificates A, B, and E omit the in-process kernel check only when a successful pinned same-run replay binds the same module and complete olean parts; one publication guard covers local and imported records, the certificate tail, and staged project artifacts, while runtime, support, probe, extraction, and audit modules retain their in-process checks. | §22.3, §22.4, §22.9 |
 | `CL-01` | `cli-api` | Global options and upward project discovery obey the exact CLI contract. | §23.1, §23.2 |
 | `CL-02` | `cli-api` | Init creates the complete canonical skeleton only in an absent or empty destination and never overwrites. | §23.4 |
 | `CL-03` | `cli-api` | Lock check, local update, and explicit network acquisition obey their exact mutually exclusive behavior. | §23.4 |
@@ -11865,7 +11891,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 483.
+**Total required capability IDs:** 484.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

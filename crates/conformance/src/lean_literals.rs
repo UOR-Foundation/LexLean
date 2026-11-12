@@ -46,6 +46,11 @@ pub struct Finding {
 
 /// The literals that are Lean syntax and are not templates: the file they are
 /// in (a suffix of its path), the beginning of the literal, and why.
+pub const EXACT_ALLOWED: [(&str, &str, &str); 1] = [
+    ("backend/lean.rs", "#eval do let ps ← Lean.searchPathRef.get; IO.println ((Lean.Json.mkObj [(\"lexlean_search_path\", Lean.toJson (ps.map System.FilePath.toString))]).compress)", "the renderer of the closed read-only search-path command"),
+];
+
+/// Prefix entries for existing closed renderers and diagnostic syntax.
 pub const ALLOWED: [(&str, &str, &str); 9] = [
     (
         "production/certificate.rs",
@@ -355,6 +360,9 @@ pub fn scan_source(file: &str, source: &str, from: usize) -> Vec<Finding> {
             Token::Literal(line, literal)
                 if line >= from
                     && is_lean_syntax(&literal)
+                    && !EXACT_ALLOWED.iter().any(|(suffix, expected, _)| {
+                        file.ends_with(suffix) && literal == *expected
+                    })
                     && !ALLOWED.iter().any(|(suffix, beginning, _)| {
                         file.ends_with(suffix) && literal.starts_with(beginning)
                     }) =>
@@ -412,4 +420,16 @@ pub fn scan_repository(root: &Path) -> Vec<Finding> {
         auxiliary_part_from(&backend),
     ));
     findings
+}
+
+#[cfg(test)]
+mod search_path_literal_tests {
+    #[test]
+    fn appended_probe_action_is_not_an_allowed_literal() {
+        let command = super::EXACT_ALLOWED[0].1;
+        let original = format!("const COMMAND: &str = r#\"{command}\"#;");
+        assert!(super::scan_source("backend/lean.rs", &original, 1).is_empty());
+        let altered = format!("const COMMAND: &str = r#\"{command}; IO.println 1\"#;");
+        assert_eq!(super::scan_source("backend/lean.rs", &altered, 1).len(), 1);
+    }
 }
