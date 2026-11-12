@@ -2093,13 +2093,13 @@ pub(crate) fn run(id: &str) {
             }
             assert_eq!(
                 step_conditions,
-                4 + 2 * atlas_jobs.len(),
+                6 + 2 * atlas_jobs.len(),
                 "the summary step and the evidence upload of every gate job carry it"
             );
             assert_eq!(
                 full_conditions,
-                atlas_jobs.len() + 1,
-                "every Atlas job and the host matrix, and no other job, wait for the plan to name the whole gate"
+                atlas_jobs.len() + 2,
+                "every Atlas job, the bootstrap export, and the host matrix, and no other job, wait for the plan to name the whole gate"
             );
             assert_eq!(rows_conditions, 1, "the legs run when the plan names a leg");
             assert_eq!(honesty_conditions, 1, "honesty runs when the plan names it");
@@ -2145,13 +2145,91 @@ pub(crate) fn run(id: &str) {
                     "the Intel graph must refuse `{from}` replaced by `{to}`"
                 );
             }
+            let take = root_file(TAKE_EXPORT);
+            bootstrap_export_workflow(&ci, &take)
+                .expect("§9.4: the run's one bootstrap export and its same-run custody");
+            let export_job = workflow_job(&ci, "bootstrap-export").expect("the export job");
+            for (from, to) in [
+                ("    needs: [plan, honesty]", "    needs: [plan]"),
+                (
+                    "cargo xtask export-bootstrap --output \"$RUNNER_TEMP/bootstrap-export\"",
+                    "echo exported",
+                ),
+                (
+                    "      LEXLEAN_VERIFY_WIDTH: \"2\"",
+                    "      LEXLEAN_VERIFY_WIDTH: \"4\"",
+                ),
+                (
+                    "          name: bootstrap-export\n",
+                    "          name: bootstrap-bundle\n",
+                ),
+                ("    name: bootstrap export\n", "    name: export\n"),
+            ] {
+                assert!(
+                    export_job.contains(from),
+                    "the plant must change the export job: {from}"
+                );
+                let planted = ci.replacen(&export_job, &export_job.replacen(from, to, 1), 1);
+                assert!(
+                    bootstrap_export_workflow(&planted, &take).is_err(),
+                    "the bootstrap export's custody must refuse `{from}` replaced by `{to}`"
+                );
+            }
+            for (from, to) in [
+                (
+                    "          FULL_GATE: ${{ needs.plan.outputs.full }}\n",
+                    "          FULL_GATE: true\n",
+                ),
+                (
+                    "    permissions:\n      contents: read\n      actions: read\n    # Complete proof",
+                    "    permissions:\n      contents: read\n    # Complete proof",
+                ),
+                (
+                    "            export LEXLEAN_BOOTSTRAP_EXPORT=\"$RUNNER_TEMP/bootstrap-export\"\n",
+                    "            export LEXLEAN_BOOTSTRAP_EXPORT=\"$RUNNER_TEMP/elsewhere\"\n",
+                ),
+            ] {
+                assert!(ci.contains(from), "the plant must change the workflow: {from}");
+                assert!(
+                    bootstrap_export_workflow(&ci.replacen(from, to, 1), &take).is_err(),
+                    "the bootstrap export's custody must refuse `{from}` replaced by `{to}`"
+                );
+            }
+            for (from, to) in [
+                ("run=${GITHUB_RUN_ID:?}", "run=${OTHER_RUN_ID:?}"),
+                (
+                    "artifacts?name=bootstrap-export",
+                    "artifacts?name=bootstrap-bundle",
+                ),
+                (
+                    "select(.name == \"bootstrap export\")",
+                    "select(.name == \"export\")",
+                ),
+                ("until [ -e \"$dir/wanted\" ]", "until true"),
+            ] {
+                assert!(
+                    take.contains(from),
+                    "the plant must change the fetcher: {from}"
+                );
+                assert!(
+                    bootstrap_export_workflow(&ci, &take.replacen(from, to, 1)).is_err(),
+                    "the fetcher's custody must refuse `{from}` replaced by `{to}`"
+                );
+            }
+            bootstrap_custody_decisions();
             honesty_dependencies(&ci).expect("expensive roots require successful same-run honesty");
             assert!(
                 honesty_dependencies(&ci.replacen("name: ${{ matrix.part }}", "name: honesty", 1))
                     .is_err(),
                 "a static matrix name acquires a suffix instead of the exact honesty context"
             );
-            for root in ["vv", "atlas-prefix", "host-matrix", "intel-construction"] {
+            for root in [
+                "bootstrap-export",
+                "vv",
+                "atlas-prefix",
+                "host-matrix",
+                "intel-construction",
+            ] {
                 let original = format!("  {root}:\n");
                 let pos = ci.find(&original).expect("the root");
                 let end = ci[pos + original.len()..]
@@ -3265,6 +3343,205 @@ fn intel_host_workflow(ci: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// The fetcher a leg runs beside its gate command to take the run's
+/// bootstrap export (§9.4).
+const TAKE_EXPORT: &str = ".github/scripts/take-bootstrap-export.sh";
+
+/// §9.4: one bootstrap export per run, carried to the legs of the same run.
+/// The export job follows honesty and the plan's whole-gate decision, runs
+/// the export at the profile of the `examples` leg, and uploads it under the
+/// one name the fetcher reads; a leg reads the artifacts of its own run only,
+/// takes the export only in a run that is the whole gate, and only into the
+/// directory its harness waits in; the fetcher names this run and the export
+/// job, and asks nothing before a case wants the export.
+fn bootstrap_export_workflow(ci: &str, take: &str) -> Result<(), String> {
+    let job = workflow_job(ci, "bootstrap-export")?;
+    let legs = workflow_job(ci, "vv")?;
+    let require = |body: &str, text: &str, rule: &str| -> Result<(), String> {
+        if body.contains(text) {
+            Ok(())
+        } else {
+            Err(format!("RP-14: {rule}: missing `{text}`"))
+        }
+    };
+    for (text, rule) in [
+        ("    name: bootstrap export\n", "the job the fetcher watches"),
+        ("    needs: [plan, honesty]\n", "the export follows honesty"),
+        (
+            "    if: ${{ needs.plan.outputs.full == 'true' }}\n",
+            "the export runs in a run that is the whole gate",
+        ),
+        ("      LEXLEAN_VERIFY_WIDTH: \"2\"\n", "the examples leg's width"),
+        (
+            "      LEXLEAN_VERIFY_MEMORY_KIB: \"12582912\"\n",
+            "the examples leg's budget",
+        ),
+        (
+            "      LEXLEAN_VERIFY_HINTS: ${{ github.workspace }}/.github/verify-hints.json\n",
+            "the committed hints",
+        ),
+        (
+            "cargo xtask export-bootstrap --output \"$RUNNER_TEMP/bootstrap-export\" 2>&1 | tee ci-evidence/vv.txt\n",
+            "the export, with the comparison and the custody record",
+        ),
+        ("          name: bootstrap-export\n", "the artifact the fetcher reads"),
+        (
+            "          path: ${{ runner.temp }}/bootstrap-export\n",
+            "the directory the export wrote",
+        ),
+        (
+            "name: acceptance-gate-evidence-bootstrap-export\n",
+            "the job's evidence",
+        ),
+    ] {
+        require(&job, text, rule)?;
+    }
+    for (text, rule) in [
+        ("      actions: read\n", "a leg lists the run's artifacts"),
+        (
+            "          FULL_GATE: ${{ needs.plan.outputs.full }}\n",
+            "a leg takes the export only in a run that is the whole gate",
+        ),
+        (
+            "          if [ \"$FULL_GATE\" = true ]; then\n            export LEXLEAN_BOOTSTRAP_EXPORT=\"$RUNNER_TEMP/bootstrap-export\"\n            .github/scripts/take-bootstrap-export.sh \"$LEXLEAN_BOOTSTRAP_EXPORT\"",
+            "the fetcher fills the directory the harness waits in",
+        ),
+    ] {
+        require(&legs, text, rule)?;
+    }
+    for body in [&job, &legs] {
+        for forbidden in [
+            "run-id:",
+            "github-token:",
+            "actions/cache",
+            "continue-on-error",
+        ] {
+            if body.contains(forbidden) {
+                return Err(format!("RP-14: the export's custody admits `{forbidden}`"));
+            }
+        }
+    }
+    for (text, rule) in [
+        ("run=${GITHUB_RUN_ID:?}", "the fetcher reads this run"),
+        (
+            "repos/$repo/actions/runs/$run/artifacts?name=bootstrap-export",
+            "the fetcher reads the export job's artifact",
+        ),
+        (
+            "select(.name == \"bootstrap export\")",
+            "the fetcher watches the export job",
+        ),
+        (
+            "until [ -e \"$dir/wanted\" ]",
+            "the fetcher asks nothing before a case wants the export",
+        ),
+    ] {
+        require(take, text, rule)?;
+    }
+    if take.matches("actions/runs/").count() != 2 || take.contains("GITHUB_RUN_ID=") {
+        return Err("RP-14: the fetcher reads the run it is in and no other".to_owned());
+    }
+    Ok(())
+}
+
+/// §9.4: a custody record names the run and checkout that take the export,
+/// and every way it can differ is refused.
+fn bootstrap_custody_decisions() {
+    use crate::export_custody::{check, Custody, Identity, SPEC};
+    use std::collections::BTreeMap;
+    let pins: BTreeMap<String, String> = [
+        ("Cargo.lock", "a".repeat(64)),
+        ("lean-toolchain", "b".repeat(64)),
+        ("rust-toolchain.toml", "c".repeat(64)),
+    ]
+    .into_iter()
+    .map(|(name, digest)| (name.to_owned(), digest))
+    .collect();
+    let toolchains: BTreeMap<String, String> =
+        [("lean", "Lean (version 4.32.1)"), ("rustc", "rustc 1.97.1")]
+            .into_iter()
+            .map(|(name, text)| (name.to_owned(), text.to_owned()))
+            .collect();
+    let here = Identity {
+        repository: "UOR-Foundation/LexLean".to_owned(),
+        run_id: "100".to_owned(),
+        run_attempt: "2".to_owned(),
+        commit: "1".repeat(40),
+        tree: "2".repeat(40),
+        pins: pins.clone(),
+        toolchains: toolchains.clone(),
+    };
+    let bundle = ("d".repeat(64), 162);
+    let record = Custody {
+        spec: SPEC.to_owned(),
+        repository: here.repository.clone(),
+        run_id: here.run_id.clone(),
+        run_attempt: "1".to_owned(),
+        commit: here.commit.clone(),
+        tree: here.tree.clone(),
+        pins,
+        toolchains,
+        bundle_path: ".lexlean/production/bundle".to_owned(),
+        bundle_sha256: bundle.0.clone(),
+        bundle_files: bundle.1,
+    };
+    check(&record, &here, &bundle).expect("§9.4: the run's own export, from an earlier attempt");
+    type Plant = Box<dyn Fn(&mut Custody)>;
+    let plants: Vec<(&str, Plant)> = vec![
+        ("spec", Box::new(|record| record.spec.push('2'))),
+        (
+            "repository",
+            Box::new(|record| record.repository = "fork/LexLean".to_owned()),
+        ),
+        ("run", Box::new(|record| record.run_id = "99".to_owned())),
+        (
+            "attempt",
+            Box::new(|record| record.run_attempt = "3".to_owned()),
+        ),
+        ("commit", Box::new(|record| record.commit = "3".repeat(40))),
+        ("tree", Box::new(|record| record.tree = "4".repeat(40))),
+        (
+            "pins",
+            Box::new(|record| {
+                record
+                    .pins
+                    .insert("lean-toolchain".to_owned(), "e".repeat(64));
+            }),
+        ),
+        (
+            "toolchains",
+            Box::new(|record| {
+                record
+                    .toolchains
+                    .insert("rustc".to_owned(), "rustc 1.97.0".to_owned());
+            }),
+        ),
+        (
+            "bundle",
+            Box::new(|record| record.bundle_sha256 = "f".repeat(64)),
+        ),
+        ("bundle", Box::new(|record| record.bundle_files += 1)),
+        (
+            "bundle path",
+            Box::new(|record| record.bundle_path = "../outside".to_owned()),
+        ),
+        (
+            "bundle path",
+            Box::new(|record| record.bundle_path = "/abs/bundle".to_owned()),
+        ),
+    ];
+    for (field, plant) in plants {
+        let mut planted = record.clone();
+        plant(&mut planted);
+        let refusal = check(&planted, &here, &bundle)
+            .expect_err("§9.4: a custody record that names another run, tree, pin, or bundle");
+        assert!(
+            refusal.starts_with(field) && refusal.lines().count() == 1,
+            "the refusal names the field `{field}` alone: {refusal}"
+        );
+    }
+}
+
 /// Claim drift must finish successfully before a costly root can start.
 fn honesty_dependencies(ci: &str) -> Result<(), String> {
     let initial = workflow_job(ci, "honesty")?;
@@ -3276,7 +3553,13 @@ fn honesty_dependencies(ci: &str) -> Result<(), String> {
             "RP-14: honesty must expose its matrix-resolved context and follow the plan".to_owned(),
         );
     }
-    for root in ["vv", "atlas-prefix", "host-matrix", "intel-construction"] {
+    for root in [
+        "bootstrap-export",
+        "vv",
+        "atlas-prefix",
+        "host-matrix",
+        "intel-construction",
+    ] {
         let body = workflow_job(ci, root)?;
         if !body.contains("needs: [plan, honesty]\n")
             || body

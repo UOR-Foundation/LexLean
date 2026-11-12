@@ -37,6 +37,7 @@ fn main() -> ExitCode {
         "check-calculus" => check_calculus(&root, write),
         "check-production-export" => check_production_export(write),
         "check-freshness" => check_freshness(&root),
+        "export-bootstrap" => export_bootstrap(&std::env::args().skip(2).collect::<Vec<_>>()),
         "check-package" => check_package(&root),
         "counts" => counts::counts(&root, write),
         "check-test-inventory" => ci::check_test_inventory(&root),
@@ -67,6 +68,9 @@ fn main() -> ExitCode {
                                          packages under tests/production-export\n\
                  check-freshness         §9.4: every committed build oracle's recorded inputs, every lock,
                                          and every committed export package are current (no Lean)
+                 export-bootstrap        §9.4: export the bootstrap project once for a CI run, require
+                                         its committed packages, and write the bundle with its custody
+                                         record (--output DIR)
                  check-package          §30.3, RP-12: package lexlean crate, verify offline build & identity\n\
                  check-test-inventory    RP-13: the `test` and `bdd` recipes partition the workspace tests,\n\
                                          and the parts of .github/bdd-parts.json partition `bdd`\n\
@@ -139,6 +143,23 @@ fn check_freshness(root: &Path) -> Result<(), Fail> {
     println!(
         "check-freshness: {} build oracles ({} recorded inputs), their locks, and {} committed export packages are current (§9.4)",
         summary.projects, summary.inputs, summary.packages
+    );
+    Ok(())
+}
+
+/// §9.4: the bootstrap production export, run once for a CI run by the
+/// `bootstrap-export` job, which uploads what this writes for the run's other
+/// jobs (`repo_conformance::export_custody`).
+fn export_bootstrap(arguments: &[String]) -> Result<(), Fail> {
+    let output = arguments
+        .iter()
+        .position(|argument| argument == "--output")
+        .and_then(|index| arguments.get(index + 1))
+        .ok_or("export-bootstrap --output DIR")?;
+    let custody = repo_conformance::export_custody::publish(camino::Utf8Path::new(output))?;
+    println!(
+        "export-bootstrap: the bootstrap project exported once for run {} attempt {} (commit {}); its packages equal the committed packages (§24.7); bundle sha256 {} ({} files) in {output}",
+        custody.run_id, custody.run_attempt, custody.commit, custody.bundle_sha256, custody.bundle_files
     );
     Ok(())
 }

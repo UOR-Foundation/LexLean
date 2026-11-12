@@ -41,6 +41,11 @@ workspace carried at those versions without a tag.
   every input a committed build oracle records still hashes to its recorded digest, every lock
   passes `lexlean lock --check`, and every committed export package names this compiler's
   semantics and its project's committed semantic ID. Stale generated files fail in minutes.
+- CI exports the bootstrap project once per run (SPEC.md §9.4): the `bootstrap export` job
+  runs `cargo xtask export-bootstrap` at the `examples` leg's profile, requires the committed
+  packages, and uploads the bundle with a custody record (`lexlean/ci-bootstrap-export/1`); a
+  leg takes it when a case first needs it, and the harness checks the record against its own
+  run and checkout and replays the bundle. No bootstrap part verifies the bootstrap project.
 - Declaration IDs (SPEC.md §21.9, `SM-38`; no new diagnostic code, no change to
   any compiler-semantics ID). A language-1.2 build publishes
   `declarations/<module>.json` (`lexlean/declarations/1`, schema

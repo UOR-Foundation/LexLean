@@ -16,6 +16,7 @@ pub mod certification_library;
 pub mod counts;
 pub mod differential;
 pub mod evidence;
+pub mod export_custody;
 pub mod fixtures;
 pub mod freshness;
 pub mod gnaf;
