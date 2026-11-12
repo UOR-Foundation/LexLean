@@ -17,9 +17,6 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
-- `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
-  initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
-  `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
 - Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
   new diagnostic code; changes the language-1.2 identity). The runtime gains a
   sixth native module, `LexLeanRuntime.Regions`: a checker of local box
@@ -30,7 +27,19 @@ workspace carried at those versions without a tag.
   decision with one kernel-decided obligation and that theorem; the lowered
   data is definitionally the module's own definitions, so the lowering is not
   trusted. Verdant Resonance (35 rules, 15 properties), which
-  `linear_arithmetic` could not prove, verifies. The register is 483 IDs.
+  `linear_arithmetic` could not prove, verifies. The register is 484 IDs.
+- Declaration IDs (SPEC.md §21.9, `SM-38`; no new diagnostic code, no change to
+  any compiler-semantics ID). A language-1.2 build publishes
+  `declarations/<module>.json` (`lexlean/declarations/1`, schema
+  `api/schemas/declarations.schema.json`) with a declaration ID for every
+  declaration of a semantic module, a framed SHA-256 over its canonical JSON
+  and the IDs of the project declarations it references, with each group of
+  declarations that reference one another hashed as one, and a statement ID
+  for every theorem that omits its proof. Builds of languages 1.0 and 1.1 are
+  unchanged. The register is 483 IDs.
+- `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
+  initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
+  `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
 - The generic notation as language-1.2 source, fourth slice of the front end
   (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
   the language-1.2 identity). `parseGeneric` and `printGeneric` of
