@@ -6632,7 +6632,27 @@ fn check_array_element(ty: &SemanticType) -> Result<(), String> {
         | SemanticType::UInt16
         | SemanticType::UInt32
         | SemanticType::UInt64 => Ok(()),
-        other => Err(format!(
+        other @ (SemanticType::Type
+        | SemanticType::Parameter { .. }
+        | SemanticType::Nat
+        | SemanticType::Bool
+        | SemanticType::Prop
+        | SemanticType::Unit
+        | SemanticType::Int
+        | SemanticType::String
+        | SemanticType::Bytes
+        | SemanticType::Ordering
+        | SemanticType::Option { .. }
+        | SemanticType::Result { .. }
+        | SemanticType::List { .. }
+        | SemanticType::Named { .. }
+        | SemanticType::Product { .. }
+        | SemanticType::Function { .. }
+        | SemanticType::Map { .. }
+        | SemanticType::Set { .. }
+        | SemanticType::ContractViolation
+        | SemanticType::ReasoningFailure
+        | SemanticType::Array { .. }) => Err(format!(
             "type {other} cannot be the element of an array: an array holds one fixed-width integer type (Int8, Int16, Int32, Int64, UInt8, UInt16, UInt32, or UInt64)"
         )),
     }
