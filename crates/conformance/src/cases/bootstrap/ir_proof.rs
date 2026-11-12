@@ -280,7 +280,7 @@ fn enc_declaration(declaration: &Declaration) -> Value {
 #[derive(Clone)]
 enum Input {
     Proof(Proof),
-    Declaration(Declaration),
+    Declaration(Box<Declaration>),
     Permit(AxiomPolicy, Vec<String>),
 }
 
@@ -377,7 +377,7 @@ fn committed() -> (Vec<Input>, usize, usize) {
         if !seen.insert(key) {
             continue;
         }
-        out.push(Input::Declaration(declaration.clone()));
+        out.push(Input::Declaration(Box::new(declaration.clone())));
         out.push(Input::Permit(
             declaration.policy.clone(),
             declaration.policy.axioms().to_vec(),
@@ -611,7 +611,7 @@ fn named() -> Vec<Vector> {
     );
     add(
         "a theorem with parameters",
-        Input::Declaration(declaration(
+        Input::Declaration(Box::new(declaration(
             DeclKind::Lemma,
             vec![
                 binder(1, "x", Term::Sort(Universe::Num(1))),
@@ -622,11 +622,11 @@ fn named() -> Vec<Vector> {
                 proof: Proof::Exact(local(2)),
             },
             AxiomPolicy::Exact(names(&["Quot.sound", "propext"])),
-        )),
+        ))),
     );
     add(
         "a definition",
-        Input::Declaration(declaration(
+        Input::Declaration(Box::new(declaration(
             DeclKind::TermDefinition,
             Vec::new(),
             DeclBody::Definition {
@@ -638,11 +638,11 @@ fn named() -> Vec<Vector> {
                 },
             },
             AxiomPolicy::None,
-        )),
+        ))),
     );
     add(
         "a corollary",
-        Input::Declaration(declaration(
+        Input::Declaration(Box::new(declaration(
             DeclKind::Corollary,
             Vec::new(),
             DeclBody::TheoremLike {
@@ -650,7 +650,7 @@ fn named() -> Vec<Vector> {
                 proof: Proof::Reflexivity,
             },
             AxiomPolicy::Allow(names(&["propext", "Classical.choice"])),
-        )),
+        ))),
     );
     add(
         "none permits nothing",
@@ -728,7 +728,7 @@ fn drawn_proofs(seeded: &mut Seeded, depth: usize) -> Vec<Proof> {
 fn drawn_cases(seeded: &mut Seeded, depth: usize) -> Vec<CaseProof> {
     (0..seeded.below(3))
         .map(|_| CaseProof {
-            constructor: qualified("demo", *seeded.pick(&["zero", "succ", "node"])),
+            constructor: qualified("demo", seeded.pick(&["zero", "succ", "node"])),
             lean_name: (*seeded.pick(&["Nat.zero", "Nat.succ", "T.node"])).to_owned(),
             binders: (0..seeded.below(3))
                 .map(|_| (drawn_local(seeded), (*seeded.pick(&["n", "ih"])).to_owned()))
@@ -875,7 +875,7 @@ fn seeded_inputs(count: usize, seed: u64) -> Vec<Input> {
             let observed = drawn_names(&mut seeded);
             [
                 Input::Proof(proof),
-                Input::Declaration(declaration),
+                Input::Declaration(Box::new(declaration)),
                 Input::Permit(policy, observed),
             ]
         })
