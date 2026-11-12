@@ -11552,6 +11552,56 @@ axioms the module now declares. The case then stops at the stack-bound step,
 bootstrap member did before its regeneration, which produces the package and
 measures the root's stack bound.
 
+### the checker of semantic expressions is source (BS-52)
+
+`BS-52` holds the two production roots of `LexLeanBoot.LseTypes`
+(`bootstrap/src/LseTypes.lex.tex`) to `lexicon::lse::check_signature` and
+`check_value`: the zonked type and the type of every natural literal in
+occurrence order, or the message of the first error. The module threads the
+oracle's state through inference, unification, zonking, and capture-avoiding
+substitution: solved metavariables are named `?n` in the order the oracle
+makes them, a renamed binder is `x#n` with the oracle's counter, and every
+message prints its expressions with `printLse` of `BS-25`. Each recursive
+definition is structural over a chain the host's bound on nesting builds, so
+the roots admit `recursion`; a root whose bound runs out returns an error of
+its own, which no run of the case reaches. What the oracle's lookup closure
+answers is handed over as rows and a fallback. The oracle is the existing
+public code of `lse.rs`; the case reads the encoder and the seeded
+expressions of `BS-25`'s case, and no other Rust changes.
+
+The case holds the roots to the oracle on hand-built expressions over a
+hand-built glossary that reach every error of the checker, an opaque head, a
+defined result type, partial application, literals of an inferred and an
+undetermined type, a binder and a `let` renamed to avoid capture, and binders
+named apart; on every signature and defined value of the committed lexicon
+packages, checked against its own package with every other constant opaque
+as a package loads and against the builtin packages with every other
+constant missing as a closure does; and on seeded expressions. Each of the 20
+planted defects names the one vector that catches it, and the case asserts
+that the site of each plant occurs once. The row's statement carries no
+counts.
+
+The case passes a bound of 192: the evaluator copies the chain the bound
+builds at each call, so a bound of 4,096 made each run cost seconds, and no
+committed or seeded expression nests near 192. Two rules of the Rust rendering
+shaped the source. A call that can overflow is bound with `let` or is the
+value the function returns, never an operand, so each message prints its
+expressions into names first. And a definition that calls itself as its last
+step is rendered as a loop whose exit does not propagate the overflow of a
+call to another definition, so `inferBinding`, `inferRest`, and `unifyPiLoop`
+bind their own recursive call and rebuild its record.
+
+The case was first compiled and run on the normative host over `release/v0.4`
+at `26e5e0ace` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_52`). Its corpus is 39 named vectors, the signatures and
+defined values of the 43 committed packages that load (224 signature and 236
+value runs), and 200 and 1,500 seeded expressions. The evaluator agrees with
+the oracle on 899 runs, the rendered packages under the pinned rustc on 3,499
+runs, and each of the 20 planted defects is detected by its own vector. The
+case then stops at the stack-bound step, `bootstrap/check_signature is no
+package of the committed exports`, as each bootstrap member does before its
+regeneration, which produces the two packages and measures their stack bounds.
+
 ### the lexer of the authoring notation is source (BS-22)
 
 `BS-22` holds the two production roots of `LexLeanBoot.SurfaceLex`
