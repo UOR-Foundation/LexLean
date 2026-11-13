@@ -1,8 +1,8 @@
 spec = "lexlean/lock/2"
 language = "1.2"
-compiler_semantics = "a82990b56aa082f57e3bf3e2d6494d75a8170f26e269448de19110f5459655ad"
-project_config_sha256 = "30e9380b31a91b74c3c02f5882a9070290c6a5c41e1dd3bf56d9c617396343e7"
-lean_toolchain = "leanprover/lean4:v4.32.1"
+compiler_semantics = "7ba1ed3d4365ce79728a9b8fad798cfff07e95e74eced24cc1cda5aef29dabca"
+project_config_sha256 = "a1b589680a7c9d242df355c183efd08438e0fa36b5c0548283b436b3363263ad"
+lean_toolchain = "leanprover/lean4:v4.32.2"
 
 [[workspace_file]]
 path = "lake-manifest.json"
@@ -14,7 +14,7 @@ sha256 = "520c1a2d70040d3b2b4801c3857355de024615c763985fba303504c8520203ca"
 
 [[workspace_file]]
 path = "lean-toolchain"
-sha256 = "8e3538e0ab5f81a3ee04927d8838c8c674e0e112838b4b3ce87ec218143276af"
+sha256 = "2bdc48adfa58d0017e538a0ad117c5d73d35deec879978f909406a80c8037273"
 
 [[package]]
 id = "helpdesk.titles"
@@ -62,8 +62,8 @@ version = "1.0.0"
 kind = "path"
 source = "stdlib"
 module_prefix = "LexLeanStd"
-tree_sha256 = "316ac824e54957e79f4bdd5ed1f3228b7c5a817333134bddff9552d254434a08"
-manifest_sha256 = "1dbb7c6933b8f2a4a9d4af7746eefcb077ea1b339d9b88a63eadf64b6a348f4f"
+tree_sha256 = "e300215721c304bc9a029cecc23817cf6d9b88c5d9b2fe1bb46f10a29827d578"
+manifest_sha256 = "fa3c9469ad798c690c46cee22ece7a9e02b529ec455a473456057c4cc425c4c4"
 imports = []
 
 [[source_package]]
@@ -72,8 +72,8 @@ version = "1.0.0"
 kind = "path"
 source = "std-models"
 module_prefix = "LexLeanStdModels"
-tree_sha256 = "50c65a4e193eed2693c0cc863dda02363dea6eb0608f71d19c18dd7f9bb10143"
-manifest_sha256 = "b23bdec83131b3e4f0a45197f98f9b7144a208ff5a2692289262e5096a455001"
+tree_sha256 = "8e3c530c5ec64bea9097b74b9ccb292e2f67afa9b1fdc1e838aa355a72f99ce4"
+manifest_sha256 = "22f9b8ce50fb2cdab2152578ac61fe9672e97ca0d43dd90a00e996447756622e"
 imports = []
 
 [[source_package]]
@@ -82,6 +82,6 @@ version = "1.0.0"
 kind = "path"
 source = "std-reasoning"
 module_prefix = "LexLeanStdReasoning"
-tree_sha256 = "41389013809361357064b363ddea23a2fc4d335b1905ff6729f9be30fd0e529b"
-manifest_sha256 = "76ead6f0bc516e1d9669cf1333e7b75d9e7c19c7f3f8aeb000ca36ad15d432bc"
+tree_sha256 = "1aced4d4b9607f27625a9ed949fb389ae5469ac48e838339228e147084122d93"
+manifest_sha256 = "818d474f0b04c29f32fe6195c5412e7f4a4009c312e5cf3a982372a9f12aa4ed"
 imports = []
