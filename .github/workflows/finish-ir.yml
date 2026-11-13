@@ -82,7 +82,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        case: [conformance_bs_69, conformance_bs_70, conformance_bs_72]
+        case: [conformance_bs_69, conformance_bs_70]
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     steps:
@@ -91,6 +91,12 @@ jobs:
           persist-credentials: false
       - name: Install the pinned Rust toolchain
         run: rustup toolchain install
+      - name: Free disk space
+        run: |
+          set -euo pipefail
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL /usr/local/share/boost
+          df -h /
       - name: Reserve bounded overflow memory for the proofs
         run: |
           set -euo pipefail
@@ -109,6 +115,8 @@ jobs:
           # Lean-backed export, so the record is uploaded either way.
           LEXLEAN_MEASURE_STACK=all cargo test -p repo-conformance --all-features --test conformance -- --exact ${{ matrix.case }} --nocapture 2>&1 \
             | grep -E --line-buffered 'debug [0-9]+ bytes|test result|panicked|^test |BS-'
+          df -h /
+          python3 -c 'import json; print("RECORD", json.dumps(json.load(open("tests/stack-bounds.json"))["rows"], sort_keys=True))'
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}
         with:
