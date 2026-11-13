@@ -9117,6 +9117,174 @@ module with a state machine over the tokens, reading each member value with the 
 `generic::value` is called, so that the limit on nesting falls where the oracle's does; a
 span runs from the first token of the element to the end of its last. Neither of the last two
 admits `recursion`. The decoder of a tooling module and the checker stay in the host.
+The text channel and the simple proof sentences (§15.5, §16.2) are a component of the front end as
+source (`BS-35`, issue 269), the module `GrammarProof` over the atoms of `PrimitiveScan` (`BS-03`),
+with two production roots for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.GrammarProof.textTokens` | the path, the atoms, and an atom range | the tokens of the range, or the refusal's code, message, and span | `grammar::chart::text_tokens` |
+| `LexLeanBoot.GrammarProof.parseProofSentence` | the path, the atoms, and the tokens of one sentence | the sentence with its keyword occurrences, or the refusal | `grammar::proof::parse_proof_sentence` |
+
+`textTokens` walks the range under `iterate_until`, one atom or one island a step: white space is
+dropped, a dollar sign is refused, an opening control is folded with the first closing control of its
+kind into one island token after a bounded scan of its own that stops at that close or at another
+opening control, and a closing control met outside an island is refused. `parseProofSentence`
+matches the seven registered sentences against the tokens by position, as the oracle's matcher
+consumes them, and builds the keyword occurrences of the sentence it accepts. A sentence it refuses
+is `LLF5005` at the first token that composes one of the 31 forbidden words of §16.12 with the
+byte-adjacent word, numeral, and symbol atoms after it, or that begins the sentence and holds an
+underscore, and otherwise at the sentence's first atom. Neither root admits `recursion`. The
+oracle's tests for the `<;>` combinator and the focusing dot `·` are kept as written though no
+scanned sentence reaches them: a semicolon ends a composed word, and `·` is a Unicode symbol. The
+glossary forms, the propositions, and the elaboration of a sentence stay in the host.
+The printer of the semantic notation (§17.21) is the sixth component of the front end as source
+(`BS-36`, issue 269), the module `SemanticPrint` over `SurfaceDoc` (`BS-23`), `SurfaceGeneric`
+(`BS-24`), and the standard library's `Json`, with two production roots for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.SemanticPrint.printAt` | the schema, a value, and a position (declaration, term, type, or proof) | its notation at 100 columns | `surface::semantic::print_at` |
+| `LexLeanBoot.SemanticPrint.printSemanticModule` | the schema and a module | the notation of its declarations, or the error of a value that is no module | `surface::semantic::print_module` |
+
+The schema is the host's input, the value the oracle reads from the embedded tree, so that the
+module walks it as the oracle does: a reference is followed through `$defs` to the node it names,
+the references to `term`, `type`, `member`, and `parameter` are the positions with readable forms,
+and the alternative of a union is the one whose `kind` is the value's, by `const` or `enum`. The
+printer recurses structurally over the value (one function for a value, one for the items of an
+array, and one for the members of an object), so it admits `recursion` and owes a row in
+`tests/stack-bounds.json` (`PD-08`). Each object's printing is decided before its members are
+printed: a shallow test, which reads no deeper than the members of its members, says whether a
+readable form carries it exactly (the members it spells and nothing else, a name or literal the
+form can write), and that decision gives each member its position, so each member is printed once.
+A readable form's lists (the arguments, the type arguments, the parameters of a `fun`, the
+parameter types of `Fn`, the fields of a `record`, and the branches of a `match`) are positions of
+their own that join their items as the form writes them. Everything else is the generic notation of
+`BS-24` with the members at the positions the schema gives them. The reader of the notation and the
+decoding of a module stay in the host.
+The reader of the semantic notation (§17.21) is the seventh component of the front end as source
+(`BS-37`, issue 269), the module `SemanticRead` over `SurfaceLex` (`BS-22`), `SurfaceGeneric`
+(`BS-24`), and the standard library's `Json`, with three production roots for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.SemanticRead.parseAt` | the schema, a text, and a position (declaration, term, type, or proof) | the one value the text is at that position, or the offset and message of the first error | `surface::semantic::parse_at` |
+| `LexLeanBoot.SemanticRead.parseSemanticModule` | the schema, a text, and a schema tag | the module of the declarations the text is, or the first error | `surface::semantic::parse_module` |
+| `LexLeanBoot.SemanticRead.semanticSpans` | the schema and a text | the byte range of each declaration, or the first error | `surface::semantic::declaration_spans` |
+
+The text is lexed with `lexText` (`BS-22`) first, so that a lexical error is reported before any
+error of the reading, as the oracle's `Reader::new` reports it. The tokens are then read by a
+machine with an explicit stack of frames under `iterate_until`, so that no root admits `recursion`:
+each construct the oracle reads by a recursive call (an array and the members of an object at a
+position, a parenthesised type or term, each readable form with the parts it reads one after the
+other, a parameter, a list of type arguments) is a frame that waits for the value it asked for,
+and a goal names what is read next (a value at a position, a tagged value, a type, a term, a
+parameter, a generic value, a list of types) with the depth the oracle passes to that call, so
+that the limit of 256 on nesting falls where the oracle's does. A value at a position with no
+readable form, and a member written as an object, are read by the generic reader of `BS-24`
+(`readFrom`) at the oracle's depth. Positions are found in the schema as `BS-36` finds them, and an
+object's members are kept in the order they were read and sorted by key when it closes, so that a
+member written twice is refused at its name after its value is read, as the oracle's `BTreeMap`
+refuses it. The printer of the notation and the decoding of a module stay in the host.
+The canonical JSON of a native core module (§17.10, §21.7) is a component of the front end as
+source (`BS-38`, issue 269), the module `CoreJson`, with one production root for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.CoreJson.coreJson` | a core module | its canonical JSON text | `surface::core::canonical_json` |
+
+The module takes a core module as first-order data: its schema tag, its imports, its node table,
+its proof nodes, and its declarations. A node, a universe level, a binder's visibility, and an
+annotation's value are inductives of the module that mirror the kernel terms of §17.10, and a
+declaration is the standard library's `Json` (`SL-11`, `SL-13`) of the value the host serializes
+it to, which the root writes with the standard library's writer, as the oracle writes the
+serialized value. Every other part is written by the root itself in the oracle's order: the
+members of a node and of a level in byte order of key, and every string escaped by `quoteText`
+(`BS-22`). A level is written by structural recursion over the level, and the writer of a
+declaration recurses over the value, so the root admits `recursion`. The module's types are the
+input of the printer of the core notation (`BS-39`).
+The printer of the core notation (§17.21.8) is a component of the front end as source (`BS-39`,
+issue 269), the module `CorePrint` over `CoreJson` (`BS-38`), whose module types it reads,
+`SurfaceDoc` (`BS-23`), and `SurfaceGeneric` (`BS-24`), with one production root for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.CorePrint.printCoreModule` | a core module | its notation, or the error of a module the notation does not carry | `surface::core::print_module` |
+
+The root refuses another schema, then a node pointing to itself or forward, then proof nodes that
+are not strictly increasing nodes, then a declaration root outside the module, as the oracle's
+`check` does, and writes the imports and the declarations. The statements come from one pass over
+the node table in its order. A stack holds the nodes still to be written inside another, and a node
+takes a child from the top of the stack when the child is used once (the uses are counted from a
+sorted list of every edge and root, so the pass reads them in order), is the top, and is less than
+48 deep, which is the oracle's rule that a child ends right before the children its user has taken.
+The same pass builds each node's term from the terms it takes and refuses a string literal that
+holds no Unicode scalar at its node, the first in the order of the nodes, which is the order the
+oracle meets them. A term holds its bound variables by index and its constants by name, and the
+binders it writes, so a node's term does not depend on where it is written; a structural walk of
+each statement then resolves them against the binders in scope, as the oracle's scope does. The
+walk and the levels admit `recursion`. The reader of the notation stays in the host.
+The reader of the core notation (§17.21.8) is a component of the front end as source (`BS-40`,
+issue 269), the module `CoreRead` over `CoreJson` (`BS-38`), `SurfaceLex` (`BS-22`), and
+`SurfaceGeneric` (`BS-24`), with one production root for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.CoreRead.readCoreModule` | a text | its imports, nodes, proof nodes, each declaration's members with its roots, and the byte range of each declaration, or the offset and message of the first error | `surface::core::read_module` |
+
+The oracle reads a module and then decodes each declaration's members into a declaration; the
+seam `read_module` returns what it reads before that decoding, and `parse_module` is that seam
+followed by the decoding, so the root is held to the reader and the decoding stays in the host.
+The root scans a token where the oracle peeks one, so that a lexical error stands where the
+oracle meets it. A term is read by a machine with an explicit stack of jobs (a term, a binder and
+its close, the arrow and body of a `fun` or a binder form, the parts of a `let`, an arrow after a
+head, a prefix form, an application's arguments, a parenthesis, a `proof`), with a stack of the
+parts a job holds and of the names in scope, and the universe levels by a second machine of the
+same kind, so the root admits no `recursion`; each node is numbered when it finishes, as the
+oracle pushes it. A declaration's members are read by `parseGeneric`, and its kind, name,
+universe parameters, and roots are added in order of key; a root that names a statement is
+resolved after every statement is read.
+The grammar of a mathematical island (§15.5) is a component of the front end as source (`BS-42`,
+issue 269), the module `GrammarMath` over the atoms of `PrimitiveScan` (`BS-03`), with one
+production root for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.GrammarMath.parseMath` | the path, the atoms, the island's range, the closure's projection, the limits, and the budget spent before | the covers of the range, or the refusal's code, message, and span | `grammar::math::parse_math` |
+
+The glossary closure belongs to the lexicon, so the root takes its projection: for each atom
+position, the math-channel edges the token lattice holds there (each with its end, and the frame,
+precedence, and associativity of its form), with the limits `max_token_lattice_edges`,
+`max_parse_states`, and `max_scope_depth` and the states the budget spent before. The root keeps
+the lattice's counter and its memo of positions, so an edge is counted once however many passes
+read its position, and every `LLS8002` falls where the oracle's does. The Pratt parser is a stack
+of frames under `iterate_until` (an expression, its operator loop, a pending infix, a primary, a
+grouping, a prefix operand, a call's arguments), one step a frame, so it admits no `recursion`;
+each value carries its atom range and an encoding of the node, so the start of a call's head and
+the equality of two covers are read without a walk. The worklist of segmentations is the oracle's:
+each pass takes the shortest extent at a branch point it has not chosen, records the branch
+points it met, and every other extent of each is one more choice to try, once. The token lattice
+and the elaboration of a cover stay in the host.
+The grammar keywords, the unknown-atom diagnosis, the binders, and the term phrases of the text
+channel (§15.3, §15.4, §12.2) are a component of the front end as source (`BS-43`, issue 269), the
+module `PropositionTerms` over the tokens of `GrammarProof` (`BS-35`) and the atoms of
+`PrimitiveScan` (`BS-03`), with four production roots for `rust-std`:
+
+| Root | Takes | Returns | Oracle |
+| --- | --- | --- | --- |
+| `LexLeanBoot.PropositionTerms.keywordEntry` | a word | the core entry of the grammar keyword it spells, or none | `grammar::proposition::keyword_entry` |
+| `LexLeanBoot.PropositionTerms.unknownAtom` | a sentence's atoms and tokens, the closure's projection, and the budget | the unknown atom's refusal, or none, or the limit's refusal | `TextParser::unknown_atom_diagnostic` |
+| `LexLeanBoot.PropositionTerms.binderAlternatives` | the same, a token, and whether the slot requires an article | every binder there and the token after it | `TextParser::binder` |
+| `LexLeanBoot.PropositionTerms.termPhrase` | the same, a token, and a nesting depth | every term phrase there and the token after it | `TextParser::term_phrase` |
+
+As for `BS-42`, the root takes the closure's projection: the text-channel edges at each atom
+position, each with its form's category and whether the form is plural or sentence-case, the
+limits, and the states the budget spent before, and it keeps the lattice's counter and memo. A term
+phrase whose arguments are term phrases is a stack of frames under `iterate_until`: the start of a
+phrase, the noun forms after `the` still to try, the alternatives of a first argument still to
+extend, and the second arguments of a binary form, each frame holding the alternatives gathered so
+far, so every alternative comes out in the oracle's order and none of the roots admits `recursion`.
+The proposition grammar and the elaboration of a phrase stay in the host.
 
 ## 18. Lean backend
 
@@ -12154,6 +12322,14 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `BS-32` | `bootstrap` | The labeled hash recipes of content identity of SPEC.md §21.1 to §21.5, §11.5, §19.8, and §22.9 (`artifact::content_id`: the frame of a label and a payload, each preceded by its big-endian length in four and eight bytes, under a domain and a NUL; `tree_digest` over path and content rows; `source_id` over the project manifest, the lock, and the sources; `semantic_id_for` over the compiler-semantics digest, the language, the pinned Lean toolchain, the linked IR, and the lexicon closure; `build_id`; `attestation_id`; and `pdf_recipe_id`) is language-1.2 source in the `bootstrap/` project, as six production roots of `ContentId` over the standard library's SHA-256: `treeDigest`, `sourceId`, `semanticId`, `buildId`, `attestationId`, and `pdfRecipeId`, each eligible for `rust-std` with exactly its declared effects, `allocation` and `overflow`, and each with no part of its certificate beyond 3,145,728 bytes; their rendered `rust-std` packages under the pinned rustc, and on the normative host their lowered programs under the calculus evaluator, agree with the oracle to the byte on hand-built inputs that reach every frame of every recipe, lengths beyond one byte, and messages across blocks, on the trees and source inputs of the committed projects, on the source and semantic IDs of every committed build manifest, whose recorded build ID the oracle reproduces, and on seeded inputs; each planted defect in the source is detected by the one vector it names, and the certified packages the production export publishes for the project are the committed ones; choosing and normalizing the files of a tree or a source ID, and serializing the IR, the closure, and the attestation body, are outside the claim. | §17.23, §21.1, §21.5 |
 | `BS-33` | `bootstrap` | The canonical text of the project manifest of SPEC.md §10.1 and its digest (`config::ProjectConfig::canonical_toml`: the ten header keys in their fixed order with the pinned Lean toolchain, the lexicon sources sorted by package or the empty array when there is none, the artifact sources and the source packages in their order, the eleven limits in their fixed order, and the PDF provider; and `config_sha256`: the lower-case hex SHA-256 of that text) is language-1.2 source in the `bootstrap/` project, as two production roots of `ProjectText` over the TOML writers of `BS-31`: `canonicalProject` and `configSha256`, each eligible for `rust-std` with exactly its declared effects, `allocation` and `overflow`, and each with no part of its certificate beyond 3,145,728 bytes; their rendered `rust-std` packages under the pinned rustc, and on the normative host their lowered programs under the calculus evaluator, agree with the oracle to the byte on hand-built configurations, which reach every kind of lexicon source, the empty source list, equal packages, every optional table, escapes, and the largest limits, on every committed `lexlean.toml` that parses, and on seeded configurations; each planted defect in the source is detected by the one vector it names, and the certified packages the production export publishes for the project are the committed ones; reading and validating a manifest is outside the claim. | §10.1, §17.23 |
 | `BS-34` | `bootstrap` | The build manifest of SPEC.md §21.6 in the canonical JSON of §21.7 (`artifact::manifest::BuildManifest::to_json` written as a file: the specification, the compiler version and semantics ID, the language, the project, the source, semantic, and build IDs, the pinned Lean toolchain, the selection and the module rows in their order, a module's origin only when it has one, and the input and output rows sorted by kind, path, length, and digest, each digest in lower-case hex) is language-1.2 source in the `bootstrap/` project, as the production root `buildManifest` of `ManifestText` over the standard library's `Json` writer, eligible for `rust-std` with exactly its declared effects, `allocation`, `overflow`, and `recursion`, and with no part of its certificate beyond 3,145,728 bytes; its rendered `rust-std` package under the pinned rustc, and on the normative host its lowered program under the calculus evaluator, agree with the oracle to the byte on hand-built manifests, which reach every key of the row order, lengths across a byte, a module's origin, and escapes, on every committed build manifest, each of which is the oracle's text of its own fields, and on seeded manifests; each planted defect in the source is detected by the one vector it names, and the certified packages the production export publishes for the project are the committed ones; gathering the rows of a build and hashing its files are outside the claim. | §17.23, §21.6, §21.7 |
+| `BS-35` | `bootstrap` | The text channel and the simple proof sentences of SPEC.md §15.5 and §16.2 (`grammar::chart::text_tokens`: an atom range with its white space dropped and each mathematical island, from `\(` or `\[` to the first closing control of its kind, folded into one token, or the first refusal in the range: a dollar delimiter (`LLP2001`), an island opened inside another, an island without its close, and a close that closes none (`LLL1006`); and `grammar::proof::parse_proof_sentence`: the tokens of one sentence read as one of the seven registered simple sentences, with the keyword occurrences that cover it, or `LLF5005` at the first token that composes a forbidden proof word with the byte-adjacent atoms after it or begins the sentence with an underscore, and otherwise at the sentence's first atom) is language-1.2 source in the `bootstrap/` project, as two production roots of `GrammarProof` over the atoms of `BS-03`: `textTokens` and `parseProofSentence`, each eligible for `rust-std` with exactly its declared effects, none of them `recursion`, and each with no part of its certificate beyond 3,145,728 bytes; their rendered `rust-std` packages under the pinned rustc, and on the normative host their lowered programs under the calculus evaluator, agree with the oracle to the byte on the hand-built vectors, which reach every refusal of the two, every registered sentence, and every forbidden word, on seeded atom ranges of every committed `.lex.tex` source, and on seeded sentences and seeded edits of the registered ones; each planted defect in the source is detected by the one vector it names, and the certified packages the production export publishes for the project are the committed ones; the glossary forms, the proposition grammar, and the elaboration of a sentence are outside the claim. | §17.23, §15.5, §16.2 |
+| `BS-36` | `bootstrap` | The printer of the authoring notation of a semantic module of SPEC.md §17.21 (`surface::semantic::print_at`: a value at the position of a declaration, a term, a type, or a proof, found by walking the semantic-module schema, written in the readable form of a term, a type, a member, or a parameter when that form carries the value exactly and otherwise in the generic notation tagged by its `kind`, with each member at the position the schema gives it, and laid out at 100 columns; and `surface::semantic::print_module`: the declarations of a module so written, each ended by a line feed and separated by an empty line, or the error of a value that is not a module) is language-1.2 source in the `bootstrap/` project, as two production roots of `SemanticPrint` over the layout algebra of `BS-23`, the generic notation of `BS-24`, and the standard library's `Json`, with the schema as the host's input: `printAt` and `printSemanticModule`, each eligible for `rust-std` with exactly its declared effects, which admit `recursion` as the printer of `BS-24` does, and each with no part of its certificate beyond 3,145,728 bytes; their rendered `rust-std` packages under the pinned rustc, and on the normative host their lowered programs under the calculus evaluator, agree with the oracle to the byte on the hand-built vectors, which reach every readable form and each condition that writes a value generically, every error of a module, and the schema's sample of every alternative of the declaration, term, type, and proof unions, on every declaration and every module of the committed semantic modules written in the notation, and on seeded edits of their declarations; each planted defect in the source is detected by the one vector it names, and the certified packages the production export publishes for the project are the committed ones; the reader of the notation and the decoding of a module are outside the claim. | §17.23, §17.21 |
+| `BS-37` | `bootstrap` | The reader of the authoring notation of a semantic module of SPEC.md §17.21 (`surface::semantic::parse_at`: a text lexed by the lexer of the notation and read as exactly one value at the position of a declaration, a term, a type, or a proof, found by walking the semantic-module schema, in the readable form of a term, a type, a member, or a parameter, or in the generic notation tagged by its `kind` with each member at the position the schema gives it, with the nesting the notation bounds at 256, or the offset and message of the first error; `surface::semantic::parse_module`: the declarations of a text read one after the other and made a module under its schema tag; and `surface::semantic::declaration_spans`: the byte range of each declaration so read) is language-1.2 source in the `bootstrap/` project, as three production roots of `SemanticRead` over the lexer of `BS-22`, the generic notation of `BS-24`, and the standard library's `Json`, with the schema as the host's input: `parseAt`, `parseSemanticModule`, and `semanticSpans`, each eligible for `rust-std` with exactly its declared effects, none of them `recursion`, and each with no part of its certificate beyond 3,145,728 bytes; their rendered `rust-std` packages under the pinned rustc, and on the normative host their lowered programs under the calculus evaluator, agree with the oracle to the byte on the hand-built vectors, which reach every readable form, every error of the reader, and the limit on nesting, on the schema's sample of every alternative of the declaration, term, type, and proof unions printed and read back, on every committed semantic module written in the notation read and spanned and each of its declarations printed and read back, and on seeded edits of the printed declarations; each planted defect in the source is detected by the one vector it names, and the certified packages the production export publishes for the project are the committed ones; the printer of the notation and the decoding of a module are outside the claim. | §17.23, §17.21 |
+| `BS-38` | `bootstrap` | The canonical JSON of a native core module of SPEC.md §17.10 and §21.7 (`surface::core::canonical_json`: the module's declarations as the values they serialize to, its imports, its node table with each node's members in byte order of key, its proof nodes, and its schema tag, written with object keys in byte order and strings escaped as canonical JSON escapes them) is language-1.2 source in the `bootstrap/` project, as the production root `coreJson` of `CoreJson`, which takes the module as first-order data (its kernel terms, levels, binders, and annotations as inductives of the module, and each declaration as the standard library's `Json`), eligible for `rust-std` with exactly its declared effects, which admit `recursion` as the standard library's writer does, and with no part of its certificate beyond 3,145,728 bytes; its rendered `rust-std` package under the pinned rustc, and on the normative host its lowered program under the calculus evaluator, agree with the oracle to the byte on the hand-built modules, which reach every kind of node, level, binder, and annotation and strings that need escaping, on the committed core modules written in the notation, and on seeded edits of them; each planted defect in the source is detected by the one vector it names, and the certified packages the production export publishes for the project are the committed ones; the serialization of a declaration to its value and the validation of a module are outside the claim. | §17.23, §17.21, §17.10, §21.7 |
+| `BS-39` | `bootstrap` | The printer of the notation of a native core module of SPEC.md §17.21.8 (`surface::core::print_module`: a module of the schema `lexlean/core-module/2` whose edges point backward and whose proof nodes and declaration roots are nodes of it, written as its imports, its declarations with their members in the generic notation, and its statements, a node written inside the node that uses it exactly when it is used once, ends right before that node's other written-inside children, and is less than 48 deep, its bound variables written by the name of their binder when no nearer binder has that name and otherwise by index, a constant a binder in scope is named like written `const`, and each statement laid out at 100 columns; or the error of a module the notation does not carry, in the oracle's order) is language-1.2 source in the `bootstrap/` project, as the production root `printCoreModule` of `CorePrint` over the module types of `BS-38`, the layout algebra of `BS-23`, and the generic notation of `BS-24`, eligible for `rust-std` with exactly its declared effects, which admit `recursion`, and with no part of its certificate beyond 3,145,728 bytes; its rendered `rust-std` package under the pinned rustc, and on the normative host its lowered program under the calculus evaluator, agree with the oracle to the byte on the hand-built modules, which reach every error and every kind of node, level, binder, annotation, and name, the inlining bound, and lines beyond the width, on the committed core modules written in the notation, and on seeded edits of them; each planted defect in the source is detected by the one vector it names, and the certified packages the production export publishes for the project are the committed ones; the reader of the notation and the decoding of a module are outside the claim. | §17.23, §17.21 |
+| `BS-40` | `bootstrap` | The reader of the notation of a native core module of SPEC.md §17.21.8 up to the decoding of its declarations (`surface::core::read_module`, the reader of `surface::core::parse_module`: a text read as its imports, its declarations with their members in the generic notation and their kind, name, universe parameters, and roots, and its statements, each numbering its nodes in the order they finish and checking its label, with names resolved to the nearest binder in scope, a nesting depth of at most 256 and a level raised by at most 1024, the byte range of each declaration, and the roots a statement's name states resolved; or the offset and message of the first error, in the order the oracle finds them) is language-1.2 source in the `bootstrap/` project, as the production root `readCoreModule` of `CoreRead` over the module types of `BS-38`, the string reader of `BS-22`, and the generic notation of `BS-24`, eligible for `rust-std` with exactly its declared effects, none of them `recursion`, and with no part of its certificate beyond 3,145,728 bytes; its rendered `rust-std` package under the pinned rustc, and on the normative host its lowered program under the calculus evaluator, agree with the oracle to the byte on the hand-built texts, which reach every error of the reader and every form of the notation, on the committed core modules written in the notation, and on seeded edits of them; each planted defect in the source is detected by the one vector it names, and the certified packages the production export publishes for the project are the committed ones; the decoding of a declaration's members into a declaration and the validation of a module are outside the claim. | §17.23, §17.21 |
+| `BS-42` | `bootstrap` | The grammar of a mathematical island of SPEC.md §15.5 (`grammar::math::parse_math`: an island's atom range parsed by a Pratt parser over the declared precedence scale, with explicit call syntax, grouping parentheses, `\lexeme` and `\reference` arguments, prefix, postfix, and infix operators whose precedence, associativity, and frame come from their glossary entries, and leaves that are glossary forms or composed identifiers, under every segmentation the token lattice of §14.1 admits, giving the distinct complete covers in the order the oracle's worklist finds them, or the first failure: an expression missing, a grouping or argument unclosed, braces, a malformed reference (`LLR3005`), candidates that disagree on their profile, a surface both a prefix and a leaf (`LLP2002`), an unknown atom (`LLL1004`), a nonassociative chain, text after the expression, and the limits of nesting, parse states, and lattice edges (`LLS8002`)) is language-1.2 source in the `bootstrap/` project, as the production root `parseMath` of `GrammarMath` over the atoms of `BS-03`, with the glossary closure's projection as the host's input (the math-channel edges at each atom position with the frame, precedence, and associativity of each edge's form, and the limits and counters of the parse budget), eligible for `rust-std` with exactly its declared effects, none of them `recursion`, and with no part of its certificate beyond 3,145,728 bytes; its rendered `rust-std` package under the pinned rustc, and on the normative host its lowered program under the calculus evaluator, agree with the oracle to the byte on the hand-built islands, which reach every failure, every kind of node, and an island with two covers, over the built-in closure and a lexicon package of the case's own, on the islands of the committed `.lex.tex` sources, and on seeded islands; each planted defect in the source is detected by the one vector it names, and the certified packages the production export publishes for the project are the committed ones; the token lattice, the glossary closure, and the elaboration of a cover are outside the claim. | §17.23, §15.5, §14.1 |
+| `BS-43` | `bootstrap` | The grammar keywords, the unknown-atom diagnosis, the binders, and the term phrases of the text channel of SPEC.md §15.3, §15.4, and §12.2 (`grammar::proposition::keyword_entry`: the core entry a grammar keyword's spelling names; `TextParser::unknown_atom_diagnostic`: the first word or symbol of a sentence that is no grammar or proof keyword and that no text-channel form beginning at or before it covers, as `LLL1004`; `TextParser::binder`: every binder at a token, a type-noun form that is neither plural nor sentence-case or a mathematical island, then an island holding exactly one composed identifier, with or without the article the slot requires; and `TextParser::term_phrase`: every term phrase at a token, an island or `the SELF of ARG [and ARG]` over the noun-of and binary-noun-of forms with term phrases as arguments, in the oracle's order; each failing only by the limits of nesting, parse states, and lattice edges, `LLS8002`) is language-1.2 source in the `bootstrap/` project, as four production roots of `PropositionTerms` over the tokens of `BS-35` and the atoms of `BS-03`, with the glossary closure's projection as the host's input (the text-channel edges at each atom position with each form's category and whether it is plural or sentence-case, and the limits and counters of the parse budget): `keywordEntry`, `unknownAtom`, `binderAlternatives`, and `termPhrase`, each eligible for `rust-std` with exactly its declared effects, none of them `recursion`, and each with no part of its certificate beyond 3,145,728 bytes; their rendered `rust-std` packages under the pinned rustc, and on the normative host their lowered programs under the calculus evaluator, agree with the oracle to the byte on the hand-built sentences over the built-in closure and the committed glossary of the Peano example, which reach every limit failure, an unknown word and symbol, every kind of binder and term phrase, and each condition that refuses one, on every keyword spelling, on the sentences of the committed `.lex.tex` sources asked at every token, and on seeded sentences; each planted defect in the source is detected by the one vector it names, and the certified packages the production export publishes for the project are the committed ones; the token lattice, the glossary closure, the proposition grammar, and elaboration are outside the claim. | §17.23, §15.3, §15.4, §12.2 |
 | `PK-01` | `packages` | A language-1.2 project that declares a source package by its identifier, version, kind `path`, and the member directory a `lexlean-workspace.toml` lists locks it by the tree digest of its manifest and source files, its manifest digest, its version, its module prefix, and its own packages, and the configuration and the lock read back to the bytes written; a project without a source package keeps its bytes, and a package of another kind, a source package in another language, a changed byte or version (LLC0105), an undeclared package (LLC0106), a module prefix claimed twice (LLC0107), a project or a package outside the workspace (LLC0108), a path that escapes it, and a symlink (LLS8001) are each refused with the named code. | §10.5, §11.1, §25.1 |
 | `PK-02` | `packages` | A module of a project imports only modules of its own project and modules of the packages the project declares, and a module of a package only modules of itself and of the packages its own manifest declares: a package module is a module of the importing project under its own module prefix, a module of a package the project does not declare fails with LLR3009, and an import cycle through a package fails with LLR3003. | §10.5, §15.1 |
 | `PK-03` | `packages` | An importing project builds and verifies under the pinned Lean offline, and its package modules are generated, elaborated, replayed with `leanchecker`, and audited for their exact axioms under the package's module prefix with the package as their origin in the records; the source ID of the project changes with the pins, and no file of the package is written by `fmt`, `build`, or `verify`. | §10.5, §21.3, §22 |
@@ -12170,7 +12346,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 496.
+**Total required capability IDs:** 504.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

@@ -1715,9 +1715,12 @@ impl<'a> Parser<'a> {
         })
     }
 
-    /// A declaration whose roots are known: the statements that carry a
+    /// A declaration's members with its roots: the statements that carry a
     /// person's names have all been read.
-    fn finish(&self, pending: Pending) -> PResult<CoreDeclaration> {
+    fn resolve_roots(
+        &self,
+        pending: Pending,
+    ) -> PResult<(std::collections::BTreeMap<String, Json>, usize)> {
         let mut object = pending.object;
         let resolve = |root: Root| -> PResult<usize> {
             match root {
@@ -1735,8 +1738,7 @@ impl<'a> Parser<'a> {
         if let Some(value) = pending.value {
             object.insert("value".to_owned(), Json::from_usize(resolve(value)?));
         }
-        serde_json::from_str(&Json::Obj(object).to_canonical_string())
-            .map_err(|failure| error(pending.start, format!("not a declaration: {failure}")))
+        Ok((object, pending.start))
     }
 
     /// A node a declaration states: `@N`, or the name of a statement.
@@ -1817,16 +1819,32 @@ struct Pending {
     start: usize,
 }
 
-/// Read the notation of a core module, and the byte range of each of its
-/// declarations in the text.
-///
-/// # Errors
-///
-/// Text that is not the notation of a module, with the byte offset of the
-/// first thing that is not.
-pub fn parse_module_with_spans(
-    text: &str,
-) -> Result<(CoreModule, Vec<(usize, usize)>), SurfaceError> {
+/// A declaration's members with its roots resolved and the offset of its
+/// first token, or the error of a root no statement is named.
+#[doc(hidden)]
+pub type ReadDeclaration = Result<(std::collections::BTreeMap<String, Json>, usize), SurfaceError>;
+
+/// A module read up to the decoding of its declarations: each declaration's
+/// members with its roots resolved and the offset of its first token, or the
+/// error of a root no statement is named. `BS-40`'s case holds the bootstrap
+/// reader to it; `parse_module_with_spans` decodes it.
+#[doc(hidden)]
+pub struct ReadModule {
+    /// The imports.
+    pub imports: Vec<String>,
+    /// The node table.
+    pub nodes: Vec<CoreNode>,
+    /// The proof nodes, in the order they were read.
+    pub proof_nodes: Vec<usize>,
+    /// Each declaration, before serde decodes it.
+    pub declarations: Vec<ReadDeclaration>,
+    /// The byte range of each declaration.
+    pub spans: Vec<(usize, usize)>,
+}
+
+/// The notation read up to the decoding of its declarations (`BS-40`'s seam).
+#[doc(hidden)]
+pub fn read_module(text: &str) -> Result<ReadModule, SurfaceError> {
     let mut parser = Parser::new(text);
     let imports = parser.imports()?;
     let mut pending = Vec::new();
@@ -1850,19 +1868,47 @@ pub fn parse_module_with_spans(
             spans.push((token.start, parser.last_end));
         }
     }
-    let mut declarations = Vec::with_capacity(pending.len());
-    for declaration in pending {
-        declarations.push(parser.finish(declaration)?);
+    let declarations = pending
+        .into_iter()
+        .map(|declaration| parser.resolve_roots(declaration))
+        .collect();
+    Ok(ReadModule {
+        imports,
+        nodes: parser.nodes,
+        proof_nodes: parser.proof,
+        declarations,
+        spans,
+    })
+}
+
+/// Read the notation of a core module, and the byte range of each of its
+/// declarations in the text.
+///
+/// # Errors
+///
+/// Text that is not the notation of a module, with the byte offset of the
+/// first thing that is not.
+pub fn parse_module_with_spans(
+    text: &str,
+) -> Result<(CoreModule, Vec<(usize, usize)>), SurfaceError> {
+    let read = read_module(text)?;
+    let mut declarations = Vec::with_capacity(read.declarations.len());
+    for declaration in read.declarations {
+        let (object, start) = declaration?;
+        declarations.push(
+            serde_json::from_str(&Json::Obj(object).to_canonical_string())
+                .map_err(|failure| error(start, format!("not a declaration: {failure}")))?,
+        );
     }
     Ok((
         CoreModule {
             spec: CORE_SPEC_2.to_owned(),
-            imports,
-            nodes: parser.nodes,
-            proof_nodes: parser.proof,
+            imports: read.imports,
+            nodes: read.nodes,
+            proof_nodes: read.proof_nodes,
             declarations,
         },
-        spans,
+        read.spans,
     ))
 }
 
