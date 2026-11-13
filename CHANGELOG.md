@@ -17,6 +17,11 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The canonical JSON of a native core module as language-1.2 source
+  (SPEC.md §17.23, §17.10, §21.7, `BS-38`, #269; no new diagnostic code, no
+  change to the language-1.2 identity). `coreJson` of `CoreJson` returns what
+  `surface::core::canonical_json` returns and admits `recursion`. The register
+  is 494 IDs.
 - A one-pass writer for the counts of the bootstrap count cases, #92.
   Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
   `BS-15` records every count it checks in `target/count-report/` instead of
