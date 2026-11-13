@@ -17,6 +17,14 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The conservative checker of LexLean Semantic Expressions as language-1.2
+  source, the third slice of the lexicon closure (SPEC.md §17.23, §13.7,
+  `BS-52`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `checkSignature` and `checkValue` of `LseTypes` return what
+  `lse::check_signature` and `check_value` return, the zonked type and the
+  literal types or the first error, with what the lookup answers given as a
+  table. Both admit `recursion`, structural over a bound on nesting the host
+  passes.
 - `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
   command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
   new language-1.2 module `RuntimeHost`, that calls the step and carries out each
