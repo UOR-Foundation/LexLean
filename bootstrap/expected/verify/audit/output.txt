@@ -642,6 +642,7 @@
 'LexLeanBoot.RuntimeValidate.addFnMethods' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.addImpl' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.addMethods' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.admitErr' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.armsOk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.assignable' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.associatedArity' does not depend on any axioms
@@ -659,6 +660,13 @@
 'LexLeanBoot.RuntimeValidate.callDirectHeap' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.callExpected' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.callHeap' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.cfgFn' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.cfgFns' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.cfgItemErr' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.cfgOf' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.cfgOk' depends on axioms: [propext]
+'LexLeanBoot.RuntimeValidate.cfgPairErr' depends on axioms: [propext]
+'LexLeanBoot.RuntimeValidate.cfgPaired' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.colonPieces' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.colonStep' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.completes' depends on axioms: [propext, Quot.sound]
@@ -669,6 +677,8 @@
 'LexLeanBoot.RuntimeValidate.derivesErr' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.emptyFr' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.endsInCast' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.entryArity' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.entryCount' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.exposed' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.exprLen' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.exprOk' depends on axioms: [propext, Quot.sound]
@@ -691,6 +701,7 @@
 'LexLeanBoot.RuntimeValidate.hasSigNamed' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.headErr' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.headName' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.hostEffects' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.identByte' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.identErr' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.identShape' depends on axioms: [propext, Quot.sound]
@@ -698,6 +709,8 @@
 'LexLeanBoot.RuntimeValidate.inList' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.inRangeB' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.indexNames' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.innerFn' does not depend on any axioms
+'LexLeanBoot.RuntimeValidate.innerUse' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.isAbsent' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.isEmptyChain' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.isInteger' does not depend on any axioms
@@ -726,6 +739,7 @@
 'LexLeanBoot.RuntimeValidate.paramsOk' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.pass1' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.pass1Item' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.RuntimeValidate.pass1Use' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.pass2Item' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.RuntimeValidate.patArity' does not depend on any axioms
 'LexLeanBoot.RuntimeValidate.patFields' does not depend on any axioms
