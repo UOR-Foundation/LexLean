@@ -29,7 +29,7 @@ rules, from SPEC.md §27.2; nothing else in the repository defines an
 | R1 | `model/*.toml` is the single source of every repository conformance claim and public diagnostic code; generated claim/error documentation must match. | `cargo xtask validate-model` |
 | R2 | Honesty levels are load-bearing: `some-true`, `build`, and `open` are never blurred. | the honesty meta-gate (`just bdd`) and the vocabulary checks in `validate-model` |
 | R3 | A capability begins with a register row, then one scenario, then one failing named test, then implementation. | `just bdd` |
-| R4 | Nothing is deferred: no deferral marker, stub, placeholder component, empty branch, or feature switch that disables a normative capability. | `audit-deferral`, inside `validate-model` |
+| R4 | Nothing is deferred: no deferral marker, stub, placeholder component, empty branch, or unsanctioned feature switch that disables a normative capability; §8.4 names the one sanctioned feature and what a build without it must do. | `audit-deferral`, inside `validate-model` |
 | R5 | Every public failure is registered and emitted through the closed error model; user input never panics. | `audit-errors`, inside `validate-model`, and the negative fixture suite |
 | R6 | Shipped dependency boundaries, versions, licenses, and sources are explicit and audited. | `just deny` and `audit-shipped` |
 | R7 | Every accepted LexLean source and canonical output satisfies complete lexical and symbolic closure. | the `lexical-closure` and `latex-pdf` conformance suites |
