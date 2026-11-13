@@ -60,6 +60,10 @@ pub const LAWS: &str = "LexLeanRuntime.Laws";
 /// the list of its elements.
 pub const ARRAYS: &str = "LexLeanRuntime.Arrays";
 
+/// The decision regions (`LexLeanRegions`): the checker data, the local box
+/// obligations, and the soundness theorem a `region_check` proof applies.
+pub const REGIONS: &str = "LexLeanRuntime.Regions";
+
 /// The released bytes of the language-1.1 portable runtime, which a
 /// language-1.1 semantic module splices inside its namespace.
 pub const FROZEN_PORTABLE_PATH: &str = "language/runtime-1.2/frozen/portable-runtime-1.1.txt";
@@ -362,7 +366,8 @@ mod tests {
                 super::MODELS,
                 super::REASONING,
                 super::LAWS,
-                super::ARRAYS
+                super::ARRAYS,
+                super::REGIONS
             ]
         );
         let arrays = modules
@@ -370,6 +375,11 @@ mod tests {
             .find(|module| module.name == super::ARRAYS)
             .expect("the arrays module");
         assert_eq!(arrays.imports, [super::PORTABLE]);
+        let regions = modules
+            .iter()
+            .find(|module| module.name == super::REGIONS)
+            .expect("the regions module");
+        assert!(regions.imports.is_empty(), "{:?}", regions.imports);
         for imported_by_both in [super::REASONING, super::LAWS] {
             let module = modules
                 .iter()

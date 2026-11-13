@@ -91,6 +91,11 @@ fn conformance_rp_18() {
 }
 
 #[test]
+fn conformance_rp_19() {
+    repo_conformance::cases::run("RP-19");
+}
+
+#[test]
 fn conformance_cf_01() {
     repo_conformance::cases::run("CF-01");
 }
@@ -823,6 +828,11 @@ fn conformance_pf_22() {
 #[test]
 fn conformance_pf_23() {
     repo_conformance::cases::run("PF-23");
+}
+
+#[test]
+fn conformance_pf_24() {
+    repo_conformance::cases::run("PF-24");
 }
 
 #[test]

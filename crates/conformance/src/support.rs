@@ -262,7 +262,10 @@ fn term(value: &SnapshotTerm) -> usize {
 
 fn prove(value: &SnapshotProof) -> usize {
     match value {
-        SnapshotProof::Reflexivity | SnapshotProof::Decide | SnapshotProof::Congruence => 1,
+        SnapshotProof::Reflexivity
+        | SnapshotProof::Decide
+        | SnapshotProof::RegionCheck
+        | SnapshotProof::Congruence => 1,
         SnapshotProof::LinearArithmetic { definitions } => 1 + definitions.len(),
         SnapshotProof::TermCases { definitions, .. } => 2 + definitions.len(),
         SnapshotProof::Simplify { definitions } => definitions.len(),
@@ -3229,6 +3232,74 @@ pub fn packaged_crate_version(root: &Utf8Path) -> Result<String, String> {
         "lexlean"
     });
     run(binary.as_str(), &["--version"], &unpacked, &[])
+}
+
+/// RP-19 (§8.4): build the `lexlean` binary without its default
+/// `production-data` feature and return its path. The build has a directory
+/// of its own (`target/check-only-verify`): the workspace build directory is
+/// held by the running test, and RP-12 builds a default binary at the same
+/// path under `target/package-verify`.
+///
+/// # Errors
+///
+/// The build failing, with its output.
+pub fn check_only_binary(root: &Utf8Path) -> Result<Utf8PathBuf, String> {
+    let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
+    let target_dir = root.join("target/check-only-verify");
+    let output = std::process::Command::new(&cargo)
+        .args([
+            "build",
+            "--offline",
+            "--locked",
+            "-p",
+            "lexlean",
+            "--bin",
+            "lexlean",
+            "--no-default-features",
+        ])
+        .current_dir(root.as_std_path())
+        .env("CARGO_TARGET_DIR", target_dir.as_str())
+        // Debug info is not what is compared; leaving it out keeps the
+        // directory small.
+        .env("CARGO_PROFILE_DEV_DEBUG", "0")
+        .output()
+        .map_err(|error| format!("{cargo} build: {error}"))?;
+    if !output.status.success() {
+        return Err(format!(
+            "{cargo} build --no-default-features exited {:?}\n{}",
+            output.status.code(),
+            String::from_utf8_lossy(&output.stderr)
+        ));
+    }
+    Ok(target_dir.join("debug").join(if cfg!(windows) {
+        "lexlean.exe"
+    } else {
+        "lexlean"
+    }))
+}
+
+/// Run a `lexlean` executable in `directory` and return its exit code,
+/// stdout, and stderr, as [`cli_in`] does for the library linked here.
+///
+/// # Panics
+///
+/// When the executable cannot be started.
+#[must_use]
+pub fn cli_binary_in(
+    binary: &Utf8Path,
+    directory: &Utf8Path,
+    arguments: &[&str],
+) -> (i32, String, String) {
+    let output = std::process::Command::new(binary.as_std_path())
+        .args(arguments)
+        .current_dir(directory.as_std_path())
+        .output()
+        .unwrap_or_else(|error| panic!("{binary}: {error}"));
+    (
+        output.status.code().unwrap_or(-1),
+        String::from_utf8_lossy(&output.stdout).into_owned(),
+        String::from_utf8_lossy(&output.stderr).into_owned(),
+    )
 }
 
 /// Run the pinned `lean` on a tiny module with `#print axioms` commands and

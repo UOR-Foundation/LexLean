@@ -23,7 +23,7 @@ workspace carried at those versions without a tag.
   pinned Lean's `Array`; `length` and `index` apply to it, and the primitives
   `array_from_list`, `array_to_list`, and `array_set` convert it to and from
   the list of its elements and replace one element, an offset at or past the
-  length leaving the array as it is. The runtime gains a sixth native module,
+  length leaving the array as it is. The runtime gains a native module,
   `LexLeanRuntime.Arrays`: the two instances, the three primitives, and nine
   laws that relate an array to its list, every row within `propext`
   (`tests/runtime-library/ARRAYS.md`). A `law` proof now imports the module
@@ -35,6 +35,34 @@ workspace carried at those versions without a tag.
   is `LLT4005`. That the pinned Lean writes a singly referenced array in place
   is cited (`LEAN-ARRAY-4-32-1`), not established here. The design and the
   decisions left to the owners are in `docs/proposals/verified-arrays.md`.
+  The register is 497 IDs.
+- Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
+  new diagnostic code; changes the language-1.2 identity). The runtime gains a
+  sixth native module, `LexLeanRuntime.Regions`: a checker of local box
+  obligations for first-match decisions over natural-number fields, and
+  `LexLeanRegions.holds`, its soundness theorem, within `propext` and
+  `Quot.sound` (`tests/runtime-library/REGIONS.md`). The language-1.2 proof
+  form `region_check` proves a property `breaks request = false` of such a
+  decision with one kernel-decided obligation and that theorem; the lowered
+  data is definitionally the module's own definitions, so the lowering is not
+  trusted. Verdant Resonance (35 rules, 15 properties), which
+  `linear_arithmetic` could not prove, verifies. The register is 496 IDs.
+- A check-only build of the crate, #495. The `lexlean` crate's
+  `production-data` feature, on by default, embeds
+  `language/preservation-1.2/library/`, the native preservation library that
+  only certificate generation reads (32.2 of the 36.4 MB of embedded data).
+  Built with `--no-default-features`, the crate leaves it out and reports the
+  language-1.2 compiler-semantics ID from `LANGUAGE_1_2_SEMANTICS_ID`, which
+  `RP-10` now requires to equal the ID recomputed from disk; a project's
+  `check`, `lock`, `fmt`, and `build` behave as in a default build, and
+  `production build` and the `verify` of a project with a production root are
+  refused with the new `LLC0205` before anything is published (`RP-19`).
+  Its version report adds the line `variant check-only`: it shares the
+  compiler-semantics IDs of a full build, not its executable identity.
+  SPEC.md §8.4 names this feature as the one exception to its rule that no
+  feature disables a normative capability. A default build is unchanged.
+  A landing that moves the language-1.2 ID now also updates the constant;
+  `RP-10` names the new value when it is stale.
 - `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
   command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
   new language-1.2 module `RuntimeHost`, that calls the step and carries out each
