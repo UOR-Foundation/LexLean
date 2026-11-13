@@ -855,81 +855,67 @@ pub fn format_int(p0: i64) -> Str {
     Str::format_i64(p0)
 }
 
-pub fn f0(v0: List<i64>, v1: List<i64>) -> R<List<i64>> {
-    f1(v0, v1)
+#[derive(Clone)]
+pub enum Fn0 {
+    F2(Bytes),
 }
 
-pub fn f1(v0: List<i64>, v1: List<i64>) -> R<List<i64>> {
-    let m1 = v0;
-    match m1.uncons() {
-        None => {
-            Ok(List::<i64>::nil())
+impl Fn0 {
+    pub fn apply(&self, p0: Option<Bytes>, p1: (Bytes, Bytes)) -> Option<Bytes> {
+        match self {
+            Fn0::F2(k0) => f2(k0.clone(), p0, p1),
         }
-        Some((v2, v3)) => {
-            let m2 = v1;
-            match m2.uncons() {
-                None => {
-                    Ok(List::<i64>::nil())
+    }
+}
+
+pub fn f0(v0: List<(Bytes, Bytes)>, v1: Bytes) -> Option<Bytes> {
+    f1(Fn0::F2(v1), None::<Bytes>, v0)
+}
+
+pub fn f1(v0: Fn0, p4: Option<Bytes>, p5: List<(Bytes, Bytes)>) -> Option<Bytes> {
+    let m3 = (p4, p5);
+    {
+        let mut m3 = m3;
+        loop {
+            let step = {
+                let (v1, v2) = m3;
+                let m1 = v2;
+                match m1.uncons() {
+                    None => {
+                        Err::<(Option<Bytes>, List<(Bytes, Bytes)>), Option<Bytes>>(v1)
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(Option<Bytes>, List<(Bytes, Bytes)>), Option<Bytes>>(({
+                            let c2: Fn0 = v0.clone();
+                            c2.apply(v1, v3)
+                        }, v4))
+                    }
                 }
-                Some((v4, v5)) => {
-                    Ok(List::cons(f2(f3(v2, v4)?)?, f1(v3, v5)?))
-                }
+            };
+            match step {
+                Ok(next) => { m3 = next; }
+                Err(done) => break done,
             }
         }
     }
 }
 
-pub fn f2(v0: i64) -> R<i64> {
-    let m6 = {
-        let a4 = v0;
-        let a5 = {
-            let a3 = 32768i64;
-            int_neg(a3)?
-        };
-        compare(a4, a5)
+pub fn f2(v0: Bytes, v1: Option<Bytes>, v2: (Bytes, Bytes)) -> Option<Bytes> {
+    f3(v0, v1, v2)
+}
+
+pub fn f3(v0: Bytes, v1: Option<Bytes>, v2: (Bytes, Bytes)) -> Option<Bytes> {
+    let a7 = v0;
+    let a8 = {
+        let (h6, _) = v2;
+        h6
     };
-    if match m6 {
-        Ordering::Less => {
-            true
-        }
-        Ordering::Equal => {
-            false
-        }
-        Ordering::Greater => {
-            false
-        }
-    } {
-        let a7 = 32768i64;
-        int_neg(a7)
+    if equal(a7, a8) {
+        Some({
+            let (_, h9) = v2;
+            h9
+        })
     } else {
-        let m10 = {
-            let a8 = 32767i64;
-            let a9 = v0;
-            compare(a8, a9)
-        };
-        if match m10 {
-            Ordering::Less => {
-                true
-            }
-            Ordering::Equal => {
-                false
-            }
-            Ordering::Greater => {
-                false
-            }
-        } {
-            Ok(32767i64)
-        } else {
-            Ok(v0)
-        }
+        v1
     }
-}
-
-pub fn f3(v0: i64, v1: i64) -> R<i64> {
-    let a12 = v0;
-    let a13 = {
-        let a11 = v1;
-        int_neg(a11)?
-    };
-    int_sub(a12, a13)
 }

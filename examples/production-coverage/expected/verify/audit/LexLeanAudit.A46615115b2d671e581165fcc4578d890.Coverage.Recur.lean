@@ -1,0 +1,29 @@
+module
+import Coverage.Recur
+#print axioms Coverage.Recur.countdown
+#print axioms Coverage.Recur.countdown_decreases
+#print axioms Coverage.Recur.exprSize
+#print axioms Coverage.Recur.foldExpr
+#print axioms Coverage.Recur.foldStatement
+#print axioms Coverage.Recur.foldStatements
+#print axioms Coverage.Recur.forestSize
+#print axioms Coverage.Recur.isEven
+#print axioms Coverage.Recur.isOdd
+#print axioms Coverage.Recur.ping
+#print axioms Coverage.Recur.ping_seven
+#print axioms Coverage.Recur.ping_to_pong
+#print axioms Coverage.Recur.pong
+#print axioms Coverage.Recur.pong_to_ping
+#print axioms Coverage.Recur.prune
+#print axioms Coverage.Recur.prune_plus
+#print axioms Coverage.Recur.reassociate
+#print axioms Coverage.Recur.reassociate_literal
+#print axioms Coverage.Recur.reassociate_plus
+#print axioms Coverage.Recur.reduce
+#print axioms Coverage.Recur.reduce_decreases
+#print axioms Coverage.Recur.roseSize
+#print axioms Coverage.Recur.search
+#print axioms Coverage.Recur.search_decreases
+#print axioms Coverage.Recur.statementSize
+#print axioms Coverage.Recur.statementsSize
+#print axioms Coverage.Recur.weight

@@ -1,0 +1,120 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{kindText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : LexLeanBoot.CalculusCheck.Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match ty with | LexLeanBoot.CalculusCheck.Ty.TUnit => (LexLeanRuntime.utf8Encode ("type:unit") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TBool => (LexLeanRuntime.utf8Encode ("type:bool") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TNat => (LexLeanRuntime.utf8Encode ("type:nat") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TInt => (LexLeanRuntime.utf8Encode ("type:int") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TFixed \_ => (LexLeanRuntime.utf8Encode ("type:fixed") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TString => (LexLeanRuntime.utf8Encode ("type:string") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TBytes => (LexLeanRuntime.utf8Encode ("type:bytes") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TOrdering => (LexLeanRuntime.utf8Encode ("type:ordering") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TOption \_ => (LexLeanRuntime.utf8Encode ("type:option") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TResult \_ \_ => (LexLeanRuntime.utf8Encode ("type:result") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TList \_ => (LexLeanRuntime.utf8Encode ("type:list") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TPair \_ \_ => (LexLeanRuntime.utf8Encode ("type:pair") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TAdt \_ => (LexLeanRuntime.utf8Encode ("type:adt") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TFn \_ \_ => (LexLeanRuntime.utf8Encode ("type:fn") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TNil => (LexLeanRuntime.utf8Encode ("type:nil") : ByteArray) | LexLeanBoot.CalculusCheck.Ty.TCons \_ \_ => (LexLeanRuntime.utf8Encode ("type:nil") : ByteArray))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{typeOrigin}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : LexLeanBoot.CalculusCheck.Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustValidate.Origin}.\par
+\noindent Definition: \texttt{(\{ element := kindText (ty), width := Option.none \} : LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{functionAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(seed : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustValidate.Origin}.\par
+\noindent Definition: \texttt{(\{ element := (LexLeanRuntime.utf8Encode ("function") : ByteArray), width := Option.none \} : LexLeanBoot.RustValidate.Origin)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{firstEmpty}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(types : LexLeanBoot.CalculusCheck.Ty) (inhabited : LexLeanBoot.CalculusCheck.Ty) (index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(match types with | LexLeanBoot.CalculusCheck.Ty.TUnit => Option.none | LexLeanBoot.CalculusCheck.Ty.TBool => Option.none | LexLeanBoot.CalculusCheck.Ty.TNat => Option.none | LexLeanBoot.CalculusCheck.Ty.TInt => Option.none | LexLeanBoot.CalculusCheck.Ty.TFixed \_ => Option.none | LexLeanBoot.CalculusCheck.Ty.TString => Option.none | LexLeanBoot.CalculusCheck.Ty.TBytes => Option.none | LexLeanBoot.CalculusCheck.Ty.TOrdering => Option.none | LexLeanBoot.CalculusCheck.Ty.TOption \_ => Option.none | LexLeanBoot.CalculusCheck.Ty.TResult \_ \_ => Option.none | LexLeanBoot.CalculusCheck.Ty.TList \_ => Option.none | LexLeanBoot.CalculusCheck.Ty.TPair \_ \_ => Option.none | LexLeanBoot.CalculusCheck.Ty.TAdt \_ => Option.none | LexLeanBoot.CalculusCheck.Ty.TFn \_ \_ => Option.none | LexLeanBoot.CalculusCheck.Ty.TNil => Option.none | LexLeanBoot.CalculusCheck.Ty.TCons head tail => (if LexLeanBoot.RustLower.visible (head) (inhabited) then firstEmpty (tail) (inhabited) ((index + 1)) else Option.some (index)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{binderPat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(type : LexLeanBoot.CalculusCheck.Ty) (body : LexLeanBoot.CalculusCheck.Expr) (name : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Pat}.\par
+\noindent Definition: \texttt{(if ((!LexLeanBoot.CalculusCheck.tyEq (type) (LexLeanBoot.CalculusCheck.Ty.TUnit)) \&\& LexLeanBoot.RustBodies.mentions (body) (name)) then LexLeanBoot.RustAst.Pat.PBind (LexLeanBoot.RustValidate.Id.IdLocal (name)) else LexLeanBoot.RustBodies.wildPat (0))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{paramsOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(names : List (Nat)) (types : LexLeanBoot.CalculusCheck.Ty) (body : LexLeanBoot.CalculusCheck.Expr) (known : LexLeanBoot.CalculusCheck.Ty) (position : Nat) (empty : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Par}.\par
+\noindent Definition: \texttt{(match types with | LexLeanBoot.CalculusCheck.Ty.TUnit => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TBool => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TNat => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TInt => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TFixed \_ => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TString => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TBytes => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TOrdering => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TOption \_ => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TResult \_ \_ => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TList \_ => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TPair \_ \_ => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TAdt \_ => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TFn \_ \_ => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TNil => LexLeanBoot.RustAst.Par.ParNil | LexLeanBoot.CalculusCheck.Ty.TCons head tail => (match names with | List.nil => LexLeanBoot.RustAst.Par.ParNil | List.cons name rest => LexLeanBoot.RustAst.Par.ParCons ((if (Nat.beq (empty) (0)) then binderPat (head) (body) (name) else (if (Nat.beq ((position + 1)) (empty)) then LexLeanBoot.RustAst.Pat.PBind (LexLeanBoot.RustValidate.Id.IdLocal (name)) else LexLeanBoot.RustBodies.wildPat (0)))) (LexLeanBoot.RustLower.vty (known) (head)) (paramsOf (rest) (tail) (body) (known) ((position + 1)) (empty))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{emptyBody}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(name : Nat) (ty : LexLeanBoot.CalculusCheck.Ty)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Expr}.\par
+\noindent Definition: \texttt{LexLeanBoot.RustAst.Expr.EBlock (LexLeanBoot.RustAst.Expr.ENil) (LexLeanBoot.RustAst.Expr.EMatch (LexLeanBoot.RustAst.Expr.ERead (LexLeanBoot.RustValidate.ReadKind.RkMove) (LexLeanBoot.RustValidate.Id.IdLocal (name)) (typeOrigin (ty))) (LexLeanBoot.RustAst.Expr.ENil) (typeOrigin (ty)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{nameAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(names : List (Nat)) (index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match LexLeanBoot.CalculusCheck.listAt (Nat) (names) (index) with | Option.some name => name | Option.none => 0)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{typeAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(types : LexLeanBoot.CalculusCheck.Ty) (index : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.CalculusCheck.Ty}.\par
+\noindent Definition: \texttt{(match LexLeanBoot.RustTerms.chainGet (types) (index) with | Option.some found => found | Option.none => LexLeanBoot.CalculusCheck.Ty.TNil)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shell}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(names : List (Nat)) (types : LexLeanBoot.CalculusCheck.Ty) (result : LexLeanBoot.CalculusCheck.Ty) (failing : Bool) (body : LexLeanBoot.CalculusCheck.Expr) (known : LexLeanBoot.CalculusCheck.Ty) (inhabited : LexLeanBoot.CalculusCheck.Ty) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Def}.\par
+\noindent Definition: \texttt{(let resultTy : LexLeanBoot.RustValidate.Ty := (if failing then LexLeanBoot.RustValidate.Ty.TyUnary (LexLeanBoot.RustValidate.UnaryKind.UkFallible) (LexLeanBoot.RustLower.vty (known) (result)) else LexLeanBoot.RustLower.vty (known) (result)); (match firstEmpty (types) (inhabited) (0) with | Option.some empty => LexLeanBoot.RustAst.Def.DFunction (LexLeanBoot.RustValidate.Id.IdFunction (position)) (paramsOf (names) (types) (body) (known) (0) ((empty + 1))) (resultTy) (emptyBody (nameAt (names) (empty)) (typeAt (types) (empty))) (functionAt (0)) | Option.none => LexLeanBoot.RustAst.Def.DFunction (LexLeanBoot.RustValidate.Id.IdFunction (position)) (paramsOf (names) (types) (body) (known) (0) (0)) (resultTy) (LexLeanBoot.RustAst.Expr.EBlock (LexLeanBoot.RustAst.Expr.ENil) (LexLeanBoot.RustAst.Expr.ENil)) (functionAt (0))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shellsFrom}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(bodies : LexLeanBoot.CalculusCheck.Expr) (names : List (List (Nat))) (types : LexLeanBoot.CalculusCheck.Ty) (results : LexLeanBoot.CalculusCheck.Ty) (fallible : List (Bool)) (known : LexLeanBoot.CalculusCheck.Ty) (inhabited : LexLeanBoot.CalculusCheck.Ty) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Def}.\par
+\noindent Definition: \texttt{(match bodies with | LexLeanBoot.CalculusCheck.Expr.EValue \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.EVar \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.ELet \_ \_ \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.ECond \_ \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.EMatch \_ \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.EBuild \_ \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.ECall \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.EClosure \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.EApply \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.EPrim \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.EFirst \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.ESecond \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.EField \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.ENil => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Expr.ECons body rest => (match names with | List.nil => LexLeanBoot.RustAst.Def.DNil | List.cons these restNames => (match types with | LexLeanBoot.CalculusCheck.Ty.TCons own restTypes => (match results with | LexLeanBoot.CalculusCheck.Ty.TCons result restResults => LexLeanBoot.RustAst.Def.DCons (shell (these) (own) (result) (LexLeanBoot.RustLower.flagAt (fallible) (position)) (body) (known) (inhabited) (position)) (shellsFrom (rest) (restNames) (restTypes) (restResults) (fallible) (known) (inhabited) ((position + 1))) | LexLeanBoot.CalculusCheck.Ty.TNil => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TUnit => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TBool => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TNat => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TInt => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TFixed \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TString => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TBytes => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TOrdering => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TOption \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TResult \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TList \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TPair \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TAdt \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TFn \_ \_ => LexLeanBoot.RustAst.Def.DNil) | LexLeanBoot.CalculusCheck.Ty.TNil => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TUnit => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TBool => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TNat => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TInt => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TFixed \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TString => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TBytes => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TOrdering => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TOption \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TResult \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TList \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TPair \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TAdt \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.CalculusCheck.Ty.TFn \_ \_ => LexLeanBoot.RustAst.Def.DNil)) | LexLeanBoot.CalculusCheck.Expr.EArm \_ \_ \_ => LexLeanBoot.RustAst.Def.DNil)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{functionShells}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(spec : ByteArray) (adts : LexLeanBoot.CalculusCheck.Ty) (names : List (List (Nat))) (types : LexLeanBoot.CalculusCheck.Ty) (results : LexLeanBoot.CalculusCheck.Ty) (bodies : LexLeanBoot.CalculusCheck.Expr) (fallible : List (Bool)) (frame : LexLeanBoot.RustBodies.Frame)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Def}.\par
+\noindent Definition: \texttt{(let program : LexLeanBoot.CalculusCheck.Program := (\{ spec := spec, adts := adts, parameters := names, types := types, results := results, bodies := bodies \} : LexLeanBoot.CalculusCheck.Program); (let known : LexLeanBoot.CalculusCheck.Ty := (frame).known; (let owners : LexLeanBoot.CalculusCheck.Ty := LexLeanBoot.RustLower.tyAppend (LexLeanBoot.RustLower.adtOwners (LexLeanBoot.CalculusCheck.tyChainLength (adts))) (known); (let inhabited : LexLeanBoot.CalculusCheck.Ty := LexLeanBoot.RustLower.inhabitation (program) (known) (LexLeanBoot.RustLower.revClos ((frame).ordered) (LexLeanBoot.RustLower.Clos.ClNil)) ((frame).edges) (owners); shellsFrom (bodies) (names) (types) (results) (fallible) (known) (inhabited) (0)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{appendDefs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(subject : LexLeanBoot.RustAst.Def) (tail : LexLeanBoot.RustAst.Def)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Def}.\par
+\noindent Definition: \texttt{(match subject with | LexLeanBoot.RustAst.Def.DEnum \_ \_ \_ => tail | LexLeanBoot.RustAst.Def.DApply \_ \_ \_ \_ \_ \_ => tail | LexLeanBoot.RustAst.Def.DFunction \_ \_ \_ \_ \_ => tail | LexLeanBoot.RustAst.Def.DNil => tail | LexLeanBoot.RustAst.Def.DCons head rest => LexLeanBoot.RustAst.Def.DCons (head) (appendDefs (rest) (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{placeLoop}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(item : LexLeanBoot.RustAst.Def) (out : LexLeanBoot.RustLoops.LoopOut)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Def}.\par
+\noindent Definition: \texttt{(match item with | LexLeanBoot.RustAst.Def.DEnum \_ \_ \_ => item | LexLeanBoot.RustAst.Def.DApply \_ \_ \_ \_ \_ \_ => item | LexLeanBoot.RustAst.Def.DFunction name \_ result \_ <U+00AB>at<U+00BB> => LexLeanBoot.RustAst.Def.DFunction (name) ((out).params) (result) ((out).body) (<U+00AB>at<U+00BB>) | LexLeanBoot.RustAst.Def.DNil => item | LexLeanBoot.RustAst.Def.DCons \_ \_ => item)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{placeAll}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(shells : LexLeanBoot.RustAst.Def) (outs : List (LexLeanBoot.RustLoops.LoopOut)) (dead : List (Bool)) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Def}.\par
+\noindent Definition: \texttt{(match shells with | LexLeanBoot.RustAst.Def.DEnum \_ \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.RustAst.Def.DApply \_ \_ \_ \_ \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.RustAst.Def.DFunction \_ \_ \_ \_ \_ => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.RustAst.Def.DNil => LexLeanBoot.RustAst.Def.DNil | LexLeanBoot.RustAst.Def.DCons item rest => (if LexLeanBoot.RustLower.flagAt (dead) (position) then LexLeanBoot.RustAst.Def.DCons (item) (placeAll (rest) (outs) (dead) ((position + 1))) else (match outs with | List.nil => LexLeanBoot.RustAst.Def.DCons (item) (placeAll (rest) (outs) (dead) ((position + 1))) | List.cons out more => LexLeanBoot.RustAst.Def.DCons (placeLoop (item) (out)) (placeAll (rest) (more) (dead) ((position + 1))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{assembleItems}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(types : LexLeanBoot.RustAst.Def) (shells : LexLeanBoot.RustAst.Def) (outs : List (LexLeanBoot.RustLoops.LoopOut)) (dead : List (Bool))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{LexLeanBoot.RustAst.Def}.\par
+\noindent Definition: \texttt{appendDefs (types) (placeAll (shells) (outs) (dead) (0))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

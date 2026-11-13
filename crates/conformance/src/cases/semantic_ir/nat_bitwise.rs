@@ -1,4 +1,4 @@
-//! SM-38: bitwise primitives and shifts on unbounded `Nat` (SPEC.md §17.11,
+//! SM-42: bitwise primitives and shifts on unbounded `Nat` (SPEC.md §17.11,
 //! §17.12, #317).
 
 use crate::support::{self, P};
@@ -28,7 +28,7 @@ fn project_of(text: &str, language: &str) -> P {
     project
 }
 
-/// Run the case of `SM-38`.
+/// Run the case of `SM-42`.
 pub fn run() {
     let accepted = project_of(&source(THEOREM_XOR, false), "1.2");
     let checked = support::checked_project(&accepted);
@@ -132,14 +132,14 @@ pub fn run() {
         "{THEOREM_XOR}\ntheorem{{\n  name: stepOne,\n  parameters: [],\n  statement: ((step 1) = 7),\n  proof: reflexivity{{}},\n  axioms: [propext]\n}}\n\n"
     );
     let evaluated = project_of(&source(&evaluated, false), "1.2");
-    support::verify_ok_backed("SM-38", &evaluated);
+    support::verify_ok_backed("SM-42", &evaluated);
     let wrong = "theorem{\n  name: stepWrong,\n  parameters: [],\n  statement: ((step 1) = 6),\n  proof: reflexivity{},\n  axioms: []\n}\n\n";
     let wrong = project_of(&source(wrong, false), "1.2");
     let false_law = project_of(&source(&false_law, false), "1.2");
     // Both are well formed and link: only Lean refuses them.
     wrong.check_ok();
     false_law.check_ok();
-    if support::lean_backed("SM-38") {
+    if support::lean_backed("SM-42") {
         wrong.verify_fails_with("LLV7002");
         false_law.verify_fails_with("LLV7002");
     }

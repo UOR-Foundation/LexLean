@@ -1,1 +1,1 @@
-{"spec":"lexlean/production-request/1","roots":[{"root":"Production.Main.checkedSum","package":{"name":"match","version":"1.0.0"},"targets":[{"id":"rust-core","digest":"a8fe3888c091b64d07e75bc326eeb808f058537d5133faa918f41ea8dd5858c3"}]}]}
+{"spec":"lexlean/production-request/1","roots":[{"root":"Production.Main.checkedSum","package":{"name":"match","version":"1.0.0"},"targets":[{"id":"rust-core","digest":"8b3e80b4c157feb88808a57a2f91c28fcb8bee10ed2b7288d784342f291b34a4"}]}]}

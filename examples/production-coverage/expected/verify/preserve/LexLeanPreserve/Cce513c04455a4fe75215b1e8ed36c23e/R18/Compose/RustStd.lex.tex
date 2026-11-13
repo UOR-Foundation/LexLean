@@ -1,4 +1,5 @@
 \begin{lexlean}{RustStd}
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cce513c04455a4fe75215b1e8ed36c23e/R18/Compose/RustStd.lex.tex
 \title{Certificate E LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.Compose.RustStd}
 \begin{coremodule}
 imports [
@@ -9,15 +10,33 @@ imports [
 
 theorem LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.Compose.RustStd.root : @914 := @915 {
   all: [LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.Compose.RustStd.root],
+========
+\title{Certificate E LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18.Compose.RustStd}
+\begin{coremodule}
+imports [
+  LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18,
+  LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18.RustStd,
+  LexLeanPreservation.Compose
+]
+
+theorem LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18.Compose.RustStd.root : @914 := @915 {
+  all: [LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18.Compose.RustStd.root],
+>>>>>>>> 6a02d2c7d519f1a4d169ebb3496fbad51bd259cb:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C46615115b2d671e581165fcc4578d890/R18/Compose/RustStd.lex.tex
   class: false,
   generated: false,
   policy: exact{axioms: [Classical.choice, Quot.sound, propext]},
   transparency: semireducible
 }
 
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cce513c04455a4fe75215b1e8ed36c23e/R18/Compose/RustStd.lex.tex
 @0 := LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.RustStd.program
 @1 := LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.RustStd.krate
 @2 := LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.RustStd.flags
+========
+@0 := LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18.RustStd.program
+@1 := LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18.RustStd.krate
+@2 := LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18.RustStd.flags
+>>>>>>>> 6a02d2c7d519f1a4d169ebb3496fbad51bd259cb:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C46615115b2d671e581165fcc4578d890/R18/Compose/RustStd.lex.tex
 @3 := Nat
 @4 := #2
 @5 := LexLeanTarget.TargetSyntax.Value.nat
@@ -82,7 +101,11 @@ theorem LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.Compose.RustStd.ro
 @97 := LexLeanTarget.TargetSyntax.Function.mk @86 @87 @88 @92
 @102 := List.getD.{0} @82 @84 @72 @97
 @106 := fun (__e_n : @3) =>
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cce513c04455a4fe75215b1e8ed36c23e/R18/Compose/RustStd.lex.tex
   LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.RustStd.root @17 @72
+========
+  LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18.RustStd.root @17 @72
+>>>>>>>> 6a02d2c7d519f1a4d169ebb3496fbad51bd259cb:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C46615115b2d671e581165fcc4578d890/R18/Compose/RustStd.lex.tex
 @107 := LexLeanPreservation.Rust.WTL
 @115 := {p : @8} -> {c : @9} -> {A : @10} -> @107 @4 @15 @17 @57 @87
 @117 := LexLeanPreservation.Rust.wtl_nil @0
@@ -193,12 +216,21 @@ theorem LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.Compose.RustStd.ro
 @318 := @313 @275
 @319 := @132 @62
 @320 := @319 @309
+<<<<<<<< HEAD:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/Cce513c04455a4fe75215b1e8ed36c23e/R18/Compose/RustStd.lex.tex
 @321 := LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.denote
 @323 := @321 @4 @15
 @324 := LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.__fits_0
 @326 := @324 @4 @15
 @330 := @5 (Coverage.Main.higher @4 @15)
 @333 := LexLeanPreserve.Cce513c04455a4fe75215b1e8ed36c23e.R18.root @4 @15
+========
+@321 := LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18.denote
+@323 := @321 @4 @15
+@324 := LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18.__fits_0
+@326 := @324 @4 @15
+@330 := @5 (Coverage.Main.higher @4 @15)
+@333 := LexLeanPreserve.C46615115b2d671e581165fcc4578d890.R18.root @4 @15
+>>>>>>>> 6a02d2c7d519f1a4d169ebb3496fbad51bd259cb:examples/production-coverage/expected/verify/preserve/LexLeanPreserve/C46615115b2d671e581165fcc4578d890/R18/Compose/RustStd.lex.tex
 @334 := Bool
 @335 := Ne.{1}
 @336 := LexLeanPreservation.Obs

@@ -110,7 +110,7 @@ fn enc_args(args: &[Expr]) -> Value {
 }
 
 /// A block (11): lets as a chain of `ELet`, then the tail.
-fn enc_block(block: &Block) -> Value {
+pub(super) fn enc_block(block: &Block) -> Value {
     let lets = block
         .lets
         .iter()
@@ -242,7 +242,7 @@ pub(super) fn enc_expr(expr: &Expr) -> Value {
 }
 
 /// `Par`: nil, cons (pattern, type, the rest).
-fn enc_params(parameters: &[(Pat, ast::Type)]) -> Value {
+pub(super) fn enc_params(parameters: &[(Pat, ast::Type)]) -> Value {
     parameters
         .iter()
         .rev()
@@ -252,7 +252,7 @@ fn enc_params(parameters: &[(Pat, ast::Type)]) -> Value {
 }
 
 /// `Def`: enum, apply, function, nil, cons.
-fn enc_item_def(item: &ItemDef) -> Value {
+pub(super) fn enc_item_def(item: &ItemDef) -> Value {
     match item {
         ItemDef::Enum { name, variants, at } => {
             adt(0, vec![enc_type(name), enc_row(variants), enc_origin(at)])
@@ -297,14 +297,20 @@ fn enc_item_def(item: &ItemDef) -> Value {
 /// `Crate`, a structure: whether the profile is `rust-core`, and the items
 /// as a `Def` chain.
 pub(super) fn enc_crate(krate: &Crate) -> Value {
-    let items = krate
-        .items
-        .iter()
-        .rev()
-        .fold(adt(3, Vec::new()), |tail, item| {
-            adt(4, vec![enc_item_def(item), tail])
-        });
-    adt(0, vec![boolean(krate.profile == Profile::Core), items])
+    adt(
+        0,
+        vec![
+            boolean(krate.profile == Profile::Core),
+            enc_items(&krate.items),
+        ],
+    )
+}
+
+/// The items as a `Def` chain.
+pub(super) fn enc_items(items: &[ItemDef]) -> Value {
+    items.iter().rev().fold(adt(3, Vec::new()), |tail, item| {
+        adt(4, vec![enc_item_def(item), tail])
+    })
 }
 
 // ------------------------------------------------------------------ oracle
@@ -1016,14 +1022,14 @@ use crate::support;
 
 /// A committed package: its crate as the package renderer lowers it (the
 /// exports included), and the library it committed.
-struct Packaged {
-    krate: Crate,
+pub(super) struct Packaged {
+    pub(super) krate: Crate,
     library: String,
 }
 
 /// The crate and the committed `src/lib.rs` of every committed package
 /// manifest under `compiler/rust` and `tests/production-export`.
-fn packaged() -> Vec<Packaged> {
+pub(super) fn packaged() -> Vec<Packaged> {
     let root = support::repo_root();
     let mut files = Vec::new();
     super::rust_validate::walk(root.as_std_path(), &mut files);
@@ -1053,7 +1059,7 @@ fn packaged() -> Vec<Packaged> {
 
 /// The header a profile's library begins with: the attributes and the
 /// runtime, as `ast::print` writes them before any item.
-fn header(profile: Profile) -> String {
+pub(super) fn header(profile: Profile) -> String {
     ast::print(&Crate {
         profile,
         items: Vec::new(),
@@ -1068,13 +1074,13 @@ fn tight(krate: &Crate, header: &str) -> Option<Run> {
 }
 
 /// A run of `printCrate` with a capacity of exactly the output.
-fn exact(krate: &Crate, header: &str) -> Option<Run> {
+pub(super) fn exact(krate: &Crate, header: &str) -> Option<Run> {
     let printed = catch(|| format!("{header}{}", print_body(krate)))?;
     print_run(krate, header, printed.len())
 }
 
 /// The function bodies of a crate as expressions: the block of each.
-fn bodies(krate: &Crate) -> Vec<Expr> {
+pub(super) fn bodies(krate: &Crate) -> Vec<Expr> {
     krate
         .items
         .iter()
@@ -1086,7 +1092,7 @@ fn bodies(krate: &Crate) -> Vec<Expr> {
 }
 
 /// `printExpr` with a capacity of exactly the output.
-fn exact_expr(expr: &Expr) -> Option<Run> {
+pub(super) fn exact_expr(expr: &Expr) -> Option<Run> {
     let printed = catch(|| ast::print_expr(expr))?;
     expr_run(expr, printed.len())
 }
@@ -1183,20 +1189,20 @@ const ROOTS: [(&str, &[&str]); 2] = [
 // The counts SPEC.md §17.23, the register statement of BS-06, its scenario,
 // and VERIFICATION.md state, over the tree with the packages of the two roots
 // committed: the case fails when the tree no longer gives them.
-const COMMITTED_MANIFESTS: usize = 256;
+const COMMITTED_MANIFESTS: usize = 330;
 const COMMITTED_FIXTURES: usize = 122;
-const COMMITTED_PROGRAMS: usize = 173;
-const COMMITTED_CRATES: usize = 232;
-const COMMITTED_PACKAGES: usize = 256;
-const VECTORS_CRATE: usize = 627;
-const COMMITTED_DISTINCT: usize = 464;
-const REFUSED_CRATE: usize = 61;
-const VECTORS_EXPR: usize = 2_083;
+const COMMITTED_PROGRAMS: usize = 247;
+const COMMITTED_CRATES: usize = 306;
+const COMMITTED_PACKAGES: usize = 330;
+const VECTORS_CRATE: usize = 785;
+const COMMITTED_DISTINCT: usize = 612;
+const REFUSED_CRATE: usize = 71;
+const VECTORS_EXPR: usize = 2_265;
 const HAND_EXPR: usize = 1_532;
-const EVALUATOR_CRATE: usize = 562;
+const EVALUATOR_CRATE: usize = 612;
 const SEEDED_CRATE: usize = 400;
-const SEEDED_EXPR: usize = 399;
-const RUSTC_SEEDED_RUNS: usize = 2_984;
+const SEEDED_EXPR: usize = 400;
+const RUSTC_SEEDED_RUNS: usize = 2_989;
 
 /// The crates the evaluator is given in full: those of at most this many
 /// expressions.
@@ -1312,16 +1318,16 @@ pub(super) fn case() {
             "the committed library ends with the printed items"
         );
     }
-    assert_eq!(
-        (manifests, fixtures, distinct, all.len(), packages.len()),
-        (
-            COMMITTED_MANIFESTS,
-            COMMITTED_FIXTURES,
-            COMMITTED_PROGRAMS,
-            COMMITTED_CRATES,
-            COMMITTED_PACKAGES
-        ),
-        "the committed manifests, fixtures, distinct programs, distinct crates, and packages"
+    crate::counts!(
+        "BS-06",
+        "the committed manifests, fixtures, distinct programs, distinct crates, and packages",
+        {
+            COMMITTED_MANIFESTS: manifests,
+            COMMITTED_FIXTURES: fixtures,
+            COMMITTED_PROGRAMS: distinct,
+            COMMITTED_CRATES: all.len(),
+            COMMITTED_PACKAGES: packages.len(),
+        }
     );
     eprintln!(
         "BS-06: {manifests} manifests, {fixtures} fixtures, {distinct} programs, {} crates, {} packages ({:?})",
@@ -1380,25 +1386,18 @@ pub(super) fn case() {
         started.elapsed()
     );
 
-    assert_eq!(
-        (
-            crate_runs.len(),
-            committed_count,
-            refused(&crate_runs),
-            expr_runs.len(),
-            hand_exprs,
-            refused(&expr_runs)
-        ),
-        (
-            VECTORS_CRATE,
-            COMMITTED_DISTINCT,
-            REFUSED_CRATE,
-            VECTORS_EXPR,
-            HAND_EXPR,
-            0
-        ),
-        "the vectors of printCrate and printExpr, the committed crates among them, and the refused"
+    crate::counts!(
+        "BS-06",
+        "the vectors of printCrate and printExpr, the committed crates among them, and the refused",
+        {
+            VECTORS_CRATE: crate_runs.len(),
+            COMMITTED_DISTINCT: committed_count,
+            REFUSED_CRATE: refused(&crate_runs),
+            VECTORS_EXPR: expr_runs.len(),
+            HAND_EXPR: hand_exprs,
+        }
     );
+    assert_eq!(refused(&expr_runs), 0, "no printExpr vector is refused");
     // The corpora of the normative host are made here, so that every count
     // the row states is asserted before the first leg runs.
     let evaluator_crates: Vec<Run> = crate_runs
@@ -1416,23 +1415,20 @@ pub(super) fn case() {
     let (seeded_crates, seeded_exprs) = mutants(&bases, &mut seeded, EVALUATOR_MUTANTS);
     let mut large = super::Seeded(0x0B55_0066);
     let (large_crates, large_exprs) = mutants(&bases, &mut large, RUSTC_MUTANTS);
-    assert_eq!(
-        (
-            evaluator_crates.len(),
-            evaluator_exprs.len(),
-            seeded_crates.len(),
-            seeded_exprs.len(),
-            large_crates.len() + large_exprs.len()
-        ),
-        (
-            EVALUATOR_CRATE,
-            VECTORS_EXPR,
-            SEEDED_CRATE,
-            SEEDED_EXPR,
-            RUSTC_SEEDED_RUNS
-        ),
-        "the vectors and the seeded mutants of the evaluator, and the further mutants of rustc"
+    crate::counts!(
+        "BS-06",
+        "the vectors and the seeded mutants of the evaluator, and the further mutants of rustc",
+        {
+            EVALUATOR_CRATE: evaluator_crates.len(),
+            VECTORS_EXPR: evaluator_exprs.len(),
+            SEEDED_CRATE: seeded_crates.len(),
+            SEEDED_EXPR: seeded_exprs.len(),
+            RUSTC_SEEDED_RUNS: large_crates.len() + large_exprs.len(),
+        }
     );
+    if crate::counts::stop_before_runs("BS-06") {
+        return;
+    }
     let checked = support::checked_project(&project);
     let crate_root = super::lower(&checked, &project, MODULE, "printCrate");
     let expr_root = super::lower(&checked, &project, MODULE, "printExpr");
@@ -1490,7 +1486,13 @@ pub(super) fn case() {
         ],
         "seeded",
     );
-    assert_eq!(large_runs, RUSTC_SEEDED_RUNS);
+    crate::counts!(
+        "BS-06",
+        "the further mutants rustc ran",
+        {
+            RUSTC_SEEDED_RUNS: large_runs,
+        }
+    );
     // The gate is armed: each defect planted in a copy of the source is a
     // disagreement with the oracle.
     let mut detection: BTreeMap<&str, Vec<Run>> = BTreeMap::new();

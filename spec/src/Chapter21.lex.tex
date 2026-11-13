@@ -208,7 +208,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The released binary embeds all three closed language IDs. Repository tests" (cons "recompute the complete current input tree and, from the exclusion lists of" (cons "this section, the compatibility-filtered trees independently, compare each with" (cons "the embedded ID, and pin the 1.0 and 1.1 IDs to the committed example locks." (nil String)))))
+      (cons "The released binary embeds all three closed language IDs. Repository tests" (cons "recompute the complete current input tree and, from the exclusion lists of" (cons "this section, the compatibility-filtered trees independently, compare each with" (cons "the embedded ID, and pin the 1.0 and 1.1 IDs to the committed example locks." (cons "A build without the `production-data` feature (§8.4) lacks part of the full" (cons "tree, so it reports the language-1.2 ID from the checked-in constant" (cons "`LANGUAGE_1_2_SEMANTICS_ID`; the same tests require that constant to equal the" (cons "recomputed ID, because a wrong one would lock and check consistently with" (cons "itself. Its 1.0 and 1.1 IDs are computed, since no file they cover is left out." (nil String))))))))))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -433,6 +433,20 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
+    arguments: [
+      (cons "The language-1.2 runtime imported by generated modules is not included in" (cons "this build layout. A Lake consumer supplies runtime sources generated from a" (cons "compiler checkout with the same language-1.2 compiler-semantics ID; see" (cons "[Use generated Lean from Lake](docs/LEAN-CONSUMER.md) for the current workflow" (cons "and its distinction from the verification evidence of §22." (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0034,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
     arguments: [3, 1, "21.6 Build manifest"],
     constructor: DocRows::Item.heading,
     type_arguments: []
@@ -441,7 +455,7 @@ definition{
 }
 
 definition{
-  name: i0034,
+  name: i0035,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -453,7 +467,7 @@ definition{
 }
 
 definition{
-  name: i0035,
+  name: i0036,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -468,7 +482,7 @@ definition{
 }
 
 definition{
-  name: i0036,
+  name: i0037,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -482,7 +496,7 @@ definition{
 }
 
 definition{
-  name: i0037,
+  name: i0038,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -496,7 +510,7 @@ definition{
 }
 
 definition{
-  name: i0038,
+  name: i0039,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -510,7 +524,7 @@ definition{
 }
 
 definition{
-  name: i0039,
+  name: i0040,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -522,7 +536,7 @@ definition{
 }
 
 definition{
-  name: i0040,
+  name: i0041,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -534,7 +548,7 @@ definition{
 }
 
 definition{
-  name: i0041,
+  name: i0042,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -548,7 +562,7 @@ definition{
 }
 
 definition{
-  name: i0042,
+  name: i0043,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -560,7 +574,7 @@ definition{
 }
 
 definition{
-  name: i0043,
+  name: i0044,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -572,7 +586,7 @@ definition{
 }
 
 definition{
-  name: i0044,
+  name: i0045,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -584,7 +598,7 @@ definition{
 }
 
 definition{
-  name: i0045,
+  name: i0046,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -598,7 +612,7 @@ definition{
 }
 
 definition{
-  name: i0046,
+  name: i0047,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -612,7 +626,7 @@ definition{
 }
 
 definition{
-  name: i0047,
+  name: i0048,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -626,7 +640,148 @@ definition{
 }
 
 definition{
-  name: i0048,
+  name: i0049,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "21.9 Declaration IDs"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0050,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A language-1.2 build gives every declaration of a semantic module (§17.12) a" (cons "declaration ID, so that a tool can name one definition, structure, or theorem" (cons "by its content, and reuse what was established about it, without re-deriving" (cons "a key of its own. The semantic ID (§21.4) names the whole project and changes" (cons "with any declaration; a declaration ID changes only with what the declaration" (cons "depends on." (nil String)))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0051,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The *references* of a declaration are the member references in its canonical" (cons "JSON, an object whose keys are exactly `name`, or `module` and `name`, that" (cons "name a declaration of a semantic module of the linked project, or a member the" (cons "compiler generates for one, such as the constructor `Shape.empty` of `Shape`" (cons "or a field of a structure: a generated member `Owner.member` is a reference to" (cons "its owner, whose declaration it takes its meaning from. A reference" (cons "into the declaration's own module is written without `module` before it is" (cons "hashed, so a declaration ID does not depend on the name of the module that" (cons "holds it. A reference that names no declaration of the linked project, such as" (cons "one into the standard library the compiler embeds, is hashed as written: its" (cons "meaning is fixed by the compiler-semantics ID." (nil String))))))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0052,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The declarations of the project form a graph by reference. Its strongly" (cons "connected components are the *groups*: a declaration in no cycle is a group of" (cons "its own, and declarations that reference one another, such as a mutual group," (cons "share one. Groups are hashed so that every group a group references is hashed" (cons "first:" (nil String))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0053,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "group_digest(G) = SHA256(" (cons "  \"lexlean-declaration-group-v1\u0000\"" (cons "  || frame(\"compiler-semantics\", compiler_semantics_digest_bytes)" (cons "  || frame(\"language\", \"1.2\")" (cons "  || frame(\"toolchain\", \"leanprover/lean4:v4.32.1\")" (cons "  || for each member of G in (module, name) order:" (cons "       frame(\"declaration\", canonical_declaration_json)" (cons "  || for each reference from a member of G to a declaration outside G," (cons "     once each, in (module, name) order:" (cons "       [frame(\"reference-module\", module_utf8), when it is another module's]" (cons "       || frame(\"reference\", name_utf8)" (cons "       || frame(\"reference-id\", declaration_id_bytes)" (cons ")" (cons "" (cons "declaration_id(D in G) = SHA256(" (cons "  \"lexlean-declaration-v1\u0000\"" (cons "  || frame(\"group\", group_digest(G))" (cons "  || frame(\"name\", name_utf8)" (cons ")" (nil String))))))))))))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0054,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "A theorem also has a statement ID, the identity of what it states without how" (cons "it is proved, so that two proofs of one statement name one obligation:" (nil String)))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0055,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "text",
+      (cons "statement_id(T) = SHA256(" (cons "  \"lexlean-statement-v1\u0000\"" (cons "  || frame(\"compiler-semantics\", compiler_semantics_digest_bytes)" (cons "  || frame(\"language\", \"1.2\")" (cons "  || frame(\"toolchain\", \"leanprover/lean4:v4.32.1\")" (cons "  || frame(\"statement\", canonical_declaration_json_without_proof)" (cons "  || for each reference of that JSON, other than T itself, in (module, name)" (cons "     order, framed as for a group" (cons ")" (nil String))))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0056,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "The build publishes the IDs of each semantic module at" (cons "`declarations/<full-module-path>.json`, a manifest output of kind" (cons "`declarations` (§21.6):" (nil String))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0057,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      "json",
+      (cons "{" (cons "  \"spec\": \"lexlean/declarations/1\"," (cons "  \"module\": \"Main\"," (cons "  \"declarations\": [" (cons "    {\"name\": \"judge\", \"kind\": \"definition\", \"id\": \"...\", \"references\": [{\"name\": \"small\"}]}," (cons "    {\"name\": \"judge_five\", \"kind\": \"theorem\", \"id\": \"...\", \"statement_id\": \"...\", \"references\": [{\"name\": \"judge\"}]}" (cons "  ]" (cons "}" (nil String)))))))))
+    ],
+    constructor: DocRows::Item.fence,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0058,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Declarations are listed in source order; each row's `references` are its" (cons "references to project declarations in `(module, name)` order, with `module`" (cons "only for another module's. The schema is" (cons "`api/schemas/declarations.schema.json`. It lies outside `schemas/` and so" (cons "outside the compiler-semantics ID, like the schemas of §24.7, and its SHA-256" (cons "is recorded under its spec in `api/schemas/versions.toml`: the IDs are derived" (cons "from what the compiler computes and change nothing it computes. A language-1.0" (cons "or 1.1 build publishes no declarations file, so their output is unchanged." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0059,
   parameters: [],
   result: DocRows::Item,
   body: constructor{

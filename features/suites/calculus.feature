@@ -17,9 +17,9 @@ Feature: calculus
     And the invalid program also has no Rust rendering, while the valid one loads and renders
 
   @TC-03 @build
-  Scenario: The calculus denotation is a kernel-checked LexLean definition that charges every evaluator operation, Lean's kernel reduces every kernel-reducible fixture to its expected outcome with its exact step count, no fixture program is stuck on its stated arguments or on seeded random well-typed arguments at any sampled fuel, and a wrong expected outcome is rejected by Lean.
+  Scenario: The calculus denotation is a kernel-checked LexLean definition that charges every evaluator operation, Lean's kernel reduces every kernel-reducible fixture to its expected outcome with its exact step count, no fixture program is stuck on its stated arguments or, on the normative Linux x86-64 host, on seeded random well-typed arguments at any sampled fuel, and a wrong expected outcome is rejected by Lean.
     Given the `compiler` project and its generated `TargetFixtures` module
-    When the project is verified under pinned Lean, every fixture program is run on seeded random well-typed arguments at sampled fuels, and a copy stating one wrong expected outcome is verified
+    When the project is verified under pinned Lean, on the normative Linux x86-64 host every fixture program is run on seeded random well-typed arguments at sampled fuels, and a copy stating one wrong expected outcome is verified
     Then every kernel-reducible fixture has a theorem the kernel proves, the module equals its generator, and no run is stuck
     And the copy fails with LLV7002 on the wrong outcome
 

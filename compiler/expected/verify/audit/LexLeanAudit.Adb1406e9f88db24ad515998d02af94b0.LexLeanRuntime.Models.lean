@@ -1,0 +1,29 @@
+module
+import LexLeanRuntime.Models
+#print axioms LexLeanModels.Agreement
+#print axioms LexLeanModels.Complete1
+#print axioms LexLeanModels.Complete2
+#print axioms LexLeanModels.Complete4
+#print axioms LexLeanModels.Equivalent
+#print axioms LexLeanModels.EquivalentStep
+#print axioms LexLeanModels.EquivalentStepNoInvariant
+#print axioms LexLeanModels.EquivalentStepNoPrecondition
+#print axioms LexLeanModels.EquivalentStepTotal
+#print axioms LexLeanModels.EquivalentTotal
+#print axioms LexLeanModels.Initial
+#print axioms LexLeanModels.Preserves
+#print axioms LexLeanModels.PreservesTotal
+#print axioms LexLeanModels.Satisfies
+#print axioms LexLeanModels.SatisfiesStep
+#print axioms LexLeanModels.SatisfiesStepNoInvariant
+#print axioms LexLeanModels.SatisfiesStepNoPrecondition
+#print axioms LexLeanModels.SatisfiesStepTotal
+#print axioms LexLeanModels.SatisfiesTotal
+#print axioms LexLeanModels.Sound1
+#print axioms LexLeanModels.Sound2
+#print axioms LexLeanModels.Sound4
+#print axioms LexLeanModels.encodeInt
+#print axioms LexLeanModels.inRange
+#print axioms LexLeanModels.linesMatch
+#print axioms LexLeanModels.tensorMatches
+#print axioms LexLeanModels.utf8Char

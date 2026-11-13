@@ -136,6 +136,12 @@ The source ID, semantic ID, or lock digest a production request pins differs fro
 
 Class: `cli-configuration`. Exit code: 2.
 
+## `LLC0205` --- Production data not embedded in this build
+
+The compiler was built without the production data, which production export and the certification of a production root read.
+
+Class: `cli-configuration`. Exit code: 2.
+
 ## `LLF5001` --- Invalid definition form, self head, or recursion
 
 Invalid definition form, self head, or recursion.

@@ -14,6 +14,7 @@ import LexLeanBoot.CalculusCheck
 #print axioms LexLeanBoot.CalculusCheck.adtShapes
 #print axioms LexLeanBoot.CalculusCheck.allDigits
 #print axioms LexLeanBoot.CalculusCheck.allHex
+#print axioms LexLeanBoot.CalculusCheck.armFields
 #print axioms LexLeanBoot.CalculusCheck.bindAll
 #print axioms LexLeanBoot.CalculusCheck.boolDebug
 #print axioms LexLeanBoot.CalculusCheck.byteIs
@@ -56,6 +57,7 @@ import LexLeanBoot.CalculusCheck
 #print axioms LexLeanBoot.CalculusCheck.hexNibble
 #print axioms LexLeanBoot.CalculusCheck.hexStep
 #print axioms LexLeanBoot.CalculusCheck.inapplicable
+#print axioms LexLeanBoot.CalculusCheck.inferTy
 #print axioms LexLeanBoot.CalculusCheck.isNilTy
 #print axioms LexLeanBoot.CalculusCheck.isNilValue
 #print axioms LexLeanBoot.CalculusCheck.kindDebug
@@ -84,6 +86,11 @@ import LexLeanBoot.CalculusCheck
 #print axioms LexLeanBoot.CalculusCheck.shapeTag
 #print axioms LexLeanBoot.CalculusCheck.shapesOf
 #print axioms LexLeanBoot.CalculusCheck.significant
+#print axioms LexLeanBoot.CalculusCheck.siteNode
+#print axioms LexLeanBoot.CalculusCheck.siteOne
+#print axioms LexLeanBoot.CalculusCheck.siteOwn
+#print axioms LexLeanBoot.CalculusCheck.siteTree
+#print axioms LexLeanBoot.CalculusCheck.siteTrees
 #print axioms LexLeanBoot.CalculusCheck.startsWithByte
 #print axioms LexLeanBoot.CalculusCheck.strDebug
 #print axioms LexLeanBoot.CalculusCheck.text
@@ -103,6 +110,8 @@ import LexLeanBoot.CalculusCheck
 #print axioms LexLeanBoot.CalculusCheck.undeclaredAdt
 #print axioms LexLeanBoot.CalculusCheck.undeclaredFunction
 #print axioms LexLeanBoot.CalculusCheck.unicodeEscape
+#print axioms LexLeanBoot.CalculusCheck.useTree
+#print axioms LexLeanBoot.CalculusCheck.useTrees
 #print axioms LexLeanBoot.CalculusCheck.valDebug
 #print axioms LexLeanBoot.CalculusCheck.valueChainLength
 #print axioms LexLeanBoot.CalculusCheck.valueOk

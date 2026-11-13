@@ -57,3 +57,10 @@ Feature: production
     When every recursive package of those exports is matched to its row, each harness stack is compared with the largest bound times the headroom, and the rendered harness of `isClosedLeanName` is run on a stack at that product and on a quarter of its own bound
     Then every recursive package has a row, no row is stale, and every harness stack covers its bound with the headroom
     And a harness stack below a bound is refused, and the harness on a quarter of its bound aborts
+
+  @PD-10 @build
+  Scenario: The registry holds the effects `files` and `process` and one row per constructor of `LexLeanStd.Host::Request` naming the effect it realizes, so a production root whose closure builds a request admits that request's effect, and a root that does not, or that is declared for a target without allocation, fails with `LLT4005`.
+    Given the production registry, the standard library's `Host` module, and the `host-effects` fixture
+    When the request rows are compared with the module's constructors and a stated table, and the fixture's roots are analysed
+    Then each root realizes exactly the effects of the requests it builds, through a call in another module too, and a root that only reads a request or builds `exit` realizes neither
+    And a root that does not admit the effect of a request it builds, and a root that builds one for `rust-core`, each fail with `LLT4005`, and a type named `Request` in another module realizes nothing

@@ -94,6 +94,12 @@ pub struct Manifest {
     /// ascending) and that `rust-core` states no `allocation`; it does not
     /// derive the list.
     pub effects: Vec<String>,
+    /// The export that is a command, when the package is one: its signature is
+    /// the step of a command root (`host::recognize`), and the package carries
+    /// a `src/main.rs` that drives it. Only a `rust-std` package has one, and
+    /// the effects it states are what the driver is given.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub entry: Option<String>,
 }
 
 /// A rendered package: its files by path.
@@ -373,10 +379,15 @@ impl Manifest {
     ///
     /// Returns the reason the bytes are not a manifest.
     pub fn parse(bytes: &[u8]) -> Result<Self, String> {
-        crate::artifact::canonical_json::Json::parse(bytes)
-            .map_err(|error| format!("package manifest is malformed: {error}"))?;
-        serde_json::from_slice(bytes)
-            .map_err(|error| format!("package manifest is malformed: {error}"))
+        crate::calculus::read_program_json(bytes, 1, || {
+            crate::artifact::canonical_json::Json::parse_unbounded(bytes)?;
+            let mut reader = serde_json::Deserializer::from_slice(bytes);
+            reader.disable_recursion_limit();
+            let value = Self::deserialize(&mut reader).map_err(|error| error.to_string())?;
+            reader.end().map_err(|error| error.to_string())?;
+            Ok(value)
+        })
+        .map_err(|error| format!("package manifest is malformed: {error}"))
     }
 
     /// The canonical file bytes.
@@ -389,7 +400,7 @@ impl Manifest {
         let text = serde_json::to_string(self)
             .map_err(|error| format!("package manifest does not serialize: {error}"))?;
         Ok(
-            crate::artifact::canonical_json::Json::parse(text.as_bytes())
+            crate::artifact::canonical_json::Json::parse_unbounded(text.as_bytes())
                 .map_err(|error| format!("package manifest is not canonical JSON: {error}"))?
                 .to_file_bytes(),
         )
@@ -630,6 +641,14 @@ pub fn lower(manifest: &Manifest) -> Result<(ast::Crate, Program, Profile), Stri
         return fail("hidden allocation: a rust-core package states the effect `allocation`");
     }
     let program = manifest.program.canonical()?;
+    if let Some(entry) = &manifest.entry {
+        if profile != Profile::Std {
+            return fail(format!(
+                "hidden allocation: the entry `{entry}` is a command, whose requests hold text and bytes, and a rust-core package has no allocation"
+            ));
+        }
+        super::host::recognize(&program, &manifest.exports, entry)?;
+    }
     let mut lowering = Lowering::new(&program, profile).map_err(|reason| {
         if reason.contains("requires heap allocation") {
             format!("hidden allocation: {reason}")
@@ -669,7 +688,17 @@ pub fn package(manifest: &Manifest) -> Result<Package, String> {
         Profile::Core => runtime::core()?.to_owned(),
         Profile::Std => format!("{}{}", runtime::core()?, runtime::std()?),
     };
-    let provenance = serde_json::json!({
+    let mut files = BTreeMap::new();
+    let mut hashes = serde_json::Map::new();
+    hashes.insert("Cargo.toml".to_owned(), sha256(&cargo).into());
+    hashes.insert(library_path.to_owned(), sha256(&library).into());
+    if let Some(entry) = &manifest.entry {
+        let command = super::host::recognize(&program, &manifest.exports, entry)?;
+        let main = super::host::main_rs(&command, &manifest.name, &manifest.effects)?.into_bytes();
+        hashes.insert("src/main.rs".to_owned(), sha256(&main).into());
+        files.insert("src/main.rs".to_owned(), main);
+    }
+    let mut provenance = serde_json::json!({
         "spec": PROVENANCE_SPEC,
         "name": manifest.name,
         "version": manifest.version,
@@ -683,18 +712,170 @@ pub fn package(manifest: &Manifest) -> Result<Package, String> {
             "name": export.name,
             "function": export.function,
         })).collect::<Vec<_>>(),
-        "files": {
-            "Cargo.toml": sha256(&cargo),
-            (library_path): sha256(&library),
-        },
+        "files": hashes,
     });
+    if let (Some(entry), Some(object)) = (&manifest.entry, provenance.as_object_mut()) {
+        object.insert("entry".to_owned(), entry.clone().into());
+    }
     let provenance =
         crate::artifact::canonical_json::Json::parse(provenance.to_string().as_bytes())
             .map_err(|error| format!("provenance is not canonical JSON: {error}"))?
             .to_file_bytes();
-    let mut files = BTreeMap::new();
     files.insert("Cargo.toml".to_owned(), cargo);
     files.insert(library_path.to_owned(), library);
     files.insert("provenance.json".to_owned(), provenance);
     Ok(Package { files })
+}
+
+#[cfg(test)]
+mod depth_tests {
+    use super::{Errors, Export, Manifest, MANIFEST_SPEC};
+    use crate::calculus::{Expr, Function, Program, Shape, Ty, Value, PROGRAM_SPEC};
+    use crate::production::lower::{json_depth, PROGRAM_JSON_DEPTH};
+
+    fn list_program(elements: usize) -> Program {
+        let ty = Ty::List {
+            element: Box::new(Ty::Nat),
+        };
+        let mut body = Expr::Build {
+            shape: Shape::Nil,
+            ty: ty.clone(),
+            operands: vec![],
+        };
+        for _ in 0..elements {
+            body = Expr::Build {
+                shape: Shape::Cons,
+                ty: ty.clone(),
+                operands: vec![
+                    Expr::Value {
+                        ty: Ty::Nat,
+                        value: Value::Nat {
+                            value: "1".to_owned(),
+                        },
+                    },
+                    body,
+                ],
+            };
+        }
+        Program {
+            spec: PROGRAM_SPEC.to_owned(),
+            adts: vec![],
+            functions: vec![Function {
+                parameters: vec![],
+                types: vec![],
+                result: ty,
+                body,
+            }],
+        }
+    }
+
+    fn make_manifest(program: Program) -> Manifest {
+        Manifest {
+            spec: MANIFEST_SPEC.to_owned(),
+            name: "deep_list".to_owned(),
+            version: "1.0.0".to_owned(),
+            profile: "rust-std".to_owned(),
+            program,
+            exports: vec![Export {
+                function: 0,
+                name: "run".to_owned(),
+                parameters: vec![],
+                errors: Errors::None,
+            }],
+            sources: vec![],
+            effects: vec!["allocation".to_owned(), "overflow".to_owned()],
+            entry: None,
+        }
+    }
+
+    #[test]
+    fn generated_deep_program_and_manifest_read_back() {
+        for elements in [65, 100] {
+            let program = list_program(elements);
+            crate::calculus::check::check(&program).expect("valid list program");
+            let bytes = program.to_file_bytes();
+            assert!(json_depth(std::str::from_utf8(&bytes).expect("UTF-8")) > 128);
+            assert_eq!(
+                Program::parse(&bytes).expect("read generated program"),
+                program
+            );
+            let manifest = make_manifest(program);
+            let bytes = manifest.to_file_bytes().expect("write generated manifest");
+            assert_eq!(
+                Manifest::parse(&bytes).expect("read generated manifest"),
+                manifest
+            );
+        }
+    }
+
+    #[test]
+    fn deep_program_reader_boundaries_and_malformed_input() {
+        let mut program = list_program(65);
+        while json_depth(&serde_json::to_string(&program).expect("JSON")) < PROGRAM_JSON_DEPTH {
+            // Projection adds one object level. This test checks the reader,
+            // not the separate static validity of the decoded program.
+            let body = program.functions[0].body.clone();
+            program.functions[0].body = Expr::First {
+                value: Box::new(body),
+            };
+        }
+        let bytes = program.to_file_bytes();
+        assert_eq!(
+            json_depth(std::str::from_utf8(&bytes).expect("UTF-8")),
+            PROGRAM_JSON_DEPTH
+        );
+        assert_eq!(
+            Program::parse(&bytes).expect("program at the limit"),
+            program
+        );
+        let manifest = make_manifest(program.clone());
+        let manifest_bytes = manifest.to_file_bytes().expect("manifest at the limit");
+        assert_eq!(
+            json_depth(std::str::from_utf8(&manifest_bytes).expect("UTF-8")),
+            PROGRAM_JSON_DEPTH + 1
+        );
+        assert_eq!(
+            Manifest::parse(&manifest_bytes).expect("wrapped program at the limit"),
+            manifest
+        );
+        fn malformed_inputs(bytes: &[u8]) -> [Vec<u8>; 4] {
+            let mut trailing = bytes.to_vec();
+            trailing.extend_from_slice(b"{}");
+            let mut duplicate = bytes.to_vec();
+            duplicate.splice(1..1, b"\"spec\":\"duplicate\",".iter().copied());
+            let mut escaped_duplicate = bytes.to_vec();
+            escaped_duplicate.splice(1..1, br#""\u0073pec":"duplicate","#.iter().copied());
+            [
+                trailing,
+                duplicate,
+                escaped_duplicate,
+                bytes[..bytes.len() - 2].to_vec(),
+            ]
+        }
+        for text in malformed_inputs(&bytes) {
+            assert!(Program::parse(&text).is_err());
+        }
+        for text in malformed_inputs(&manifest_bytes) {
+            assert!(Manifest::parse(&text).is_err());
+        }
+        let body = program.functions[0].body.clone();
+        program.functions[0].body = Expr::First {
+            value: Box::new(body),
+        };
+        let over = serde_json::to_vec(&program).expect("JSON");
+        assert!(Program::parse(&over)
+            .expect_err("over-depth program")
+            .contains("depth"));
+        let over = serde_json::to_vec(&make_manifest(program)).expect("JSON");
+        assert!(Manifest::parse(&over)
+            .expect_err("over-depth manifest")
+            .contains("depth"));
+        let unclosed = "[".repeat(50_000);
+        assert!(Program::parse(unclosed.as_bytes())
+            .expect_err("preflight depth")
+            .contains("depth"));
+        assert!(Manifest::parse(unclosed.as_bytes())
+            .expect_err("preflight depth")
+            .contains("depth"));
+    }
 }

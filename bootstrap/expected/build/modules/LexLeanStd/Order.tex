@@ -1,0 +1,155 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{lessBytes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.equal ((LexLeanRuntime.compareBytes (left) (right) : Ordering)) ((LexLeanRuntime.compareBytes (ByteArray.mk \#[]) (ByteArray.mk \#[1]) : Ordering)) : Bool)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{reverseList}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Item)}.\par
+\noindent Parameters: \texttt{(items : List (Item))}.\par
+\noindent Closure 1: binds \texttt{(reversed, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Item)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (reversed : List (Item)) (item : Item) => (item :: reversed))) (([] : List (Item))) (items) : List (Item))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mergeStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Value)}.\par
+\noindent Parameters: \texttt{(state : (Prod (List ((Prod (ByteArray) (Value)))) ((Prod (List ((Prod (ByteArray) (Value)))) (List ((Prod (ByteArray) (Value))))))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (List ((Prod (ByteArray) (Value)))) ((Prod (List ((Prod (ByteArray) (Value)))) (List ((Prod (ByteArray) (Value))))))))}.\par
+\noindent Definition: \texttt{(let left : List ((Prod (ByteArray) (Value))) := (state).1; (let right : List ((Prod (ByteArray) (Value))) := ((state).2).1; (let merged : List ((Prod (ByteArray) (Value))) := ((state).2).2; (match left with | List.nil => (match right with | List.nil => Option.none | List.cons rightHead rightTail => Option.some ((([] : List ((Prod (ByteArray) (Value)))), (rightTail, (rightHead :: merged))))) | List.cons leftHead leftTail => (match right with | List.nil => Option.some ((leftTail, (([] : List ((Prod (ByteArray) (Value)))), (leftHead :: merged)))) | List.cons rightHead rightTail => (if lessBytes ((rightHead).1) ((leftHead).1) then Option.some ((left, (rightTail, (rightHead :: merged)))) else Option.some ((leftTail, (right, (leftHead :: merged))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{mergeEntries}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Value)}.\par
+\noindent Parameters: \texttt{(left : List ((Prod (ByteArray) (Value)))) (right : List ((Prod (ByteArray) (Value))))}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (Value)))}.\par
+\noindent Definition: \texttt{(let fuel : Nat := (((LexLeanRuntime.length (left) : Nat) + (LexLeanRuntime.length (right) : Nat)) + 1); reverseList ((Prod (ByteArray) (Value))) (((((LexLeanCollections.iterateUntil ((fun (state : (Prod (List ((Prod (ByteArray) (Value)))) ((Prod (List ((Prod (ByteArray) (Value)))) (List ((Prod (ByteArray) (Value)))))))) => mergeStep (Value) (state))) (fuel) ((left, (right, ([] : List ((Prod (ByteArray) (Value))))))) : (Prod ((Prod (List ((Prod (ByteArray) (Value)))) ((Prod (List ((Prod (ByteArray) (Value)))) (List ((Prod (ByteArray) (Value)))))))) (Bool)))).1).2).2))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{passStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Value)}.\par
+\noindent Parameters: \texttt{(state : (Prod (List (List ((Prod (ByteArray) (Value))))) (List (List ((Prod (ByteArray) (Value)))))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (List (List ((Prod (ByteArray) (Value))))) (List (List ((Prod (ByteArray) (Value)))))))}.\par
+\noindent Definition: \texttt{(let runs : List (List ((Prod (ByteArray) (Value)))) := (state).1; (let merged : List (List ((Prod (ByteArray) (Value)))) := (state).2; (match runs with | List.nil => Option.none | List.cons run rest => (match rest with | List.nil => Option.some ((([] : List (List ((Prod (ByteArray) (Value))))), (run :: merged))) | List.cons next others => Option.some ((others, (mergeEntries (Value) (run) (next) :: merged)))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{mergePass}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Value)}.\par
+\noindent Parameters: \texttt{(runs : List (List ((Prod (ByteArray) (Value)))))}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (List ((Prod (ByteArray) (Value))))}.\par
+\noindent Definition: \texttt{reverseList (List ((Prod (ByteArray) (Value)))) ((((LexLeanCollections.iterateUntil ((fun (state : (Prod (List (List ((Prod (ByteArray) (Value))))) (List (List ((Prod (ByteArray) (Value))))))) => passStep (Value) (state))) (((LexLeanRuntime.length (runs) : Nat) + 1)) ((runs, ([] : List (List ((Prod (ByteArray) (Value))))))) : (Prod ((Prod (List (List ((Prod (ByteArray) (Value))))) (List (List ((Prod (ByteArray) (Value))))))) (Bool)))).1).2)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{sortStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Value)}.\par
+\noindent Parameters: \texttt{(runs : List (List ((Prod (ByteArray) (Value)))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (List (List ((Prod (ByteArray) (Value)))))}.\par
+\noindent Definition: \texttt{(if (Nat.ble ((LexLeanRuntime.length (runs) : Nat)) (1)) then Option.none else Option.some (mergePass (Value) (runs)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{sortByKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Value)}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (Value))))}.\par
+\noindent Closure 1: binds \texttt{(singles, entry)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(state)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (Value)))}.\par
+\noindent Definition: \texttt{(let runs : List (List ((Prod (ByteArray) (Value)))) := reverseList (List ((Prod (ByteArray) (Value)))) ((LexLeanCollections.listFold ((fun (singles : List (List ((Prod (ByteArray) (Value))))) (entry : (Prod (ByteArray) (Value))) => ((entry :: ([] : List ((Prod (ByteArray) (Value))))) :: singles))) (([] : List (List ((Prod (ByteArray) (Value)))))) (entries) : List (List ((Prod (ByteArray) (Value)))))); (match ((LexLeanCollections.iterateUntil ((fun (state : List (List ((Prod (ByteArray) (Value))))) => sortStep (Value) (state))) (((LexLeanRuntime.length (entries) : Nat) + 1)) (runs) : (Prod (List (List ((Prod (ByteArray) (Value))))) (Bool)))).1 with | List.nil => ([] : List ((Prod (ByteArray) (Value)))) | List.cons sorted \_ => sorted))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{keysOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type parameters: \texttt{(Value)}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (Value))))}.\par
+\noindent Closure 1: binds \texttt{(keys, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{reverseList (ByteArray) ((LexLeanCollections.listFold ((fun (keys : List (ByteArray)) (entry : (Prod (ByteArray) (Value))) => ((entry).1 :: keys))) (([] : List (ByteArray))) (entries) : List (ByteArray)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{withUnit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(entries, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (Unit)))}.\par
+\noindent Definition: \texttt{reverseList ((Prod (ByteArray) (Unit))) ((LexLeanCollections.listFold ((fun (entries : List ((Prod (ByteArray) (Unit)))) (item : ByteArray) => ((item, ()) :: entries))) (([] : List ((Prod (ByteArray) (Unit))))) (items) : List ((Prod (ByteArray) (Unit)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{dedupStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kept : List (ByteArray)) (item : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(match kept with | List.nil => (item :: kept) | List.cons last \_ => (if (LexLeanRuntime.equal (last) (item) : Bool) then kept else (item :: kept)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{sortBytes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{keysOf (Unit) (sortByKey (Unit) (withUnit (items)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{sortEntries}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (ByteArray))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Definition: \texttt{sortByKey (ByteArray) (entries)}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{sortedSet}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(kept, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{reverseList (ByteArray) ((LexLeanCollections.listFold ((fun (kept : List (ByteArray)) (item : ByteArray) => dedupStep (kept) (item))) (([] : List (ByteArray))) (sortBytes (items)) : List (ByteArray)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{insertStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : ByteArray) (state : (Prod (Bool) (List (ByteArray)))) (item : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Bool) (List (ByteArray)))}.\par
+\noindent Definition: \texttt{(match (state).1 with | Bool.true => (true, (item :: (state).2)) | Bool.false => (if (LexLeanRuntime.equal (key) (item) : Bool) then (true, (item :: (state).2)) else (if lessBytes (key) (item) then (true, (item :: (key :: (state).2))) else (false, (item :: (state).2)))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{insertSorted}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray)) (key : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state, item)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(let done : (Prod (Bool) (List (ByteArray))) := (LexLeanCollections.listFold ((fun (state : (Prod (Bool) (List (ByteArray)))) (item : ByteArray) => insertStep (key) (state) (item))) ((false, ([] : List (ByteArray)))) (items) : (Prod (Bool) (List (ByteArray)))); (match (done).1 with | Bool.true => reverseList (ByteArray) ((done).2) | Bool.false => reverseList (ByteArray) ((key :: (done).2))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{ascendStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : (Prod (Bool) (Option (ByteArray)))) (item : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Bool) (Option (ByteArray)))}.\par
+\noindent Definition: \texttt{(match (state).2 with | Option.none => ((state).1, Option.some (item)) | Option.some previous => (((state).1 \&\& lessBytes (previous) (item)), Option.some (item)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{isAscending}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(state, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{((LexLeanCollections.listFold ((fun (state : (Prod (Bool) (Option (ByteArray)))) (item : ByteArray) => ascendStep (state) (item))) ((true, Option.none)) (items) : (Prod (Bool) (Option (ByteArray))))).1}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\end{document}

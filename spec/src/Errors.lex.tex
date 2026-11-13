@@ -173,6 +173,14 @@ definition{
 }
 
 definition{
+  name: llc0205,
+  parameters: [],
+  result: Rows::ErrorRow,
+  body: (record Rows::ErrorRow {code := "LLC0205", class := "cli-configuration", exit := 2, title := "Production data not embedded in this build", statement := "The compiler was built without the production data, which production export and the certification of a production root read."}),
+  executable: true
+}
+
+definition{
   name: llf5001,
   parameters: [],
   result: Rows::ErrorRow,

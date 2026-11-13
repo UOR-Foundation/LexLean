@@ -1,0 +1,218 @@
+\begin{lexlean}{SurfaceDoc}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Buffer}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Doc,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: DNil, fields: []},
+    {name: DText, fields: [Bytes]},
+    {name: DSeq, fields: [Doc, Doc]},
+    {name: DNest, fields: [Nat, Doc]},
+    {name: DLine, fields: []},
+    {name: DSoft, fields: []},
+    {name: DGroup, fields: [Doc]}
+  ]
+}
+
+structure{
+  name: Item,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: indent, type: Nat}, {name: flat, type: Bool}, {name: node, type: Doc}]
+}
+
+structure{
+  name: Layout,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: out, type: (List Bytes)},
+    {name: column, type: Nat},
+    {name: stack, type: (List Item)}
+  ]
+}
+
+structure{
+  name: Fit,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: spent, type: Nat},
+    {name: limit, type: Nat},
+    {name: impossible, type: Bool},
+    {name: work, type: (List Item)},
+    {name: lower, type: (List Item)},
+    {name: verdict, type: (Option Bool)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: joined,
+  parameters: [pieces : (List Bytes)],
+  result: Bytes,
+  body: (LexLeanStd.Buffer::joinAll (LexLeanStd.Text::reverse pieces)),
+  executable: true
+}
+
+definition{
+  name: byteNum,
+  parameters: [subject : Bytes, position : Nat],
+  result: Nat,
+  body: (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some byte => (prim to_nat byte : Nat)
+    | Option.none => 0),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scalarStep,
+  parameters: [subject : Bytes, state : (Nat * Nat)],
+  result: (Option (Nat * Nat)),
+  body: (match (LexLeanStd.Text::byteAt subject (first state))
+    | Option.some byte => (let value : Nat := (prim to_nat byte : Nat); (if (value <? 128) then (ctor Option.some [(Nat * Nat)] (((first state) + 1), ((second state) + 1))) else (if (value <? 192) then (ctor Option.some [(Nat * Nat)] (((first state) + 1), (second state))) else (ctor Option.some [(Nat * Nat)] (((first state) + 1), ((second state) + 1))))))
+    | Option.none => (ctor Option.none [(Nat * Nat)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scalars,
+  parameters: [subject : Bytes],
+  result: Nat,
+  body: (second (first (prim iterate_until (fun [subject] (state : (Nat * Nat)) => (scalarStep subject state)) (prim length subject : Nat) (0, 0) : ((Nat * Nat) * Bool)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: spaceStep,
+  parameters: [count : Nat, state : (Nat * (List Bytes))],
+  result: (Option (Nat * (List Bytes))),
+  body: (if ((first state) <? count) then (ctor Option.some [(Nat * (List Bytes))] (((first state) + 1), (cons 0x20202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020 (second state)))) else (ctor Option.none [(Nat * (List Bytes))])),
+  executable: true
+}
+
+definition{
+  name: withIndent,
+  parameters: [pieces : (List Bytes), indent : Nat],
+  result: (List Bytes),
+  body: (let count : Nat := (prim quotient indent 256 0 : Nat); (let filled : (List Bytes) := (second (first (prim iterate_until (fun [count] (state : (Nat * (List Bytes))) => (spaceStep count state)) (count + 1) (0, (cons (prim utf8_encode "\n" : Bytes) pieces)) : ((Nat * (List Bytes)) * Bool)))); (cons (LexLeanStd.Text::sliceOr 0x20202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020202020 0 (prim remainder indent 256 0 : Nat)) filled))),
+  executable: true
+}
+
+definition{
+  name: fitWith,
+  parameters: [
+    f : Fit,
+    spent : Nat,
+    work : (List Item),
+    lower : (List Item),
+    verdict : (Option Bool)
+  ],
+  result: Fit,
+  body: (record Fit {spent := spent, limit := (project f limit), impossible := (project f impossible), work := work, lower := lower, verdict := verdict}),
+  executable: true
+}
+
+definition{
+  name: fitItem,
+  parameters: [f : Fit, item : Item, work : (List Item), lower : (List Item)],
+  result: Fit,
+  body: (let indent : Nat := (project item indent); (let flat : Bool := (project item flat); (let spent : Nat := (project f spent); (match (project item node)
+    | Doc.DNil => (fitWith f spent work lower (ctor Option.none [Bool]))
+    | Doc.DText piece => (fitWith f (spent + (scalars piece)) work lower (ctor Option.none [Bool]))
+    | Doc.DSeq head tail => (fitWith f spent (cons (record Item {indent := indent, flat := flat, node := head}) (cons (record Item {indent := indent, flat := flat, node := tail}) work)) lower (ctor Option.none [Bool]))
+    | Doc.DNest amount inner => (fitWith f spent (cons (record Item {indent := (indent + amount), flat := flat, node := inner}) work) lower (ctor Option.none [Bool]))
+    | Doc.DLine => (if flat then (fitWith f (spent + 1) work lower (ctor Option.none [Bool])) else (fitWith f spent work lower (ctor Option.some [Bool] true)))
+    | Doc.DSoft => (if flat then (fitWith f spent work lower (ctor Option.none [Bool])) else (fitWith f spent work lower (ctor Option.some [Bool] true)))
+    | Doc.DGroup inner => (fitWith f spent (cons (record Item {indent := indent, flat := true, node := inner}) work) lower (ctor Option.none [Bool])))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: fitStep,
+  parameters: [f : Fit],
+  result: (Option Fit),
+  body: (match (project f verdict)
+    | Option.some decided => (ctor Option.none [Fit])
+    | Option.none => (if (if (project f impossible) then true else ((project f limit) <? (project f spent))) then (ctor Option.some [Fit] (fitWith f (project f spent) (project f work) (project f lower) (ctor Option.some [Bool] false))) else (match (project f work)
+      | List.cons item rest => (ctor Option.some [Fit] (fitItem f item rest (project f lower)))
+      | List.nil => (match (project f lower)
+        | List.cons item rest => (ctor Option.some [Fit] (fitItem f item (nil Item) rest))
+        | List.nil => (ctor Option.some [Fit] (fitWith f (project f spent) (nil Item) (nil Item) (ctor Option.some [Bool] true))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: fits,
+  parameters: [nodes : Nat, width : Nat, column : Nat, rest : (List Item), first_item : Item],
+  result: Bool,
+  body: (let final : Fit := (first (prim iterate_until (fun (f : Fit) => (fitStep f)) (nodes + 1) (record Fit {spent := 0, limit := (prim subtract width column : Nat), impossible := (width <? column), work := (cons first_item (nil Item)), lower := rest, verdict := (ctor Option.none [Bool])}) : (Fit * Bool))); (match (project final verdict)
+    | Option.some answer => answer
+    | Option.none => false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: broken,
+  parameters: [l : Layout, indent : Nat, rest : (List Item)],
+  result: Layout,
+  body: (record Layout {out := (withIndent (project l out) indent), column := indent, stack := rest}),
+  executable: true
+}
+
+definition{
+  name: layoutItem,
+  parameters: [width : Nat, nodes : Nat, l : Layout, item : Item, rest : (List Item)],
+  result: Layout,
+  body: (let indent : Nat := (project item indent); (let flat : Bool := (project item flat); (match (project item node)
+    | Doc.DNil => (record Layout {out := (project l out), column := (project l column), stack := rest})
+    | Doc.DText piece => (record Layout {out := (cons piece (project l out)), column := ((project l column) + (scalars piece)), stack := rest})
+    | Doc.DSeq head tail => (record Layout {out := (project l out), column := (project l column), stack := (cons (record Item {indent := indent, flat := flat, node := head}) (cons (record Item {indent := indent, flat := flat, node := tail}) rest))})
+    | Doc.DNest amount inner => (record Layout {out := (project l out), column := (project l column), stack := (cons (record Item {indent := (indent + amount), flat := flat, node := inner}) rest)})
+    | Doc.DLine => (if flat then (record Layout {out := (cons (prim utf8_encode " " : Bytes) (project l out)), column := ((project l column) + 1), stack := rest}) else (broken l indent rest))
+    | Doc.DSoft => (if flat then (record Layout {out := (project l out), column := (project l column), stack := rest}) else (broken l indent rest))
+    | Doc.DGroup inner => (let one : Bool := (fits nodes width (project l column) rest (record Item {indent := indent, flat := true, node := inner})); (record Layout {out := (project l out), column := (project l column), stack := (cons (record Item {indent := indent, flat := one, node := inner}) rest)}))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: layoutStep,
+  parameters: [width : Nat, nodes : Nat, l : Layout],
+  result: (Option Layout),
+  body: (match (project l stack)
+    | List.nil => (ctor Option.none [Layout])
+    | List.cons item rest => (ctor Option.some [Layout] (layoutItem width nodes l item rest))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: renderDoc,
+  parameters: [doc : Doc, width : Nat, nodes : Nat],
+  result: Bytes,
+  body: (let final : Layout := (first (prim iterate_until (fun [nodes, width] (l : Layout) => (layoutStep width nodes l)) (nodes + 1) (record Layout {out := (nil Bytes), column := 0, stack := (cons (record Item {indent := 0, flat := false, node := doc}) (nil Item))}) : (Layout * Bool))); (joined (project final out))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

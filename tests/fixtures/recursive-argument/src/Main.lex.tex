@@ -1,0 +1,91 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Ty,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TUnit, fields: []},
+    {name: TBool, fields: []},
+    {name: TNat, fields: []},
+    {name: TInt, fields: []},
+    {name: TFixed, fields: [Nat]},
+    {name: TString, fields: []},
+    {name: TBytes, fields: []},
+    {name: TOrdering, fields: []},
+    {name: TOption, fields: [Ty]},
+    {name: TResult, fields: [Ty, Ty]},
+    {name: TList, fields: [Ty]},
+    {name: TPair, fields: [Ty, Ty]},
+    {name: TAdt, fields: [Nat]},
+    {name: TFn, fields: [Ty, Ty]},
+    {name: TNil, fields: []},
+    {name: TCons, fields: [Ty, Ty]}
+  ]
+}
+
+inductive{
+  name: Par,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: ParNil, fields: []}, {name: ParCons, fields: [Nat, Nat, Par]}]
+}
+
+definition{
+  name: paramsOf,
+  parameters: [names : (List Nat), types : Ty, body : Nat, known : Ty, position : Nat, empty : Nat],
+  result: Par,
+  body: (match types
+    | Ty.TUnit => (ctor Par.ParNil)
+    | Ty.TBool => (ctor Par.ParNil)
+    | Ty.TNat => (ctor Par.ParNil)
+    | Ty.TInt => (ctor Par.ParNil)
+    | Ty.TFixed u5x0 => (ctor Par.ParNil)
+    | Ty.TString => (ctor Par.ParNil)
+    | Ty.TBytes => (ctor Par.ParNil)
+    | Ty.TOrdering => (ctor Par.ParNil)
+    | Ty.TOption u9x0 => (ctor Par.ParNil)
+    | Ty.TResult u10x0 u10x1 => (ctor Par.ParNil)
+    | Ty.TList u11x0 => (ctor Par.ParNil)
+    | Ty.TPair u12x0 u12x1 => (ctor Par.ParNil)
+    | Ty.TAdt u13x0 => (ctor Par.ParNil)
+    | Ty.TFn u14x0 u14x1 => (ctor Par.ParNil)
+    | Ty.TNil => (ctor Par.ParNil)
+    | Ty.TCons head tail => (match names
+      | List.nil => (ctor Par.ParNil)
+      | List.cons name rest => (ctor Par.ParCons name 0 (paramsOf rest tail body known (position + 1) empty)))),
+  executable: true,
+  recursive_argument: types
+}
+
+definition{
+  name: countOf,
+  parameters: [start : Nat, types : (List Nat)],
+  result: Nat,
+  body: (match types | List.nil => start | List.cons head tail => (countOf (start + 1) tail)),
+  executable: true,
+  recursive_argument: types
+}
+
+definition{
+  name: modelOf,
+  parameters: [names : (List Nat), count : Nat],
+  result: Nat,
+  body: (match count
+    | Nat.zero => 0
+    | Nat.succ less => (match names | List.nil => 0 | List.cons name rest => (modelOf rest less))),
+  recursive_argument: count
+}
+
+definition{
+  name: tailOf,
+  parameters: [names : (List Nat), types : Ty],
+  result: Par,
+  body: (paramsOf names types 0 (ctor Ty.TUnit) (countOf 0 names) 0),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -1,0 +1,32 @@
+module
+import LexLeanBoot.RustMoves
+#print axioms LexLeanBoot.RustMoves.Later
+#print axioms LexLeanBoot.RustMoves.applyMoves
+#print axioms LexLeanBoot.RustMoves.atMostOne
+#print axioms LexLeanBoot.RustMoves.boundCount
+#print axioms LexLeanBoot.RustMoves.cloneRead
+#print axioms LexLeanBoot.RustMoves.entryOf
+#print axioms LexLeanBoot.RustMoves.firstBound
+#print axioms LexLeanBoot.RustMoves.idEq
+#print axioms LexLeanBoot.RustMoves.idKey
+#print axioms LexLeanBoot.RustMoves.isCloneKind
+#print axioms LexLeanBoot.RustMoves.isNilExpr
+#print axioms LexLeanBoot.RustMoves.isWild
+#print axioms LexLeanBoot.RustMoves.liveFind
+#print axioms LexLeanBoot.RustMoves.liveRemove
+#print axioms LexLeanBoot.RustMoves.liveSet
+#print axioms LexLeanBoot.RustMoves.mayMove
+#print axioms LexLeanBoot.RustMoves.mayMovePart
+#print axioms LexLeanBoot.RustMoves.mergeLive
+#print axioms LexLeanBoot.RustMoves.mergeParts
+#print axioms LexLeanBoot.RustMoves.moveE
+#print axioms LexLeanBoot.RustMoves.moveItems
+#print axioms LexLeanBoot.RustMoves.natMax
+#print axioms LexLeanBoot.RustMoves.partCount
+#print axioms LexLeanBoot.RustMoves.partSet
+#print axioms LexLeanBoot.RustMoves.partsLength
+#print axioms LexLeanBoot.RustMoves.projectionOf
+#print axioms LexLeanBoot.RustMoves.readPart
+#print axioms LexLeanBoot.RustMoves.readWhole
+#print axioms LexLeanBoot.RustMoves.readsE
+#print axioms LexLeanBoot.RustMoves.unbind

@@ -203,7 +203,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "`ci.yml` checks this on each of them, in every run that is the whole gate (§9.4), with one `cargo test --locked --workspace --all-features --no-fail-fast`, which reports every failing test of the host in one run and not the first failing test binary's (a host with two independent failures would otherwise cost one run for each), and which builds the library and the binary of the crate in the same profile, with the same locking and features, before it runs any test; there is no separate build step, because it would build nothing that run does not. The normative full verification and reproducibility gate runs on Linux x86-64. Other hosts produce platform-bound attestations and MUST obey the same source, manifest, and policy formats." (nil String))
+      (cons "`ci.yml` checks these hosts in every run that is the whole gate (§9.4). The normative full verification and reproducibility gate runs on Linux x86-64. The Linux AArch64 and macOS AArch64 legs each run one `cargo test --locked --workspace --all-features --no-fail-fast`, which builds the library and binary in the same locked, all-features test profile and reports every failing test binary rather than stopping at the first. These two legs are unchanged by the partitions below. Each execution job MUST check the actual Rust host triple against the host it claims. Other hosts produce platform-bound attestations and MUST obey the same source, manifest, and policy formats." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -217,7 +217,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "Non-UTF-8 project paths are outside language 1.0 and produce a registered environment diagnostic." (nil String))
+      (cons "On macOS x86-64, one construction job and one conformance execution job per committed lane partition that same complete workspace test workload. Construction MUST compile all workspace test targets once from a clean checkout with the pinned Rust toolchain, locked dependencies, all features and the default test profile, and discover the executable test targets from Cargo's machine-readable output. It MUST execute every non-conformance test target, including the `repo-conformance` library, complete `bdd` meta target and other integration targets, and all workspace doctests. It MUST record each execution's outcome and continue independent executions after a test failure. A local test or doctest failure MUST NOT prevent the conformance jobs from running after successful construction; it remains a failure of the host aggregate." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -230,8 +230,10 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
-    arguments: [3, 1, "8.4 Cargo dependency rules"],
-    constructor: DocRows::Item.heading,
+    arguments: [
+      (cons "All conformance execution jobs MUST run the same constructed `repo-conformance` conformance executable, without rebuilding it. `.github/intel-host-lanes.json` defines a nonempty set of lanes, grouping complete existing parts of `.github/bdd-parts.json`; no fixture-sharing part is split. The conformance executable's actual harness inventory and its filtered inventories MUST prove that each test belongs to exactly one lane and that their union is the complete executable's inventory. Unknown, empty, duplicate or overlapping assignments MUST fail. The remainder owns future conformance tests until assigned, rather than a copied fixed test-name list omitting them. The constructed artifact MUST bind the repository, source commit and tree, workflow run and attempt, checkout path, actual Rust version and pin, native target, profile, features, lockfile, both plans, executable bytes and mode, and exact inventories and filters. Only the executable, its actual runtime dynamic-library closure, and dependency data required by its tests may be transferred; no target build cache, proof result or artifact from another run or attempt is accepted. Consumers MUST verify this custody and inventory before executing their filters, record the subprocess outcome and complete harness results, and bind their receipts and logs to the construction identity." (nil String))
+    ],
+    constructor: DocRows::Item.para,
     type_arguments: []
   },
   executable: true
@@ -243,7 +245,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "- Every dependency requirement MUST be explicit; wildcard requirements are forbidden." (cons "- `Cargo.lock` is committed." (cons "- `cargo deny --all-features check` is part of `just vv`." (cons "- Unknown registries and unknown Git sources are denied." (cons "- `repo-model`, `repo-conformance`, and `xtask` are `publish = false`." (cons "- No shipped crate may depend on a `publish = false` repository crate." (cons "- Cargo features MUST NOT disable a normative capability. LexLean 1.0 defines no optional capability feature." (cons "- Dependency additions require a license decision and an update to `deny.toml` only when the actual graph requires it." (nil String)))))))))
+      (cons "The aggregate MUST require the construction result and exactly one successful receipt for each committed lane, reject missing, duplicate, foreign, changed, failed or incomplete evidence, and run even when a prerequisite failed or was cancelled so absence cannot become success. Its check context MUST remain exactly `build and non-Lean tests (x86_64-apple-darwin)`. The other auxiliary contexts remain exactly `build and non-Lean tests (aarch64-unknown-linux-gnu)`, `build and non-Lean tests (aarch64-apple-darwin)` and `build and non-Lean tests (x86_64-pc-windows-msvc)`. Previous-run and release evidence MUST require each of these four exact contexts once, not infer complete coverage from the number of matrix rows or accept a partition context in place of a host. The partition changes scheduling and custody only: it reduces no test, changes no assertion or corpus, and raises no host timeout." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -256,6 +258,60 @@ definition{
   parameters: [],
   result: DocRows::Item,
   body: constructor{
+    arguments: [
+      (cons "On Windows x86-64 that same complete workspace test workload runs as lanes of one run (`.github/scripts/host_lanes.py`): the conformance lanes of `.github/intel-host-lanes.json`, each running the conformance harness with that lane's filters, and a `producer` lane running every other test target of the workspace, the `repo-conformance` library, `bdd` meta target and other integration targets among them, and every doctest. Each lane is a job of its own clean checkout that builds with the pinned toolchain, locked dependencies, all features and the default test profile, checks its host triple, and records the commit, tree, run and attempt, the harness's listing, the producer's listing of the whole workspace, and every test it executed. The aggregate, whose check context remains exactly `build and non-Lean tests (x86_64-pc-windows-msvc)`, runs even when a lane failed or was cancelled, and passes only with exactly one passing receipt for each lane of the run and commit, lanes that listed the same harness, and executed tests whose union is the whole listing with each test once. It reduces no test, changes no assertion, and raises no host timeout." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0021,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "Non-UTF-8 project paths are outside language 1.0 and produce a registered environment diagnostic." (nil String))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0022,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [3, 1, "8.4 Cargo dependency rules"],
+    constructor: DocRows::Item.heading,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0023,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
+    arguments: [
+      (cons "- Every dependency requirement MUST be explicit; wildcard requirements are forbidden." (cons "- `Cargo.lock` is committed." (cons "- `cargo deny --all-features check` is part of `just vv`." (cons "- Unknown registries and unknown Git sources are denied." (cons "- `repo-model`, `repo-conformance`, and `xtask` are `publish = false`." (cons "- No shipped crate may depend on a `publish = false` repository crate." (cons "- Cargo features MUST NOT disable a normative capability, with one exception, which R4 (§27.2) sanctions by this section. The `lexlean` crate's `production-data` feature, on by default, embeds `language/preservation-1.2/library/`, the native preservation library that only certificate generation reads (§17.17). A build without it is a checker: it embeds every other file of §21.2, reports the language-1.2 compiler-semantics ID from the constant `LANGUAGE_1_2_SEMANTICS_ID` that `RP-10` holds to the full tree, behaves as a default build for every command that generates no certificate, refuses `production build` and the `verify` of a project with a production root with `LLC0205` before any build, verification, or export is published, and adds the line `variant check-only` to its version report (§30.3) (`RP-19`). It shares the compiler-semantics IDs of a full build, not its executable identity: it does not replace a full binary for any certifying or producing use. Released binaries and the normative gate use the default features. LexLean defines no other optional capability feature." (cons "- Dependency additions require a license decision and an update to `deny.toml` only when the actual graph requires it." (nil String)))))))))
+    ],
+    constructor: DocRows::Item.para,
+    type_arguments: []
+  },
+  executable: true
+}
+
+definition{
+  name: i0024,
+  parameters: [],
+  result: DocRows::Item,
+  body: constructor{
     arguments: [3, 1, "8.5 Required implementation dependencies"],
     constructor: DocRows::Item.heading,
     type_arguments: []
@@ -264,7 +320,7 @@ definition{
 }
 
 definition{
-  name: i0021,
+  name: i0025,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -278,7 +334,7 @@ definition{
 }
 
 definition{
-  name: i0022,
+  name: i0026,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -292,7 +348,7 @@ definition{
 }
 
 definition{
-  name: i0023,
+  name: i0027,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -306,7 +362,7 @@ definition{
 }
 
 definition{
-  name: i0024,
+  name: i0028,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -320,7 +376,7 @@ definition{
 }
 
 definition{
-  name: i0025,
+  name: i0029,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -334,7 +390,7 @@ definition{
 }
 
 definition{
-  name: i0026,
+  name: i0030,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
@@ -348,7 +404,7 @@ definition{
 }
 
 definition{
-  name: i0027,
+  name: i0031,
   parameters: [],
   result: DocRows::Item,
   body: constructor{
