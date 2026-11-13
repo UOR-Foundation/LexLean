@@ -224,6 +224,11 @@ pub enum Item {
     /// Lean `RtItem.defined` holds the path alone; the printer is given the
     /// definitions.
     Defined(String),
+    /// `#[cfg(unix)] item` or `#[cfg(not(unix))] item`: the one attribute an
+    /// item may carry, named `unix` or `not_unix`. A host's calls differ by
+    /// family (a process group, a file's identity), and a rendering that
+    /// states which one an item is for needs nothing else of `cfg`.
+    Cfg(String, Box<Item>),
 }
 
 /// How the printer finds the text of a [`Item::Defined`] path: the whole
@@ -719,6 +724,12 @@ impl Item {
             Item::Defined(path) => {
                 defined(path).ok_or_else(|| format!("`defined {path}` names no definition"))
             }
+            Item::Cfg(condition, inner) => Ok(format!(
+                "#[cfg({})]
+{}",
+                cfg_text(condition)?,
+                inner.print_with(defined)?
+            )),
             Item::Mod(name, members) => {
                 let mut text = format!("pub mod {name} {{\n");
                 let printed = members
@@ -747,7 +758,7 @@ impl Item {
     /// The text of an item that holds no other item and names no definition.
     fn print_plain(&self) -> String {
         match self {
-            Item::InnerAttr(..) | Item::Mod(..) | Item::Defined(_) => String::new(),
+            Item::InnerAttr(..) | Item::Mod(..) | Item::Defined(_) | Item::Cfg(..) => String::new(),
             Item::Use(path, None) => format!("use {};\n", path.join("::")),
             Item::Use(path, Some(alias)) => format!("use {} as {alias};\n", path.join("::")),
             Item::UnitStruct(name, derives) => {
@@ -818,6 +829,15 @@ impl Item {
                 )
             }
         }
+    }
+}
+
+/// The text of the condition of a [`Item::Cfg`]: the two the closed set has.
+fn cfg_text(condition: &str) -> Result<&'static str, String> {
+    match condition {
+        "unix" => Ok("unix"),
+        "not_unix" => Ok("not(unix)"),
+        other => Err(format!("`cfg` takes `unix` or `not_unix`, not `{other}`")),
     }
 }
 

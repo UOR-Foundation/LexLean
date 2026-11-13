@@ -28,7 +28,17 @@ workspace carried at those versions without a tag.
   stable `Engine` entry points (§24.1). `AR-15` recomputes with
   its own SHA-256 every identity the committed build manifests, locks,
   build outputs, and Rust packages record, and requires each to equal the
-  recorded one. The register is 494 IDs.
+  recorded one. The register is 495 IDs.
+- `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
+  command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
+  new language-1.2 module `RuntimeHost`, that calls the step and carries out each
+  request with one standard-library call (no signal API, no third-party crate).
+  The package manifest gains `entry`, the provenance gains `entry` and the digest
+  of `src/main.rs`, `RuntimeSyntax` gains the `cfgItem` item, the closed table of
+  the standard library grows from 51 to 121 names, and the validator gains the
+  rules `hidden-effect`, `cfg-condition`, `cfg-item`, and `cfg-pair`. The
+  language-1.2 compiler-semantics ID moves; 1.0 and 1.1 do not.
+  The register is 494 IDs.
 - A one-pass writer for the counts of the bootstrap count cases, #92.
   Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
   `BS-15` records every count it checks in `target/count-report/` instead of
@@ -39,6 +49,10 @@ workspace carried at those versions without a tag.
   lists every number it cannot place unambiguously. A landing that moved
   the counts took a run and a hand mirror per stage of the cases; it takes
   one pass. Unset, the cases assert as before. The register is unchanged.
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, the maintainer's decision): with `RB-24`'s runtime validator, Lean's
+  extraction of the project writes more than the 33,554,432 bytes it allowed. A
+  semantic input, so its lock and every package move.
 - The bootstrap project configures `max_total_source_bytes = 536870912` (SPEC.md
   §17.23): with `BS-27` its production export is 135,273,215 bytes, beyond the
   134,217,728 it configured. A semantic input, so its lock and every package move.
