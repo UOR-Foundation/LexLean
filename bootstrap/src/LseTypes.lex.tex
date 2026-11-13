@@ -377,6 +377,7 @@ definition{
       | LexiconLse::Lse.LConst p e us => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LConst p e us))
       | LexiconLse::Lse.LNat digits => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LNat digits))
       | LexiconLse::Lse.LNil => (ctor Option.some [LexiconLse::Lse] (ctor LexiconLse::Lse.LNil)))),
+  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: fuel
 }
@@ -388,6 +389,7 @@ definition{
   body: (match (zonk fuel (project st metas) expr)
     | Option.some done => (record Sr {out := done, ck := st})
     | Option.none => (record Sr {out := expr, ck := (ckExhaust st)})),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -457,6 +459,14 @@ definition{
   executable: true,
   mutual: Free,
   recursive_argument: fuel
+}
+
+definition{
+  name: flagOf,
+  parameters: [flagged : (Bool * Ck)],
+  result: Bool,
+  body: (first flagged),
+  executable: true
 }
 
 definition{
@@ -766,6 +776,7 @@ definition{
       | Option.none => (match (metaOf a)
         | Option.some m => (urOk (ckSolve st2 m e))
         | Option.none => (unifyRigid f st2 e a))))))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Unify,
   recursive_argument: fuel
@@ -779,7 +790,8 @@ definition{
     | Fuel.FZ => (urOk (ckExhaust st))
     | Fuel.FS f => (let cls : Nat := (rigidClass f e a); (if (cls =? 0) then (urOk st) else (if (cls =? 1) then (if (if (mayUnfold f st e) then true else (mayUnfold f st a)) then (urOk st) else (let pe : (LexiconLse::Lse * LexiconLse::Lse) := (appParts e); (let pa : (LexiconLse::Lse * LexiconLse::Lse) := (appParts a); (let head : Ur := (unify f st (first pe) (first pa)); (match (project head error)
       | Option.some message => head
-      | Option.none => (unifyArgs f (project head ck) (second pe) (second pa))))))) else (if (cls =? 2) then (unifyBinding f st e a) else (if (if (mayUnfold f st e) then true else (mayUnfold f st a)) then (urOk st) else (let ue : (Bool * Ck) := (hasUnsolved f st e); (if (first ue) then (urOk (second ue)) else (let ua : (Bool * Ck) := (hasUnsolved f (second ue) a); (if (first ua) then (urOk (second ua)) else (let txtE : Bytes := (shown e); (let txtA : Bytes := (shown a); (urFail (second ua) (cat (cat (cat (lit "expected ") txtE) (lit ", found ")) txtA)))))))))))))),
+      | Option.none => (unifyArgs f (project head ck) (second pe) (second pa))))))) else (if (cls =? 2) then (unifyBinding f st e a) else (if (if (mayUnfold f st e) then true else (mayUnfold f st a)) then (urOk st) else (let ue : (Bool * Ck) := (hasUnsolved f st e); (if (flagOf ue) then (urOk (second ue)) else (let ua : (Bool * Ck) := (hasUnsolved f (second ue) a); (if (flagOf ua) then (urOk (second ua)) else (let txtE : Bytes := (shown e); (let txtA : Bytes := (shown a); (urFail (second ua) (cat (cat (cat (lit "expected ") txtE) (lit ", found ")) txtA)))))))))))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Unify,
   recursive_argument: fuel
@@ -818,6 +830,7 @@ definition{
       | LexiconLse::Lse.LLet n t v body => (urOk st)
       | LexiconLse::Lse.LNat digits => (urOk st)
       | LexiconLse::Lse.LBinder m n t r => (urOk st))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Unify,
   recursive_argument: fuel
@@ -830,6 +843,7 @@ definition{
   body: (match fuel
     | Fuel.FZ => (urOk (ckExhaust st))
     | Fuel.FS f => (let pi : Bool := ((kindOf e) =? 5); (let fe : Fl := (flattenInto f e pi); (let fa : Fl := (flattenInto f a pi); (let ne : Nat := (prim length (project fe binders) : Nat); (let na : Nat := (prim length (project fa binders) : Nat); (if (ne =? na) then (unifyPiLoop f st (project fe binders) (project fa binders) (project fa body) (project fe body) e a) else (let txtE : Bytes := (shown e); (let txtA : Bytes := (shown a); (urFail st (cat (cat (cat (cat (cat (cat txtE (lit " binds ")) (LexLeanStd.Numeral::decimal ne)) (lit " arguments but ")) txtA) (lit " binds ")) (LexLeanStd.Numeral::decimal na)))))))))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Unify,
   recursive_argument: fuel
@@ -857,6 +871,7 @@ definition{
         | List.cons ba restA => (if ((project be mode) =? (project ba mode)) then (let once : Ur := (unify f st (project be ty) (project ba ty)); (match (project once error)
           | Option.some message => once
           | Option.none => (let renamed : LexiconLse::Lse := (ctor LexiconLse::Lse.LLocal (project be name)); (let laterTyped : Ls := (substTypes f (project once ck) restA (project ba name) renamed); (let bodyRenamed : Sr := (subst f (project laterTyped ck) actualBody (project ba name) renamed); (let next : Ur := (unifyPiLoop f (project bodyRenamed ck) restE (project laterTyped items) (project bodyRenamed out) expectedBody e a); (record Ur {error := (project next error), ck := (project next ck)}))))))) else (let txtE : Bytes := (shown e); (let txtA : Bytes := (shown a); (urFail st (cat (cat (cat (cat (cat (cat (cat (cat (cat (cat (cat (lit "binder `") (project be name)) (lit "` is ")) (modeName (project be mode))) (lit " in ")) txtE) (lit " but `")) (project ba name)) (lit "` is ")) (modeName (project ba mode))) (lit " in ")) txtA)))))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Unify,
   recursive_argument: fuel
@@ -911,6 +926,7 @@ definition{
   body: (let zonked : Sr := (zonkSt fuel st ty); (let z : LexiconLse::Lse := (project zonked out); (let st2 : Ck := (project zonked ck); (let ke : Nat := (kindOf expr); (if (if (ke =? 8) then true else (ke =? 6)) then (let txtExpr : Bytes := (shown expr); (irFail st2 (cat txtExpr (lit " is a term, not a type")))) else (if ((kindOf z) <? 2) then (irOk z st2) else (match (metaOf z)
     | Option.some m => (irOk z st2)
     | Option.none => (if (mayUnfold fuel st2 z) then (irOk z st2) else (let txtExpr : Bytes := (shown expr); (let txtZ : Bytes := (shown z); (irFail st2 (cat (cat (cat txtExpr (lit " is not a type: its type is ")) txtZ) 0x)))))))))))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -948,6 +964,7 @@ definition{
       | LexiconLse::Lse.LNil => (irOk (ctor LexiconLse::Lse.LSortProp) st)
       | LexiconLse::Lse.LArg h t => (irOk (ctor LexiconLse::Lse.LSortProp) st)
       | LexiconLse::Lse.LBinder m n t r => (irOk (ctor LexiconLse::Lse.LSortProp) st))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Infer,
   recursive_argument: fuel
@@ -984,6 +1001,7 @@ definition{
       | LexiconLse::Lse.LLet n t v inner => (expectType f st body scope)
       | LexiconLse::Lse.LNat digits => (expectType f st body scope)
       | LexiconLse::Lse.LArg h t => (expectType f st body scope))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Infer,
   recursive_argument: fuel
@@ -1003,6 +1021,7 @@ definition{
     | Fuel.FS f => (let inferred : Ir := (infer f st expr scope); (match (project inferred error)
       | Option.some message => inferred
       | Option.none => (requireSort f (project inferred ck) expr (project inferred ty))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Infer,
   recursive_argument: fuel
@@ -1024,6 +1043,7 @@ definition{
       | List.cons argument more => (let seen : Ir := (infer f st argument scope); (match (project seen error)
         | Option.some message => seen
         | Option.none => (let next : Ir := (inferRest f (project seen ck) more scope); (record Ir {ty := (project next ty), error := (project next error), ck := (project next ck)})))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Infer,
   recursive_argument: fuel
@@ -1060,6 +1080,7 @@ definition{
         | LexiconLse::Lse.LNil => (inferStuck f st2 expr g remaining total supplied z scope)
         | LexiconLse::Lse.LArg h t => (inferStuck f st2 expr g remaining total supplied z scope)
         | LexiconLse::Lse.LBinder m n t r => (inferStuck f st2 expr g remaining total supplied z scope))))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Infer,
   recursive_argument: fuel
@@ -1084,6 +1105,7 @@ definition{
     | Fuel.FS f => (match (metaOf z)
       | Option.some m => (inferRest f st remaining scope)
       | Option.none => (if (mayUnfold f st z) then (inferRest f st remaining scope) else (let txtExpr : Bytes := (shown expr); (let txtG : Bytes := (shown g); (let txtZ : Bytes := (shown z); (irFail st (cat (cat (cat (cat (cat (cat (cat (cat (cat txtExpr (lit " supplies ")) (LexLeanStd.Numeral::decimal total)) (lit " explicit argument")) (plural total)) (lit " but ")) txtG) (lit " accepts ")) (LexLeanStd.Numeral::decimal supplied)) (cat (cat (lit ": after them its type is ") txtZ) (lit ", not a function")))))))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Infer,
   recursive_argument: fuel
@@ -1115,6 +1137,7 @@ definition{
           | Option.none => (let agreed : Ur := (unify f (project actual ck) (project binder ty) (project actual ty)); (match (project agreed error)
             | Option.some message => (irFail (project agreed ck) message)
             | Option.none => (inferInstantiate f (project agreed ck) expr g binder argument rest body more total (supplied + 1) scope)))))) else (let made : Sr := (freshMeta st); (inferInstantiate f (project made ck) expr g binder (project made out) rest body remaining total supplied scope))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Infer,
   recursive_argument: fuel
@@ -1140,6 +1163,7 @@ definition{
   body: (match fuel
     | Fuel.FZ => (irFail (ckExhaust st) 0x)
     | Fuel.FS f => (let later : Ls := (substTypes f st rest (project binder name) value); (let newBody : Sr := (subst f (project later ck) body (project binder name) value); (inferBinders f (project newBody ck) expr g (project later items) (project newBody out) remaining total supplied scope)))),
+  axioms: [Quot.sound, propext],
   executable: true,
   mutual: Infer,
   recursive_argument: fuel
@@ -1153,16 +1177,26 @@ definition{
     | Fuel.FZ => ((nil (Option LexiconLse::Lse)), (ckExhaust st))
     | Fuel.FS f => (match metas
       | List.nil => ((nil (Option LexiconLse::Lse)), st)
-      | List.cons metaName more => (let solved : Sr := (zonkSt f st (ctor LexiconLse::Lse.LLocal metaName)); (let pending : (Bool * Ck) := (hasUnsolved f (project solved ck) (project solved out)); (let others : ((List (Option LexiconLse::Lse)) * Ck) := (literalTypes f (second pending) more); ((cons (if (first pending) then (ctor Option.none [LexiconLse::Lse]) else (ctor Option.some [LexiconLse::Lse] (project solved out))) (first others)), (second others))))))),
+      | List.cons metaName more => (let solved : Sr := (zonkSt f st (ctor LexiconLse::Lse.LLocal metaName)); (let pending : (Bool * Ck) := (hasUnsolved f (project solved ck) (project solved out)); (let others : ((List (Option LexiconLse::Lse)) * Ck) := (literalTypes f (second pending) more); ((cons (if (flagOf pending) then (ctor Option.none [LexiconLse::Lse]) else (ctor Option.some [LexiconLse::Lse] (project solved out))) (first others)), (second others))))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   recursive_argument: fuel
+}
+
+definition{
+  name: typedCk,
+  parameters: [typed : ((List (Option LexiconLse::Lse)) * Ck)],
+  result: Ck,
+  body: (second typed),
+  executable: true
 }
 
 definition{
   name: finish,
   parameters: [fuel : Fuel, st : Ck, ty : LexiconLse::Lse],
   result: (Result Checked Bytes),
-  body: (let zonked : Sr := (zonkSt fuel st ty); (let typed : ((List (Option LexiconLse::Lse)) * Ck) := (literalTypes fuel (project zonked ck) (LexLeanStd.Order::reverseList [Bytes] (project st literals))); (if (project (second typed) exhausted) then (ctor Result.error [Checked, Bytes] (lit "the checker's bound on nesting is exhausted")) else (ctor Result.ok [Checked, Bytes] (record Checked {ty := (project zonked out), literals := (first typed)}))))),
+  body: (let zonked : Sr := (zonkSt fuel st ty); (let typed : ((List (Option LexiconLse::Lse)) * Ck) := (literalTypes fuel (project zonked ck) (LexLeanStd.Order::reverseList [Bytes] (project st literals))); (if (project (typedCk typed) exhausted) then (ctor Result.error [Checked, Bytes] (lit "the checker's bound on nesting is exhausted")) else (ctor Result.ok [Checked, Bytes] (record Checked {ty := (project zonked out), literals := (first typed)}))))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1181,6 +1215,7 @@ definition{
   body: (if (project (project result ck) exhausted) then (ctor Result.error [Checked, Bytes] (lit "the checker's bound on nesting is exhausted")) else (match (project result error)
     | Option.some message => (ctor Result.error [Checked, Bytes] message)
     | Option.none => (finish fuel (project result ck) (project result ty)))),
+  axioms: [Quot.sound, propext],
   executable: true
 }
 
@@ -1189,6 +1224,7 @@ definition{
   parameters: [signature : LexiconLse::Lse, rows : (List CRow), fallback : Nat, depth : Nat],
   result: (Result Checked Bytes),
   body: (let fuel : Fuel := (mkFuel depth); (let typed : Ir := (expectType fuel (start rows fallback) signature (nil (Bytes * LexiconLse::Lse))); (outcome fuel typed))),
+  axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }
@@ -1210,6 +1246,7 @@ definition{
       | Option.none => false)) then (outcome fuel inferred) else (let agreed : Ur := (unify fuel (project inferred ck) sig (project inferred ty)); (match (project agreed error)
       | Option.some message => (let txtValue : Bytes := (shown value); (let txtSig : Bytes := (shown sig); (outcome fuel (irFail (project agreed ck) (cat (cat (cat (cat (cat (lit "defined value ") txtValue) (lit " does not match the signature ")) txtSig) (lit ": ")) message)))))
       | Option.none => (outcome fuel (irOk (project inferred ty) (project agreed ck))))))))),
+  axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
 }

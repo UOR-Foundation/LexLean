@@ -82,10 +82,7 @@ impl Table {
     /// constants they reference and, through the signatures of those, every
     /// constant reachable from them. No other row is ever looked up.
     fn reachable(&self, roots: &[&Lse]) -> Vec<&Row> {
-        let mut wanted: Vec<QualifiedId> = roots
-            .iter()
-            .flat_map(|root| root.referenced_consts())
-            .collect();
+        let mut wanted: Vec<QualifiedId> = roots.iter().flat_map(|root| root.referenced_consts()).collect();
         let mut seen: BTreeSet<String> = BTreeSet::new();
         let mut out = Vec::new();
         while let Some(id) = wanted.pop() {
@@ -156,8 +153,7 @@ fn signature_run(signature: &Lse, table: &Table) -> Run {
     let (rows, fallback) = table.value(&[signature]);
     (
         vec![enc_lse(signature), rows, fallback, nat(NESTING)],
-        serde_json::to_value(outcome(check_signature(signature, &lookup)))
-            .expect("a value is JSON"),
+        serde_json::to_value(outcome(check_signature(signature, &lookup))).expect("a value is JSON"),
     )
 }
 
@@ -233,101 +229,29 @@ fn named() -> Vec<Vector> {
     let signatures: &[(&'static str, &str, bool)] = &[
         ("a sort", "(sort prop)", false),
         ("a constant type", "(const t::nat)", false),
-        (
-            "a pi of types",
-            "(pi ((explicit a (const t::nat))) (const t::nat))",
-            false,
-        ),
+        ("a pi of types", "(pi ((explicit a (const t::nat))) (const t::nat))", false),
         ("an unresolved constant", "(const t::missing)", false),
         ("a constant without a signature", "(const t::word)", false),
         ("a term is no type", "(const t::zero)", false),
         ("a natural literal is a term", "(nat 3)", false),
-        (
-            "a lam is a term",
-            "(lam ((explicit x (sort prop))) (local x))",
-            false,
-        ),
+        ("a lam is a term", "(lam ((explicit x (sort prop))) (local x))", false),
         ("a local out of scope", "(local x)", false),
-        (
-            "an application of a sort",
-            "(app (sort prop) (const t::zero))",
-            false,
-        ),
-        (
-            "an application of a literal",
-            "(app (nat 1) (const t::zero))",
-            false,
-        ),
-        (
-            "two arguments too many",
-            "(app (const t::succ) (const t::zero) (const t::zero))",
-            false,
-        ),
-        (
-            "one argument too many",
-            "(app (const t::zero) (const t::zero))",
-            false,
-        ),
-        (
-            "an argument of the wrong type",
-            "(app (const t::succ) (sort prop))",
-            false,
-        ),
-        (
-            "a partial application",
-            "(app (const t::add) (const t::zero))",
-            false,
-        ),
-        (
-            "an equation is a proposition",
-            "(app (const t::eq) (const t::zero) (const t::zero))",
-            false,
-        ),
-        (
-            "a literal with an inferred type",
-            "(app (const t::eq) (const t::zero) (nat 1))",
-            false,
-        ),
-        (
-            "literals of an undetermined type",
-            "(app (const t::eq) (nat 1) (nat 2))",
-            false,
-        ),
-        (
-            "an opaque head",
-            "(app (const other::f) (const t::zero))",
-            true,
-        ),
-        (
-            "a defined result type unfolds",
-            "(app (const t::mk) (const t::zero) (const t::zero))",
-            false,
-        ),
-        (
-            "a let",
-            "(let x (sort prop) (const t::prop) (local x))",
-            false,
-        ),
-        (
-            "a let whose value disagrees",
-            "(let x (const t::nat) (sort prop) (local x))",
-            false,
-        ),
-        (
-            "a binder that is no type",
-            "(pi ((explicit a (const t::zero))) (sort prop))",
-            false,
-        ),
-        (
-            "a body that is no type",
-            "(pi ((explicit a (const t::nat))) (local a))",
-            false,
-        ),
-        (
-            "a type of a list",
-            "(app (const t::list) (const t::nat))",
-            false,
-        ),
+        ("an application of a sort", "(app (sort prop) (const t::zero))", false),
+        ("an application of a literal", "(app (nat 1) (const t::zero))", false),
+        ("two arguments too many", "(app (const t::succ) (const t::zero) (const t::zero))", false),
+        ("one argument too many", "(app (const t::zero) (const t::zero))", false),
+        ("an argument of the wrong type", "(app (const t::succ) (sort prop))", false),
+        ("a partial application", "(app (const t::add) (const t::zero))", false),
+        ("an equation is a proposition", "(app (const t::eq) (const t::zero) (const t::zero))", false),
+        ("a literal with an inferred type", "(app (const t::eq) (const t::zero) (nat 1))", false),
+        ("literals of an undetermined type", "(app (const t::eq) (nat 1) (nat 2))", false),
+        ("an opaque head", "(app (const other::f) (const t::zero))", true),
+        ("a defined result type unfolds", "(app (const t::mk) (const t::zero) (const t::zero))", false),
+        ("a let", "(let x (sort prop) (const t::prop) (local x))", false),
+        ("a let whose value disagrees", "(let x (const t::nat) (sort prop) (local x))", false),
+        ("a binder that is no type", "(pi ((explicit a (const t::zero))) (sort prop))", false),
+        ("a body that is no type", "(pi ((explicit a (const t::nat))) (local a))", false),
+        ("a type of a list", "(app (const t::list) (const t::nat))", false),
         ("a sort of a universe", "(sort (type (max u 1)))", false),
     ];
     for &(label, source, opaque) in signatures {
@@ -406,11 +330,11 @@ fn committed_packages() -> Vec<LexiconPackage> {
         let Ok(manifest) = std::fs::read_to_string(entry.path()) else {
             continue;
         };
-        let Some(language) = manifest.parse::<toml::Table>().ok().and_then(|table| {
-            table
-                .get("language")
-                .and_then(|v| v.as_str().map(str::to_owned))
-        }) else {
+        let Some(language) = manifest
+            .parse::<toml::Table>()
+            .ok()
+            .and_then(|table| table.get("language").and_then(|v| v.as_str().map(str::to_owned)))
+        else {
             continue;
         };
         let mut files: Vec<(String, Vec<u8>)> = walkdir::WalkDir::new(directory)
@@ -425,11 +349,7 @@ fn committed_packages() -> Vec<LexiconPackage> {
                     .to_string_lossy()
                     .replace('\\', "/");
                 (relative == "lexicon.toml" || relative.starts_with("entries/"))
-                    .then(|| {
-                        std::fs::read(file.path())
-                            .ok()
-                            .map(|bytes| (relative, bytes))
-                    })
+                    .then(|| std::fs::read(file.path()).ok().map(|bytes| (relative, bytes)))
                     .flatten()
             })
             .collect();
@@ -527,9 +447,9 @@ fn seeded_runs(count: usize) -> (Vec<Run>, Vec<Run>) {
         signatures.push(signature_run(&expression, table));
         let against = if seeded.chance(70) {
             {
-                let depth = 1 + seeded.below(3);
-                Some(drawn_lse(&mut seeded, depth))
-            }
+            let depth = 1 + seeded.below(3);
+            Some(drawn_lse(&mut seeded, depth))
+        }
         } else {
             None
         };
@@ -830,10 +750,7 @@ pub(super) fn case() {
     for vector in &vectors {
         by_root[vector.root].push(vector.run.clone());
     }
-    let outputs: Vec<String> = vectors
-        .iter()
-        .map(|vector| vector.run.1.to_string())
-        .collect();
+    let outputs: Vec<String> = vectors.iter().map(|vector| vector.run.1.to_string()).collect();
     for refusal in REFUSALS {
         let needle = super::hex(refusal.as_bytes());
         assert!(
