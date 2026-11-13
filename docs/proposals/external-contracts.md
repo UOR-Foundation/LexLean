@@ -101,7 +101,7 @@ public axiom dotFast.contract (left : Array Int8) (right : Array Int8) :
     DotContract left right (dotFast left right)
 ```
 
-The hidden value of the constant is the witness. The kernel never unfolds an opaque constant, so nothing about `dotFast` is provable except through the axiom. A document refers to the axiom as the member `dotFast.contract`, in `apply` and `simplify`, exactly as it refers to a theorem.
+The hidden value of the constant is the witness. The kernel never unfolds an opaque constant, so a theorem cannot unfold `dotFast` to its witness, and cannot derive the intended computational contract from that body; the contract is available only through the axiom. Reflexivity (`dotFast l r = dotFast l r`) and hypotheses about `dotFast` remain available and carry no axiom. A document refers to the axiom as the member `dotFast.contract`, in `apply` and `simplify`, exactly as it refers to a theorem.
 
 The canonical document states the declaration, the contract, the witness and the evidence. The generated-source audit admits `opaque` and `axiom` tokens only at the positions an `external` declaration of the IR accounts for.
 
@@ -113,18 +113,19 @@ What remains assumed is not logical. It is the statement that the foreign code, 
 
 ### 6.4 Evidence
 
-- `attested{report: A}`: `A` is an `artifact` declaration of role `conformance`, content-addressed like every artifact. Its bytes are a canonical JSON report that states the statement ID of the external declaration (`SM-38`), the digest of the foreign code tested, the reference it was compared with, the number of cases and the result. Linking refuses a report that names another statement ID. So a change of the contract, the signature or the witness makes old evidence stale by construction. LexLean does not run the foreign code and does not vouch for the report: the attestation records who is trusted for what.
+- `attested{report: A}`: `A` is an `artifact` declaration of role `conformance`, content-addressed like every artifact. Its bytes are a canonical JSON report that states the statement ID of the external declaration (`SM-38`), the digest of the foreign code tested, the reference it was compared with, the number of cases and the result. Linking refuses a report that names another statement ID, and the project row must pin the report's digest. The report's bytes and the contract's identity are thereby authenticated; that is all the hash and the statement ID do. Binding the report to what actually runs is a separate check, which `verify` makes and which refuses (`LLV7007`-class refusal, code to be registered with the implementation) unless all of these hold: the report's code digest equals the digest of the artifact the build selects for the declaration; the report's symbol, ABI and target equal the declaration's `symbol` and the build's target; the report's attester is one the `[[external_source]]` row names as trusted; and the report's result is `pass` with at least the case count the row requires. With D6 undecided there is no selected artifact, so until then `verify` reports the evidence as `unbound` and says so in the trust line. So a change of the contract, the signature or the witness makes old evidence stale by construction. LexLean does not run the foreign code and does not vouch for the report: the attestation records who is trusted for what. The witness (D3) establishes only that the logical contract is satisfiable; a finite conformance report does not establish universal native correctness, purity or termination, and no wording of this document claims it.
 - `proved{theorem: T}`: `T` is a theorem, checked by the pinned Lean, that a Lean model of the foreign code meets the contract. This needs the model to be importable (#362) and belongs to a later change. It does not remove trust; it moves it to whatever produced the model (section 8).
 
 ### 6.5 Policy and reporting
 
 - A project lists the externals it admits: `[[external_source]]` in `lexlean.toml` with the module, the name and the report digest, pinned in `lexlean.lock`. An `external` declaration without its row is refused. A project with no row accepts no external declaration, so the default is the ban as it is today.
+- **Proof dependencies and executable uses are different facts.** The axiom audit (§5.4) reports what `#print axioms` returns: a theorem that uses `dotFast.contract` lists it. It is not a call graph. A definition can call the opaque `dotFast` without mentioning the axiom, and a reflexive or conditional theorem can mention the call without it. So the axiom set alone does not account for every runtime use of foreign code. The design therefore adds a second, fail-closed inventory, the **external-call inventory**: the linker computes, from the IR, every definition, directly or transitively, that calls an `external` function, and the attestation records it (`external_uses`) beside `trust`. A production or `verify` root that reaches an external call not covered by an admitted `[[external_source]]` row is refused. The inventory is computed by LexLean, not by Lean, and the trust lines say so; the axiom audit is not claimed to be it.
 - Each theorem and definition states its exact axioms as now. A theorem that uses `dotFast.contract` lists `Project.Module.dotFast.contract` beside `propext`; a missing or extra one is `LLV7005`, unchanged.
-- The attestation gains `trust`: for each contract axiom, its evidence, and the declarations whose observed sets contain it. `verify` prints one line per contract axiom after its summary, for example:
+- The attestation gains `trust`: for each contract axiom, its evidence, the declarations whose observed sets contain it (proof dependencies), and, from the external-call inventory, the declarations that call the function (executable uses). `verify` prints one line per contract axiom after its summary, for example:
 
 ```text
 verified 1 module; attestation <id>
-trust: Engine.Main.dotFast.contract, attested by sha256:<report>, used by 1 theorem and 1 definition
+trust: Engine.Main.dotFast.contract, attested by sha256:<report>, proof-used by 1 theorem; called by 1 definition (call inventory: LexLean)
 ```
 
 - A status line never says "verified" without the trust lines when any exist.
@@ -219,6 +220,7 @@ Estimated from the arrays change, which touched the same layers:
 - The contract is about a mathematical function. Foreign code that reads a clock, keeps state, or does not terminate is outside what the axiom says, and evidence by testing cannot establish totality.
 - Attested evidence is as good as the test that produced it. LexLean binds the report to the contract and to the code digest; it does not judge coverage.
 - A witness is required. A contract for which no LexLean function can be written (for example one that only bounds an error) needs the reference written first. For an inference kernel the witness is the integer reference engine, which has to exist anyway.
+- Evidence is witness-only until D6: the report is bound to the contract, not to a running artifact, and `verify` says `unbound`.
 - Until D6 is decided the compiled Lean runs the witness, so the trust entry describes a binding a host makes, not one LexLean emits.
 
 ## 11. Not implemented by this PR
