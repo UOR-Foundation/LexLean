@@ -1,0 +1,99 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{answerIdle}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{0}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{answerHeat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{1}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{answerCool}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{2}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{answerDry}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{3}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{Request}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{temperature}: \texttt{Nat}.\par
+\noindent Field \texttt{humidity}: \texttt{Nat}.\par
+\noindent Field \texttt{occupied}: \texttt{Nat}.\par
+\subsection*{\texttt{cooling}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{((Nat.beq ((request).occupied) (1)) \&\& (Nat.blt (29) ((request).temperature)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{heating}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{((Nat.beq ((request).occupied) (1)) \&\& (Nat.ble ((request).temperature) (15)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{drying}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.blt (70) ((request).humidity))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{judge}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if cooling (request) then answerCool else (if heating (request) then answerHeat else (if drying (request) then answerDry else answerIdle)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{breaksCoolWhenHot}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{((((((Nat.ble ((request).temperature) (50)) \&\& (Nat.ble ((request).humidity) (100))) \&\& (Nat.blt ((request).occupied) (2))) \&\& (Nat.beq ((request).occupied) (1))) \&\& (Nat.blt (29) ((request).temperature))) \&\& (!(Nat.beq (judge (request)) (answerCool))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{coolWhenHot}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Statement: \texttt{(breaksCoolWhenHot (request) = false)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{breaksNoHeatWhenEmpty}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{((((Nat.ble ((request).temperature) (50)) \&\& (Nat.ble ((request).humidity) (100))) \&\& (Nat.beq ((request).occupied) (0))) \&\& (Nat.beq (judge (request)) (answerHeat)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{noHeatWhenEmpty}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Statement: \texttt{(breaksNoHeatWhenEmpty (request) = false)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{breaksNoCoolWhenEmpty}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{((((Nat.ble ((request).temperature) (50)) \&\& (Nat.ble ((request).humidity) (100))) \&\& (Nat.beq ((request).occupied) (0))) \&\& (Nat.beq (judge (request)) (answerCool)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{noCoolWhenEmpty}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Statement: \texttt{(breaksNoCoolWhenEmpty (request) = false)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{breaksIdleWhenEmptyAndDry}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(((((Nat.ble ((request).temperature) (50)) \&\& (Nat.ble ((request).humidity) (70))) \&\& (Nat.beq ((request).occupied) (0))) \&\& (!(Nat.beq ((request).temperature) (99)))) \&\& (!(Nat.beq (judge (request)) (answerIdle))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{idleWhenEmptyAndDry}}
+\noindent Kind: \texttt{theorem}.\par
+\noindent Parameters: \texttt{(request : Request)}.\par
+\noindent Statement: \texttt{(breaksIdleWhenEmptyAndDry (request) = false)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

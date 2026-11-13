@@ -1,0 +1,283 @@
+'DecisionRegions.Main.Request' does not depend on any axioms
+'DecisionRegions.Main.answerCool' does not depend on any axioms
+'DecisionRegions.Main.answerDry' does not depend on any axioms
+'DecisionRegions.Main.answerHeat' does not depend on any axioms
+'DecisionRegions.Main.answerIdle' does not depend on any axioms
+'DecisionRegions.Main.breaksCoolWhenHot' does not depend on any axioms
+'DecisionRegions.Main.breaksIdleWhenEmptyAndDry' does not depend on any axioms
+'DecisionRegions.Main.breaksNoCoolWhenEmpty' does not depend on any axioms
+'DecisionRegions.Main.breaksNoHeatWhenEmpty' does not depend on any axioms
+'DecisionRegions.Main.coolWhenHot' depends on axioms: [propext, Quot.sound]
+'DecisionRegions.Main.cooling' does not depend on any axioms
+'DecisionRegions.Main.drying' does not depend on any axioms
+'DecisionRegions.Main.heating' does not depend on any axioms
+'DecisionRegions.Main.idleWhenEmptyAndDry' depends on axioms: [propext, Quot.sound]
+'DecisionRegions.Main.judge' does not depend on any axioms
+'DecisionRegions.Main.noCoolWhenEmpty' depends on axioms: [propext, Quot.sound]
+'DecisionRegions.Main.noHeatWhenEmpty' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Cond' does not depend on any axioms
+'LexLeanRegions.Cond._sizeOf_1' does not depend on any axioms
+'LexLeanRegions.Cond._sizeOf_inst' does not depend on any axioms
+'LexLeanRegions.Cond.casesOn' does not depend on any axioms
+'LexLeanRegions.Cond.ctorIdx' does not depend on any axioms
+'LexLeanRegions.Cond.field' does not depend on any axioms
+'LexLeanRegions.Cond.mk._flat_ctor' does not depend on any axioms
+'LexLeanRegions.Cond.mk.inj' does not depend on any axioms
+'LexLeanRegions.Cond.mk.injEq' depends on axioms: [propext]
+'LexLeanRegions.Cond.mk.noConfusion' does not depend on any axioms
+'LexLeanRegions.Cond.mk.sizeOf_spec' does not depend on any axioms
+'LexLeanRegions.Cond.noConfusion' does not depend on any axioms
+'LexLeanRegions.Cond.noConfusionType' does not depend on any axioms
+'LexLeanRegions.Cond.op' does not depend on any axioms
+'LexLeanRegions.Cond.recOn' does not depend on any axioms
+'LexLeanRegions.Cond.value' does not depend on any axioms
+'LexLeanRegions.Property' does not depend on any axioms
+'LexLeanRegions.Property._sizeOf_1' does not depend on any axioms
+'LexLeanRegions.Property._sizeOf_inst' does not depend on any axioms
+'LexLeanRegions.Property.always' does not depend on any axioms
+'LexLeanRegions.Property.casesOn' does not depend on any axioms
+'LexLeanRegions.Property.ctorIdx' does not depend on any axioms
+'LexLeanRegions.Property.mk._flat_ctor' does not depend on any axioms
+'LexLeanRegions.Property.mk.inj' does not depend on any axioms
+'LexLeanRegions.Property.mk.injEq' depends on axioms: [propext]
+'LexLeanRegions.Property.mk.noConfusion' does not depend on any axioms
+'LexLeanRegions.Property.mk.sizeOf_spec' does not depend on any axioms
+'LexLeanRegions.Property.noConfusion' does not depend on any axioms
+'LexLeanRegions.Property.noConfusionType' does not depend on any axioms
+'LexLeanRegions.Property.outcome' does not depend on any axioms
+'LexLeanRegions.Property.recOn' does not depend on any axioms
+'LexLeanRegions.Property.when' does not depend on any axioms
+'LexLeanRegions.Rule' does not depend on any axioms
+'LexLeanRegions.Rule._sizeOf_1' does not depend on any axioms
+'LexLeanRegions.Rule._sizeOf_inst' does not depend on any axioms
+'LexLeanRegions.Rule.casesOn' does not depend on any axioms
+'LexLeanRegions.Rule.ctorIdx' does not depend on any axioms
+'LexLeanRegions.Rule.mk._flat_ctor' does not depend on any axioms
+'LexLeanRegions.Rule.mk.inj' does not depend on any axioms
+'LexLeanRegions.Rule.mk.injEq' depends on axioms: [propext]
+'LexLeanRegions.Rule.mk.noConfusion' does not depend on any axioms
+'LexLeanRegions.Rule.mk.sizeOf_spec' does not depend on any axioms
+'LexLeanRegions.Rule.noConfusion' does not depend on any axioms
+'LexLeanRegions.Rule.noConfusionType' does not depend on any axioms
+'LexLeanRegions.Rule.outcome' does not depend on any axioms
+'LexLeanRegions.Rule.recOn' does not depend on any axioms
+'LexLeanRegions.Rule.when' does not depend on any axioms
+'LexLeanRegions.Spec.Box' does not depend on any axioms
+'LexLeanRegions.Spec.allHold' does not depend on any axioms
+'LexLeanRegions.Spec.allHold._f' does not depend on any axioms
+'LexLeanRegions.Spec.allHold._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.allHold._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.allHold.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.allHold.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.allHold.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.allHold.match_1' does not depend on any axioms
+'LexLeanRegions.Spec.allHold_mem' depends on axioms: [propext]
+'LexLeanRegions.Spec.bad' does not depend on any axioms
+'LexLeanRegions.Spec.bad.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.boxOf' does not depend on any axioms
+'LexLeanRegions.Spec.boxOf._f' does not depend on any axioms
+'LexLeanRegions.Spec.boxOf._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.boxOf._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.boxOf.match_1' does not depend on any axioms
+'LexLeanRegions.Spec.boxOf_exact' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.boxOf_hull' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.breaks' does not depend on any axioms
+'LexLeanRegions.Spec.breaks.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.breaksWith' does not depend on any axioms
+'LexLeanRegions.Spec.breaksWith.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.breaksWith_eq' depends on axioms: [propext]
+'LexLeanRegions.Spec.condBox' does not depend on any axioms
+'LexLeanRegions.Spec.condBox_exact' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.condBox_hull' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.condBox_length' depends on axioms: [propext]
+'LexLeanRegions.Spec.condHolds' does not depend on any axioms
+'LexLeanRegions.Spec.condHolds.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.condsOk' does not depend on any axioms
+'LexLeanRegions.Spec.condsOk._f' does not depend on any axioms
+'LexLeanRegions.Spec.condsOk._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.condsOk._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.condsOk.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.condsOk.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.condsOk.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.condsOk_weaken' depends on axioms: [propext]
+'LexLeanRegions.Spec.covered_of_subAll' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.hull' does not depend on any axioms
+'LexLeanRegions.Spec.hull._f' does not depend on any axioms
+'LexLeanRegions.Spec.hull._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.hull._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.hull.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.hull.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.hull.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.hull.match_1' does not depend on any axioms
+'LexLeanRegions.Spec.inBox' does not depend on any axioms
+'LexLeanRegions.Spec.inBox._f' does not depend on any axioms
+'LexLeanRegions.Spec.inBox._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.inBox._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.inBox.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.inBox.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.inBox.eq_3' does not depend on any axioms
+'LexLeanRegions.Spec.inBox.eq_4' does not depend on any axioms
+'LexLeanRegions.Spec.inBox.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.inBox.match_1' does not depend on any axioms
+'LexLeanRegions.Spec.inBox_cons' depends on axioms: [propext]
+'LexLeanRegions.Spec.inBox_cons_nil' does not depend on any axioms
+'LexLeanRegions.Spec.inBox_meet' depends on axioms: [propext]
+'LexLeanRegions.Spec.inBox_nil_cons' does not depend on any axioms
+'LexLeanRegions.Spec.inBox_of_hull' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.inBox_setHi' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.inBox_setLo' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.judge' does not depend on any axioms
+'LexLeanRegions.Spec.judge._f' does not depend on any axioms
+'LexLeanRegions.Spec.judge._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.judge._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.judge.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.judge.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.judge.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.judge_cases' depends on axioms: [propext]
+'LexLeanRegions.Spec.meet' does not depend on any axioms
+'LexLeanRegions.Spec.meet._f' does not depend on any axioms
+'LexLeanRegions.Spec.meet._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.meet._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.meet.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.meet.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.meet.eq_3' does not depend on any axioms
+'LexLeanRegions.Spec.meet.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.meet.match_1' does not depend on any axioms
+'LexLeanRegions.Spec.nonEmpty' does not depend on any axioms
+'LexLeanRegions.Spec.nonEmpty._f' does not depend on any axioms
+'LexLeanRegions.Spec.nonEmpty._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.nonEmpty._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.nonEmpty.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.nonEmpty.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.nonEmpty.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.nonEmpty.match_1' does not depend on any axioms
+'LexLeanRegions.Spec.nonEmpty_of_inBox' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.oblOther' does not depend on any axioms
+'LexLeanRegions.Spec.oblOther.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.oblRule' does not depend on any axioms
+'LexLeanRegions.Spec.oblRule.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.oblRules' does not depend on any axioms
+'LexLeanRegions.Spec.oblRules._f' does not depend on any axioms
+'LexLeanRegions.Spec.oblRules._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.oblRules._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.oblRules.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.oblRules.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.oblRules.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.oblRules.match_1' does not depend on any axioms
+'LexLeanRegions.Spec.oblRules_at' depends on axioms: [propext]
+'LexLeanRegions.Spec.opHolds' does not depend on any axioms
+'LexLeanRegions.Spec.opHolds.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.regionCheck' does not depend on any axioms
+'LexLeanRegions.Spec.regionCheck.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.regionCheck_sound' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.setHi' does not depend on any axioms
+'LexLeanRegions.Spec.setHi._f' does not depend on any axioms
+'LexLeanRegions.Spec.setHi._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.setHi._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.setHi.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.setHi.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.setHi.eq_3' does not depend on any axioms
+'LexLeanRegions.Spec.setHi.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.setHi_length' depends on axioms: [propext]
+'LexLeanRegions.Spec.setLo' does not depend on any axioms
+'LexLeanRegions.Spec.setLo._f' does not depend on any axioms
+'LexLeanRegions.Spec.setLo._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.setLo._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.setLo.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.setLo.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.setLo.eq_3' does not depend on any axioms
+'LexLeanRegions.Spec.setLo.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.setLo.match_1' does not depend on any axioms
+'LexLeanRegions.Spec.setLo_length' depends on axioms: [propext]
+'LexLeanRegions.Spec.sub' does not depend on any axioms
+'LexLeanRegions.Spec.sub._f' does not depend on any axioms
+'LexLeanRegions.Spec.sub._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.sub._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.sub.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.sub.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.sub.eq_3' does not depend on any axioms
+'LexLeanRegions.Spec.sub.eq_4' does not depend on any axioms
+'LexLeanRegions.Spec.sub.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.sub.match_1' does not depend on any axioms
+'LexLeanRegions.Spec.subAll' does not depend on any axioms
+'LexLeanRegions.Spec.subAll._f' does not depend on any axioms
+'LexLeanRegions.Spec.subAll._sunfold' does not depend on any axioms
+'LexLeanRegions.Spec.subAll._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.Spec.subAll.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.subAll.eq_2' does not depend on any axioms
+'LexLeanRegions.Spec.subAll.eq_def' does not depend on any axioms
+'LexLeanRegions.Spec.subAll.match_1' does not depend on any axioms
+'LexLeanRegions.Spec.subAll_cover' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.sub_cover' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.Spec.upper' does not depend on any axioms
+'LexLeanRegions.Spec.upper.eq_1' does not depend on any axioms
+'LexLeanRegions.Spec.upper_bound' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.allHold' does not depend on any axioms
+'LexLeanRegions.allHold.eq_1' does not depend on any axioms
+'LexLeanRegions.allHoldFrom' does not depend on any axioms
+'LexLeanRegions.allHoldFrom._f' does not depend on any axioms
+'LexLeanRegions.allHoldFrom._sunfold' does not depend on any axioms
+'LexLeanRegions.allHoldFrom._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.allHoldFrom.eq_1' does not depend on any axioms
+'LexLeanRegions.allHoldFrom.eq_2' does not depend on any axioms
+'LexLeanRegions.allHoldFrom.eq_def' does not depend on any axioms
+'LexLeanRegions.allHoldFrom.match_1' does not depend on any axioms
+'LexLeanRegions.allHoldFrom_spec' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.allHold_spec' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.bad' does not depend on any axioms
+'LexLeanRegions.bad.eq_1' does not depend on any axioms
+'LexLeanRegions.bad.match_1' does not depend on any axioms
+'LexLeanRegions.beq_decide' depends on axioms: [propext]
+'LexLeanRegions.ble_decide' depends on axioms: [propext]
+'LexLeanRegions.blt_decide' depends on axioms: [propext]
+'LexLeanRegions.breaks' does not depend on any axioms
+'LexLeanRegions.breaks_spec' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.condHolds' does not depend on any axioms
+'LexLeanRegions.condHolds.eq_1' does not depend on any axioms
+'LexLeanRegions.condHolds_spec' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.condSpec' does not depend on any axioms
+'LexLeanRegions.condSpec.eq_1' does not depend on any axioms
+'LexLeanRegions.get' does not depend on any axioms
+'LexLeanRegions.get._f' does not depend on any axioms
+'LexLeanRegions.get._sunfold' does not depend on any axioms
+'LexLeanRegions.get._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.get.eq_1' does not depend on any axioms
+'LexLeanRegions.get.eq_2' does not depend on any axioms
+'LexLeanRegions.get.eq_3' does not depend on any axioms
+'LexLeanRegions.get.eq_def' does not depend on any axioms
+'LexLeanRegions.get.match_1' does not depend on any axioms
+'LexLeanRegions.holds' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.judge' does not depend on any axioms
+'LexLeanRegions.judge._f' does not depend on any axioms
+'LexLeanRegions.judge._sunfold' does not depend on any axioms
+'LexLeanRegions.judge._unsafe_rec' does not depend on any axioms
+'LexLeanRegions.judge.eq_1' does not depend on any axioms
+'LexLeanRegions.judge.eq_2' does not depend on any axioms
+'LexLeanRegions.judge.eq_def' does not depend on any axioms
+'LexLeanRegions.judge.match_1' does not depend on any axioms
+'LexLeanRegions.judge_spec' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.obligation' does not depend on any axioms
+'LexLeanRegions.obligation.eq_1' does not depend on any axioms
+'LexLeanRegions.opHolds' does not depend on any axioms
+'LexLeanRegions.opHolds.eq_1' does not depend on any axioms
+'LexLeanRegions.opHolds.eq_2' does not depend on any axioms
+'LexLeanRegions.opHolds.eq_3' does not depend on any axioms
+'LexLeanRegions.opHolds.eq_4' does not depend on any axioms
+'LexLeanRegions.opHolds.eq_5' does not depend on any axioms
+'LexLeanRegions.opHolds.eq_6' does not depend on any axioms
+'LexLeanRegions.opHolds.eq_7' does not depend on any axioms
+'LexLeanRegions.opHolds.eq_8' does not depend on any axioms
+'LexLeanRegions.opHolds.match_1' does not depend on any axioms
+'LexLeanRegions.opHolds_spec' depends on axioms: [propext, Quot.sound]
+'LexLeanRegions.opSpec' does not depend on any axioms
+'LexLeanRegions.opSpec.eq_1' does not depend on any axioms
+'LexLeanRegions.opSpec.eq_2' does not depend on any axioms
+'LexLeanRegions.opSpec.eq_3' does not depend on any axioms
+'LexLeanRegions.opSpec.eq_4' does not depend on any axioms
+'LexLeanRegions.opSpec.eq_5' does not depend on any axioms
+'LexLeanRegions.opSpec.eq_6' does not depend on any axioms
+'LexLeanRegions.opSpec.eq_7' does not depend on any axioms
+'LexLeanRegions.opSpec.match_1' does not depend on any axioms
+'LexLeanRegions.propSpec' does not depend on any axioms
+'LexLeanRegions.ruleSpec' does not depend on any axioms
+'LexLeanRegions.ruleSpec.eq_1' does not depend on any axioms
