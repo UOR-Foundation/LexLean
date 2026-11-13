@@ -1359,10 +1359,9 @@ fn ne_04_under_lean(adapter: &lexlean::ir::tooling::ToolingModule, driver: &lcnf
         1,
         "nothing but the record: {output}"
     );
-    assert!(
-        output.contains("\"spec\":\"lexlean/lcnf-extraction/2\""),
-        "{output}"
-    );
+    let record: serde_json::Value =
+        serde_json::from_str(&output).expect("the adapter emits a JSON record");
+    assert_eq!(record["spec"], "lexlean/lcnf-extraction/2", "{output}");
     compare_with_oracle().unwrap_or_else(|reason| panic!("{reason}"));
     counter_independence().unwrap_or_else(|reason| panic!("{reason}"));
     let drift = |drifted: &lcnf::Driver, fragment: &str| {
