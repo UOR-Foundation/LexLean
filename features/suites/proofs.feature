@@ -165,3 +165,10 @@ Feature: proofs
     When it is rendered and verified, copies name an unregistered law, drop an argument, pass an argument of the wrong type, drop the premise, name a later theorem as the premise, a language-1.1 module uses the form, and a copy applies the pair law to a swapped statement
     Then the generated Lean applies the registered theorem with explicit type arguments, arguments, and premises, and verifies
     And each malformed copy and the language-1.1 use fail with LLT4001 and the swapped statement fails verification with LLV7002
+
+  @PF-26 @build
+  Scenario: The language-1.2 linear_arithmetic proof form decides a first-match chain of many conditions: when the fixed script leaves a goal open, a second attempt adds the law LexLeanLaws.ite_eq_iff, which reads an if equal to a value as the disjunction of its branches, each with its condition, and the propositional simplifications that drop every branch whose condition is decided, so a chain of fourteen conditions verifies for all inputs, a proof the fixed script closes keeps its axioms, and a false bound on the chain is refused by Lean.
+    Given the committed fold-laws example, whose band function is a first-match chain of fourteen less_than conditions, with theorems about its top and middle bands proved by linear_arithmetic
+    When it is rendered and verified, and a copy states the middle band one too low
+    Then the generated Lean is the fixed script, whose second attempt adds LexLeanLaws.ite_eq_iff, and it verifies for all inputs
+    And the false copy checks but fails verification with LLV7002

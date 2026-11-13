@@ -1,4 +1,4 @@
-//! The `proofs` suite: PF-01..PF-23.
+//! The `proofs` suite: PF-01..PF-23, PF-26.
 //!
 //! Positive forms are asserted against the shared Lean-verified proof
 //! corpus (`support::verified_corpus`): every case first asserts the
@@ -118,10 +118,30 @@ fn linear_script(definitions: &[&str]) -> String {
     } else {
         "  subst_vars\n"
     };
+    let mut cases = lemmas.clone();
+    cases.extend(
+        [
+            "LexLeanLaws.ite_eq_iff",
+            "and_false",
+            "false_and",
+            "or_false",
+            "false_or",
+            "not_false_eq_true",
+            "not_true_eq_false",
+        ]
+        .map(str::to_owned),
+    );
+    let attempt = |lemmas: &[String], last: &str| {
+        format!(
+            "(try set_option linter.unusedSimpArgs false in simp only [{}] at *\n       try set_option linter.unusedSimpArgs false in simp only [{}] at *\n       all_goals (repeat' split)\n       all_goals omega{last})\n",
+            lemmas.join(", "),
+            bits.join(", ")
+        )
+    };
     format!(
-        "  intros\n{subst}  try set_option linter.unusedSimpArgs false in simp only [{}] at *\n  try set_option linter.unusedSimpArgs false in simp only [{}] at *\n  all_goals (repeat' split)\n  all_goals omega\n",
-        lemmas.join(", "),
-        bits.join(", ")
+        "  intros\n{subst}  first\n    | {}    | {}",
+        attempt(&lemmas, "\n       done"),
+        attempt(&cases, "")
     )
 }
 
@@ -969,6 +989,45 @@ pub(crate) fn run(id: &str) {
                 assert_eq!(
                     refused_theorems(&wrong, "src/Kernels.lex.tex", &error),
                     ["byte_literal", "requantize_high", "truncating_division"],
+                    "{error}"
+                );
+            }
+        }
+        // §17.12: linear_arithmetic decides a first-match chain of many conditions.
+        "PF-26" => {
+            assert!(
+                !registered_rewrites()
+                    .iter()
+                    .any(|law| law == "LexLeanLaws.ite_eq_iff"),
+                "the equation of a conditional is the second attempt, not a rewrite of the first"
+            );
+            let project = P::copy_example("fold-laws");
+            project.check_ok();
+            let build = support::rendered(&project);
+            let kernels = support::lean_text(&build, "Kernels");
+            assert!(
+                kernels.contains(&format!(
+                    "(band (x) = 14) -> (14 <= x)) := by\n{}",
+                    linear_script(&["band"])
+                )),
+                "the fixed script decides the fourteen-condition chain\n{kernels}"
+            );
+            let _ = support::verify_ok_backed("PF-26", &project);
+            // A false bound on the chain links and is refused by Lean.
+            if support::lean_backed("PF-26") {
+                let wrong = fold_laws_with(
+                    "src/Kernels.lex.tex",
+                    &[(
+                        "statement: (((band x) = 7) -> (x < 8)),",
+                        "statement: (((band x) = 7) -> (x < 7)),",
+                    )],
+                );
+                wrong.check_ok();
+                let _guard = support::env_shared();
+                let error = wrong.verify_fails_with("LLV7002");
+                assert_eq!(
+                    refused_theorems(&wrong, "src/Kernels.lex.tex", &error),
+                    ["band_middle"],
                     "{error}"
                 );
             }
