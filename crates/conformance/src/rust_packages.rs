@@ -155,6 +155,7 @@ pub fn manifest(name: &str, program: &Program, entry: u64, profile: Profile) -> 
         }],
         sources: vec![compiler_semantic_id()],
         effects: Vec::new(),
+        entry: None,
     }
     .showing_effects()
 }
