@@ -2,6 +2,14 @@ Feature: semantic-ir
 
   Compiler phases, closed IR variants, conservative elaboration, and content identity (§17, §21).
 
+  @SM-39 @build
+  Scenario: Language 1.2 simplify proofs may name exactly LexLeanRuntime.utf8Encode and String.toUTF8_eq_toByteArray as UTF-8 bridges; these names resolve to fixed global declarations and select simp only followed by reflexivity on remaining goals, preserving historical simplify lowering, while literal UTF-8 equalities verify with exact axioms and false equalities, language 1.1 uses, foreign helpers, and malformed name lists are refused.
+    Given semantic UTF-8 equalities for empty, ASCII and multibyte strings with the two fixed bridge names
+    When the project is linked, formatted, built and verified with pinned Lean
+    Then the bridge proofs use fixed global names and kernel-checked simplification followed by reflexivity
+    And a false equality fails verification while unavailable helpers and malformed name lists fail linking
+    And language 1.1 rejects the bridges and historical simplify proofs retain their generated text
+
   @SM-01 @build
   Scenario: Compiler phases execute in the required order and no backend receives an unlinked or ambiguous program.
     Given the example project with a tab and the unknown word `banana` both inserted into the theorem statement

@@ -4061,6 +4061,15 @@ fn check_member(member: &MemberRef, env: &Environment<'_>) -> Result<(), String>
     Ok(())
 }
 
+/// The fixed UTF-8 proof bridges admitted by language 1.2 (§17.10).
+pub(crate) fn is_utf8_simplify_bridge(member: &MemberRef) -> bool {
+    member.module.is_none()
+        && matches!(
+            member.name.as_str(),
+            "LexLeanRuntime.utf8Encode" | "String.toUTF8_eq_toByteArray"
+        )
+}
+
 fn check_type(ty: &SemanticType, env: &Environment<'_>) -> Result<(), String> {
     match ty {
         SemanticType::Type
@@ -8529,11 +8538,12 @@ fn check_proof(
             let mut previous = None;
             for definition in definitions {
                 check_member(definition, env)?;
-                let builtin_bridge = definition.module.is_none()
+                let builtin_bridge = (definition.module.is_none()
                     && matches!(
                         definition.name.as_str(),
                         "Bool.and_eq_true" | "Nat.beq_eq" | "Nat.blt_eq"
-                    );
+                    ))
+                    || (env.language_1_2 && is_utf8_simplify_bridge(definition));
                 let local_hypothesis = definition.module.is_none()
                     && locals.get(&definition.name) == Some(&SemanticType::Prop);
                 if function_info(definition, env).is_none()

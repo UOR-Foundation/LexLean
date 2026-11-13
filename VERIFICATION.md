@@ -39,6 +39,19 @@ Outside `vv`:
 
 ## Falsifiability records
 
+### UTF-8 proof bridges remain closed
+
+Compiler `40200f4dd5` rejected a semantic theorem equating
+`utf8_encode "problem1"` with its literal bytes: the linker reported
+`LLT4001` for the unavailable `LexLeanRuntime.utf8Encode` simplification name.
+Pinned Lean 4.32.1 required its explicit String representation theorem and
+reflexivity after simplification to discharge the same literal equality.
+`conformance_sm_39` exercises the fixed language-1.2 recipe on empty, ASCII,
+and multibyte strings, rejects a false byte equality through verification,
+and refuses foreign helper names, malformed lists, and language-1.1 uses.
+The recipe names only the two admitted global helpers and does not expose
+general tactic sequencing or change historical simplify output.
+
 ### absent inspection origins remain unavailable
 
 The mixed `True`, absent-name, `Eq.refl` case in `conformance_vr_28` initially
