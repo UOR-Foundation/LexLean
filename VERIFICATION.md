@@ -11940,6 +11940,10 @@ project configured. The project now configures 536,870,912 (the maintainer's
 decision; a semantic input, so the lock and every package move at the landing),
 which leaves room for the further components of the driver.
 
+The certificate budget of the three roots is 4,194,304 bytes: the largest part of
+`projectSemanticId`'s certificate measured 3,599,711 bytes on the regenerated
+tree, beyond the 3,145,728 most slices state, as `BS-11` states 5,505,024.
+
 ### the bdd partition can fail
 
 Each record is a defect planted on this branch, the command that ran, and its
