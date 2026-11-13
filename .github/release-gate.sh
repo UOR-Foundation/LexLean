@@ -74,13 +74,22 @@ whole_gate_passed() {
   done
 }
 
-# The commits whose runs are evidence for this one: the commit, and its second
-# parent when the commit is a merge that lands that parent's tree unchanged.
+# The commits whose runs are evidence for this one: the commit, and, while the
+# commit is a merge that lands its second parent's tree unchanged, that parent,
+# at most four merges down -- the walk `.github/ci-plan.sh` makes, so a push
+# the plan ran nothing for has its evidence here (a cut's release merge and
+# the regenerated head it lands).
 candidates="$sha"
-if parent=$(git rev-parse --verify --quiet "$sha^2") \
-  && [ "$(git rev-parse "$sha^{tree}")" = "$(git rev-parse "$parent^{tree}")" ]; then
-  candidates="$sha $parent"
-fi
+commit=$sha
+for _ in 1 2 3 4; do
+  # The release job's checkout is shallow; deepen it for the commit it walks.
+  git rev-parse --verify --quiet "$commit^2" >/dev/null \
+    || git fetch --quiet --depth=2 origin "$commit" 2>/dev/null || break
+  parent=$(git rev-parse --verify --quiet "$commit^2") || break
+  [ "$(git rev-parse "$commit^{tree}")" = "$(git rev-parse "$parent^{tree}")" ] || break
+  candidates="$candidates $parent"
+  commit=$parent
+done
 
 found=
 for commit in $candidates; do
@@ -113,7 +122,7 @@ fi
   if [ "$commit" = "$sha" ]; then
     echo "gate run commit $commit (the tagged commit)"
   else
-    echo "gate run commit $commit (the second parent of the tagged commit, whose tree $(git rev-parse "$sha^{tree}") the tagged commit carries unchanged)"
+    echo "gate run commit $commit (the second parent of the tagged commit, or of a merge below it, whose tree $(git rev-parse "$sha^{tree}") the tagged commit carries unchanged)"
   fi
   echo
   echo "jobs (name, conclusion, started, completed):"
