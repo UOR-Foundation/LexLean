@@ -82,7 +82,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        case: [conformance_bs_70]
+        case: [conformance_bs_69, conformance_bs_70]
     runs-on: ubuntu-24.04
     timeout-minutes: 360
     steps:
@@ -113,7 +113,10 @@ jobs:
         run: |
           set -uo pipefail
           echo "core_pattern: $(cat /proc/sys/kernel/core_pattern)"; echo "ulimit -c before: $(ulimit -c)"
-          ulimit -c 0; echo "ulimit -c now: $(ulimit -c)"
+          # A probe that overflows aborts; a piped core_pattern hands every abort to
+          # apport, whose copies of whole-chunk processes exhausted the runner.
+          sudo sysctl -q -w kernel.core_pattern=core; ulimit -c 0
+          echo "core_pattern now: $(cat /proc/sys/kernel/core_pattern), ulimit -c $(ulimit -c)"
           (while sleep 60; do echo "MEM $(date -u +%H:%M) $(free -m | awk '/Mem:/{printf "used %s avail %s ", $3, $7} /Swap:/{printf "swap %s", $3}') TOP $(ps -eo rss,comm --sort=-rss | sed -n '2,5p' | awk '{printf "%s:%dM ", $2, $1/1024}')"; done) &
           # No Lean here: the case measures in its rustc step and stops at its
           # Lean-backed export, so the record is uploaded either way.
