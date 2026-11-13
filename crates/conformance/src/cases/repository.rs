@@ -262,6 +262,17 @@ fn plan_decisions() {
     git(&["checkout", "-q", "-b", "carried", &base]);
     git(&["merge", "-q", "--no-ff", "-m", "carry", &merge_equal]);
     let carried = git(&["rev-parse", "HEAD"]);
+    // Carried again, to four and five equal-tree merges above that head.
+    let mut deeper = carried.clone();
+    let mut chain = Vec::new();
+    for hop in 3..=5 {
+        git(&["checkout", "-q", "-b", &format!("carried-{hop}"), &base]);
+        git(&["merge", "-q", "--no-ff", "-m", "carry", &deeper]);
+        deeper = git(&["rev-parse", "HEAD"]);
+        chain.push(deeper.clone());
+    }
+    let (four_down, five_down) = (chain[1].clone(), chain[2].clone());
+    git(&["checkout", "-q", &carried]);
     assert_eq!(
         git(&["rev-parse", "HEAD^{tree}"]),
         git(&["rev-parse", &format!("{regenerated}^{{tree}}")]),
@@ -508,6 +519,34 @@ fn plan_decisions() {
         ),
         whole,
         "§9.4: a run of a commit the carry does not reach"
+    );
+    // The walk is bounded as `release-gate.sh` bounds it: four merges below
+    // the pushed commit, and no fifth.
+    assert_eq!(
+        decide(
+            "push",
+            "",
+            "main",
+            &four_down,
+            &on_regenerated,
+            &green,
+            false
+        ),
+        nothing,
+        "§9.4: a verified tree four equal-tree merges below the push"
+    );
+    assert_eq!(
+        decide(
+            "push",
+            "",
+            "main",
+            &five_down,
+            &on_regenerated,
+            &green,
+            false
+        ),
+        whole,
+        "§9.4: a verified tree five merges below the push is beyond the release evidence's walk"
     );
     assert_eq!(
         decide_with(
@@ -4315,6 +4354,15 @@ fn release_gate_decisions() {
     git(&["checkout", "-q", "-b", "carried", &base]);
     git(&["merge", "-q", "--no-ff", "-m", "carry", &merge_equal]);
     let carried = git(&["rev-parse", "HEAD"]);
+    let mut deeper = carried.clone();
+    let mut chain = Vec::new();
+    for hop in 3..=5 {
+        git(&["checkout", "-q", "-b", &format!("carried-{hop}"), &base]);
+        git(&["merge", "-q", "--no-ff", "-m", "carry", &deeper]);
+        deeper = git(&["rev-parse", "HEAD"]);
+        chain.push(deeper.clone());
+    }
+    let (four_down, five_down) = (chain[1].clone(), chain[2].clone());
 
     // `gh`: the runs of a commit (`STUB_RUNS_<sha>`), the jobs of every run
     // (`STUB_JOBS`), and a download that writes one leg's transcript.
@@ -4434,6 +4482,11 @@ fn release_gate_decisions() {
         evidence.contains(&format!("gate run commit {head} (the second parent")),
         "the evidence names the head:\n{evidence}"
     );
+    // Four merges is the bound the plan shares; a fifth is refused.
+    let (code, _, stderr) = decide(&four_down, &[(head.as_str(), run_line("26"))], &green);
+    assert_eq!(code, 0, "four equal-tree merges down: {stderr}");
+    let (code, _, _) = decide(&five_down, &[(head.as_str(), run_line("27"))], &green);
+    assert_eq!(code, 1, "five equal-tree merges down is beyond the walk");
     // A merge whose tree no run verified: the parent's run is not evidence.
     let (code, _, stderr) = decide(
         &merge_different,

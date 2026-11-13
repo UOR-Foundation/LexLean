@@ -103,11 +103,12 @@ full_run_of() {
 
 # The full run (above) that verified the tree of COMMIT: one of COMMIT itself,
 # or, while the commit is a merge whose tree is the tree of its second parent,
-# one of that parent, at most four merges down. A cut lands this way: the
+# one of that parent, at most four merges below the commit the run is for
+# (DEPTH counts merges already walked), as `release-gate.sh` walks. A cut lands this way: the
 # release merge lands the regenerated head's tree, and the pull request that
 # carries the line to `main` lands the release merge's.
 verified_tree_run() {
-  local commit=$1 depth=0
+  local commit=$1 depth=${2:-0}
   while :; do
     if full_run_of "$commit"; then
       return 0
@@ -129,7 +130,9 @@ verified_parent_run() {
   local parent
   parent=$(git rev-parse --verify --quiet 'HEAD^2') || return 1
   [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse "$parent^{tree}")" ] || return 1
-  verified_tree_run "$parent"
+  # HEAD to its parent is the first of the four merges `release-gate.sh`
+  # walks from the tagged commit.
+  verified_tree_run "$parent" 1
 }
 
 # A pull request's run: honesty then `rest` for a draft or a stacked base,
