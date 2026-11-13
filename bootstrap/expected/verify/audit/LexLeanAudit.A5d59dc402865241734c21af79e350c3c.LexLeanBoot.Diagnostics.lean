@@ -1,0 +1,35 @@
+module
+import LexLeanBoot.Diagnostics
+#print axioms LexLeanBoot.Diagnostics.Diagnostic
+#print axioms LexLeanBoot.Diagnostics.Label
+#print axioms LexLeanBoot.Diagnostics.Note
+#print axioms LexLeanBoot.Diagnostics.Span
+#print axioms LexLeanBoot.Diagnostics.arrayOf
+#print axioms LexLeanBoot.Diagnostics.beStep
+#print axioms LexLeanBoot.Diagnostics.bigEndian
+#print axioms LexLeanBoot.Diagnostics.byteText
+#print axioms LexLeanBoot.Diagnostics.cat
+#print axioms LexLeanBoot.Diagnostics.codeExit
+#print axioms LexLeanBoot.Diagnostics.diagnosticText
+#print axioms LexLeanBoot.Diagnostics.exceeded
+#print axioms LexLeanBoot.Diagnostics.field
+#print axioms LexLeanBoot.Diagnostics.firstOf
+#print axioms LexLeanBoot.Diagnostics.isEnvironmentCode
+#print axioms LexLeanBoot.Diagnostics.jsonString
+#print axioms LexLeanBoot.Diagnostics.keyed
+#print axioms LexLeanBoot.Diagnostics.labelText
+#print axioms LexLeanBoot.Diagnostics.labelsText
+#print axioms LexLeanBoot.Diagnostics.lit
+#print axioms LexLeanBoot.Diagnostics.noteText
+#print axioms LexLeanBoot.Diagnostics.notesText
+#print axioms LexLeanBoot.Diagnostics.num
+#print axioms LexLeanBoot.Diagnostics.objectOf
+#print axioms LexLeanBoot.Diagnostics.orderStep
+#print axioms LexLeanBoot.Diagnostics.orderedPath
+#print axioms LexLeanBoot.Diagnostics.reportDiagnostics
+#print axioms LexLeanBoot.Diagnostics.sortDiagnostics
+#print axioms LexLeanBoot.Diagnostics.sortKey
+#print axioms LexLeanBoot.Diagnostics.spanText
+#print axioms LexLeanBoot.Diagnostics.strings
+#print axioms LexLeanBoot.Diagnostics.takeStep
+#print axioms LexLeanBoot.Diagnostics.worstExit

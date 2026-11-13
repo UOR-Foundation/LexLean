@@ -23,6 +23,7 @@ import LexLeanBoot.RuntimeValidate
 #print axioms LexLeanBoot.RuntimeValidate.addFnMethods
 #print axioms LexLeanBoot.RuntimeValidate.addImpl
 #print axioms LexLeanBoot.RuntimeValidate.addMethods
+#print axioms LexLeanBoot.RuntimeValidate.admitErr
 #print axioms LexLeanBoot.RuntimeValidate.armsOk
 #print axioms LexLeanBoot.RuntimeValidate.assignable
 #print axioms LexLeanBoot.RuntimeValidate.associatedArity
@@ -40,6 +41,13 @@ import LexLeanBoot.RuntimeValidate
 #print axioms LexLeanBoot.RuntimeValidate.callDirectHeap
 #print axioms LexLeanBoot.RuntimeValidate.callExpected
 #print axioms LexLeanBoot.RuntimeValidate.callHeap
+#print axioms LexLeanBoot.RuntimeValidate.cfgFn
+#print axioms LexLeanBoot.RuntimeValidate.cfgFns
+#print axioms LexLeanBoot.RuntimeValidate.cfgItemErr
+#print axioms LexLeanBoot.RuntimeValidate.cfgOf
+#print axioms LexLeanBoot.RuntimeValidate.cfgOk
+#print axioms LexLeanBoot.RuntimeValidate.cfgPairErr
+#print axioms LexLeanBoot.RuntimeValidate.cfgPaired
 #print axioms LexLeanBoot.RuntimeValidate.colonPieces
 #print axioms LexLeanBoot.RuntimeValidate.colonStep
 #print axioms LexLeanBoot.RuntimeValidate.completes
@@ -50,6 +58,8 @@ import LexLeanBoot.RuntimeValidate
 #print axioms LexLeanBoot.RuntimeValidate.derivesErr
 #print axioms LexLeanBoot.RuntimeValidate.emptyFr
 #print axioms LexLeanBoot.RuntimeValidate.endsInCast
+#print axioms LexLeanBoot.RuntimeValidate.entryArity
+#print axioms LexLeanBoot.RuntimeValidate.entryCount
 #print axioms LexLeanBoot.RuntimeValidate.exposed
 #print axioms LexLeanBoot.RuntimeValidate.exprLen
 #print axioms LexLeanBoot.RuntimeValidate.exprOk
@@ -72,6 +82,7 @@ import LexLeanBoot.RuntimeValidate
 #print axioms LexLeanBoot.RuntimeValidate.hasSigNamed
 #print axioms LexLeanBoot.RuntimeValidate.headErr
 #print axioms LexLeanBoot.RuntimeValidate.headName
+#print axioms LexLeanBoot.RuntimeValidate.hostEffects
 #print axioms LexLeanBoot.RuntimeValidate.identByte
 #print axioms LexLeanBoot.RuntimeValidate.identErr
 #print axioms LexLeanBoot.RuntimeValidate.identShape
@@ -79,6 +90,8 @@ import LexLeanBoot.RuntimeValidate
 #print axioms LexLeanBoot.RuntimeValidate.inList
 #print axioms LexLeanBoot.RuntimeValidate.inRangeB
 #print axioms LexLeanBoot.RuntimeValidate.indexNames
+#print axioms LexLeanBoot.RuntimeValidate.innerFn
+#print axioms LexLeanBoot.RuntimeValidate.innerUse
 #print axioms LexLeanBoot.RuntimeValidate.isAbsent
 #print axioms LexLeanBoot.RuntimeValidate.isEmptyChain
 #print axioms LexLeanBoot.RuntimeValidate.isInteger
@@ -107,6 +120,7 @@ import LexLeanBoot.RuntimeValidate
 #print axioms LexLeanBoot.RuntimeValidate.paramsOk
 #print axioms LexLeanBoot.RuntimeValidate.pass1
 #print axioms LexLeanBoot.RuntimeValidate.pass1Item
+#print axioms LexLeanBoot.RuntimeValidate.pass1Use
 #print axioms LexLeanBoot.RuntimeValidate.pass2Item
 #print axioms LexLeanBoot.RuntimeValidate.patArity
 #print axioms LexLeanBoot.RuntimeValidate.patFields
