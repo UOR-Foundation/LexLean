@@ -280,6 +280,9 @@
     ],
     "bootstrap-grammar-proof": [
       "BS-35"
+    ],
+    "bootstrap-proposition-terms": [
+      "BS-43"
     ]
   },
   "targets": {

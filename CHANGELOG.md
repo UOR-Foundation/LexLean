@@ -17,6 +17,13 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The grammar keywords, the unknown-atom diagnosis, the binders, and the term
+  phrases of the text channel as language-1.2 source (SPEC.md §17.23, §15.3,
+  §15.4, `BS-43`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `keywordEntry`, `unknownAtom`, `binderAlternatives`, and
+  `termPhrase` of `PropositionTerms` return what `keyword_entry` and the
+  `TextParser` methods return, with the glossary closure's projection as their
+  input, and admit no `recursion`. The register is 495 IDs.
 - The text channel and the simple proof sentences as language-1.2 source
   (SPEC.md §17.23, §15.5, §16.2, `BS-35`, #269; no new diagnostic code, no
   change to the language-1.2 identity). `textTokens` and `parseProofSentence`
