@@ -1287,13 +1287,13 @@ pub fn run(id: &str) {
     table.sort();
     assert_eq!(
         names(
-            "The closed table of the standard library (51 names): ",
+            "The closed table of the standard library (121 names): ",
             ". A call"
         ),
         table,
         "SPEC.md §17.16 lists the validator's table"
     );
-    assert_eq!(table.len(), 51, "the register states 51 names");
+    assert_eq!(table.len(), 121, "the register states 121 names");
     let mut allocating = rt_validate::allocating();
     allocating.sort();
     assert_eq!(
@@ -1306,7 +1306,7 @@ pub fn run(id: &str) {
     );
     let register = read("model/ids.toml");
     assert!(
-        register.contains("(51 names, which SPEC.md §17.16 lists"),
+        register.contains("(121 names, which SPEC.md §17.16 lists"),
         "the register states the size"
     );
 

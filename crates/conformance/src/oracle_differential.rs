@@ -1759,6 +1759,7 @@ pub fn execute(
                 }],
                 sources: Vec::new(),
                 effects: Vec::new(),
+                entry: None,
             }
             .showing_effects();
             let rendered = package_of(&manifest, &run.root);
@@ -3154,6 +3155,7 @@ pub fn lexlean_package(accepted: &Accepted, profile: &str) -> BTreeMap<String, V
         }],
         sources: Vec::new(),
         effects: Vec::new(),
+        entry: None,
     }
     .showing_effects();
     package(&manifest)
