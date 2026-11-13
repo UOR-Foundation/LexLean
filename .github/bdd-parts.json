@@ -295,6 +295,9 @@
     ],
     "bootstrap-semantic-decls": [
       "BS-70"
+    ],
+    "bootstrap-semantic-models": [
+      "BS-71"
     ]
   },
   "targets": {

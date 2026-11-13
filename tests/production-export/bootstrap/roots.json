@@ -647,6 +647,14 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "model_declaration_text",
+      "root": "LexLeanBoot.SemanticModels.modelDeclarationText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }
