@@ -898,7 +898,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 494, "§31 has 494 rows");
+            assert_eq!(table.len(), 495, "§31 has 495 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -2439,6 +2439,47 @@ pub(crate) fn run(id: &str) {
 /// build this harness links. The language-1.2 ID it reports is a constant,
 /// which RP-10 holds to the tree; here it must also land in the lock bytes,
 /// which is what a wrong constant would change while every verdict agreed.
+/// A file of the normative tree: its repository-relative path and its bytes,
+/// as `support::normative_rows` reads them.
+type NormativeRow = (String, Vec<u8>);
+
+/// How many bytes of a file witness that an image holds it: the whole file
+/// when it is short, else a window from its middle, past the header that
+/// every file of a kind repeats (RP-19).
+const WITNESS_BYTES: usize = 64;
+
+/// The witness of one file: its own bytes, or a window of them.
+fn witness_of(bytes: &[u8]) -> Vec<u8> {
+    if bytes.len() <= WITNESS_BYTES {
+        bytes.to_vec()
+    } else {
+        bytes[bytes.len() / 2 - WITNESS_BYTES / 2..][..WITNESS_BYTES].to_vec()
+    }
+}
+
+/// Which of `witnesses`, each a path and the bytes that witness it, occur in
+/// `image`, in one pass over it: a table of first bytes names the candidates
+/// at each position and only a candidate is compared, so the cost is the
+/// image's length and not its length times the inventory's size. RP-19 reads
+/// a binary of twenty-three megabytes against an inventory of thirty-one.
+fn witnessed(image: &[u8], witnesses: &[NormativeRow]) -> BTreeSet<String> {
+    let mut by_first: Vec<Vec<usize>> = vec![Vec::new(); 256];
+    for (index, (path, bytes)) in witnesses.iter().enumerate() {
+        assert!(!bytes.is_empty(), "{path}: a witness is not empty");
+        by_first[bytes[0] as usize].push(index);
+    }
+    let mut found = BTreeSet::new();
+    for (at, byte) in image.iter().enumerate() {
+        for index in &by_first[*byte as usize] {
+            let (path, witness) = &witnesses[*index];
+            if !found.contains(path) && image[at..].starts_with(witness) {
+                found.insert(path.clone());
+            }
+        }
+    }
+    found
+}
+
 fn rp_19() {
     use lexlean::api::production::{
         self, Expectation, PackageName, ProductionRequest, RootRequest, TargetRef, REQUEST_SPEC,
@@ -2447,34 +2488,68 @@ fn rp_19() {
     let binary =
         support::check_only_binary(&root).expect("the crate builds without its default features");
 
-    // The library is left out and the rest of the tree is not: the binary
-    // holds no library source and does hold the library's module list, which
-    // is outside `library/`.
+    // The whole excluded inventory is bound to the built variant, not its
+    // largest file alone: a build that left the largest out and embedded any
+    // other would pass that and still break what RP-19 states. Every file of
+    // the inventory is witnessed by bytes of its own, and the image is read
+    // once for all of them.
     let image = std::fs::read(binary.as_std_path()).expect("the binary is readable");
-    let holds = |needle: &[u8]| image.windows(needle.len()).any(|window| window == needle);
     let rows = support::normative_rows();
-    let library: Vec<&(String, Vec<u8>)> = rows
+    let (library, retained_rows): (Vec<&NormativeRow>, Vec<&NormativeRow>) = rows
         .iter()
-        .filter(|(path, _)| path.starts_with("language/preservation-1.2/library/"))
-        .collect();
+        .partition(|(path, _)| path.starts_with("language/preservation-1.2/library/"));
     assert!(
         library.len() > 10,
-        "RP-19: the library has its sources on disk"
+        "RP-19: the excluded inventory is the library's files on disk"
     );
-    let largest = library
+    let witnesses: Vec<NormativeRow> = library
         .iter()
-        .max_by_key(|(_, bytes)| bytes.len())
-        .expect("a library file");
+        .map(|(path, bytes)| (path.clone(), witness_of(bytes)))
+        .collect();
+    // A file whose witness the retained data carries anyway cannot be told
+    // from that data in an image. Such a file is named here with its reason
+    // rather than passing in silence, and the reason is checked: its own
+    // bytes are embedded outside the library, so an image holding them holds
+    // no library source.
+    let retained: Vec<u8> = retained_rows
+        .iter()
+        .flat_map(|(_, bytes)| bytes.iter().copied().chain(std::iter::once(0)))
+        .collect();
+    let indistinguishable = witnessed(&retained, &witnesses);
+    for path in &indistinguishable {
+        let (_, bytes) = library
+            .iter()
+            .find(|(candidate, _)| candidate == path)
+            .expect("a file of the inventory");
+        let whole = vec![(path.clone(), bytes.clone())];
+        assert!(
+            !witnessed(&retained, &whole).is_empty(),
+            "RP-19: `{path}` cannot be told from the retained data in an image, and its own bytes are not part of that data; the inventory is not bound"
+        );
+    }
+    let found = witnessed(&image, &witnesses);
+    let embedded: Vec<&String> = found.difference(&indistinguishable).collect();
     assert!(
-        !holds(&largest.1),
-        "RP-19: the build without production-data embeds `{}`",
-        largest.0
+        embedded.is_empty(),
+        "RP-19: the build without production-data embeds {embedded:?} of `language/preservation-1.2/library/`"
     );
-    let kept = rows
+    // The scan finds what is there: the preservation data outside `library/`,
+    // which this build does embed, is found in the same image by the same
+    // method, so an absence above is an absence and not a broken search.
+    let siblings: Vec<NormativeRow> = retained_rows
         .iter()
-        .find(|(path, _)| path == "language/preservation-1.2/library.toml")
-        .expect("the library's module list");
-    assert!(holds(&kept.1), "RP-19: `{}` is embedded", kept.0);
+        .filter(|(path, _)| path.starts_with("language/preservation-1.2/"))
+        .map(|(path, bytes)| (path.clone(), witness_of(bytes)))
+        .collect();
+    assert!(
+        siblings.len() > 1,
+        "RP-19: the retained preservation data is more than one file"
+    );
+    assert_eq!(
+        witnessed(&image, &siblings).len(),
+        siblings.len(),
+        "RP-19: the embedded preservation data outside `library/` is in the image"
+    );
 
     let normalized =
         |text: &str, project: &camino::Utf8Path| text.replace(project.as_str(), "<project>");

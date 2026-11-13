@@ -14453,30 +14453,48 @@ PR, with existing generated records untouched; its source changes are not
 qualified by those preceding records. Coordinate the single identity/writer wave
 with the release owner before readiness, merge or downstream SDK adoption.
 
-### the check-only build's language-1.2 constant can fail (RP-10, RP-19)
+### the check-only build's excluded inventory and its constant can fail (RP-19, RP-10)
 
-A build without `production-data` (§8.4) reports `LANGUAGE_1_2_SEMANTICS_ID` in
-place of the language-1.2 ID it cannot compute. A wrong constant would not change
-a verdict: such a build locks and checks consistently with itself. So the
-constant is held twice: `RP-10` against the ID recomputed from disk, and `RP-19`
-against the lock bytes of the default build.
+A build without `production-data` (§8.4) embeds no file of
+`language/preservation-1.2/library/` and reports the language-1.2
+compiler-semantics ID from `LANGUAGE_1_2_SEMANTICS_ID`. Neither holds by
+construction once a binary exists, so `RP-19` reads the built image against the
+complete excluded inventory and `RP-10` reads the constant against the tree.
 
-Planted: the last digit of the constant, `…151a` to `…151b`, in
-`crates/lexlean/src/lib.rs`. Command:
-`cargo test -p repo-conformance --all-features --test conformance -- conformance_rp_10 conformance_rp_19 --exact --test-threads=1`.
+Planted, the inventory: `build.rs` keeps out every file of the library except
+`src/Values.lex.tex` (70,609 bytes), while the largest, `src/RustLemmas.lex.tex`
+(17,189,578 bytes), stays out --- so an assertion that read the largest file
+alone would have passed. Command: `cargo test -p repo-conformance
+--all-features --test conformance -- conformance_rp_19 --exact`. Observed:
+
+```text
+test conformance_rp_19 ... FAILED
+RP-19: the build without production-data embeds ["language/preservation-1.2/library/src/Values.lex.tex"] of `language/preservation-1.2/library/`
+test result: FAILED. 0 passed; 1 failed
+```
+
+Read directly, that planted binary (77,585,088 bytes, the debug build the case
+makes) holds the witness of `src/Values.lex.tex` and not the witness of
+`src/RustLemmas.lex.tex`.
+
+Planted, the constant: its last digit, `...680b` to `...680c`, in
+`crates/lexlean/src/lib.rs`. A wrong constant changes no verdict, because such
+a build locks and checks consistently with itself, so it is held twice ---
+against the tree by `RP-10`, and against the default build's lock bytes by
+`RP-19`. Command: `cargo test -p repo-conformance --all-features --test
+conformance -- conformance_rp_10 conformance_rp_19 --exact --test-threads=1`.
 Observed:
 
 ```text
 test conformance_rp_10 ... FAILED
 test conformance_rp_19 ... FAILED
-RP-10: lexlean::LANGUAGE_1_2_SEMANTICS_ID is stale; the tree's language-1.2 ID is 635a25acb886587f8777525e778092e9599d1f2df26da59403ee39e9e299151a
-  left: "635a25acb886587f8777525e778092e9599d1f2df26da59403ee39e9e299151b"
- right: "635a25acb886587f8777525e778092e9599d1f2df26da59403ee39e9e299151a"
+RP-10: lexlean::LANGUAGE_1_2_SEMANTICS_ID is stale; the tree's language-1.2 ID is 06639c99a4cb1dbcb7fc9c0c87544ee05c599079d85272d8af66c8045900680b
+  left: "06639c99a4cb1dbcb7fc9c0c87544ee05c599079d85272d8af66c8045900680c"
+ right: "06639c99a4cb1dbcb7fc9c0c87544ee05c599079d85272d8af66c8045900680b"
 RP-19: language-1.2: lexlean.lock bytes
 test result: FAILED. 0 passed; 2 failed
 ```
 
 `RP-19` failed at the first language-1.2 lock, whose `compiler_semantics` line
-carried the planted digit while the default build's carried the tree's.
-Restored, `conformance_rp_10` passes; `conformance_rp_19` passed on the same
-tree before the plant.
+carried the planted digit while the default build's carried the tree's. With
+each plant removed, `conformance_rp_10` and `conformance_rp_19` pass.
