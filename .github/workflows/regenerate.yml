@@ -1,16 +1,22 @@
 # The write recipes of SPEC.md §9.2 on a runner (§9.4): every file the gate
 # compares with a committed oracle, regenerated from a clean checkout of the
-# dispatched ref and returned as one binary patch. Not part of the gate. It
-# reads the repository and writes nothing to it; the patch is reviewed and
-# committed like any other written output (§28.3).
+# pushed commit and committed back onto it. Not part of the gate.
 #
 #   git push origin <commit>:refs/heads/regenerate/<name>          # or regenerate/atlas/<name>
-#   gh workflow run regenerate.yml --ref <branch> [-f atlas=true]  # once on the default branch
+#
+# When the commit is the head of one open pull request of this repository,
+# `deliver` commits the regenerated tree on it, pushes that commit to the pull
+# request's branch as a fast-forward, dispatches `ci.yml` there (a push with
+# the workflow token starts no `pull_request` run), and deletes the
+# `regenerate/` branch: the landing needs no patch handled by hand. Otherwise
+# the patch is the run's artifact, as before:
+#
 #   gh run download <run> --name regenerated-<commit>
 #   git apply --index regenerated.patch
 #
 # A push to `regenerate/**` starts it from any commit, because GitHub
-# dispatches only a workflow its default branch carries.
+# dispatches only a workflow its default branch carries. `cut.yml` calls it on
+# the version commit of a release cut, naming the branch to deliver to.
 name: regenerate
 
 on:
@@ -22,12 +28,25 @@ on:
         description: Rewrite UOR Atlas's verification records too (its whole proof, in the records job)
         type: boolean
         default: false
+  workflow_call:
+    inputs:
+      ref:
+        description: The commit to regenerate (the caller's commit when empty)
+        type: string
+        default: ""
+      branch:
+        description: The branch to deliver the regenerated commit to, whose head must be `ref`
+        type: string
+        default: ""
+      atlas:
+        type: boolean
+        default: false
 
 permissions:
   contents: read
 
 concurrency:
-  group: regenerate-${{ github.ref }}
+  group: regenerate-${{ github.ref }}-${{ inputs.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -51,6 +70,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.ref || github.sha }}
           persist-credentials: false
       - name: Install the pinned Rust toolchain
         run: rustup toolchain install
@@ -121,6 +141,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.ref || github.sha }}
           persist-credentials: false
       - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -161,6 +182,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.ref || github.sha }}
           persist-credentials: false
       - name: Install the pinned Rust toolchain
         run: rustup toolchain install
@@ -288,6 +310,8 @@ jobs:
       - name: Return the regenerated tree
         if: ${{ !cancelled() }}
         shell: bash
+        env:
+          COMMIT: ${{ inputs.ref || github.sha }}
         run: |
           set -euo pipefail
           out="$RUNNER_TEMP/regenerated"
@@ -295,10 +319,10 @@ jobs:
           git add --all
           git diff --cached --binary > "$out/regenerated.patch"
           git diff --cached --name-only > "$out/regenerated-files.txt"
-          echo "$GITHUB_SHA" > "$out/base-commit.txt"
+          echo "$COMMIT" > "$out/base-commit.txt"
           (cd "$out" && sha256sum regenerated.patch regenerated-files.txt base-commit.txt > SHA256SUMS)
           {
-            echo "### Regenerated $(wc -l < "$out/regenerated-files.txt") paths on $GITHUB_SHA"
+            echo "### Regenerated $(wc -l < "$out/regenerated-files.txt") paths on $COMMIT"
             echo
             if [ -s "$out/counts.txt" ]; then
               echo '#### Counts (the writer lists here anything it could not place)'
@@ -307,14 +331,47 @@ jobs:
               echo '```'
             fi
             echo '```bash'
-            echo "gh run download $GITHUB_RUN_ID --repo $GITHUB_REPOSITORY --name regenerated-$GITHUB_SHA"
+            echo "gh run download $GITHUB_RUN_ID --repo $GITHUB_REPOSITORY --name regenerated-$COMMIT"
             echo "git apply --index regenerated.patch"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}
         with:
-          name: regenerated-${{ github.sha }}
+          name: regenerated-${{ inputs.ref || github.sha }}
           path: ${{ runner.temp }}/regenerated
           if-no-files-found: error
           retention-days: 7
+
+  # The regenerated tree delivered (§9.4): committed on the commit it was made
+  # from and pushed, as a fast-forward, to the head branch of the one open pull
+  # request of this repository whose head is still that commit (or to the
+  # branch a caller names), then the gate dispatched there. A head that moved
+  # in the meantime is left alone and the patch stays the run's artifact.
+  deliver:
+    name: deliver
+    needs: [finish]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      actions: write
+      pull-requests: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: regenerated-${{ inputs.ref || github.sha }}
+          path: ${{ runner.temp }}/regenerated
+      - name: Commit the regenerated tree to the pull request and run the gate there
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          COMMIT: ${{ inputs.ref || github.sha }}
+          BRANCH: ${{ inputs.branch }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          REGENERATED: ${{ runner.temp }}/regenerated
+        run: .github/scripts/deliver-regenerated.sh

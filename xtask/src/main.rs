@@ -10,6 +10,7 @@ use std::process::ExitCode;
 use camino::Utf8PathBuf;
 
 mod audit;
+mod bump;
 mod ci;
 mod codegen;
 mod counts;
@@ -47,6 +48,7 @@ fn main() -> ExitCode {
         "ci-shards" => ci::ci_shards(&root),
         "release-artifacts" => release_artifacts(&root),
         "release-check" => release_check(&root),
+        "bump-version" => bump::bump_version(&root, &std::env::args().skip(2).collect::<Vec<_>>()),
         "validate" => codegen::check_model(&root, false).and_then(|()| spec_links::validate(&root)),
         _ => {
             eprintln!(
@@ -83,6 +85,8 @@ fn main() -> ExitCode {
                                          runs every process once in import order\n\
                  release-artifacts       §30.3: derive the release/ artifact set from the repository\n\
                  release-check           RP-12: refuse release until §30.3/§30.4 are fully satisfied\n\
+                 bump-version X.Y.Z      §2.3, §9.4: move every site of the workspace version and the\n\
+                                         lock's workspace rows to X.Y.Z (a release cut, `cut.yml`)\n\
                  validate                validate-model then validate-spec-links\n\
                  \n\
                  --write                 validate-model / check-golden / check-fixtures / check-calculus /\n\
