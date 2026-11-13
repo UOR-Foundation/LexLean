@@ -155,6 +155,13 @@ title = "Stale production expectation"
 statement = "The source ID, semantic ID, or lock digest a production request pins differs from the project's, or the project changed while it was being exported."
 
 [[error]]
+code = "LLC0205"
+class = "cli-configuration"
+exit = 2
+title = "Production data not embedded in this build"
+statement = "The compiler was built without the production data, which production export and the certification of a production root read."
+
+[[error]]
 code = "LLF5001"
 class = "language"
 exit = 1
