@@ -503,6 +503,14 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "print_core_module",
+      "root": "LexLeanBoot.CorePrint.printCoreModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

@@ -24,6 +24,7 @@ use crate::support::{self, P};
 
 mod cli_output;
 mod core_json;
+mod core_print;
 mod diagnostics;
 mod gnaf_validate;
 mod lexicon_lre;
@@ -2576,6 +2577,7 @@ fn case(id: &str) {
         "BS-33" => project_text::case(),
         "BS-34" => manifest_text::case(),
         "BS-38" => core_json::case(),
+        "BS-39" => core_print::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

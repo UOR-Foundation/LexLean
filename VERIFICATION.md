@@ -11725,6 +11725,45 @@ then stops at the stack-bound step, `bootstrap/core_json is no package of the
 committed exports`, as each bootstrap member did before its regeneration. The
 branch is based on `release/v0.4`; `BS-39` and `BS-40` stack on it.
 
+### the printer of the core notation is source (BS-39)
+
+`BS-39` holds the production root `LexLeanBoot.CorePrint.printCoreModule`
+(`bootstrap/src/CorePrint.lex.tex`) to `surface::core::print_module`: the notation
+of a native core module of `lexlean/core-module/2` (§17.21.8). The root takes the
+module as the first-order data of `CoreJson` (`BS-38`), checks it as the oracle
+does, decides which nodes are written inside the node that uses them, builds the
+terms in one pass over the nodes with a stack, resolves each variable to the
+name of its binder or to its index and each constant to a bare word or
+`const "…"` per statement, and lays the statements out at 100 columns with
+`SurfaceDoc` (`BS-23`). It admits `recursion` in its printers of levels and
+documents. The case holds the root to the oracle on hand-built modules that reach
+every node, level, binder, annotation, and declaration form, a shadowed binder, a
+constant named like a binder, and every error of the check; on every committed
+core module of language 1.2; and on seeded edits of them. Each planted defect
+names the one vector that catches it, and the case asserts that the site of each
+plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `CorePrint`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, with the axioms Lean's audit reports declared. Lean's
+certificate check first refused a helper that tested a field of a pair inside a
+condition; it reads a record of its own.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace` with `BS-38` (1,382 s). Its corpus is 39 named vectors, the 407
+committed core modules (2 under the evaluator, all 407 under rustc), and 25 and
+500 seeded edits. The evaluator agrees with the oracle on 66 runs and the
+rendered package under the pinned rustc on 946, and each of the 29 planted
+defects is detected by its own vector. The first runs found no fault of the
+module and two of the case: the evaluator's runs on modules of 14 KB took the
+case past the host's memory, so it evaluates those of at most 9 KB on three
+processors; and the vector of the shadowed binder put the inner lambda in a
+statement of its own, where the variable is free either way, so it was rebuilt
+to write both lambdas inside one statement. The case then stops at the
+stack-bound step, `bootstrap/print_core_module is no package of the committed
+exports`, as each bootstrap member did before its regeneration. The branch is
+stacked on `BS-38`.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

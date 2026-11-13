@@ -280,6 +280,9 @@
     ],
     "bootstrap-core-json": [
       "BS-38"
+    ],
+    "bootstrap-core-print": [
+      "BS-39"
     ]
   },
   "targets": {
