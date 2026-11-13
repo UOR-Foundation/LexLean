@@ -4310,6 +4310,11 @@ fn release_gate_decisions() {
     git(&["commit", "-q", "-m", "main moves"]);
     git(&["merge", "-q", "--no-ff", "-m", "merge", "behind"]);
     let merge_different = git(&["rev-parse", "HEAD"]);
+    // A merge of the equal-tree merge: a cut's release merge carried on, two
+    // merges above the head whose run verified the tree.
+    git(&["checkout", "-q", "-b", "carried", &base]);
+    git(&["merge", "-q", "--no-ff", "-m", "carry", &merge_equal]);
+    let carried = git(&["rev-parse", "HEAD"]);
 
     // `gh`: the runs of a commit (`STUB_RUNS_<sha>`), the jobs of every run
     // (`STUB_JOBS`), and a download that writes one leg's transcript.
@@ -4417,6 +4422,17 @@ fn release_gate_decisions() {
     assert!(
         evidence.contains(&format!("gate run commit {head} (the second parent")),
         "the evidence names the parent:\n{evidence}"
+    );
+    // Two equal-tree merges above the head: the head's run, as the plan finds
+    // it for the push it ran nothing for.
+    let (code, evidence, stderr) = decide(&carried, &[(head.as_str(), run_line("25"))], &green);
+    assert_eq!(
+        code, 0,
+        "the run two equal-tree merges down is the evidence: {stderr}"
+    );
+    assert!(
+        evidence.contains(&format!("gate run commit {head} (the second parent")),
+        "the evidence names the head:\n{evidence}"
     );
     // A merge whose tree no run verified: the parent's run is not evidence.
     let (code, _, stderr) = decide(
