@@ -122,6 +122,8 @@ fn proof_uses(proof: &SemanticProof, local: &str) -> bool {
     };
     match proof {
         SemanticProof::Reflexivity | SemanticProof::Decide | SemanticProof::Congruence => false,
+        // The lowered request lists every field of the theorem's one parameter.
+        SemanticProof::RegionCheck => true,
         SemanticProof::LinearArithmetic { definitions }
         | SemanticProof::Simplify { definitions } => definitions
             .iter()
@@ -1282,6 +1284,12 @@ impl Render<'_> {
         Ok(match proof {
             SemanticProof::Reflexivity => format!("{pad}rfl\n"),
             SemanticProof::Decide => format!("{pad}decide\n"),
+            SemanticProof::RegionCheck => {
+                return Err(Diagnostic::new(
+                    code!("LLI9001"),
+                    "phase lean-backend: region_check is a whole proof, never a branch",
+                ))
+            }
             SemanticProof::LinearArithmetic { definitions } => {
                 let unfolded = definitions
                     .iter()
@@ -2081,15 +2089,19 @@ pub fn render_lean(
     // module and `law` applies it, so a module with either proof uses it.
     let laws = elaborated.contains("\"kind\":\"linear_arithmetic\"")
         || elaborated.contains("\"kind\":\"law\"");
+    // §17.12 (decision regions): a `region_check` proof applies the
+    // soundness theorem of the regions module.
+    let regions = elaborated.contains("\"kind\":\"region_check\"");
     let mut text = String::from("module\npublic import Init\n");
     if language_1_2 {
-        use crate::backend::runtime::{COLLECTIONS, LAWS, MODELS, PORTABLE, REASONING};
+        use crate::backend::runtime::{COLLECTIONS, LAWS, MODELS, PORTABLE, REASONING, REGIONS};
         for (used, runtime_module) in [
             (runtime, PORTABLE),
             (collections, COLLECTIONS),
             (models, MODELS),
             (reasoning, REASONING),
             (laws, LAWS),
+            (regions, REGIONS),
         ] {
             if used {
                 text.push_str(&format!("public import {runtime_module}\n"));
@@ -2372,11 +2384,29 @@ pub fn render_lean(
                     let binders = render.scoped_parameters(parameters, |local| {
                         term_uses(statement, local) || proof_uses(proof, local)
                     });
+                    // §17.12 (decision regions): the proof is read from the
+                    // module's prior declarations, not from the proof node.
+                    let body = if matches!(proof, SemanticProof::RegionCheck) {
+                        let lowered = crate::ir::semantic::regions::lower(
+                            &module.declarations[..index],
+                            declaration,
+                        )
+                        .map_err(|reason| {
+                            Diagnostic::new(
+                                code!("LLI9001"),
+                                format!("phase lean-backend: {reason}"),
+                            )
+                        })?;
+                        crate::ir::semantic::regions::proof_text(&lowered, "  ", |field| {
+                            format!("({}).{}", identifier(&lowered.request), identifier(field))
+                        })
+                    } else {
+                        render.proof(proof, 1, &scrutinee_types(parameters))?
+                    };
                     text.push_str(&format!(
-                        "public theorem {name}{}{binders} : {} := by\n{}",
+                        "public theorem {name}{}{binders} : {} := by\n{body}",
                         render.scoped_type_parameters(type_parameters, declaration),
                         render.term(statement),
-                        render.proof(proof, 1, &scrutinee_types(parameters))?
                     ));
                 }
                 SemanticDeclaration::Artifact { .. }
