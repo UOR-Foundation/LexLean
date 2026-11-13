@@ -277,6 +277,9 @@
     ],
     "bootstrap-manifest-text": [
       "BS-34"
+    ],
+    "bootstrap-grammar-proof": [
+      "BS-35"
     ]
   },
   "targets": {

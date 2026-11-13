@@ -55,3 +55,5 @@ writers it uses, and the standard library's `Numeral`, `Order`, and `Sha256`, an
 canonical project manifest of SPEC.md §10.1 and its digest.
 `src/ManifestText.lex.tex` (SPEC.md §17.23, `BS-34`) imports the standard library's `Json`,
 `Numeral`, `Order`, and `Text`, and writes the build manifest of SPEC.md §21.6.
+`src/GrammarProof.lex.tex` (SPEC.md §17.23, `BS-35`) imports `PrimitiveScan`, whose atoms, places,
+and refusals it reads and returns, and the standard library's `Text`.
