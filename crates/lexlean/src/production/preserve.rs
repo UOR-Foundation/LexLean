@@ -151,6 +151,28 @@ fn internal(reason: impl std::fmt::Display) -> Diagnostic {
     Diagnostic::new(code!("LLI9001"), format!("phase preservation: {reason}"))
 }
 
+/// Refuse, as `LLC0205`, work that needs the native library in a build that
+/// does not embed it (the `production-data` feature, SPEC.md §8.4).
+/// Certificate generation calls this before reading the library, so the
+/// refusal is the registered code rather than whatever the first missing
+/// file would turn into on the way out.
+///
+/// # Errors
+///
+/// `LLC0205` when this build was made without the production data.
+pub fn require_library() -> Result<(), Diagnostic> {
+    if crate::embedded::PRODUCTION_DATA {
+        Ok(())
+    } else {
+        Err(Diagnostic::new(
+            code!("LLC0205"),
+            format!(
+                "this lexlean was built without the `production-data` feature and does not embed `{LIBRARY_DIR}/`, which certificate generation reads; use a build with default features"
+            ),
+        ))
+    }
+}
+
 fn embedded_text(path: &str) -> Result<&'static str, Diagnostic> {
     crate::embedded::FILES
         .iter()
@@ -437,6 +459,7 @@ pub fn check_native_sources(
 
 fn native() -> Result<&'static Native, Diagnostic> {
     static NATIVE: OnceLock<Result<Native, String>> = OnceLock::new();
+    require_library()?;
     NATIVE.get_or_init(load_native).as_ref().map_err(internal)
 }
 
