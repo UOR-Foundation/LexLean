@@ -421,53 +421,6 @@
 'LexLeanBoot.LexiconLse.visitBinderForm' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.LexiconLse.visitForm' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.LexiconLse.visitLet' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.Cm' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.Shape' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.allMathSafe' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.associativities' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.atomSafe' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.cat' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.categories' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.channelName' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.channels' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.channelsOfCategories' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.className' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.cmMove' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.commentStep' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.contByte' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.entryPath' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.features' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.fixedArity' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.frames' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.framesOfCategories' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.inRange' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.indexIn' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.isIn' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.isLeanName' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.isMathSafeCode' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.isNameRest' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.isNameStart' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.leanStep' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.lit' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.mathDelimiters' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.mathOk' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.mathSafeStep' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.natAt' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.permittedFrame' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.plainStep' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.rendererUnsafeAscii' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.requiredChannels' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.scalarCode' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.scalarWidth' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.segAt' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.shapeFacts' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.surfaceSafety' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.tableOf' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.textOk' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.textSafePunctuation' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.tokenIndex' does not depend on any axioms
-'LexLeanBoot.LexiconSchema.tomlCommentAt' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.LexiconSchema.unsafeMessage' does not depend on any axioms
 'LexLeanBoot.LockText.Lock' does not depend on any axioms
 'LexLeanBoot.LockText.LockPackage' does not depend on any axioms
 'LexLeanBoot.LockText.LockPdf' does not depend on any axioms
