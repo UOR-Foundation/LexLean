@@ -120,6 +120,9 @@ head is an open pull request's, `regenerate.yml` commits the result to the
 pull request and restarts the gate there. A release `X.Y.Z` is cut by
 `git push origin release/vX.Y:refs/heads/cut/vX.Y.Z`; merging the pull request
 `cut.yml` opens tags and publishes it (`tag.yml`, `release.yml`).
+A pull request that is final is marked ready with auto-merge on
+(`gh pr merge --auto --merge`), so it lands when its gate passes and its
+branch is deleted on merge.
 
 ## Comments
 

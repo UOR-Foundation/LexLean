@@ -3,7 +3,7 @@
 # Once `ci.yml` has passed on that push, this tags it `vX.Y.Z`, dispatches
 # `release.yml` on the tag (a tag pushed with the workflow token starts no
 # run), and opens the pull request that carries the line to `main`, which
-# receives a line at its tag. Any other push ends at the first step.
+# receives a line at its tag, with auto-merge on. Any other push ends at the first step.
 #
 # A gate that fails leaves the commit untagged; tag it by hand once a rerun
 # passes (`git tag -a vX.Y.Z -m "LexLean vX.Y.Z" && git push origin vX.Y.Z`),
@@ -97,3 +97,7 @@ jobs:
               --body "\`main\` receives \`$GITHUB_REF_NAME\` at its tag \`v$VERSION\` (SPEC.md §9.4; opened by \`tag.yml\`)." \
               || echo "::warning::no pull request into main opened"
           fi
+          # The line contains `main`, so the merge lands the tree the tag's
+          # gate verified, and it merges itself once its checks pass.
+          gh pr merge --repo "$REPO" "$GITHUB_REF_NAME" --auto --merge \
+            || echo "::warning::auto-merge not enabled on the pull request into main"
