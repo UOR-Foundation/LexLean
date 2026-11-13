@@ -11695,6 +11695,36 @@ produces the three packages and measures the row of `print_tooling_module` in
 `tests/stack-bounds.json` (`PD-08`). The branch is stacked on `BS-24` and lands
 after it.
 
+### the canonical JSON of a core module is source (BS-38)
+
+`BS-38` holds the production root `LexLeanBoot.CoreJson.coreJson`
+(`bootstrap/src/CoreJson.lex.tex`) to `surface::core::canonical_json`: a native
+core module as its canonical JSON text. The root takes the module as
+first-order data (its schema tag, imports, node table, proof nodes, and
+declarations, each declaration as the standard library's `Json` of the value
+the host serializes it to) and writes the rest in the oracle's order; it admits
+`recursion` over a level and through the writer of a declaration. The case holds
+the root to the oracle on hand-built modules that reach every kind of node,
+level, binder, and annotation value, on every committed core module of
+language 1.2, and on seeded edits of them. Each planted defect names the one
+vector that catches it, and the case asserts that the site of each plant occurs
+once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `CoreJson`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, with the axioms Lean's audit reports declared.
+
+The case was first compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_38`, 1,209 s). Its corpus is 12 named vectors, the 407 committed
+core modules (19 under the evaluator, all 407 under rustc), and 60 and 600
+seeded edits. The evaluator agrees with the oracle on 91 runs and the rendered
+package under the pinned rustc on 1,019, and each of the 20 planted defects is
+detected by its own vector. The first run found no fault of the module. The case
+then stops at the stack-bound step, `bootstrap/core_json is no package of the
+committed exports`, as each bootstrap member did before its regeneration. The
+branch is based on `release/v0.4`; `BS-39` and `BS-40` stack on it.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
