@@ -11,7 +11,7 @@
   {
     "part": "examples",
     "recipes": "examples",
-    "examples_part": "without:uor-atlas",
+    "examples_part": "without:uor-atlas,bootstrap",
     "bdd_part": "",
     "width": "2",
     "memory_kib": "12582912",

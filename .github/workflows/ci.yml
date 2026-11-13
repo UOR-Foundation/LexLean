@@ -5,7 +5,8 @@
 # the exact pinned toolchains and no build cache: §9.4 says "from a clean
 # checkout", and a restored target directory is not one. CI runs its twelve
 # recipes as the legs of `.github/vv-rows.json` at once, each its own clean
-# checkout: `examples`, which here verifies every example but UOR Atlas, and
+# checkout: `examples`, which here verifies every example but UOR Atlas and
+# the bootstrap project (the `bootstrap export` job verifies it), and
 # `honesty`, format/model/spec-links and the BDD meta target first, then
 # `rest`, the remaining recipes in order, with the `bdd` rows below.
 # Together they run every recipe of `vv` exactly once, so the gate is the same
@@ -193,7 +194,12 @@ jobs:
   # its cases first needs it, and the harness checks the record against the
   # leg's own run and checkout and replays the bundle before the case reads
   # it. The legs start when honesty passes, as before, and wait only at that
-  # point; the artifact is read by this run alone.
+  # point; the artifact is read by this run alone. The export verifies the
+  # bootstrap project through the same `verify` the `examples` recipe runs,
+  # so this job is also that project's part of the recipe: it formats, locks,
+  # checks, and builds a clean copy first, and holds the export's verified
+  # directory to the recipe's checks after, and the `examples` leg does not
+  # verify the project again.
   bootstrap-export:
     name: bootstrap export
     needs: [plan, honesty]
@@ -244,6 +250,15 @@ jobs:
           sample_pid=$!
           trap 'kill "$sample_pid" 2>/dev/null || true; wait "$sample_pid" 2>/dev/null || true' EXIT
           cargo xtask export-bootstrap --output "$RUNNER_TEMP/bootstrap-export" 2>&1 | tee ci-evidence/vv.txt
+      # The bootstrap project's part of the `examples` recipe (§9.4), made
+      # visible as the Atlas join makes Atlas's: the leg names it in its part
+      # and does not verify it.
+      - name: Assert the export verified the bootstrap example
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -F "verify-examples: bootstrap verified (attestation " ci-evidence/vv.txt
+          grep -E "^verify-examples: bootstrap: [0-9]+ normalized verification records equal expected/verify " ci-evidence/vv.txt
       - name: Summarize the run's timing and memory
         if: ${{ !cancelled() }}
         run: cargo xtask ci-summary --evidence ci-evidence
@@ -384,8 +399,10 @@ jobs:
       # These assertions make its complete proof run visible as first-class CI
       # evidence without running the expensive verifier a second time.
       # The leg that runs `examples` is chosen by the matrix, not by the log,
-      # so a leg that should have verified Atlas and did not fails here.
-      - name: Assert the leg verified every example but Atlas
+      # so a leg that should have verified the examples and did not fails
+      # here, as does one that verified Atlas or the bootstrap project, which
+      # their own jobs verify.
+      - name: Assert the leg verified every example but Atlas and bootstrap
         shell: bash
         run: |
           set -euo pipefail
@@ -394,6 +411,10 @@ jobs:
               grep -F "verify-examples: nat-add-zero verified (attestation " ci-evidence/vv.txt
               if grep -F "verify-examples: uor-atlas" ci-evidence/vv.txt; then
                 echo "::error::the examples leg verified Atlas, which the Atlas jobs verify as parts (SPEC.md §9.4)"
+                exit 1
+              fi
+              if grep -F "verify-examples: bootstrap" ci-evidence/vv.txt; then
+                echo "::error::the examples leg verified the bootstrap project, which the bootstrap export verifies (SPEC.md §9.4)"
                 exit 1
               fi
               ;;

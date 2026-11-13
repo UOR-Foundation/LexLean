@@ -30,6 +30,15 @@ workspace carried at those versions without a tag.
   version, the changelog's `## Unreleased` heading, and `Cargo.lock`), opens the
   pull request, and regenerates it; `tag.yml` tags the merge once its gate
   passes, dispatches `release.yml`, and opens the pull request into `main`.
+- The whole gate verifies the bootstrap project once (SPEC.md §9.4). The
+  `bootstrap export` job, whose export already verified it whole through the
+  `examples` recipe's own `verify`, is now that project's part of the recipe:
+  `export-bootstrap` formats, locks, checks and builds a clean copy first and
+  then holds the export's verified directory to the recipe's checks (no
+  telemetry, records equal to `bootstrap/expected/verify`). The `examples` leg
+  runs `without:uor-atlas,bootstrap` and no longer spends about 53 minutes
+  verifying the project a second time; `LEXLEAN_EXAMPLES_PART=without:` takes
+  a comma-separated list. `RP-14` pins the job's assertion and the leg's.
 - Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
   new diagnostic code; changes the language-1.2 identity). The runtime gains a
   sixth native module, `LexLeanRuntime.Regions`: a checker of local box
