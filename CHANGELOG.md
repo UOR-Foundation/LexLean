@@ -17,6 +17,13 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The reader of the core notation as language-1.2 source (SPEC.md §17.23,
+  §17.21, `BS-40`, #269; no new diagnostic code, no change to the
+  language-1.2 identity). `readCoreModule` of `CoreRead` returns what
+  `surface::core::read_module` returns, the reader of `parse_module` before the
+  decoding of a declaration, and admits no `recursion`. `parse_module_with_spans`
+  reads with `read_module` and then decodes, with the same results and errors.
+  The register is 496 IDs.
 - The printer of the core notation as language-1.2 source (SPEC.md §17.23,
   §17.21, `BS-39`, #269; no new diagnostic code, no change to the
   language-1.2 identity). `printCoreModule` of `CorePrint` returns what

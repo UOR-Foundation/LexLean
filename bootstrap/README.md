@@ -61,3 +61,7 @@ with, `Numeral`, `Order`, and `Text`, and `SurfaceLex`, whose `quoteText` escape
 `src/CorePrint.lex.tex` (SPEC.md §17.23, `BS-39`) imports `CoreJson`, whose module types it
 prints, `AxiomOutput`, `SurfaceDoc`, `SurfaceGeneric`, `SurfaceLex`, and the standard library's
 `Json`, `Numeral`, `Order`, and `Text`.
+`src/CoreRead.lex.tex` (SPEC.md §17.23, `BS-40`) imports `CoreJson`, whose module types it
+reads to, `SurfaceLex`, whose string reader it reads strings with, `SurfaceGeneric`, whose
+`parseGeneric` reads a declaration's members, `AxiomOutput`, and the standard library's `Json`,
+`Numeral`, `Order`, and `Text`.
