@@ -11888,6 +11888,36 @@ check` of the `bootstrap/` project passes, with each of the four roots eligible
 for `rust-std` with exactly its declared effects, and `lexlean fmt --check`
 passes.
 
+### the semantic terms and proofs are source (BS-69)
+
+`BS-69` holds the two production roots of `LexLeanBoot.SemanticTerms`
+(`bootstrap/src/SemanticTerms.lex.tex`) to `lexlean::ir::semantic`: `semanticTermText`
+to the canonical JSON of the serde form of `SemanticTerm` and `semanticProofText` to
+that of `SemanticProof`, as `DocumentModule::to_json` embeds a semantic module.
+The module declares the 42 term forms and the 13 proof forms of SPEC.md §17.11
+and §17.12 as inductives over the types of `SemanticTypes` (`BS-68`). Arguments,
+assignments, match branches, map entries, and graph edges are chains of cells of
+the term itself, and proof branches and nested members chains of cells of the
+proof, so that each root is one structural recursion. A list of type arguments,
+definitions, generalized names, or premises is left out when it is empty exactly
+where the oracle's serde attributes skip it. Both roots admit exactly
+`allocation`, `overflow`, and `recursion`. The oracle is the existing public code
+of `semantic.rs` and its serde derivations; no Rust outside the case changes.
+
+The case holds each root to the oracle on hand-built terms and proofs that reach
+every constructor, every connective, every literal, binders with captures, and
+every optional list both empty and not; on every distinct term and proof of
+every committed semantic module that links, found as each JSON object of the
+module that reads back as a term or a proof; and on seeded terms and proofs.
+Each planted defect names the root and the vector that catch it, and the case
+asserts that the site of each plant occurs once. The row's statement carries no
+counts.
+
+Measured with the compiler binary of this tree's compiler sources: `lexlean
+check` of the `bootstrap/` project passes, with each of the two roots eligible
+for `rust-std` with exactly its declared effects, and `lexlean fmt --check`
+passes.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

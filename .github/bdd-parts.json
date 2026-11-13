@@ -289,6 +289,9 @@
     ],
     "bootstrap-semantic-types": [
       "BS-68"
+    ],
+    "bootstrap-semantic-terms": [
+      "BS-69"
     ]
   },
   "targets": {

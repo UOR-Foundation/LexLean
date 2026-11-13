@@ -67,3 +67,6 @@ and of a linked project, and the project's semantic ID.
 `src/SemanticTypes.lex.tex` (SPEC.md §17.23, `BS-68`) imports the standard library's `Json`, `Order`,
 and `Text`, and writes the closed types of the semantic module language as the linked IR embeds
 them and as diagnostics spell them, and the facts of its primitives and integer families.
+`src/SemanticTerms.lex.tex` (SPEC.md §17.23, `BS-69`) imports `SemanticTypes` (`BS-68`) and the standard
+library's `Json` and `Order`, and writes the closed terms and proofs of the semantic module language as
+the linked IR embeds them.

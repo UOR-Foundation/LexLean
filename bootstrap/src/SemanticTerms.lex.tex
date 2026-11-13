@@ -1,0 +1,347 @@
+\begin{lexlean}{SemanticTerms}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{SemanticTypes}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Order}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: STerm,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TVar, fields: [Bytes]},
+    {name: TNat, fields: [Bytes]},
+    {name: TInteger, fields: [SemanticTypes::SemanticInteger, Bytes]},
+    {name: TString, fields: [Bytes]},
+    {name: TBytes, fields: [Bytes]},
+    {
+      name: TPrimitive,
+      fields: [SemanticTypes::SemanticPrimitive, STerm, SemanticTypes::SemanticType]
+    },
+    {name: TBool, fields: [Bool]},
+    {name: TUnit, fields: []},
+    {name: TNil, fields: [SemanticTypes::SemanticType]},
+    {name: TCons, fields: [STerm, STerm]},
+    {name: TRecord, fields: [(Option Bytes), Bytes, SemanticTypes::SemanticType, STerm]},
+    {name: TConstructor, fields: [(Option Bytes), Bytes, SemanticTypes::SemanticType, STerm]},
+    {
+      name: TInstanceValue,
+      fields: [(Option Bytes), Bytes, SemanticTypes::SemanticType, (Option Bytes), Bytes]
+    },
+    {name: TProject, fields: [STerm, Bytes]},
+    {name: TCall, fields: [(Option Bytes), Bytes, SemanticTypes::SemanticType, STerm]},
+    {name: TIf, fields: [STerm, STerm, STerm]},
+    {name: TMatch, fields: [STerm, STerm]},
+    {name: TEq, fields: [STerm, STerm]},
+    {name: TLe, fields: [STerm, STerm]},
+    {name: TLt, fields: [STerm, STerm]},
+    {name: TAdd, fields: [STerm, STerm]},
+    {name: TBeq, fields: [STerm, STerm]},
+    {name: TBle, fields: [STerm, STerm]},
+    {name: TBlt, fields: [STerm, STerm]},
+    {name: TAnd, fields: [STerm, STerm]},
+    {name: TPropAnd, fields: [STerm, STerm]},
+    {name: TOr, fields: [STerm, STerm]},
+    {name: TNot, fields: [STerm]},
+    {name: TImplies, fields: [STerm, STerm]},
+    {name: TIff, fields: [STerm, STerm]},
+    {name: TForall, fields: [Bytes, SemanticTypes::SemanticType, STerm]},
+    {name: TLet, fields: [Bytes, SemanticTypes::SemanticType, STerm, STerm]},
+    {name: TPair, fields: [STerm, STerm]},
+    {name: TFirst, fields: [STerm]},
+    {name: TSecond, fields: [STerm]},
+    {name: TLambda, fields: [(List (Bytes * SemanticTypes::SemanticType)), (List Bytes), STerm]},
+    {name: TApply, fields: [STerm, STerm]},
+    {name: TFunctionRef, fields: [(Option Bytes), Bytes, SemanticTypes::SemanticType]},
+    {name: TMapLiteral, fields: [SemanticTypes::SemanticType, SemanticTypes::SemanticType, STerm]},
+    {name: TSetLiteral, fields: [SemanticTypes::SemanticType, STerm]},
+    {name: TGraphLiteral, fields: [SemanticTypes::SemanticType, STerm, STerm]},
+    {
+      name: TCheckedApply,
+      fields: [(Option Bytes), Bytes, SemanticTypes::SemanticType, STerm, (List Bytes)]
+    },
+    {name: KEnd, fields: []},
+    {name: KItem, fields: [STerm, STerm]},
+    {name: KAssign, fields: [Bytes, STerm, STerm]},
+    {name: KBranch, fields: [(Option Bytes), Bytes, (List Bytes), STerm, STerm]},
+    {name: KEntry, fields: [STerm, STerm, STerm]},
+    {name: KEdge, fields: [STerm, STerm, STerm]}
+  ]
+}
+
+inductive{
+  name: Reflection,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: RList, fields: [Bytes, Bytes, (Option Bytes), Bytes, (Option Bytes), Bytes, Bytes]},
+    {
+      name: RRecord,
+      fields: [Bytes, (Option Bytes), Bytes, (Option Bytes), Bytes, (List (Bytes * Bytes))]
+    }
+  ]
+}
+
+inductive{
+  name: SProof,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: PReflexivity, fields: []},
+    {name: PDecide, fields: []},
+    {name: PLinearArithmetic, fields: [(List ((Option Bytes) * Bytes))]},
+    {name: PSimplify, fields: [(List ((Option Bytes) * Bytes))]},
+    {name: PConstructor, fields: [SProof]},
+    {name: PCases, fields: [Bytes, SProof]},
+    {name: PTermCases, fields: [STerm, (List ((Option Bytes) * Bytes))]},
+    {name: PInduction, fields: [Bytes, (List Bytes), SProof]},
+    {name: PNestedInduction, fields: [Bytes, SProof, SProof]},
+    {name: PCongruence, fields: []},
+    {name: PRegionCheck, fields: []},
+    {name: PBooleanReflection, fields: [Reflection]},
+    {
+      name: PLaw,
+      fields: [Bytes, SemanticTypes::SemanticType, STerm, (List ((Option Bytes) * Bytes))]
+    },
+    {name: PApply, fields: [(Option Bytes), Bytes, SemanticTypes::SemanticType, STerm]},
+    {name: QEnd, fields: []},
+    {name: QItem, fields: [SProof, SProof]},
+    {name: QBranch, fields: [Bytes, (List Bytes), SProof, SProof]},
+    {name: QMember, fields: [SemanticTypes::SemanticType, Bytes, STerm, SProof, SProof]}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: member,
+  parameters: [key : String, entry : LexLeanStd.Json::Json, rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JMember (lit key) entry rest),
+  executable: true
+}
+
+definition{
+  name: kinded,
+  parameters: [kind : String, rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj (member "kind" (ctor LexLeanStd.Json::Json.JStr (lit kind)) rest)),
+  executable: true
+}
+
+definition{
+  name: memberJson,
+  parameters: [owner : (Option Bytes), named : Bytes],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj (match owner
+    | Option.some source => (member "module" (ctor LexLeanStd.Json::Json.JStr source) (member "name" (ctor LexLeanStd.Json::Json.JStr named) (ctor LexLeanStd.Json::Json.JNil)))
+    | Option.none => (member "name" (ctor LexLeanStd.Json::Json.JStr named) (ctor LexLeanStd.Json::Json.JNil)))),
+  executable: true
+}
+
+definition{
+  name: paramJson,
+  parameters: [named : Bytes, typed : SemanticTypes::SemanticType],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj (member "name" (ctor LexLeanStd.Json::Json.JStr named) (member "type" (SemanticTypes::typeJson typed) (ctor LexLeanStd.Json::Json.JNil)))),
+  executable: true
+}
+
+definition{
+  name: chainOf,
+  parameters: [items : (List LexLeanStd.Json::Json)],
+  result: LexLeanStd.Json::Json,
+  body: (prim list_fold (fun (chain : LexLeanStd.Json::Json) (item : LexLeanStd.Json::Json) => (ctor LexLeanStd.Json::Json.JItem item chain)) (ctor LexLeanStd.Json::Json.JNil) (LexLeanStd.Order::reverseList [LexLeanStd.Json::Json] items) : LexLeanStd.Json::Json),
+  executable: true
+}
+
+definition{
+  name: paramsJson,
+  parameters: [entries : (List (Bytes * SemanticTypes::SemanticType))],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JArr (chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (entry : (Bytes * SemanticTypes::SemanticType)) => (cons (paramJson (first entry) (second entry)) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [(Bytes * SemanticTypes::SemanticType)] entries) : (List LexLeanStd.Json::Json)))),
+  executable: true
+}
+
+definition{
+  name: namesJson,
+  parameters: [names : (List Bytes)],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JArr (chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (named : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr named) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [Bytes] names) : (List LexLeanStd.Json::Json)))),
+  executable: true
+}
+
+definition{
+  name: membersJson,
+  parameters: [refs : (List ((Option Bytes) * Bytes))],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JArr (chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (entry : ((Option Bytes) * Bytes)) => (cons (memberJson (first entry) (second entry)) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [((Option Bytes) * Bytes)] refs) : (List LexLeanStd.Json::Json)))),
+  executable: true
+}
+
+definition{
+  name: typesWhenAny,
+  parameters: [key : String, types : SemanticTypes::SemanticType, rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (match types
+    | SemanticTypes::SemanticType.SType => rest
+    | SemanticTypes::SemanticType.SNat => rest
+    | SemanticTypes::SemanticType.SBool => rest
+    | SemanticTypes::SemanticType.SProp => rest
+    | SemanticTypes::SemanticType.SUnit => rest
+    | SemanticTypes::SemanticType.SInt => rest
+    | SemanticTypes::SemanticType.SInt8 => rest
+    | SemanticTypes::SemanticType.SInt16 => rest
+    | SemanticTypes::SemanticType.SInt32 => rest
+    | SemanticTypes::SemanticType.SInt64 => rest
+    | SemanticTypes::SemanticType.SUInt8 => rest
+    | SemanticTypes::SemanticType.SUInt16 => rest
+    | SemanticTypes::SemanticType.SUInt32 => rest
+    | SemanticTypes::SemanticType.SUInt64 => rest
+    | SemanticTypes::SemanticType.SString => rest
+    | SemanticTypes::SemanticType.SBytes => rest
+    | SemanticTypes::SemanticType.SOrdering => rest
+    | SemanticTypes::SemanticType.SContractViolation => rest
+    | SemanticTypes::SemanticType.SReasoningFailure => rest
+    | SemanticTypes::SemanticType.SParameter part0 => rest
+    | SemanticTypes::SemanticType.SOption part0 => rest
+    | SemanticTypes::SemanticType.SResult part0 part1 => rest
+    | SemanticTypes::SemanticType.SList part0 => rest
+    | SemanticTypes::SemanticType.SNamed part0 part1 part2 => rest
+    | SemanticTypes::SemanticType.SProduct part0 part1 => rest
+    | SemanticTypes::SemanticType.SFunction part0 part1 => rest
+    | SemanticTypes::SemanticType.SMap part0 part1 => rest
+    | SemanticTypes::SemanticType.SSet part0 => rest
+    | SemanticTypes::SemanticType.SNil => rest
+    | SemanticTypes::SemanticType.SItem part0 part1 => (member key (ctor LexLeanStd.Json::Json.JArr (SemanticTypes::typeJson types)) rest)),
+  executable: true
+}
+
+definition{
+  name: termJson,
+  parameters: [term : STerm],
+  result: LexLeanStd.Json::Json,
+  body: (match term
+    | STerm.TVar named => (kinded "var" (member "name" (ctor LexLeanStd.Json::Json.JStr named) (ctor LexLeanStd.Json::Json.JNil)))
+    | STerm.TNat digits => (kinded "nat" (member "value" (ctor LexLeanStd.Json::Json.JStr digits) (ctor LexLeanStd.Json::Json.JNil)))
+    | STerm.TInteger family digits => (kinded "integer" (member "representation" (ctor LexLeanStd.Json::Json.JStr (SemanticTypes::integerName family)) (member "value" (ctor LexLeanStd.Json::Json.JStr digits) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TString content => (kinded "string" (member "value" (ctor LexLeanStd.Json::Json.JStr content) (ctor LexLeanStd.Json::Json.JNil)))
+    | STerm.TBytes digits => (kinded "bytes" (member "hex" (ctor LexLeanStd.Json::Json.JStr digits) (ctor LexLeanStd.Json::Json.JNil)))
+    | STerm.TPrimitive operation arguments outcome => (kinded "primitive" (member "operation" (ctor LexLeanStd.Json::Json.JStr (project (SemanticTypes::primitiveFacts operation) serdeName)) (member "arguments" (ctor LexLeanStd.Json::Json.JArr (termJson arguments)) (member "result" (SemanticTypes::typeJson outcome) (ctor LexLeanStd.Json::Json.JNil)))))
+    | STerm.TBool flag => (kinded "bool" (member "value" (ctor LexLeanStd.Json::Json.JBool flag) (ctor LexLeanStd.Json::Json.JNil)))
+    | STerm.TUnit => (kinded "unit" (ctor LexLeanStd.Json::Json.JNil))
+    | STerm.TNil element => (kinded "nil" (member "element" (SemanticTypes::typeJson element) (ctor LexLeanStd.Json::Json.JNil)))
+    | STerm.TCons head tail => (kinded "cons" (member "head" (termJson head) (member "tail" (termJson tail) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TRecord recordRefA recordRefB typeArgs assigned => (kinded "record" (member "type" (memberJson recordRefA recordRefB) (typesWhenAny "type_arguments" typeArgs (member "fields" (ctor LexLeanStd.Json::Json.JArr (termJson assigned)) (ctor LexLeanStd.Json::Json.JNil)))))
+    | STerm.TConstructor builtA builtB typeArgs arguments => (kinded "constructor" (member "constructor" (memberJson builtA builtB) (typesWhenAny "type_arguments" typeArgs (member "arguments" (ctor LexLeanStd.Json::Json.JArr (termJson arguments)) (ctor LexLeanStd.Json::Json.JNil)))))
+    | STerm.TInstanceValue classRefA classRefB typeArgs resolvedA resolvedB => (kinded "instance_value" (member "class" (memberJson classRefA classRefB) (member "arguments" (ctor LexLeanStd.Json::Json.JArr (SemanticTypes::typeJson typeArgs)) (member "resolved" (memberJson resolvedA resolvedB) (ctor LexLeanStd.Json::Json.JNil)))))
+    | STerm.TProject subject field => (kinded "project" (member "value" (termJson subject) (member "field" (ctor LexLeanStd.Json::Json.JStr field) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TCall functionA functionB typeArgs arguments => (kinded "call" (member "function" (memberJson functionA functionB) (typesWhenAny "type_arguments" typeArgs (member "arguments" (ctor LexLeanStd.Json::Json.JArr (termJson arguments)) (ctor LexLeanStd.Json::Json.JNil)))))
+    | STerm.TIf condition whenTrue whenFalse => (kinded "if" (member "condition" (termJson condition) (member "then_value" (termJson whenTrue) (member "else_value" (termJson whenFalse) (ctor LexLeanStd.Json::Json.JNil)))))
+    | STerm.TMatch scrutinee branches => (kinded "match" (member "scrutinee" (termJson scrutinee) (member "branches" (ctor LexLeanStd.Json::Json.JArr (termJson branches)) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TEq left right => (kinded "eq" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TLe left right => (kinded "le" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TLt left right => (kinded "lt" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TAdd left right => (kinded "add" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TBeq left right => (kinded "beq" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TBle left right => (kinded "ble" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TBlt left right => (kinded "blt" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TAnd left right => (kinded "and" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TPropAnd left right => (kinded "prop_and" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TOr left right => (kinded "or" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TNot subject => (kinded "not" (member "value" (termJson subject) (ctor LexLeanStd.Json::Json.JNil)))
+    | STerm.TImplies premise conclusion => (kinded "implies" (member "premise" (termJson premise) (member "conclusion" (termJson conclusion) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TIff left right => (kinded "iff" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TForall binderA binderB body => (kinded "forall" (member "binder" (paramJson binderA binderB) (member "body" (termJson body) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TLet binderA binderB bound body => (kinded "let" (member "binder" (paramJson binderA binderB) (member "value" (termJson bound) (member "body" (termJson body) (ctor LexLeanStd.Json::Json.JNil)))))
+    | STerm.TPair left right => (kinded "pair" (member "left" (termJson left) (member "right" (termJson right) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TFirst subject => (kinded "first" (member "value" (termJson subject) (ctor LexLeanStd.Json::Json.JNil)))
+    | STerm.TSecond subject => (kinded "second" (member "value" (termJson subject) (ctor LexLeanStd.Json::Json.JNil)))
+    | STerm.TLambda parameters captures body => (kinded "lambda" (member "parameters" (paramsJson parameters) (member "captures" (namesJson captures) (member "body" (termJson body) (ctor LexLeanStd.Json::Json.JNil)))))
+    | STerm.TApply function arguments => (kinded "apply" (member "function" (termJson function) (member "arguments" (ctor LexLeanStd.Json::Json.JArr (termJson arguments)) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TFunctionRef functionA functionB typeArgs => (kinded "function_ref" (member "function" (memberJson functionA functionB) (typesWhenAny "type_arguments" typeArgs (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TMapLiteral keyType valueType entries => (kinded "map_literal" (member "key" (SemanticTypes::typeJson keyType) (member "value" (SemanticTypes::typeJson valueType) (member "entries" (ctor LexLeanStd.Json::Json.JArr (termJson entries)) (ctor LexLeanStd.Json::Json.JNil)))))
+    | STerm.TSetLiteral element elements => (kinded "set_literal" (member "element" (SemanticTypes::typeJson element) (member "elements" (ctor LexLeanStd.Json::Json.JArr (termJson elements)) (ctor LexLeanStd.Json::Json.JNil))))
+    | STerm.TGraphLiteral node nodes edges => (kinded "graph_literal" (member "node" (SemanticTypes::typeJson node) (member "nodes" (ctor LexLeanStd.Json::Json.JArr (termJson nodes)) (member "edges" (ctor LexLeanStd.Json::Json.JArr (termJson edges)) (ctor LexLeanStd.Json::Json.JNil)))))
+    | STerm.TCheckedApply modelA modelB typeArgs arguments checks => (kinded "checked_apply" (member "model" (memberJson modelA modelB) (typesWhenAny "type_arguments" typeArgs (member "arguments" (ctor LexLeanStd.Json::Json.JArr (termJson arguments)) (member "checks" (namesJson checks) (ctor LexLeanStd.Json::Json.JNil))))))
+    | STerm.KEnd => (ctor LexLeanStd.Json::Json.JNil)
+    | STerm.KItem head tail => (ctor LexLeanStd.Json::Json.JItem (termJson head) (termJson tail))
+    | STerm.KAssign field assigned tail => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JObj (member "field" (ctor LexLeanStd.Json::Json.JStr field) (member "value" (termJson assigned) (ctor LexLeanStd.Json::Json.JNil)))) (termJson tail))
+    | STerm.KBranch owner named bound body tail => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JObj (member "constructor" (memberJson owner named) (member "binders" (namesJson bound) (member "body" (termJson body) (ctor LexLeanStd.Json::Json.JNil))))) (termJson tail))
+    | STerm.KEntry key entry tail => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JObj (member "key" (termJson key) (member "value" (termJson entry) (ctor LexLeanStd.Json::Json.JNil)))) (termJson tail))
+    | STerm.KEdge source target tail => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JObj (member "source" (termJson source) (member "target" (termJson target) (ctor LexLeanStd.Json::Json.JNil)))) (termJson tail))),
+  executable: true,
+  recursive_argument: term
+}
+
+definition{
+  name: reflectionJson,
+  parameters: [reflection : Reflection],
+  result: LexLeanStd.Json::Json,
+  body: (match reflection
+    | Reflection.RList parameter values booleanA booleanB propositionA propositionB comparison => (kinded "list" (member "parameter" (ctor LexLeanStd.Json::Json.JStr parameter) (member "values" (ctor LexLeanStd.Json::Json.JStr values) (member "boolean_definition" (memberJson booleanA booleanB) (member "proposition_definition" (memberJson propositionA propositionB) (member "comparison" (ctor LexLeanStd.Json::Json.JStr comparison) (ctor LexLeanStd.Json::Json.JNil)))))))
+    | Reflection.RRecord recordName booleanA booleanB propositionA propositionB fields => (kinded "record" (member "record" (ctor LexLeanStd.Json::Json.JStr recordName) (member "boolean_definition" (memberJson booleanA booleanB) (member "proposition_definition" (memberJson propositionA propositionB) (member "fields" (ctor LexLeanStd.Json::Json.JArr (chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (entry : (Bytes * Bytes)) => (cons (ctor LexLeanStd.Json::Json.JObj (member "field" (ctor LexLeanStd.Json::Json.JStr (first entry)) (member "expected" (ctor LexLeanStd.Json::Json.JStr (second entry)) (ctor LexLeanStd.Json::Json.JNil)))) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [(Bytes * Bytes)] fields) : (List LexLeanStd.Json::Json)))) (ctor LexLeanStd.Json::Json.JNil))))))),
+  executable: true
+}
+
+definition{
+  name: proofJson,
+  parameters: [proof : SProof],
+  result: LexLeanStd.Json::Json,
+  body: (match proof
+    | SProof.PReflexivity => (kinded "reflexivity" (ctor LexLeanStd.Json::Json.JNil))
+    | SProof.PDecide => (kinded "decide" (ctor LexLeanStd.Json::Json.JNil))
+    | SProof.PLinearArithmetic definitions => (kinded "linear_arithmetic" (match definitions
+      | List.nil => (ctor LexLeanStd.Json::Json.JNil)
+      | List.cons head rest => (member "definitions" (membersJson definitions) (ctor LexLeanStd.Json::Json.JNil))))
+    | SProof.PSimplify definitions => (kinded "simplify" (member "definitions" (membersJson definitions) (ctor LexLeanStd.Json::Json.JNil)))
+    | SProof.PConstructor branches => (kinded "constructor" (member "branches" (ctor LexLeanStd.Json::Json.JArr (proofJson branches)) (ctor LexLeanStd.Json::Json.JNil)))
+    | SProof.PCases scrutinee branches => (kinded "cases" (member "scrutinee" (ctor LexLeanStd.Json::Json.JStr scrutinee) (member "branches" (ctor LexLeanStd.Json::Json.JArr (proofJson branches)) (ctor LexLeanStd.Json::Json.JNil))))
+    | SProof.PTermCases scrutinee definitions => (kinded "term_cases" (member "scrutinee" (termJson scrutinee) (member "definitions" (membersJson definitions) (ctor LexLeanStd.Json::Json.JNil))))
+    | SProof.PInduction scrutinee generalized branches => (kinded "induction" (member "scrutinee" (ctor LexLeanStd.Json::Json.JStr scrutinee) (match generalized
+      | List.nil => (member "branches" (ctor LexLeanStd.Json::Json.JArr (proofJson branches)) (ctor LexLeanStd.Json::Json.JNil))
+      | List.cons head rest => (member "generalizing" (namesJson generalized) (member "branches" (ctor LexLeanStd.Json::Json.JArr (proofJson branches)) (ctor LexLeanStd.Json::Json.JNil))))))
+    | SProof.PNestedInduction scrutinee branches nested => (kinded "nested_induction" (member "scrutinee" (ctor LexLeanStd.Json::Json.JStr scrutinee) (member "branches" (ctor LexLeanStd.Json::Json.JArr (proofJson branches)) (member "members" (ctor LexLeanStd.Json::Json.JArr (proofJson nested)) (ctor LexLeanStd.Json::Json.JNil)))))
+    | SProof.PCongruence => (kinded "congruence" (ctor LexLeanStd.Json::Json.JNil))
+    | SProof.PRegionCheck => (kinded "region_check" (ctor LexLeanStd.Json::Json.JNil))
+    | SProof.PBooleanReflection reflection => (kinded "boolean_reflection" (member "reflection" (reflectionJson reflection) (ctor LexLeanStd.Json::Json.JNil)))
+    | SProof.PLaw lawName typeArgs arguments premises => (kinded "law" (member "name" (ctor LexLeanStd.Json::Json.JStr lawName) (typesWhenAny "type_arguments" typeArgs (member "arguments" (ctor LexLeanStd.Json::Json.JArr (termJson arguments)) (match premises
+      | List.nil => (ctor LexLeanStd.Json::Json.JNil)
+      | List.cons head rest => (member "premises" (membersJson premises) (ctor LexLeanStd.Json::Json.JNil)))))))
+    | SProof.PApply theoremRefA theoremRefB typeArgs arguments => (kinded "apply" (member "theorem" (memberJson theoremRefA theoremRefB) (typesWhenAny "type_arguments" typeArgs (member "arguments" (ctor LexLeanStd.Json::Json.JArr (termJson arguments)) (ctor LexLeanStd.Json::Json.JNil)))))
+    | SProof.QEnd => (ctor LexLeanStd.Json::Json.JNil)
+    | SProof.QItem head tail => (ctor LexLeanStd.Json::Json.JItem (proofJson head) (proofJson tail))
+    | SProof.QBranch built bound proved tail => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JObj (member "constructor" (ctor LexLeanStd.Json::Json.JStr built) (member "binders" (namesJson bound) (member "proof" (proofJson proved) (ctor LexLeanStd.Json::Json.JNil))))) (proofJson tail))
+    | SProof.QMember typed bound statement branches tail => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JObj (member "type" (SemanticTypes::typeJson typed) (member "binder" (ctor LexLeanStd.Json::Json.JStr bound) (member "statement" (termJson statement) (member "branches" (ctor LexLeanStd.Json::Json.JArr (proofJson branches)) (ctor LexLeanStd.Json::Json.JNil)))))) (proofJson tail))),
+  executable: true,
+  recursive_argument: proof
+}
+
+definition{
+  name: semanticTermText,
+  parameters: [term : STerm],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (termJson term)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: semanticProofText,
+  parameters: [proof : SProof],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (proofJson proof)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
