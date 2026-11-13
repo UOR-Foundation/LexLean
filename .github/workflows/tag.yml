@@ -142,8 +142,10 @@ jobs:
           if git merge-base --is-ancestor FETCH_HEAD HEAD 2>/dev/null \
             || { git fetch --quiet --unshallow origin 2>/dev/null; git fetch --quiet origin main \
                  && git merge-base --is-ancestor FETCH_HEAD HEAD; }; then
-            gh pr merge --repo "$REPO" "$LINE" --merge \
-              || echo "::warning::the pull request into main did not merge"
+            # Bound to the tagged commit: a line that moved past it is not
+            # what this run verified, and the merge is refused.
+            gh pr merge --repo "$REPO" "$LINE" --merge --match-head-commit "$COMMIT" \
+              || echo "::warning::the pull request into main did not merge at $COMMIT; it waits for a person"
           else
             echo "::warning::main has commits $LINE lacks; the pull request into main waits for a person"
             echo "\`main\` has commits \`$LINE\` lacks: the pull request into main is left for a person." >> "$GITHUB_STEP_SUMMARY"

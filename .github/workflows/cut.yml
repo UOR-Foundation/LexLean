@@ -172,9 +172,11 @@ jobs:
         run: .github/scripts/await-gate.sh
 
   # The merge of the pull request at the head the gate passed on, as a merge
-  # commit: the line has not moved since the cut, so the merge's tree is the
-  # head's, which is the evidence `ci.yml`'s plan and `release-gate.sh` accept
-  # for it (the merge pushed with the workflow token starts no run of its own).
+  # commit made here on the line's head B and pushed with a lease on B: B is
+  # an ancestor of the head, so the merge's tree is the head's, the evidence
+  # `ci.yml`'s plan and `release-gate.sh` accept for it (the push, made with
+  # the workflow token, starts no run of its own), and a line that moved after
+  # the check refuses the push instead of taking a tree nobody verified.
   land:
     name: land the cut
     needs: [version, regenerate, gate, gate-more]
@@ -190,6 +192,9 @@ jobs:
       merge: ${{ steps.merge.outputs.merge }}
       line: ${{ steps.merge.outputs.line }}
     steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
       - name: Merge the pull request at the verified head
         id: merge
         shell: bash
@@ -198,6 +203,7 @@ jobs:
           REPO: ${{ github.repository }}
           BRANCH: ${{ needs.version.outputs.branch }}
           HEAD_SHA: ${{ needs.regenerate.outputs.head }}
+          REPO_OWNER: ${{ github.repository_owner }}
         run: |
           set -euo pipefail
           pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number,baseRefName,headRefOid \
@@ -211,17 +217,24 @@ jobs:
             echo "::error::$BRANCH is at $head, not $HEAD_SHA where the gate passed; merge it by hand once its gate passes"
             exit 1
           fi
-          base=$(gh api "repos/$REPO/branches/$line" --jq .commit.sha)
-          if [ "$(gh api "repos/$REPO/compare/$base...$HEAD_SHA" --jq .behind_by)" != 0 ]; then
+          git fetch --quiet origin "+refs/heads/$line:refs/remotes/origin/$line"
+          base=$(git rev-parse "refs/remotes/origin/$line")
+          if ! git merge-base --is-ancestor "$base" "$HEAD_SHA"; then
             echo "::error::$line moved to $base since the cut, so the merge would land a tree the gate did not verify; merge it by hand"
             exit 1
           fi
-          gh pr merge --repo "$REPO" "$number" --merge --match-head-commit "$HEAD_SHA"
-          merge=$(gh pr view --repo "$REPO" "$number" --json mergeCommit --jq .mergeCommit.oid)
-          if [ -z "$merge" ] || [ "$merge" = null ]; then
-            echo "::error::pull request #$number reports no merge commit"
+          git checkout --quiet --detach "$base"
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            merge --quiet --no-ff --no-edit \
+            -m "Merge pull request #$number from $REPO_OWNER/$BRANCH" -m "Release ${BRANCH#cut/v}, landed by cut.yml at the head its gate verified." "$HEAD_SHA"
+          if [ "$(git rev-parse 'HEAD^{tree}')" != "$(git rev-parse "$HEAD_SHA^{tree}")" ]; then
+            echo "::error::the merge's tree is not the tree the gate verified"
             exit 1
           fi
+          # The lease makes the push land only on the B checked above.
+          git push --force-with-lease="refs/heads/$line:$base" origin "HEAD:refs/heads/$line"
+          merge=$(git rev-parse HEAD)
           echo "merge=$merge" >> "$GITHUB_OUTPUT"
           echo "line=$line" >> "$GITHUB_OUTPUT"
           echo "Merged #$number into \`$line\` as \`$merge\` at the verified head \`$HEAD_SHA\`." >> "$GITHUB_STEP_SUMMARY"
