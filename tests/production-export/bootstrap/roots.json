@@ -495,6 +495,22 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "print_at",
+      "root": "LexLeanBoot.SemanticPrint.printAt",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "print_semantic_module",
+      "root": "LexLeanBoot.SemanticPrint.printSemanticModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

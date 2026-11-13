@@ -11695,6 +11695,52 @@ produces the three packages and measures the row of `print_tooling_module` in
 `tests/stack-bounds.json` (`PD-08`). The branch is stacked on `BS-24` and lands
 after it.
 
+### the printer of the semantic notation is source (BS-36)
+
+`BS-36` holds the production roots `LexLeanBoot.SemanticPrint.printAt` and
+`printSemanticModule` (`bootstrap/src/SemanticPrint.lex.tex`) to
+`surface::semantic::print_at` and `print_module`. The semantic-module schema is
+the host's input, the bytes the oracle reads from the embedded tree, which the
+case asserts are the committed `schemas/semantic-module-v2.schema.json`. The
+module imports `SurfaceGeneric` (`BS-24`), `SurfaceDoc` (`BS-23`), `SurfaceLex`
+(`BS-22`), and the standard library's `Json`, `Order`, and `Text`; both roots
+admit `recursion`, as the printer of `BS-24` does. The case holds the roots to
+the oracle on hand-built values that reach every readable form of a term and a
+type and each condition that writes a value generically (a member more, a name
+the form cannot write, a non-canonical literal, empty type arguments, a member
+spelled like a type), every error of a module, and the schema's sample of every
+alternative of the declaration, term, type, and proof unions; on the committed
+semantic modules written in the notation, read by the oracle and printed whole
+and one declaration at a time; and on seeded edits of their declarations. Each
+planted defect names the one vector that catches it, and the case asserts that
+the site of each plant occurs once. One test of the oracle cannot be planted:
+`plain` refuses a variable named `false`, which `is_bare` already refuses, so
+dropping it changes no output. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `SemanticPrint`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass once the axioms Lean's audit reports are declared
+(`Quot.sound` and `propext` on the definitions that match on the schema's
+values). The first verify refused `docAt` for returning its own matched
+parameter in a leaf arm (`LLI9001`); the arm rebuilds the constructor.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace`. Its corpus is 314 named vectors (306 values at a position and 8
+modules), 408 committed modules with 9,022 declarations (328 declarations and
+176 modules under the evaluator, 1,508 and 340 under rustc, sampled because
+each run carries the schema), and 200 and 800 seeded edits. The evaluator
+agrees with the oracle on 834 runs of `printAt` and 184 of
+`printSemanticModule`, and each of the 29 planted defects is detected by its own
+vector. The first runs found no fault of the module and three of the case: two
+schema samples shared a label, the whole corpus with a copy of the schema in
+each run took 9 GB, and one plant's vector used a parameter name that is still
+bare. The rustc differential of that run was ended by the host's out-of-memory
+killer, which stopped the shared VM's largest processes for another job; it
+reruns with the regeneration. The case then stops at the stack-bound step, as
+each bootstrap member did before its regeneration, which produces the
+`bootstrap/print_at` and `bootstrap/print_semantic_module` packages. The branch
+is based on `release/v0.4` and stacks on nothing.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

@@ -55,3 +55,6 @@ writers it uses, and the standard library's `Numeral`, `Order`, and `Sha256`, an
 canonical project manifest of SPEC.md §10.1 and its digest.
 `src/ManifestText.lex.tex` (SPEC.md §17.23, `BS-34`) imports the standard library's `Json`,
 `Numeral`, `Order`, and `Text`, and writes the build manifest of SPEC.md §21.6.
+`src/SemanticPrint.lex.tex` (SPEC.md §17.23, `BS-36`) imports `SurfaceGeneric`, whose generic
+notation it writes every value without a readable form in, `SurfaceDoc`, `SurfaceLex`, and the
+standard library's `Json`, `Order`, and `Text`.
