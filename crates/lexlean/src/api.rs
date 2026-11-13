@@ -1056,6 +1056,18 @@ impl Engine {
         let operational = crate::verify::operational::Operational::from_environment()
             .map_err(LexLeanError::from_diagnostic)?;
         let (mut checked, lock) = self.checked(&request.selection)?;
+        // A project with a production root is certified, which needs the
+        // native library; a build without it refuses here, before a build is
+        // rendered or published (§8.4), not partway through verification.
+        if checked
+            .modules
+            .values()
+            .filter_map(|module| module.production.as_ref())
+            .any(|report| !report.roots.is_empty())
+        {
+            crate::production::preserve::require_library()
+                .map_err(LexLeanError::from_diagnostic)?;
+        }
         let mut rendered = render_build(&self.project, &checked)?;
         // Rendering is the last consumer of parser atoms,
         // declaration-origin tables, visibility sets, and the core

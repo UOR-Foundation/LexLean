@@ -1,0 +1,110 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.bool@1.2.0}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{regions.titles@1.0.0}
+\title{A thermostat decided by regions}
+\begin{semanticmodule}
+definition{name: answerIdle, parameters: [], result: Nat, body: 0}
+
+definition{name: answerHeat, parameters: [], result: Nat, body: 1}
+
+definition{name: answerCool, parameters: [], result: Nat, body: 2}
+
+definition{name: answerDry, parameters: [], result: Nat, body: 3}
+
+structure{
+  name: Request,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: temperature, type: Nat}, {name: humidity, type: Nat}, {name: occupied, type: Nat}]
+}
+
+definition{
+  name: cooling,
+  parameters: [request : Request],
+  result: Bool,
+  body: (((project request occupied) =? 1) && (29 <? (project request temperature)))
+}
+
+definition{
+  name: heating,
+  parameters: [request : Request],
+  result: Bool,
+  body: (((project request occupied) =? 1) && ((project request temperature) <=? 15))
+}
+
+definition{
+  name: drying,
+  parameters: [request : Request],
+  result: Bool,
+  body: (70 <? (project request humidity))
+}
+
+definition{
+  name: judge,
+  parameters: [request : Request],
+  result: Nat,
+  body: (if (cooling request) then (answerCool) else (if (heating request) then (answerHeat) else (if (drying request) then (answerDry) else (answerIdle))))
+}
+
+definition{
+  name: breaksCoolWhenHot,
+  parameters: [request : Request],
+  result: Bool,
+  body: (((((((project request temperature) <=? 50) && ((project request humidity) <=? 100)) && ((project request occupied) <? 2)) && ((project request occupied) =? 1)) && (29 <? (project request temperature))) && (not ((judge request) =? (answerCool))))
+}
+
+theorem{
+  name: coolWhenHot,
+  parameters: [request : Request],
+  statement: ((breaksCoolWhenHot request) = false),
+  proof: region_check{},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: breaksNoHeatWhenEmpty,
+  parameters: [request : Request],
+  result: Bool,
+  body: (((((project request temperature) <=? 50) && ((project request humidity) <=? 100)) && ((project request occupied) =? 0)) && ((judge request) =? (answerHeat)))
+}
+
+theorem{
+  name: noHeatWhenEmpty,
+  parameters: [request : Request],
+  statement: ((breaksNoHeatWhenEmpty request) = false),
+  proof: region_check{},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: breaksNoCoolWhenEmpty,
+  parameters: [request : Request],
+  result: Bool,
+  body: (((((project request temperature) <=? 50) && ((project request humidity) <=? 100)) && ((project request occupied) =? 0)) && ((judge request) =? (answerCool)))
+}
+
+theorem{
+  name: noCoolWhenEmpty,
+  parameters: [request : Request],
+  statement: ((breaksNoCoolWhenEmpty request) = false),
+  proof: region_check{},
+  axioms: [Quot.sound, propext]
+}
+
+definition{
+  name: breaksIdleWhenEmptyAndDry,
+  parameters: [request : Request],
+  result: Bool,
+  body: ((((((project request temperature) <=? 50) && ((project request humidity) <=? 70)) && ((project request occupied) =? 0)) && (not ((project request temperature) =? 99))) && (not ((judge request) =? (answerIdle))))
+}
+
+theorem{
+  name: idleWhenEmptyAndDry,
+  parameters: [request : Request],
+  statement: ((breaksIdleWhenEmptyAndDry request) = false),
+  proof: region_check{},
+  axioms: [Quot.sound, propext]
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -300,11 +300,25 @@ fn semantics_selection(language: &str) -> Option<fn(&str) -> bool> {
     }
 }
 
+/// The language-1.2 compiler-semantics ID of the full embedded tree, checked
+/// in for a build without the `production-data` feature, which lacks part of
+/// that tree and so cannot compute it (SPEC.md §8.4, §21.2). A build with the
+/// feature computes the ID and never reads this. RP-10 recomputes the ID from
+/// disk and fails when this differs: a wrong value here would lock and check
+/// consistently with itself, so agreement on verdicts could not reveal it.
+/// The 1.0 and 1.1 IDs need no constant: no file they cover is left out.
+pub const LANGUAGE_1_2_SEMANTICS_ID: &str =
+    "a82990b56aa082f57e3bf3e2d6494d75a8170f26e269448de19110f5459655ad";
+
 /// The `(repository-relative path, bytes)` rows of the embedded tree whose §11.5
 /// digest is `language`'s compiler-semantics ID, in path order (§21.10).
-/// `None` for an unsupported language.
+/// `None` for an unsupported language, and for language 1.2 without the
+/// `production-data` feature, whose embedded tree cannot cover it.
 #[must_use]
 pub fn compiler_semantics_files(language: &str) -> Option<EmbeddedRows> {
+    if language == LANGUAGE_1_2 && !embedded::PRODUCTION_DATA {
+        return None;
+    }
     semantics_selection(language).map(embedded_rows)
 }
 
@@ -318,16 +332,20 @@ pub fn compiler_semantics_id_for(language: &str) -> Sha256Digest {
     static V1_1: OnceLock<Sha256Digest> = OnceLock::new();
     static V1_2: OnceLock<Sha256Digest> = OnceLock::new();
     match language {
-        LANGUAGE_VERSION | LANGUAGE_1_1 | LANGUAGE_1_2 => {
-            let slot = match language {
-                LANGUAGE_VERSION => &V1_0,
-                LANGUAGE_1_1 => &V1_1,
-                _ => &V1_2,
-            };
+        LANGUAGE_VERSION | LANGUAGE_1_1 => {
+            let slot = if language == LANGUAGE_VERSION { &V1_0 } else { &V1_1 };
             *slot.get_or_init(|| {
                 embedded_digest(semantics_selection(language).expect("a supported language"))
             })
         }
+        LANGUAGE_1_2 => *V1_2.get_or_init(|| {
+            if embedded::PRODUCTION_DATA {
+                embedded_digest(semantics_selection(language).expect("a supported language"))
+            } else {
+                Sha256Digest::from_hex(LANGUAGE_1_2_SEMANTICS_ID)
+                    .expect("RP-10 parses the checked-in language-1.2 ID")
+            }
+        }),
         // An unsupported language never shares an identity with a supported
         // one; configuration rejects it before any identity is published.
         other => Sha256Digest::of(format!("unsupported-language\0{other}").as_bytes()),

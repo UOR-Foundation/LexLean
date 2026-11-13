@@ -28,7 +28,48 @@ workspace carried at those versions without a tag.
   stable `Engine` entry points (§24.1). `AR-15` recomputes with
   its own SHA-256 every identity the committed build manifests, locks,
   build outputs, and Rust packages record, and requires each to equal the
-  recorded one. The register is 495 IDs.
+  recorded one. The register is 497 IDs.
+- Releases and regeneration need no hand steps (SPEC.md §9.4). `regenerate.yml`
+  gains the job `deliver`: when the regenerated commit heads one open pull
+  request of this repository, the patch is committed on it, pushed to the pull
+  request's branch as a fast-forward, the gate is dispatched there, and the
+  `regenerate/` branch is deleted; the patch is still the run's artifact
+  otherwise. `ci.yml`'s plan treats a dispatch on a pull request's head branch
+  as that pull request (draft: honesty then `rest`), and a passed dispatched run
+  of a merged head lets the merge push run nothing, as a pull request run does.
+  A release is cut by pushing the line's head to `cut/vX.Y.Z`: `cut.yml` runs
+  the new `cargo xtask bump-version X.Y.Z` (every site of the workspace
+  version, the changelog's `## Unreleased` heading, and `Cargo.lock`), opens the
+  pull request, and regenerates it; `tag.yml` tags the merge once its gate
+  passes, dispatches `release.yml`, and opens the pull request into `main`.
+- Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
+  new diagnostic code; changes the language-1.2 identity). The runtime gains a
+  sixth native module, `LexLeanRuntime.Regions`: a checker of local box
+  obligations for first-match decisions over natural-number fields, and
+  `LexLeanRegions.holds`, its soundness theorem, within `propext` and
+  `Quot.sound` (`tests/runtime-library/REGIONS.md`). The language-1.2 proof
+  form `region_check` proves a property `breaks request = false` of such a
+  decision with one kernel-decided obligation and that theorem; the lowered
+  data is definitionally the module's own definitions, so the lowering is not
+  trusted. Verdant Resonance (35 rules, 15 properties), which
+  `linear_arithmetic` could not prove, verifies. The register is 496 IDs.
+- A check-only build of the crate, #495. The `lexlean` crate's
+  `production-data` feature, on by default, embeds
+  `language/preservation-1.2/library/`, the native preservation library that
+  only certificate generation reads (32.2 of the 36.4 MB of embedded data).
+  Built with `--no-default-features`, the crate leaves it out and reports the
+  language-1.2 compiler-semantics ID from `LANGUAGE_1_2_SEMANTICS_ID`, which
+  `RP-10` now requires to equal the ID recomputed from disk; a project's
+  `check`, `lock`, `fmt`, and `build` behave as in a default build, and
+  `production build` and the `verify` of a project with a production root are
+  refused with the new `LLC0205` before anything is published (`RP-19`).
+  Its version report adds the line `variant check-only`: it shares the
+  compiler-semantics IDs of a full build, not its executable identity.
+  SPEC.md §8.4 names this feature as the one exception to its rule that no
+  feature disables a normative capability. A default build is unchanged.
+  A landing that moves the language-1.2 ID now also updates the constant;
+  `RP-10` names the new value when it is stale.
+
 - `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
   command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
   new language-1.2 module `RuntimeHost`, that calls the step and carries out each

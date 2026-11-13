@@ -341,13 +341,21 @@ fn print_human_diagnostics(stderr: &mut dyn Write, error: &LexLeanError, colors:
 }
 
 fn version_text() -> String {
-    format!(
+    let report = format!(
         "lexlean {}\nlanguage {}\ncompiler-semantics {}\nlean-toolchain {}\n",
         crate::COMPILER_VERSION,
         crate::LANGUAGE_VERSION,
         crate::compiler_semantics_id().to_hex(),
         crate::LEAN_TOOLCHAIN
-    )
+    );
+    // A build without the production data shares the compiler-semantics IDs
+    // of a full build but cannot certify, so it says what it is: the same
+    // four lines would let it pass for a release binary (§8.4, §30.3).
+    if crate::embedded::PRODUCTION_DATA {
+        report
+    } else {
+        report + "variant check-only\n"
+    }
 }
 
 /// The generated `ERRORS.md` entry for one registered code (§23.4).
