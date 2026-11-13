@@ -22,7 +22,7 @@ workspace carried at those versions without a tag.
   `BS-72`, #269; no new diagnostic code, no change to the language-1.2 identity).
   `reasoningDeclarationText` and `wholeSemanticModuleText` of `SemanticReasoning` return the
   canonical JSON of the serde form of those declarations and of `SemanticModule`, for
-  every committed semantic module. The register is 501 IDs.
+  every committed semantic module. The register is 502 IDs.
 - The declarations of artifacts, contracts, realizations, evidence, and models as
   language-1.2 source, seventh slice of the typed IR (SPEC.md §17.23, §17.12, `BS-71`,
   #269; no new diagnostic code, no change to the language-1.2 identity).
