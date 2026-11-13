@@ -269,6 +269,7 @@ fn plan_decisions() {
          case \"$2\" in\n\
            */workflows/ci.yml/runs\\?*) printf '%s\\n' \"${STUB_RUNS:-}\" ;;\n\
            */runs/*/jobs\\?*) printf '%s\\n' \"${STUB_JOBS:-}\" ;;\n\
+           */pulls\\?*) printf '%s\\n' \"${STUB_PULLS:-}\" ;;\n\
            *) exit 2 ;;\n\
          esac\n",
     )
@@ -279,14 +280,17 @@ fn plan_decisions() {
         std::fs::set_permissions(&stub, std::fs::Permissions::from_mode(0o755)).expect("chmod");
     }
     let path = format!("{}:{}", bin.display(), std::env::var("PATH").expect("PATH"));
-    // (full, rows' parts) for one planted event.
-    let decide = |event: &str,
-                  draft: &str,
-                  base: &str,
-                  commit: &str,
-                  runs: &str,
-                  jobs: &[String],
-                  fail: bool| {
+    // (full, rows' parts) for one planted event; a dispatch names its branch
+    // and the open pull requests `gh` lists for it, as `draft<TAB>base` lines.
+    let decide_with = |event: &str,
+                       draft: &str,
+                       base: &str,
+                       commit: &str,
+                       runs: &str,
+                       jobs: &[String],
+                       fail: bool,
+                       branch: &str,
+                       pulls: &str| {
         git(&["checkout", "-q", "--detach", commit]);
         let out = dir.join("out");
         let _ = std::fs::remove_file(&out);
@@ -303,7 +307,9 @@ fn plan_decisions() {
             .env("GITHUB_OUTPUT", &out)
             .env("GITHUB_STEP_SUMMARY", dir.join("summary"))
             .env("STUB_RUNS", runs)
-            .env("STUB_JOBS", jobs.join("\n"));
+            .env("STUB_JOBS", jobs.join("\n"))
+            .env("REF", branch)
+            .env("STUB_PULLS", pulls);
         if fail {
             command.env("STUB_FAIL", "1");
         }
@@ -343,6 +349,14 @@ fn plan_decisions() {
                 .collect::<Vec<_>>(),
         )
     };
+    let decide =
+        |event: &str,
+         draft: &str,
+         base: &str,
+         commit: &str,
+         runs: &str,
+         jobs: &[String],
+         fail: bool| { decide_with(event, draft, base, commit, runs, jobs, fail, "", "") };
     let whole = ("true".to_owned(), parts.clone());
     let draft = (
         "false".to_owned(),
@@ -403,6 +417,59 @@ fn plan_decisions() {
     assert_eq!(
         decide("workflow_dispatch", "", "main", &direct, "", &[], false),
         whole
+    );
+    // A dispatch on the head branch of one open pull request of this
+    // repository is planned as that pull request (`regenerate.yml` commits
+    // to the head with the workflow token, which starts no pull request run);
+    // no pull request, several, or an unreadable list is the whole gate.
+    for (what, pulls, fail, expected) in [
+        ("a draft's head", "true\trelease/v0.4", false, &draft),
+        ("a stacked head", "false\tclaude/issue-91-h6", false, &draft),
+        (
+            "a ready head into a line",
+            "false\trelease/v0.4",
+            false,
+            &whole,
+        ),
+        ("a branch with no pull request", "", false, &whole),
+        (
+            "a branch that heads two pull requests",
+            "true\trelease/v0.4\ntrue\tmain",
+            false,
+            &whole,
+        ),
+        ("an unreadable list", "true\trelease/v0.4", true, &whole),
+    ] {
+        assert_eq!(
+            &decide_with(
+                "workflow_dispatch",
+                "",
+                "",
+                &direct,
+                "",
+                &[],
+                fail,
+                "claude/issue-91-h7",
+                pulls
+            ),
+            expected,
+            "§9.4: a dispatch on {what}"
+        );
+    }
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &direct,
+            "",
+            &[],
+            false,
+            "",
+            "true\tmain"
+        ),
+        whole,
+        "§9.4: a dispatch that names no branch is the whole gate"
     );
     assert_eq!(decide("push", "", "main", &direct, "", &[], false), whole);
     // A merge of its head's tree whose whole gate passed runs nothing.
@@ -533,8 +600,12 @@ fn plan_decisions() {
     let script_text = root_file(".github/ci-plan.sh");
     assert!(
         script_text.contains(".head_repository.full_name == \\\"$repo\\\"")
-            && script_text.contains("event=pull_request&status=success"),
-        "§9.4: only a passed pull request run of this repository counts"
+            && script_text.contains("runs?head_sha=$parent&status=success")
+            && script_text.contains(
+                "select(.event == \\\"pull_request\\\" or .event == \\\"workflow_dispatch\\\")"
+            )
+            && script_text.contains("select(.head.repo.full_name == \\\"$repo\\\")"),
+        "§9.4: only a passed pull request or dispatched run of this repository counts, and only this repository's pull request plans a dispatch"
     );
 }
 
@@ -2290,7 +2361,8 @@ pub(crate) fn run(id: &str) {
                     && plan_job.contains("        run: .github/ci-plan.sh\n")
                     && plan_job.contains("          DRAFT: ${{ github.event.pull_request.draft }}\n")
                     && plan_job.contains("          BASE: ${{ github.event.pull_request.base.ref }}\n")
-                    && plan_job.contains("          EVENT: ${{ github.event_name }}\n"),
+                    && plan_job.contains("          EVENT: ${{ github.event_name }}\n")
+                    && plan_job.contains("          REF: ${{ github.ref_name }}\n"),
                 "§9.4: the plan runs the script on the event and the base branch, and may read the runs of the repository"
             );
             // The workflow runs the file as a command: a mode that is not

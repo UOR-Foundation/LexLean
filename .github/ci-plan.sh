@@ -7,12 +7,15 @@
 #   not main or release/*     request into a line can land on it
 #   pull request, ready, base the whole gate
 #   main or release/*
-#   workflow_dispatch         the whole gate
+#   workflow_dispatch on the  planned as that pull request, by the rows above
+#   head branch of one open   (`regenerate.yml` dispatches this after it
+#   pull request              commits to the head)
+#   workflow_dispatch, other  the whole gate
 #   push to main or to a      the whole gate, unless the push is a merge whose
 #   release line (§9.4)
 #                             tree is the tree of its second parent and the
 #                             whole gate passed on that parent as a pull
-#                             request run: then nothing, and the run says
+#                             request or dispatched run: then nothing, and the run says
 #                             which run verified the tree
 #
 # Why: a pull request is pushed to several times before its head is final, a
@@ -25,7 +28,7 @@
 # tree that lands.
 #
 # Inputs, all from the environment: EVENT, DRAFT, BASE (the base branch of a
-# pull request), REPO. The jobs read `full`
+# pull request), REPO, and REF (the branch a dispatch names). The jobs read `full`
 # and `rows` from GITHUB_OUTPUT. `LEXLEAN_CI_ROWS` names the legs file
 # when a test runs the script elsewhere.
 set -euo pipefail
@@ -35,6 +38,7 @@ event=${EVENT:?EVENT names the workflow event}
 draft=${DRAFT:-}
 base=${BASE:-}
 repo=${REPO:?REPO names owner/name}
+ref=${REF:-}
 out=${GITHUB_OUTPUT:-/dev/stdout}
 summary=${GITHUB_STEP_SUMMARY:-/dev/null}
 
@@ -70,7 +74,7 @@ hosts_passed() {
     }'
 }
 
-# The id of a pull request run of this workflow on the second parent of HEAD
+# The id of a pull request run, or a dispatched run, of this workflow on the second parent of HEAD
 # that ran every job of the gate and passed every one, when HEAD is a merge of
 # that parent with the same tree. A draft run has honesty and the `rest` leg, so it is
 # never one: the run must hold the join of Atlas, every exact supported-host context, and
@@ -80,8 +84,8 @@ verified_parent_run() {
   parent=$(git rev-parse --verify --quiet 'HEAD^2') || return 1
   head_tree=$(git rev-parse 'HEAD^{tree}')
   [ "$head_tree" = "$(git rev-parse "$parent^{tree}")" ] || return 1
-  runs=$(gh api "repos/$repo/actions/workflows/ci.yml/runs?head_sha=$parent&event=pull_request&status=success&per_page=30" \
-    --jq ".workflow_runs[] | select(.head_repository.full_name == \"$repo\") | .id") || return 1
+  runs=$(gh api "repos/$repo/actions/workflows/ci.yml/runs?head_sha=$parent&status=success&per_page=30" \
+    --jq ".workflow_runs[] | select(.head_repository.full_name == \"$repo\") | select(.event == \"pull_request\" or .event == \"workflow_dispatch\") | .id") || return 1
   for id in $runs; do
     names=$(gh api "repos/$repo/actions/runs/$id/jobs?per_page=100" --paginate \
       --jq '.jobs[] | "\(.name)\t\(.conclusion)"') || continue
@@ -100,23 +104,41 @@ verified_parent_run() {
   return 1
 }
 
+# A pull request's run: honesty then `rest` for a draft or a stacked base,
+# the whole gate for a ready pull request into a line.
+pull_request_plan() {
+  if [ "$draft" = true ]; then
+    emit false "$(jq -c '[.[] | select(.part == "honesty" or .part == "rest")]' "$rows_file")"
+    printf '%s\n' 'Draft pull request: honesty then the `rest` leg only. This run is not the gate; marking the pull request ready runs the whole gate.' >> "$summary"
+  else
+    case "$base" in
+      # An unknown base is not known to be stacked: the whole gate.
+      main | release/* | '')
+        whole_gate 'Pull request ready for review: the whole gate.'
+        ;;
+      *)
+        emit false "$(jq -c '[.[] | select(.part == "honesty" or .part == "rest")]' "$rows_file")"
+        printf 'Pull request into `%s`, which is neither `main` nor a release line: honesty then the `rest` leg only. A stacked pull request cannot land on a line; the pull request into `main` or a release line runs the whole gate.\n' "$base" >> "$summary"
+        ;;
+    esac
+  fi
+}
+
+# The one open pull request of this repository whose head is the dispatched
+# branch, as `draft<TAB>base`; nothing when there is none, several, or the
+# list cannot be read.
+dispatched_pull_request() {
+  local found
+  [ -n "$ref" ] || return 1
+  found=$(gh api "repos/$repo/pulls?state=open&head=${repo%%/*}:$ref&per_page=2" \
+    --jq ".[] | select(.head.repo.full_name == \"$repo\") | \"\(.draft)\t\(.base.ref)\"") || return 1
+  [ -n "$found" ] && [ "$(printf '%s\n' "$found" | wc -l)" -eq 1 ] || return 1
+  printf '%s\n' "$found"
+}
+
 case "$event" in
   pull_request)
-    if [ "$draft" = true ]; then
-      emit false "$(jq -c '[.[] | select(.part == "honesty" or .part == "rest")]' "$rows_file")"
-      printf '%s\n' 'Draft pull request: honesty then the `rest` leg only. This run is not the gate; marking the pull request ready runs the whole gate.' >> "$summary"
-    else
-      case "$base" in
-        # An unknown base is not known to be stacked: the whole gate.
-        main | release/* | '')
-          whole_gate 'Pull request ready for review: the whole gate.'
-          ;;
-        *)
-          emit false "$(jq -c '[.[] | select(.part == "honesty" or .part == "rest")]' "$rows_file")"
-          printf 'Pull request into `%s`, which is neither `main` nor a release line: honesty then the `rest` leg only. A stacked pull request cannot land on a line; the pull request into `main` or a release line runs the whole gate.\n' "$base" >> "$summary"
-          ;;
-      esac
-    fi
+    pull_request_plan
     ;;
   push)
     if run=$(verified_parent_run); then
@@ -124,6 +146,16 @@ case "$event" in
       printf 'This push merges a head whose tree it equals, and the whole gate passed on that head: run %s of %s. Nothing is run again.\n' "$run" "$repo" >> "$summary"
     else
       whole_gate 'Push: the whole gate.'
+    fi
+    ;;
+  workflow_dispatch)
+    if found=$(dispatched_pull_request); then
+      draft=${found%%$'\t'*}
+      base=${found#*$'\t'}
+      printf 'Dispatched on the head of an open pull request into `%s`: planned as that pull request.\n' "$base" >> "$summary"
+      pull_request_plan
+    else
+      whole_gate 'Run on request: the whole gate.'
     fi
     ;;
   *)
