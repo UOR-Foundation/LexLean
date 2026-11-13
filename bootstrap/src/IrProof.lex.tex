@@ -1,0 +1,324 @@
+\begin{lexlean}{IrProof}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{IrTerm}
+\importmodule{LexiconLse}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Order}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Proof,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: PSeq, fields: [Proof]},
+    {name: PIntro, fields: [(List Nat)]},
+    {name: PExact, fields: [IrTerm::Term]},
+    {name: PApplyOne, fields: [IrTerm::Term]},
+    {name: PApply, fields: [IrTerm::Term, Proof]},
+    {name: PRfl, fields: []},
+    {name: PWitness, fields: [IrTerm::Term]},
+    {name: PLeft, fields: []},
+    {name: PRight, fields: []},
+    {name: PHave, fields: [Nat, IrTerm::Term, Proof]},
+    {name: PRewrite, fields: [(Option Nat), Proof]},
+    {name: PSimp, fields: [(Option Nat), IrTerm::Term]},
+    {name: PConstructor, fields: [Proof]},
+    {name: PCases, fields: [IrTerm::Term, Proof]},
+    {name: PInduction, fields: [IrTerm::Term, Proof]},
+    {name: PCalc, fields: [IrTerm::GlobalRef, IrTerm::Term, Proof]},
+    {name: PNil, fields: []},
+    {name: PItem, fields: [Proof, Proof]},
+    {name: PRule, fields: [Bool, IrTerm::Term, Proof]},
+    {name: PCase, fields: [Bytes, Bytes, (List (Nat * Bytes)), Proof, Proof]},
+    {name: PStep, fields: [IrTerm::Term, IrTerm::Term, Proof]}
+  ]
+}
+
+inductive{
+  name: DeclKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: KTypeDefinition, fields: []},
+    {name: KTermDefinition, fields: []},
+    {name: KPredicateDefinition, fields: []},
+    {name: KTheorem, fields: []},
+    {name: KLemma, fields: []},
+    {name: KCorollary, fields: []}
+  ]
+}
+
+inductive{
+  name: AxiomPolicy,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: ANone, fields: []},
+    {name: AAllow, fields: [(List Bytes)]},
+    {name: AExact, fields: [(List Bytes)]}
+  ]
+}
+
+inductive{
+  name: DeclBody,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: BDefinition, fields: [Bytes, IrTerm::Term, IrTerm::Term]},
+    {name: BTheorem, fields: [IrTerm::Term, Proof]}
+  ]
+}
+
+structure{
+  name: Declaration,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: component, type: Bytes},
+    {name: leanName, type: Bytes},
+    {name: kind, type: DeclKind},
+    {name: params, type: IrTerm::Term},
+    {name: body, type: DeclBody},
+    {name: policy, type: AxiomPolicy}
+  ]
+}
+
+structure{
+  name: Walk,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: remaining, type: (List Bytes)}, {name: same, type: Bool}]
+}
+
+definition{
+  name: jarr,
+  parameters: [items : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JArr items),
+  executable: true
+}
+
+definition{
+  name: jobj,
+  parameters: [members : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj members),
+  executable: true
+}
+
+definition{
+  name: jnil,
+  parameters: [],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JNil),
+  executable: true
+}
+
+definition{
+  name: tagged,
+  parameters: [tag : String, rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (jobj (IrTerm::member "k" (IrTerm::jtext tag) rest)),
+  executable: true
+}
+
+definition{
+  name: bindAll,
+  parameters: [locals : (List Nat), state : IrTerm::Renumber],
+  result: (LexLeanStd.Json::Json * IrTerm::Renumber),
+  body: (let folded : ((List Nat) * IrTerm::Renumber) := (prim list_fold (fun (acc : ((List Nat) * IrTerm::Renumber)) (localId : Nat) => (let bound : (Nat * IrTerm::Renumber) := (IrTerm::bind (second acc) localId); ((cons (first bound) (first acc)), (second bound)))) ((nil Nat), state) locals : ((List Nat) * IrTerm::Renumber)); ((prim list_fold (fun (chain : LexLeanStd.Json::Json) (index : Nat) => (ctor LexLeanStd.Json::Json.JItem (IrTerm::jnat index) chain)) (jnil) (first folded) : LexLeanStd.Json::Json), (second folded))),
+  executable: true
+}
+
+definition{
+  name: caseLocals,
+  parameters: [binders : (List (Nat * Bytes))],
+  result: (List Nat),
+  body: (LexLeanStd.Order::reverseList [Nat] (prim list_fold (fun (acc : (List Nat)) (entry : (Nat * Bytes)) => (cons (first entry) acc)) (nil Nat) binders : (List Nat))),
+  executable: true
+}
+
+definition{
+  name: targetJson,
+  parameters: [target : (Option Nat), state : IrTerm::Renumber],
+  result: (LexLeanStd.Json::Json * IrTerm::Renumber),
+  body: (match target
+    | Option.none => ((IrTerm::jtext "goal"), state)
+    | Option.some localId => (let resolved : (IrTerm::Resolved * IrTerm::Renumber) := (IrTerm::resolve state localId); ((match (first resolved)
+      | IrTerm::Resolved.RBound index => (IrTerm::jnat index)
+      | IrTerm::Resolved.RFree free => (IrTerm::jnat free)), (second resolved)))),
+  executable: true
+}
+
+definition{
+  name: termWith,
+  parameters: [
+    key : String,
+    term : IrTerm::Term,
+    state : IrTerm::Renumber,
+    rest : LexLeanStd.Json::Json
+  ],
+  result: (LexLeanStd.Json::Json * IrTerm::Renumber),
+  body: (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson term state); ((IrTerm::member key (first written) rest), (second written))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: proofJson,
+  parameters: [proof : Proof, state : IrTerm::Renumber],
+  result: (LexLeanStd.Json::Json * IrTerm::Renumber),
+  body: (match proof
+    | Proof.PSeq steps => (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson steps state); ((tagged "seq" (IrTerm::member "s" (jarr (first inner)) (jnil))), (second inner)))
+    | Proof.PIntro locals => (let bound : (LexLeanStd.Json::Json * IrTerm::Renumber) := (bindAll locals state); ((tagged "intro" (IrTerm::member "l" (jarr (first bound)) (jnil))), (second bound)))
+    | Proof.PExact term => (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (termWith "t" term state (jnil)); ((tagged "exact" (first written)), (second written)))
+    | Proof.PApplyOne term => (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (termWith "t" term state (jnil)); ((tagged "apply-one" (first written)), (second written)))
+    | Proof.PApply function premises => (let head : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson function state); (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson premises (second head)); ((tagged "apply" (IrTerm::member "f" (first head) (IrTerm::member "p" (jarr (first inner)) (jnil)))), (second inner))))
+    | Proof.PRfl => ((tagged "rfl" (jnil)), state)
+    | Proof.PWitness term => (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (termWith "t" term state (jnil)); ((tagged "witness" (first written)), (second written)))
+    | Proof.PLeft => ((tagged "left" (jnil)), state)
+    | Proof.PRight => ((tagged "right" (jnil)), state)
+    | Proof.PHave localId proposition nested => (let stated : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson proposition state); (let index : (Nat * IrTerm::Renumber) := (IrTerm::bind (second stated) localId); (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson nested (second index)); ((tagged "have" (IrTerm::member "l" (IrTerm::jnat (first index)) (IrTerm::member "p" (first stated) (IrTerm::member "q" (first inner) (jnil))))), (second inner)))))
+    | Proof.PRewrite target rules => (let aimed : (LexLeanStd.Json::Json * IrTerm::Renumber) := (targetJson target state); (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson rules (second aimed)); ((tagged "rw" (IrTerm::member "at" (first aimed) (IrTerm::member "r" (jarr (first inner)) (jnil)))), (second inner))))
+    | Proof.PSimp target rules => (let aimed : (LexLeanStd.Json::Json * IrTerm::Renumber) := (targetJson target state); (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson rules (second aimed)); ((tagged "simp-only" (IrTerm::member "at" (first aimed) (IrTerm::member "r" (jarr (first inner)) (jnil)))), (second inner))))
+    | Proof.PConstructor branches => (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson branches state); ((tagged "constructor" (IrTerm::member "b" (jarr (first inner)) (jnil))), (second inner)))
+    | Proof.PCases scrutinee branchesOf => (let head : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson scrutinee state); (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson branchesOf (second head)); ((tagged "cases" (IrTerm::member "t" (first head) (IrTerm::member "c" (jarr (first inner)) (jnil)))), (second inner))))
+    | Proof.PInduction scrutinee branchesOf => (let head : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson scrutinee state); (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson branchesOf (second head)); ((tagged "induction" (IrTerm::member "t" (first head) (IrTerm::member "c" (jarr (first inner)) (jnil)))), (second inner))))
+    | Proof.PCalc relation start steps => (let begun : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson start state); (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson steps (second begun)); ((tagged "calc" (IrTerm::member "rel" (IrTerm::globalTermJson relation (ctor LexiconLse::Universe.UNil)) (IrTerm::member "s" (first begun) (IrTerm::member "steps" (jarr (first inner)) (jnil))))), (second inner))))
+    | Proof.PNil => ((jnil), state)
+    | Proof.PItem head tail => (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson head state); (let rest : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson tail (second written)); ((ctor LexLeanStd.Json::Json.JItem (first written) (first rest)), (second rest))))
+    | Proof.PRule backward term tail => (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson term state); (let rest : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson tail (second written)); ((ctor LexLeanStd.Json::Json.JItem (jobj (IrTerm::member "rev" (ctor LexLeanStd.Json::Json.JBool backward) (IrTerm::member "t" (first written) (jnil)))) (first rest)), (second rest))))
+    | Proof.PCase ctorName leanName binders branch tail => (let bound : (LexLeanStd.Json::Json * IrTerm::Renumber) := (bindAll (caseLocals binders) state); (let inner : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson branch (second bound)); (let rest : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson tail (second inner)); ((ctor LexLeanStd.Json::Json.JItem (jobj (IrTerm::member "ctor" (ctor LexLeanStd.Json::Json.JStr ctorName) (IrTerm::member "lean" (ctor LexLeanStd.Json::Json.JStr leanName) (IrTerm::member "b" (jarr (first bound)) (IrTerm::member "p" (first inner) (jnil)))))) (first rest)), (second rest)))))
+    | Proof.PStep term justification tail => (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson term state); (let justified : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson justification (second written)); (let rest : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson tail (second justified)); ((ctor LexLeanStd.Json::Json.JItem (jobj (IrTerm::member "t" (first written) (IrTerm::member "p" (first justified) (jnil)))) (first rest)), (second rest)))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: proof
+}
+
+definition{
+  name: kindName,
+  parameters: [kind : DeclKind],
+  result: LexLeanStd.Json::Json,
+  body: (match kind
+    | DeclKind.KTypeDefinition => (IrTerm::jtext "typedefinition")
+    | DeclKind.KTermDefinition => (IrTerm::jtext "termdefinition")
+    | DeclKind.KPredicateDefinition => (IrTerm::jtext "predicatedefinition")
+    | DeclKind.KTheorem => (IrTerm::jtext "theorem")
+    | DeclKind.KLemma => (IrTerm::jtext "lemma")
+    | DeclKind.KCorollary => (IrTerm::jtext "corollary")),
+  executable: true
+}
+
+definition{
+  name: textChain,
+  parameters: [names : (List Bytes)],
+  result: LexLeanStd.Json::Json,
+  body: (prim list_fold (fun (chain : LexLeanStd.Json::Json) (named : Bytes) => (ctor LexLeanStd.Json::Json.JItem (ctor LexLeanStd.Json::Json.JStr named) chain)) (jnil) (LexLeanStd.Order::reverseList [Bytes] names) : LexLeanStd.Json::Json),
+  executable: true
+}
+
+definition{
+  name: policyJson,
+  parameters: [policy : AxiomPolicy],
+  result: LexLeanStd.Json::Json,
+  body: (match policy
+    | AxiomPolicy.ANone => (jobj (IrTerm::member "kind" (IrTerm::jtext "none") (IrTerm::member "axioms" (jarr (jnil)) (jnil))))
+    | AxiomPolicy.AAllow names => (jobj (IrTerm::member "kind" (IrTerm::jtext "allow") (IrTerm::member "axioms" (jarr (textChain names)) (jnil))))
+    | AxiomPolicy.AExact names => (jobj (IrTerm::member "kind" (IrTerm::jtext "exact") (IrTerm::member "axioms" (jarr (textChain names)) (jnil))))),
+  executable: true
+}
+
+definition{
+  name: bodyJson,
+  parameters: [body : DeclBody, state : IrTerm::Renumber],
+  result: (LexLeanStd.Json::Json * IrTerm::Renumber),
+  body: (match body
+    | DeclBody.BDefinition entry typed defined => (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson typed state); (let valued : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson defined (second written)); ((tagged "definition" (IrTerm::member "entry" (ctor LexLeanStd.Json::Json.JStr entry) (IrTerm::member "t" (first written) (IrTerm::member "v" (first valued) (jnil))))), (second valued))))
+    | DeclBody.BTheorem statement proof => (let stated : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson statement state); (let proved : (LexLeanStd.Json::Json * IrTerm::Renumber) := (proofJson proof (second stated)); ((tagged "theorem" (IrTerm::member "s" (first stated) (IrTerm::member "p" (first proved) (jnil)))), (second proved))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: declarationJson,
+  parameters: [declaration : Declaration, state : IrTerm::Renumber],
+  result: (LexLeanStd.Json::Json * IrTerm::Renumber),
+  body: (let bound : (LexLeanStd.Json::Json * IrTerm::Renumber) := (IrTerm::termJson (project declaration params) state); (let written : (LexLeanStd.Json::Json * IrTerm::Renumber) := (bodyJson (project declaration body) (second bound)); ((jobj (IrTerm::member "component" (ctor LexLeanStd.Json::Json.JStr (project declaration component)) (IrTerm::member "lean_name" (ctor LexLeanStd.Json::Json.JStr (project declaration leanName)) (IrTerm::member "kind" (kindName (project declaration kind)) (IrTerm::member "params" (jarr (first bound)) (IrTerm::member "body" (first written) (IrTerm::member "policy" (policyJson (project declaration policy)) (jnil)))))))), (second written)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: proofText,
+  parameters: [proof : Proof],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (first (proofJson proof (IrTerm::hashing)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: declarationText,
+  parameters: [declaration : Declaration],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (first (declarationJson declaration (IrTerm::hashing)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: listed,
+  parameters: [names : (List Bytes), named : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [named] (found : Bool) (candidate : Bytes) => (if found then true else (prim equal candidate named : Bool))) false names : Bool),
+  executable: true
+}
+
+definition{
+  name: sortedUnique,
+  parameters: [names : (List Bytes)],
+  result: (List Bytes),
+  body: (LexLeanStd.Order::reverseList [Bytes] (prim list_fold (fun (kept : (List Bytes)) (entry : (Bytes * Bytes)) => (match kept
+    | List.nil => (cons (first entry) kept)
+    | List.cons head rest => (if (prim equal head (first entry) : Bool) then kept else (cons (first entry) kept)))) (nil Bytes) (LexLeanStd.Order::sortEntries (prim list_fold (fun (acc : (List (Bytes * Bytes))) (named : Bytes) => (cons (named, named) acc)) (nil (Bytes * Bytes)) (LexLeanStd.Order::reverseList [Bytes] names) : (List (Bytes * Bytes)))) : (List Bytes))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: walkStep,
+  parameters: [walk : Walk, named : Bytes],
+  result: Walk,
+  body: (match (project walk remaining)
+    | List.nil => (record Walk {remaining := (nil Bytes), same := false})
+    | List.cons head rest => (record Walk {remaining := rest, same := (if (project walk same) then (prim equal head named : Bool) else false)})),
+  executable: true
+}
+
+definition{
+  name: sameNames,
+  parameters: [left : (List Bytes), right : (List Bytes)],
+  result: Bool,
+  body: (let walked : Walk := (prim list_fold (fun (walk : Walk) (named : Bytes) => (walkStep walk named)) (record Walk {remaining := right, same := true}) left : Walk); (if (project walked same) then (match (project walked remaining)
+    | List.nil => true
+    | List.cons head rest => false) else false)),
+  executable: true
+}
+
+definition{
+  name: permits,
+  parameters: [policy : AxiomPolicy, observed : (List Bytes)],
+  result: Bool,
+  body: (match policy
+    | AxiomPolicy.ANone => (match observed | List.nil => true | List.cons head rest => false)
+    | AxiomPolicy.AAllow allowed => (prim list_fold (fun [allowed] (allSoFar : Bool) (named : Bytes) => (if allSoFar then (listed allowed named) else false)) true observed : Bool)
+    | AxiomPolicy.AExact exactNames => (sameNames (sortedUnique observed) exactNames)),
+  axioms: [propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -58,6 +58,12 @@ workspace carried at those versions without a tag.
   A landing that moves the language-1.2 ID now also updates the constant;
   `RP-10` names the new value when it is stale.
 
+- The proof and declaration IR in their canonical JSON, and the axiom policy check, as
+  language-1.2 source, second slice of the typed IR (SPEC.md §17.23, §17.4, §17.5,
+  §15.9, `BS-66`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `proofText`, `declarationText`, and `permits` of `IrProof` return what
+  `Proof::to_json`, `Declaration::to_json`, and `AxiomPolicy::permits` return; the
+  JSON roots admit `recursion`. The register is 498 IDs.
 - The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
   §17.23, the maintainer's decision): with `BS-65` the Lean extraction of its
   production export writes more than the 33,554,432 bytes it configured. A semantic

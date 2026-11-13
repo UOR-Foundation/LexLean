@@ -58,3 +58,6 @@ canonical project manifest of SPEC.md §10.1 and its digest.
 `src/IrTerm.lex.tex` (SPEC.md §17.23, `BS-65`) imports `LexiconLse` (`BS-25`), whose universes
 and binder modes it uses, and the standard library's `Json`, `Numeral`, and `Order`, and writes
 the canonical JSON of a linked term of SPEC.md §17.9.
+`src/IrProof.lex.tex` (SPEC.md §17.23, `BS-66`) imports `IrTerm` (`BS-65`), whose term JSON and
+renumbering it uses, `LexiconLse`, and the standard library's `Json` and `Order`, and writes the
+canonical JSON of a linked proof and declaration and checks an axiom policy.

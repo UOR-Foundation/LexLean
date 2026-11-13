@@ -280,6 +280,9 @@
     ],
     "bootstrap-ir-term": [
       "BS-65"
+    ],
+    "bootstrap-ir-proof": [
+      "BS-66"
     ]
   },
   "targets": {

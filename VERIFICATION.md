@@ -11775,6 +11775,45 @@ check` of the `bootstrap/` project passes, with each of the five roots eligible
 for `rust-std` with exactly its declared effects, and `lexlean fmt --check`
 passes.
 
+### the proof and declaration IR are source (BS-66)
+
+`BS-66` holds the three production roots of `LexLeanBoot.IrProof`
+(`bootstrap/src/IrProof.lex.tex`) to `lexlean::ir::proof` and
+`lexlean::ir::declaration`: `proofText` to `Proof::to_json` under the hashing
+renumbering written canonically, `declarationText` to `Declaration::to_json`
+likewise, and `permits` to `AxiomPolicy::permits`. The module declares the closed
+proof IR of SPEC.md §17.4, the declaration kinds, bodies, and axiom policies of
+§17.5 and §15.9, and the declaration, over the term IR and the renumbering of
+`IrTerm` (`BS-65`). Proof steps, rewrite rules, case branches, and calculation
+steps are chains of cells of `Proof` itself, so that `proofText` is one
+structural recursion that threads the renumbering: an introduction binds its
+locals in order, a `have` binds its local after its proposition, a case binds
+its locals before its proof, a rewrite target is resolved as an occurrence, and a
+declaration binds its parameters before its body. `permits` sorts the observed
+axioms with the standard library's stable merge sort, drops repeats, and
+compares the list with the policy's under `exact`. The two JSON roots admit
+exactly `allocation`, `overflow`, and `recursion`, and `permits` exactly
+`allocation` and `overflow`. The oracle is the existing public code of
+`proof.rs` and `declaration.rs`; no Rust outside the case changes.
+
+The case holds each root to the oracle on hand-built proofs that reach every
+proof constructor, introduction order with a rebound local, a `have` over a free
+local, rewrites at a free and at a bound hypothesis, `cases` and `induction` with
+bound fields, and a calculation; on hand-built declarations of a lemma with
+parameters, a definition, and a corollary under an `allow` policy; on hand-built
+policies with no axiom, a subset, a refusal after an acceptance, duplicates, a
+missing and an extra axiom, and a policy out of order; on every distinct
+declaration and nested proof of the linked IR of the committed projects that
+declare document environments, with each declaration's policy against its own
+axioms and against none; and on seeded inputs. Each planted defect names the
+vector that catches it, and the case asserts that the site of each plant occurs
+once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree's compiler sources: `lexlean
+check` of the `bootstrap/` project passes, with each of the three roots eligible
+for `rust-std` with exactly its declared effects, and `lexlean fmt --check`
+passes.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
