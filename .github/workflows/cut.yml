@@ -1,5 +1,5 @@
 # A release cut in one push (SPEC.md §9.4): the version commit, its
-# regeneration, and the pull request that lands it on its line.
+# regeneration, its gate, and its landing, tag, and release, with no hand step.
 #
 #   git push origin release/vX.Y:refs/heads/cut/vX.Y.Z
 #
@@ -8,10 +8,20 @@
 # `## X.Y.Z`, commits that on the pushed commit, and opens the pull request
 # from `cut/vX.Y.Z` into `release/vX.Y`. `regenerate.yml` then writes what the
 # version moves (every build oracle names the compiler's version), delivers
-# that to the branch, and dispatches the gate there. Merging the pull request
-# is the decision to release: `tag.yml` tags the merge once its gate passes
-# and `release.yml` publishes it. The pushed commit must be on the line, and
-# the version must follow the line's and have no tag.
+# that to the branch, and dispatches the gate there. `gate` and `gate-more`
+# wait for that run (the gate takes hours, and a job may run six), `land`
+# merges the pull request at the head the gate passed on, and `tag.yml`,
+# called here because a merge made with the workflow token starts no run,
+# tags the merge, dispatches `release.yml`, and carries the line to `main`.
+# The pushed commit must be on the line, and the version must follow the
+# line's and have no tag.
+#
+# What stops the landing leaves the pull request open, and a person's merge
+# of it releases as before (`tag.yml` on the push): a gate that failed (re-run
+# its failed jobs, then this run's failed jobs, and the cut lands), a gate
+# with no verdict after two waits (re-run this run's failed jobs to wait
+# again), no pull request, a line that moved since the cut, or a head pushed
+# since the gate ran.
 name: cut
 
 on:
@@ -83,7 +93,7 @@ jobs:
             -m "cargo xtask bump-version $VERSION: the workspace version, SPEC.md §2.3, RP-01, Cargo.lock, and the changelog's unreleased entries."
           git push origin "HEAD:refs/heads/$GITHUB_REF_NAME"
           echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
-          body="Cuts LexLean $VERSION on \`$LINE\` (\`cut.yml\`). \`regenerate.yml\` writes what the version moves and dispatches the gate here. Merging releases: \`tag.yml\` tags the merge as \`v$VERSION\` once its gate passes, and \`release.yml\` publishes it. Edit the \`## $VERSION\` changelog section before merging if it needs a summary."
+          body="Cuts LexLean $VERSION on \`$LINE\` (\`cut.yml\`). \`regenerate.yml\` writes what the version moves and dispatches the gate here. Once that gate passes, \`cut.yml\` merges this pull request at the head it verified, tags the merge as \`v$VERSION\`, and \`release.yml\` publishes it; nobody needs to merge it. A push to this branch before then stops the automatic landing, and merging by hand releases as before."
           if url=$(gh pr create --repo "$GITHUB_REPOSITORY" --base "$LINE" --head "$GITHUB_REF_NAME" \
               --title "Release $VERSION" --body "$body" 2>&1); then
             echo "Opened $url" >> "$GITHUB_STEP_SUMMARY"
@@ -106,3 +116,127 @@ jobs:
     with:
       ref: ${{ needs.version.outputs.commit }}
       branch: ${{ needs.version.outputs.branch }}
+
+  # The gate of the delivered head: the run `regenerate.yml` dispatched,
+  # planned as the pull request's, which must be the whole gate and pass every
+  # job. Two waits, because the gate runs for hours and a job for at most six.
+  gate:
+    name: wait for the gate
+    needs: regenerate
+    if: needs.regenerate.outputs.head != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      state: ${{ steps.wait.outputs.state }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.regenerate.outputs.head }}
+          persist-credentials: false
+      - name: Wait for the gate of the delivered head
+        id: wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ needs.regenerate.outputs.head }}
+          WAIT_MINUTES: "340"
+        run: .github/scripts/await-gate.sh
+
+  gate-more:
+    name: wait for the gate (continued)
+    needs: [regenerate, gate]
+    if: needs.gate.outputs.state == 'pending'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      state: ${{ steps.wait.outputs.state }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ needs.regenerate.outputs.head }}
+          persist-credentials: false
+      - name: Wait for the gate of the delivered head
+        id: wait
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_SHA: ${{ needs.regenerate.outputs.head }}
+          WAIT_MINUTES: "340"
+          FINAL: "true"
+        run: .github/scripts/await-gate.sh
+
+  # The merge of the pull request at the head the gate passed on, as a merge
+  # commit: the line has not moved since the cut, so the merge's tree is the
+  # head's, which is the evidence `ci.yml`'s plan and `release-gate.sh` accept
+  # for it (the merge pushed with the workflow token starts no run of its own).
+  land:
+    name: land the cut
+    needs: [version, regenerate, gate, gate-more]
+    if: >-
+      !cancelled() && needs.regenerate.result == 'success'
+      && (needs.gate.outputs.state == 'passed' || needs.gate-more.outputs.state == 'passed')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      merge: ${{ steps.merge.outputs.merge }}
+      line: ${{ steps.merge.outputs.line }}
+    steps:
+      - name: Merge the pull request at the verified head
+        id: merge
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BRANCH: ${{ needs.version.outputs.branch }}
+          HEAD_SHA: ${{ needs.regenerate.outputs.head }}
+        run: |
+          set -euo pipefail
+          pr=$(gh pr list --repo "$REPO" --head "$BRANCH" --state open --json number,baseRefName,headRefOid \
+            --jq '.[] | "\(.number) \(.baseRefName) \(.headRefOid)"')
+          if [ -z "$pr" ] || [ "$(printf '%s\n' "$pr" | wc -l)" -ne 1 ]; then
+            echo "::error::no single open pull request from $BRANCH; open it and merge it by hand"
+            exit 1
+          fi
+          read -r number line head <<< "$pr"
+          if [ "$head" != "$HEAD_SHA" ]; then
+            echo "::error::$BRANCH is at $head, not $HEAD_SHA where the gate passed; merge it by hand once its gate passes"
+            exit 1
+          fi
+          base=$(gh api "repos/$REPO/branches/$line" --jq .commit.sha)
+          if [ "$(gh api "repos/$REPO/compare/$base...$HEAD_SHA" --jq .behind_by)" != 0 ]; then
+            echo "::error::$line moved to $base since the cut, so the merge would land a tree the gate did not verify; merge it by hand"
+            exit 1
+          fi
+          gh pr merge --repo "$REPO" "$number" --merge --match-head-commit "$HEAD_SHA"
+          merge=$(gh pr view --repo "$REPO" "$number" --json mergeCommit --jq .mergeCommit.oid)
+          if [ -z "$merge" ] || [ "$merge" = null ]; then
+            echo "::error::pull request #$number reports no merge commit"
+            exit 1
+          fi
+          echo "merge=$merge" >> "$GITHUB_OUTPUT"
+          echo "line=$line" >> "$GITHUB_OUTPUT"
+          echo "Merged #$number into \`$line\` as \`$merge\` at the verified head \`$HEAD_SHA\`." >> "$GITHUB_STEP_SUMMARY"
+
+  tag:
+    name: tag
+    needs: land
+    uses: ./.github/workflows/tag.yml
+    # A reusable workflow is validated against what its caller grants: `tag`
+    # pushes the tag, dispatches, and opens and merges the pull request into
+    # `main`.
+    permissions:
+      contents: write
+      actions: write
+      pull-requests: write
+    with:
+      commit: ${{ needs.land.outputs.merge }}
+      line: ${{ needs.land.outputs.line }}
