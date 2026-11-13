@@ -178,6 +178,8 @@ pub fn run(id: &str) {
     let named = rules_named(&source);
     // The rules of the constructs `RB-19` grew the set by are planted there.
     planted.extend(super::rust_heap_syntax::RULES);
+    // The rules of the host table and the `cfg` items are planted by `RB-24`.
+    planted.extend(super::rust_driver::RULES);
     let missing: Vec<&String> = named
         .iter()
         .filter(|name| !planted.contains(name.as_str()))
