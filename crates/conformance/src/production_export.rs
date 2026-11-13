@@ -225,7 +225,7 @@ impl Exported {
 
     /// The verified directory retained beside the export's production area.
     #[must_use]
-    pub(crate) fn verified_root(&self) -> Utf8PathBuf {
+    pub fn verified_root(&self) -> Utf8PathBuf {
         self.bundle()
             .parent()
             .and_then(Utf8Path::parent)

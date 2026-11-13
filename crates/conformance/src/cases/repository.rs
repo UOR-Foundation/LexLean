@@ -1709,7 +1709,8 @@ pub(crate) fn run(id: &str) {
             assert!(legs.len() >= 2, "the gate runs in legs: {legs:?}");
             // The leg that runs `examples` verifies at width 2 with the
             // committed hints and a 12 GiB budget, and every example but the
-            // one the Atlas jobs verify as parts; every other leg names no
+            // one the Atlas jobs verify as parts and the bootstrap project,
+            // which the bootstrap export verifies; every other leg names no
             // profile and no part (§9.4, §22.11). The values are the
             // verifier's to accept: a width it refuses, or hints it cannot
             // read, would fail the gate as `LLV7017` before any stage ran, so
@@ -1725,7 +1726,7 @@ pub(crate) fn run(id: &str) {
                             "2",
                             "12582912",
                             ".github/verify-hints.json",
-                            "without:uor-atlas"
+                            "without:uor-atlas,bootstrap"
                         ]
                         .map(str::to_owned),
                         "§9.4: the examples leg's profile and part"
@@ -2198,6 +2199,14 @@ pub(crate) fn run(id: &str) {
                     "          name: bootstrap-bundle\n",
                 ),
                 ("    name: bootstrap export\n", "    name: export\n"),
+                (
+                    "grep -F \"verify-examples: bootstrap verified (attestation \" ci-evidence/vv.txt\n",
+                    "true\n",
+                ),
+                (
+                    "grep -E \"^verify-examples: bootstrap: [0-9]+ normalized verification records equal expected/verify \" ci-evidence/vv.txt\n",
+                    "true\n",
+                ),
             ] {
                 assert!(
                     export_job.contains(from),
@@ -2221,6 +2230,10 @@ pub(crate) fn run(id: &str) {
                 (
                     "            export LEXLEAN_BOOTSTRAP_EXPORT=\"$RUNNER_TEMP/bootstrap-export\"\n",
                     "            export LEXLEAN_BOOTSTRAP_EXPORT=\"$RUNNER_TEMP/elsewhere\"\n",
+                ),
+                (
+                    "              if grep -F \"verify-examples: bootstrap\" ci-evidence/vv.txt; then\n",
+                    "              if false; then\n",
                 ),
             ] {
                 assert!(ci.contains(from), "the plant must change the workflow: {from}");
@@ -3665,7 +3678,9 @@ const TAKE_EXPORT: &str = ".github/scripts/take-bootstrap-export.sh";
 /// one name the fetcher reads; a leg reads the artifacts of its own run only,
 /// takes the export only in a run that is the whole gate, and only into the
 /// directory its harness waits in; the fetcher names this run and the export
-/// job, and asks nothing before a case wants the export.
+/// job, and asks nothing before a case wants the export. The job asserts
+/// that it verified the bootstrap example for the `examples` recipe, and the
+/// `examples` leg fails when it verifies that project again.
 fn bootstrap_export_workflow(ci: &str, take: &str) -> Result<(), String> {
     let job = workflow_job(ci, "bootstrap-export")?;
     let legs = workflow_job(ci, "vv")?;
@@ -3705,6 +3720,14 @@ fn bootstrap_export_workflow(ci: &str, take: &str) -> Result<(), String> {
             "name: acceptance-gate-evidence-bootstrap-export\n",
             "the job's evidence",
         ),
+        (
+            "grep -F \"verify-examples: bootstrap verified (attestation \" ci-evidence/vv.txt\n",
+            "the export verified the bootstrap example",
+        ),
+        (
+            "grep -E \"^verify-examples: bootstrap: [0-9]+ normalized verification records equal expected/verify \" ci-evidence/vv.txt\n",
+            "the export's records equal the bootstrap example's expected/verify",
+        ),
     ] {
         require(&job, text, rule)?;
     }
@@ -3717,6 +3740,10 @@ fn bootstrap_export_workflow(ci: &str, take: &str) -> Result<(), String> {
         (
             "          if [ \"$FULL_GATE\" = true ]; then\n            export LEXLEAN_BOOTSTRAP_EXPORT=\"$RUNNER_TEMP/bootstrap-export\"\n            .github/scripts/take-bootstrap-export.sh \"$LEXLEAN_BOOTSTRAP_EXPORT\"",
             "the fetcher fills the directory the harness waits in",
+        ),
+        (
+            "              if grep -F \"verify-examples: bootstrap\" ci-evidence/vv.txt; then\n",
+            "the examples leg does not verify the project the export verifies",
         ),
     ] {
         require(&legs, text, rule)?;
