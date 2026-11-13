@@ -23,8 +23,9 @@ workspace carried at those versions without a tag.
   LexLean records is already that digest, so no recorded byte moves.
   `lexlean::artifact::address` has one function per artifact kind returning
   its canonical bytes, written by the same recipe as the identity
-  (`content_id::*_frames` over a hash or a buffer), and
-  `Engine::identities` gives a checked project's. `AR-15` recomputes with
+  (`content_id::*_frames` over a hash or a buffer), and the hidden
+  `api::content_identities` gives a checked project's, outside the seven
+  stable `Engine` entry points (§24.1). `AR-15` recomputes with
   its own SHA-256 every identity the committed build manifests, locks,
   build outputs, and Rust packages record, and requires each to equal the
   recorded one. The register is 494 IDs.

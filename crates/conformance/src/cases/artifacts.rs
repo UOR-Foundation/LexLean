@@ -850,11 +850,13 @@ fn audit_project(dir: &camino::Utf8Path, into: &mut Addresses) {
             .unwrap_or_else(|error| panic!("{dir}: the project locks: {error}"));
         engine
     };
-    let identities = engine
-        .identities(CheckRequest {
+    let identities = lexlean::api::content_identities(
+        &engine,
+        &CheckRequest {
             selection: Selection::Entrypoints,
-        })
-        .unwrap_or_else(|error| panic!("{dir}: the project checks: {error}"));
+        },
+    )
+    .unwrap_or_else(|error| panic!("{dir}: the project checks: {error}"));
     for (what, recorded, canonical) in [
         (
             "source_id",

@@ -935,21 +935,6 @@ impl Engine {
         self.bound("check", self.check_inner(&request))
     }
 
-    /// The canonical bytes of the project's content identities (§21.10):
-    /// its configuration, its language's compiler-semantics tree, and the
-    /// messages of its source, semantic, and build IDs, whose SHA-256 are the
-    /// IDs a build records.
-    pub fn identities(
-        &self,
-        request: CheckRequest,
-    ) -> Result<crate::artifact::address::Identities, LexLeanError> {
-        let (checked, _lock) = self.checked(&request.selection)?;
-        Ok(crate::artifact::address::identities(
-            &self.project.config,
-            &checked,
-        ))
-    }
-
     /// Obtain the stable semantic snapshot (§24.1, Task 3).
     pub fn snapshot(
         &self,
@@ -1558,4 +1543,25 @@ pub fn verify_part(
             )
         }
     }
+}
+
+/// The canonical bytes of a project's content identities (§21.10): its
+/// configuration, its language's compiler-semantics tree, and the messages of
+/// its source, semantic, and build IDs, whose SHA-256 are the IDs a build
+/// records. Not one of the stable entry points of §24.1: `AR-15` holds every
+/// committed identity to it.
+///
+/// # Errors
+///
+/// When the project does not check.
+#[doc(hidden)]
+pub fn content_identities(
+    engine: &Engine,
+    request: &CheckRequest,
+) -> Result<crate::artifact::address::Identities, LexLeanError> {
+    let (checked, _lock) = engine.checked(&request.selection)?;
+    Ok(crate::artifact::address::identities(
+        &engine.project.config,
+        &checked,
+    ))
 }
