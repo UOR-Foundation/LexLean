@@ -1,0 +1,121 @@
+# Not for merge: the last two steps of regenerate.yml for a stack whose
+# combined tree is applied, with each case's stack measurement on its own
+# runner, because one runner measuring seven cases at once was shut down.
+name: finish-ir
+
+on:
+  push:
+    branches: ['finish/**']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: finish-ir-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  counts:
+    if: github.repository == 'UOR-Foundation/LexLean'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Install elan and the pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - name: Reserve bounded overflow memory for the proofs
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-case.swap"
+          sudo chmod 600 "$RUNNER_TEMP/lexlean-case.swap"
+          sudo mkswap "$RUNNER_TEMP/lexlean-case.swap"
+          sudo swapon "$RUNNER_TEMP/lexlean-case.swap"
+      - name: Write the moved counts
+        shell: bash
+        run: |
+          set -uo pipefail
+          mkdir -p "$RUNNER_TEMP/finished"
+          parts=$(python3 - <<'PY'
+          import json, pathlib, re
+          ids = set()
+          for path in pathlib.Path("crates/conformance/src").rglob("*.rs"):
+              ids |= set(re.findall(r'counts!\(\s*"([A-Z]+-[0-9]+)"', path.read_text()))
+          plan = json.loads(pathlib.Path(".github/bdd-parts.json").read_text())
+          parts = plan["parts"] if "parts" in plan else plan
+          print(" ".join(sorted(name for name, members in parts.items()
+                                if isinstance(members, list) and ids & set(members))))
+          PY
+          )
+          echo "parts with counts: $parts"
+          for part in $parts; do
+            LEXLEAN_COUNTS=fast LEXLEAN_BDD_PART="$part" cargo xtask bdd > "$RUNNER_TEMP/fast-$part.log" 2>&1
+            echo "$part: exit $?"
+          done
+          cargo xtask counts --write 2>&1 | grep -v -E '^\s*(Finished|Running|Compiling)' | tee "$RUNNER_TEMP/finished/counts.txt"
+          test "${PIPESTATUS[0]}" -eq 0
+      - name: Write the model documents
+        run: cargo xtask validate-model --write
+      - name: Return the changes
+        if: ${{ !cancelled() }}
+        run: |
+          set -euo pipefail
+          git add --all
+          git diff --cached --binary > "$RUNNER_TEMP/finished/counts.patch"
+          git diff --cached --name-only
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: finished-counts
+          path: ${{ runner.temp }}/finished
+          retention-days: 7
+
+  measure:
+    if: github.repository == 'UOR-Foundation/LexLean'
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [conformance_bs_66, conformance_bs_67, conformance_bs_68, conformance_bs_69, conformance_bs_70, conformance_bs_71, conformance_bs_72]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Install elan and the pinned Lean toolchain
+        run: |
+          set -euo pipefail
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - name: Reserve bounded overflow memory for the proofs
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-case.swap"
+          sudo chmod 600 "$RUNNER_TEMP/lexlean-case.swap"
+          sudo mkswap "$RUNNER_TEMP/lexlean-case.swap"
+          sudo swapon "$RUNNER_TEMP/lexlean-case.swap"
+      - name: Measure
+        shell: bash
+        env:
+          LEXLEAN_VERIFY_WIDTH: "2"
+          LEXLEAN_VERIFY_MEMORY_KIB: "12582912"
+        run: |
+          set -euo pipefail
+          LEXLEAN_MEASURE_STACK=all cargo test -p repo-conformance --all-features --test conformance -- --exact ${{ matrix.case }} --nocapture 2>&1 \
+            | grep -E --line-buffered 'debug [0-9]+ bytes|test result|panicked|^test |BS-'
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: stack-bounds-${{ matrix.case }}
+          path: tests/stack-bounds.json
+          retention-days: 7
