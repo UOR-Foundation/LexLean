@@ -1,0 +1,248 @@
+\begin{lexlean}{LseScopes}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexiconLse}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: SWork,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: SExpr, fields: [LexiconLse::Lse]},
+    {name: SBind, fields: [Bytes]},
+    {name: STrunc, fields: [Nat]},
+    {name: SUni, fields: [LexiconLse::Universe]}
+  ]
+}
+
+structure{
+  name: Sc,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: work, type: (List SWork)},
+    {name: scope, type: (List Bytes)},
+    {name: depth, type: Nat},
+    {name: error, type: (Option Bytes)}
+  ]
+}
+
+structure{
+  name: Rc,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: stack, type: (List LexiconLse::Lse)}, {name: found, type: (List (Bytes * Bytes))}]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: member,
+  parameters: [items : (List Bytes), wanted : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [wanted] (found : Bool) (item : Bytes) => (if found then true else (prim equal item wanted : Bool))) false items : Bool),
+  executable: true
+}
+
+definition{
+  name: dropFront,
+  parameters: [items : (List Bytes), count : Nat],
+  result: (List Bytes),
+  body: (first (prim iterate_until (fun (rest : (List Bytes)) => (match rest
+    | List.nil => (ctor Option.none [(List Bytes)])
+    | List.cons head tail => (ctor Option.some [(List Bytes)] tail))) count items : ((List Bytes) * Bool))),
+  executable: true
+}
+
+definition{
+  name: scGo,
+  parameters: [st : Sc, work : (List SWork)],
+  result: (Option Sc),
+  body: (ctor Option.some [Sc] (record Sc {work := work, scope := (project st scope), depth := (project st depth), error := (ctor Option.none [Bytes])})),
+  executable: true
+}
+
+definition{
+  name: scFail,
+  parameters: [st : Sc, message : Bytes],
+  result: (Option Sc),
+  body: (ctor Option.some [Sc] (record Sc {work := (project st work), scope := (project st scope), depth := (project st depth), error := (ctor Option.some [Bytes] message)})),
+  executable: true
+}
+
+definition{
+  name: uniStep,
+  parameters: [st : Sc, rest : (List SWork), universes : (List Bytes), u : LexiconLse::Universe],
+  result: (Option Sc),
+  body: (match u
+    | LexiconLse::Universe.UNum n => (scGo st rest)
+    | LexiconLse::Universe.UVar name => (if (member universes name) then (scGo st rest) else (scFail st (cat (cat (lit "universe variable `") name) (lit "` is not declared"))))
+    | LexiconLse::Universe.USucc inner => (scGo st (cons (ctor SWork.SUni inner) rest))
+    | LexiconLse::Universe.UMax items => (scGo st (cons (ctor SWork.SUni items) rest))
+    | LexiconLse::Universe.UIMax a b => (scGo st (cons (ctor SWork.SUni a) (cons (ctor SWork.SUni b) rest)))
+    | LexiconLse::Universe.UNil => (scGo st rest)
+    | LexiconLse::Universe.UItem head tail => (scGo st (cons (ctor SWork.SUni head) (cons (ctor SWork.SUni tail) rest)))),
+  executable: true
+}
+
+definition{
+  name: exprStep,
+  parameters: [st : Sc, rest : (List SWork), expr : LexiconLse::Lse],
+  result: (Option Sc),
+  body: (match expr
+    | LexiconLse::Lse.LSortProp => (scGo st rest)
+    | LexiconLse::Lse.LSortType u => (scGo st (cons (ctor SWork.SUni u) rest))
+    | LexiconLse::Lse.LConst p e us => (scGo st (cons (ctor SWork.SUni us) rest))
+    | LexiconLse::Lse.LLocal name => (if (member (project st scope) name) then (scGo st rest) else (scFail st (cat (cat (lit "local `") name) (lit "` is not in scope"))))
+    | LexiconLse::Lse.LApp f args => (scGo st (cons (ctor SWork.SExpr f) (cons (ctor SWork.SExpr args) rest)))
+    | LexiconLse::Lse.LPi binders body => (scGo st (cons (ctor SWork.SExpr binders) (cons (ctor SWork.SExpr body) (cons (ctor SWork.STrunc (project st depth)) rest))))
+    | LexiconLse::Lse.LLam binders body => (scGo st (cons (ctor SWork.SExpr binders) (cons (ctor SWork.SExpr body) (cons (ctor SWork.STrunc (project st depth)) rest))))
+    | LexiconLse::Lse.LLet name ty value body => (scGo st (cons (ctor SWork.SExpr ty) (cons (ctor SWork.SExpr value) (cons (ctor SWork.SBind name) (cons (ctor SWork.SExpr body) (cons (ctor SWork.STrunc (project st depth)) rest))))))
+    | LexiconLse::Lse.LNat digits => (scGo st rest)
+    | LexiconLse::Lse.LNil => (scGo st rest)
+    | LexiconLse::Lse.LArg head tail => (scGo st (cons (ctor SWork.SExpr head) (cons (ctor SWork.SExpr tail) rest)))
+    | LexiconLse::Lse.LBinder mode name ty more => (scGo st (cons (ctor SWork.SExpr ty) (cons (ctor SWork.SBind name) (cons (ctor SWork.SExpr more) rest))))),
+  executable: true
+}
+
+definition{
+  name: scStep,
+  parameters: [universes : (List Bytes), st : Sc],
+  result: (Option Sc),
+  body: (match (project st error)
+    | Option.some stopped => (ctor Option.none [Sc])
+    | Option.none => (match (project st work)
+      | List.nil => (ctor Option.none [Sc])
+      | List.cons item rest => (match item
+        | SWork.SExpr expr => (exprStep st rest expr)
+        | SWork.SBind name => (ctor Option.some [Sc] (record Sc {work := rest, scope := (cons name (project st scope)), depth := ((project st depth) + 1), error := (ctor Option.none [Bytes])}))
+        | SWork.STrunc wanted => (ctor Option.some [Sc] (record Sc {work := rest, scope := (dropFront (project st scope) (prim subtract (project st depth) wanted : Nat)), depth := wanted, error := (ctor Option.none [Bytes])}))
+        | SWork.SUni u => (uniStep st rest universes u)))),
+  executable: true
+}
+
+definition{
+  name: checkScopes,
+  parameters: [expr : LexiconLse::Lse, universes : (List Bytes), bound : Nat],
+  result: (Option Bytes),
+  body: (project (first (prim iterate_until (fun [universes] (st : Sc) => (scStep universes st)) ((prim multiply bound 4 : Nat) + 4) (record Sc {work := (cons (ctor SWork.SExpr expr) (nil SWork)), scope := (nil Bytes), depth := 0, error := (ctor Option.none [Bytes])}) : (Sc * Bool))) error),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: rcGo,
+  parameters: [st : Rc, stack : (List LexiconLse::Lse)],
+  result: (Option Rc),
+  body: (ctor Option.some [Rc] (record Rc {stack := stack, found := (project st found)})),
+  executable: true
+}
+
+definition{
+  name: rcStep,
+  parameters: [st : Rc],
+  result: (Option Rc),
+  body: (match (project st stack)
+    | List.nil => (ctor Option.none [Rc])
+    | List.cons expr rest => (match expr
+      | LexiconLse::Lse.LSortProp => (rcGo st rest)
+      | LexiconLse::Lse.LSortType u => (rcGo st rest)
+      | LexiconLse::Lse.LConst p e us => (ctor Option.some [Rc] (record Rc {stack := rest, found := (cons (p, e) (project st found))}))
+      | LexiconLse::Lse.LLocal name => (rcGo st rest)
+      | LexiconLse::Lse.LApp f args => (rcGo st (cons f (cons args rest)))
+      | LexiconLse::Lse.LPi binders body => (rcGo st (cons binders (cons body rest)))
+      | LexiconLse::Lse.LLam binders body => (rcGo st (cons binders (cons body rest)))
+      | LexiconLse::Lse.LLet name ty value body => (rcGo st (cons ty (cons value (cons body rest))))
+      | LexiconLse::Lse.LNat digits => (rcGo st rest)
+      | LexiconLse::Lse.LNil => (rcGo st rest)
+      | LexiconLse::Lse.LArg head tail => (rcGo st (cons head (cons tail rest)))
+      | LexiconLse::Lse.LBinder mode name ty more => (rcGo st (cons ty (cons more rest))))),
+  executable: true
+}
+
+definition{
+  name: referencedConsts,
+  parameters: [expr : LexiconLse::Lse, bound : Nat],
+  result: (List (Bytes * Bytes)),
+  body: (LexLeanStd.Order::reverseList [(Bytes * Bytes)] (project (first (prim iterate_until (fun (st : Rc) => (rcStep st)) ((prim multiply bound 4 : Nat) + 4) (record Rc {stack := (cons expr (nil LexiconLse::Lse)), found := (nil (Bytes * Bytes))}) : (Rc * Bool))) found)),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: isSort,
+  parameters: [expr : LexiconLse::Lse],
+  result: Bool,
+  body: (match expr
+    | LexiconLse::Lse.LSortProp => true
+    | LexiconLse::Lse.LSortType u => true
+    | LexiconLse::Lse.LConst p e us => false
+    | LexiconLse::Lse.LLocal name => false
+    | LexiconLse::Lse.LApp f args => false
+    | LexiconLse::Lse.LPi binders body => false
+    | LexiconLse::Lse.LLam binders body => false
+    | LexiconLse::Lse.LLet name ty value body => false
+    | LexiconLse::Lse.LNat digits => false
+    | LexiconLse::Lse.LNil => false
+    | LexiconLse::Lse.LArg head tail => false
+    | LexiconLse::Lse.LBinder mode name ty more => false),
+  executable: true
+}
+
+definition{
+  name: explicitStep,
+  parameters: [state : (LexiconLse::Lse * Nat)],
+  result: (Option (LexiconLse::Lse * Nat)),
+  body: (match (first state)
+    | LexiconLse::Lse.LBinder mode name ty more => (ctor Option.some [(LexiconLse::Lse * Nat)] (more, (if (mode =? 0) then ((second state) + 1) else (second state))))
+    | LexiconLse::Lse.LSortProp => (ctor Option.none [(LexiconLse::Lse * Nat)])
+    | LexiconLse::Lse.LSortType u => (ctor Option.none [(LexiconLse::Lse * Nat)])
+    | LexiconLse::Lse.LConst p e us => (ctor Option.none [(LexiconLse::Lse * Nat)])
+    | LexiconLse::Lse.LLocal name => (ctor Option.none [(LexiconLse::Lse * Nat)])
+    | LexiconLse::Lse.LApp f args => (ctor Option.none [(LexiconLse::Lse * Nat)])
+    | LexiconLse::Lse.LPi binders body => (ctor Option.none [(LexiconLse::Lse * Nat)])
+    | LexiconLse::Lse.LLam binders body => (ctor Option.none [(LexiconLse::Lse * Nat)])
+    | LexiconLse::Lse.LLet name ty value body => (ctor Option.none [(LexiconLse::Lse * Nat)])
+    | LexiconLse::Lse.LNat digits => (ctor Option.none [(LexiconLse::Lse * Nat)])
+    | LexiconLse::Lse.LNil => (ctor Option.none [(LexiconLse::Lse * Nat)])
+    | LexiconLse::Lse.LArg head tail => (ctor Option.none [(LexiconLse::Lse * Nat)])),
+  executable: true
+}
+
+definition{
+  name: outerShape,
+  parameters: [expr : LexiconLse::Lse, bound : Nat],
+  result: (Nat * Bool),
+  body: (match expr
+    | LexiconLse::Lse.LPi binders body => ((second (first (prim iterate_until (fun (state : (LexiconLse::Lse * Nat)) => (explicitStep state)) (bound + 1) (binders, 0) : ((LexiconLse::Lse * Nat) * Bool)))), (isSort body))
+    | LexiconLse::Lse.LSortProp => (0, true)
+    | LexiconLse::Lse.LSortType u => (0, true)
+    | LexiconLse::Lse.LConst p e us => (0, false)
+    | LexiconLse::Lse.LLocal name => (0, false)
+    | LexiconLse::Lse.LApp f args => (0, false)
+    | LexiconLse::Lse.LLam binders body => (0, false)
+    | LexiconLse::Lse.LLet name ty value body => (0, false)
+    | LexiconLse::Lse.LNat digits => (0, false)
+    | LexiconLse::Lse.LNil => (0, false)
+    | LexiconLse::Lse.LArg head tail => (0, false)
+    | LexiconLse::Lse.LBinder mode name ty more => (0, false)),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

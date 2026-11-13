@@ -55,3 +55,12 @@ writers it uses, and the standard library's `Numeral`, `Order`, and `Sha256`, an
 canonical project manifest of SPEC.md §10.1 and its digest.
 `src/ManifestText.lex.tex` (SPEC.md §17.23, `BS-34`) imports the standard library's `Json`,
 `Numeral`, `Order`, and `Text`, and writes the build manifest of SPEC.md §21.6.
+`src/LexiconSchema.lex.tex` (SPEC.md §17.23, `BS-50`) imports `PrimitiveScan` (`BS-03`), whose
+atoms it reads, `LexiconLse` (`BS-25`), whose byte classes it uses, and the standard library's
+`Text`: the tables and predicates of the lexicon entry schema of SPEC.md §13.
+`src/LseScopes.lex.tex` (SPEC.md §17.23, `BS-51`) imports `LexiconLse` (`BS-25`), whose
+expressions it walks, and the standard library's `Order`: the scopes, references, and outer
+shape of a semantic expression of SPEC.md §13.8.
+`src/LseTypes.lex.tex` (SPEC.md §17.23, `BS-52`) imports `LexiconLse` (`BS-25`), whose
+expressions it checks and prints, and the standard library's `Numeral` and `Order`: the
+conservative checker of semantic expressions of SPEC.md §13.7.
