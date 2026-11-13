@@ -511,6 +511,14 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "read_core_module",
+      "root": "LexLeanBoot.CoreRead.readCoreModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

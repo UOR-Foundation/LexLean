@@ -11764,6 +11764,56 @@ stack-bound step, `bootstrap/print_core_module is no package of the committed
 exports`, as each bootstrap member did before its regeneration. The branch is
 stacked on `BS-38`.
 
+### the reader of the core notation is source (BS-40)
+
+`BS-40` holds the production root `LexLeanBoot.CoreRead.readCoreModule`
+(`bootstrap/src/CoreRead.lex.tex`) to the reader of `surface::core::parse_module`
+up to the decoding of each declaration: the imports, the node table numbered in
+the order its nodes finish, the proof nodes, each declaration's members with its
+roots resolved, and the byte range of each declaration, or the offset and
+message of the first error. The decoding of a declaration's members (serde's
+messages) stays in the host and outside the claim; to hold the module to the
+reader alone, `core.rs` splits `parse_module_with_spans` into a doc-hidden
+`read_module` and the decoding over it, which keeps what the function returns
+and the order of its errors. The module reads the text with explicit stacks of
+jobs under `iterate_until` and admits no `recursion`; it imports `CoreJson`
+(`BS-38`), whose node and level types it builds, `SurfaceGeneric`, whose reader
+reads a declaration's members, `SurfaceLex`, and `AxiomOutput`. The case holds the
+root to the oracle on hand-built texts that reach the reader's errors, every
+term, level, binder, annotation, and declaration form, named statements, a
+shadowed and an unnamed binder, and the limits on depth, on `+` beyond 1,024, and
+on numbers beyond 64 bits; on the committed core modules of language 1.2 written
+in the notation; and on seeded edits of them. Two of the oracle's refusals are
+kept in the module but no text reaches them (`the members of a declaration are
+an object`: the members are the text between matching braces, which the generic
+reader reads as an object or refuses; and `a statement defines the node its term
+ends with`: a term's own node is the last one reading it numbers), and one test
+cannot be planted (a binder's empty name never matches a word, which is never
+empty). Each planted defect names the one vector that catches it, and the case
+asserts that the site of each plant occurs once. The row's statement carries no
+counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoints are `CoreJson` and `CoreRead`: `lexlean check`, `lexlean build`,
+and `lexlean verify` pass, with the axioms Lean's audit reports declared.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace` with `BS-38` and `BS-39`. Its corpus is 97 named vectors, the 376
+committed core modules in the notation (1 under the evaluator, all under rustc),
+and 80 and 800 seeded edits. The evaluator agrees with the oracle on 178 runs,
+and each of the 29 planted defects is detected by its own vector. The first runs
+found three faults of the module: it returned a declaration's members as a bare
+chain where the oracle has an object; two messages named the node type where the
+oracle writes `@N`; and a number beyond 64 bits overflowed before it was refused,
+so the module now decides `the number is too large` on the digits. They found
+four of the case: a vector's line feed made the oracle refuse a control character
+before the end of an unterminated string, two plants named a pair type the module
+had since replaced by a record, a vector's statement label was not its node's
+number, and a plant needed a reference to the node being written. The rendered package under the pinned rustc agrees with the oracle on 1,273 runs
+(520 s).
+The case then stops at the stack-bound step, as each bootstrap member did before
+its regeneration. The branch is stacked on `BS-39`.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

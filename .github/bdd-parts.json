@@ -283,6 +283,9 @@
     ],
     "bootstrap-core-print": [
       "BS-39"
+    ],
+    "bootstrap-core-read": [
+      "BS-40"
     ]
   },
   "targets": {
