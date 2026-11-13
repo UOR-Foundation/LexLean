@@ -17,6 +17,12 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The reader of the semantic notation as language-1.2 source (SPEC.md
+  §17.23, §17.21, `BS-37`, #269; no new diagnostic code, no change to the
+  language-1.2 identity). `parseAt`, `parseSemanticModule`, and
+  `semanticSpans` of `SemanticRead` return what `surface::semantic::parse_at`,
+  `parse_module`, and `declaration_spans` return, with the semantic-module
+  schema as their input, and admit no `recursion`. The register is 494 IDs.
 - A one-pass writer for the counts of the bootstrap count cases, #92.
   Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
   `BS-15` records every count it checks in `target/count-report/` instead of

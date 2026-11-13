@@ -1,0 +1,1395 @@
+\begin{lexlean}{SemanticRead}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\importmodule{SurfaceGeneric}
+\importmodule{SurfaceLex}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Pos,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: PTerm, fields: []},
+    {name: PType, fields: []},
+    {name: PMember, fields: []},
+    {name: PParam, fields: []},
+    {name: PNode, fields: [LexLeanStd.Json::Json]},
+    {name: PAny, fields: []}
+  ]
+}
+
+structure{
+  name: Cell,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: key, type: Bytes},
+    {name: value, type: LexLeanStd.Json::Json},
+    {name: rest, type: LexLeanStd.Json::Json}
+  ]
+}
+
+structure{
+  name: Elem,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: value, type: LexLeanStd.Json::Json}, {name: rest, type: LexLeanStd.Json::Json}]
+}
+
+structure{
+  name: Look,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: rest, type: LexLeanStd.Json::Json},
+    {name: found, type: (Option LexLeanStd.Json::Json)}
+  ]
+}
+
+structure{
+  name: Gather,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: rest, type: LexLeanStd.Json::Json},
+    {name: items, type: (List LexLeanStd.Json::Json)}
+  ]
+}
+
+structure{
+  name: Slash,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: cursor, type: Nat}, {name: after, type: Nat}]
+}
+
+structure{
+  name: Frame,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: op, type: Nat},
+    {name: stage, type: Nat},
+    {name: depth, type: Nat},
+    {name: offset, type: Nat},
+    {name: word, type: Bytes},
+    {name: place, type: Pos},
+    {name: scope, type: (Option LexLeanStd.Json::Json)},
+    {name: values, type: (List LexLeanStd.Json::Json)},
+    {name: members, type: (List (Bytes * LexLeanStd.Json::Json))},
+    {name: held, type: LexLeanStd.Json::Json},
+    {name: heldMore, type: LexLeanStd.Json::Json},
+    {name: spans, type: (List (Nat * Nat))}
+  ]
+}
+
+structure{
+  name: Rd,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: stack, type: (List Frame)},
+    {name: value, type: LexLeanStd.Json::Json},
+    {name: mode, type: Nat},
+    {name: goal, type: Nat},
+    {name: place, type: Pos},
+    {name: depth, type: Nat},
+    {name: error, type: (Option SurfaceLex::Failure)},
+    {name: spans, type: (List (Nat * Nat))}
+  ]
+}
+
+structure{
+  name: Got,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: value, type: LexLeanStd.Json::Json},
+    {name: pos, type: Nat},
+    {name: error, type: (Option SurfaceLex::Failure)}
+  ]
+}
+
+structure{
+  name: Names,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: items, type: (List LexLeanStd.Json::Json)},
+    {name: pos, type: Nat},
+    {name: more, type: Bool},
+    {name: error, type: (Option SurfaceLex::Failure)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: both,
+  parameters: [left : Bool, right : Bool],
+  result: Bool,
+  body: (if left then right else false),
+  executable: true
+}
+
+definition{
+  name: same,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal left right : Bool),
+  executable: true
+}
+
+definition{
+  name: ticked,
+  parameters: [word : Bytes],
+  result: Bytes,
+  body: (cat (cat (lit "`") word) (lit "`")),
+  executable: true
+}
+
+definition{
+  name: listed,
+  parameters: [needle : Bytes, items : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun [needle] (found : Bool) (item : Bytes) => (if found then true else (prim equal item needle : Bool))) false items : Bool),
+  executable: true
+}
+
+definition{
+  name: nextMember,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: (Option Cell),
+  body: (match chain
+    | LexLeanStd.Json::Json.JMember key value rest => (ctor Option.some [Cell] (record Cell {key := key, value := value, rest := rest}))
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [Cell])),
+  executable: true
+}
+
+definition{
+  name: nextItem,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: (Option Elem),
+  body: (match chain
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.some [Elem] (record Elem {value := element, rest := rest}))
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JMember key value rest => (ctor Option.none [Elem])),
+  executable: true
+}
+
+definition{
+  name: asObj,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match value
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.some [LexLeanStd.Json::Json] inner)
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JMember key member rest => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: asArr,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match value
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.some [LexLeanStd.Json::Json] inner)
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JMember key member rest => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: asStr,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: (Option Bytes),
+  body: (match value
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.some [Bytes] text)
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JMember key member rest => (ctor Option.none [Bytes])),
+  executable: true
+}
+
+definition{
+  name: lookStep,
+  parameters: [key : Bytes, state : Look],
+  result: (Option Look),
+  body: (match (project state found)
+    | Option.some hit => (ctor Option.none [Look])
+    | Option.none => (match (nextMember (project state rest))
+      | Option.some cell => (if (same (project cell key) key) then (ctor Option.some [Look] (record Look {rest := (ctor LexLeanStd.Json::Json.JNil), found := (ctor Option.some [LexLeanStd.Json::Json] (project cell value))})) else (ctor Option.some [Look] (record Look {rest := (project cell rest), found := (ctor Option.none [LexLeanStd.Json::Json])})))
+      | Option.none => (ctor Option.none [Look]))),
+  executable: true
+}
+
+definition{
+  name: getIn,
+  parameters: [value : LexLeanStd.Json::Json, key : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match (asObj value)
+    | Option.some chain => (project (first (prim iterate_until (fun [key] (state : Look) => (lookStep key state)) 1000000 (record Look {rest := chain, found := (ctor Option.none [LexLeanStd.Json::Json])}) : (Look * Bool))) found)
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: present,
+  parameters: [found : (Option LexLeanStd.Json::Json)],
+  result: Bool,
+  body: (match found | Option.some value => true | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: strOf,
+  parameters: [found : (Option LexLeanStd.Json::Json)],
+  result: (Option Bytes),
+  body: (match found
+    | Option.some value => (asStr value)
+    | Option.none => (ctor Option.none [Bytes])),
+  executable: true
+}
+
+definition{
+  name: arrOf,
+  parameters: [found : (Option LexLeanStd.Json::Json)],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match found
+    | Option.some value => (asArr value)
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: gatherStep,
+  parameters: [state : Gather],
+  result: (Option Gather),
+  body: (match (nextItem (project state rest))
+    | Option.some elem => (ctor Option.some [Gather] (record Gather {rest := (project elem rest), items := (cons (project elem value) (project state items))}))
+    | Option.none => (ctor Option.none [Gather])),
+  executable: true
+}
+
+definition{
+  name: itemsOfChain,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: (List LexLeanStd.Json::Json),
+  body: (LexLeanStd.Order::reverseList [LexLeanStd.Json::Json] (project (first (prim iterate_until (fun (state : Gather) => (gatherStep state)) 1000000 (record Gather {rest := chain, items := (nil LexLeanStd.Json::Json)}) : (Gather * Bool))) items)),
+  executable: true
+}
+
+definition{
+  name: slashStep,
+  parameters: [text : Bytes, state : Slash],
+  result: (Option Slash),
+  body: (let position : Nat := (project state cursor); (match (LexLeanStd.Text::byteAt text position)
+    | Option.some byte => (ctor Option.some [Slash] (record Slash {cursor := (position + 1), after := (if ((prim to_nat byte : Nat) =? 47) then (position + 1) else (project state after))}))
+    | Option.none => (ctor Option.none [Slash]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: lastSegment,
+  parameters: [text : Bytes],
+  result: Bytes,
+  body: (let after : Nat := (project (first (prim iterate_until (fun [text] (state : Slash) => (slashStep text state)) ((prim length text : Nat) + 1) (record Slash {cursor := 0, after := 0}) : (Slash * Bool))) after); (LexLeanStd.Text::sliceOr text after (prim subtract (prim length text : Nat) after : Nat))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: defNamed,
+  parameters: [schema : LexLeanStd.Json::Json, name : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match (getIn schema (lit "$defs"))
+    | Option.some defs => (getIn defs name)
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: resolveStep,
+  parameters: [schema : LexLeanStd.Json::Json, node : LexLeanStd.Json::Json],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match (strOf (getIn node (lit "$ref")))
+    | Option.some reference => (defNamed schema (lastSegment reference))
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: resolve,
+  parameters: [schema : LexLeanStd.Json::Json, node : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (first (prim iterate_until (fun [schema] (current : LexLeanStd.Json::Json) => (resolveStep schema current)) 4096 node : (LexLeanStd.Json::Json * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: classify,
+  parameters: [schema : LexLeanStd.Json::Json, node : LexLeanStd.Json::Json],
+  result: Pos,
+  body: (match (strOf (getIn node (lit "$ref")))
+    | Option.some reference => (let segment : Bytes := (lastSegment reference); (if (same segment (lit "term")) then (ctor Pos.PTerm) else (if (same segment (lit "type")) then (ctor Pos.PType) else (if (same segment (lit "member")) then (ctor Pos.PMember) else (if (same segment (lit "parameter")) then (ctor Pos.PParam) else (ctor Pos.PNode (resolve schema node)))))))
+    | Option.none => (ctor Pos.PNode node)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: itemsOf,
+  parameters: [schema : LexLeanStd.Json::Json, node : LexLeanStd.Json::Json],
+  result: Pos,
+  body: (match (getIn (resolve schema node) (lit "items"))
+    | Option.some items => (classify schema items)
+    | Option.none => (ctor Pos.PAny)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: memberOf,
+  parameters: [
+    schema : LexLeanStd.Json::Json,
+    object : (Option LexLeanStd.Json::Json),
+    key : Bytes
+  ],
+  result: Pos,
+  body: (match object
+    | Option.some node => (match (getIn (resolve schema node) (lit "properties"))
+      | Option.some properties => (match (getIn properties key)
+        | Option.some member => (classify schema member)
+        | Option.none => (ctor Pos.PAny))
+      | Option.none => (ctor Pos.PAny))
+    | Option.none => (ctor Pos.PAny)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tagIs,
+  parameters: [alternative : LexLeanStd.Json::Json, kind : Bytes],
+  result: Bool,
+  body: (match (getIn alternative (lit "properties"))
+    | Option.some properties => (match (getIn properties (lit "kind"))
+      | Option.some tag => (if (match (strOf (getIn tag (lit "const")))
+        | Option.some constant => (same constant kind)
+        | Option.none => false) then true else (match (arrOf (getIn tag (lit "enum")))
+        | Option.some kinds => (prim list_fold (fun [kind] (found : Bool) (item : LexLeanStd.Json::Json) => (if found then true else (match (asStr item)
+          | Option.some text => (same text kind)
+          | Option.none => false))) false (itemsOfChain kinds) : Bool)
+        | Option.none => false))
+      | Option.none => false)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: alternativeOf,
+  parameters: [schema : LexLeanStd.Json::Json, union : LexLeanStd.Json::Json, kind : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match (arrOf (getIn (resolve schema union) (lit "oneOf")))
+    | Option.some alternatives => (prim list_fold (fun [kind, schema] (found : (Option LexLeanStd.Json::Json)) (item : LexLeanStd.Json::Json) => (match found
+      | Option.some hit => found
+      | Option.none => (let resolved : LexLeanStd.Json::Json := (resolve schema item); (if (tagIs resolved kind) then (ctor Option.some [LexLeanStd.Json::Json] resolved) else (ctor Option.none [LexLeanStd.Json::Json]))))) (ctor Option.none [LexLeanStd.Json::Json]) (itemsOfChain alternatives) : (Option LexLeanStd.Json::Json))
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isUnion,
+  parameters: [schema : LexLeanStd.Json::Json, node : LexLeanStd.Json::Json],
+  result: Bool,
+  body: (match (arrOf (getIn (resolve schema node) (lit "oneOf")))
+    | Option.some alternatives => (prim list_fold (fun [schema] (fine : Bool) (item : LexLeanStd.Json::Json) => (if fine then (match (getIn (resolve schema item) (lit "properties"))
+      | Option.some properties => (present (getIn properties (lit "kind")))
+      | Option.none => false) else false)) true (itemsOfChain alternatives) : Bool)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: kindScope,
+  parameters: [schema : LexLeanStd.Json::Json, place : Pos, kind : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match place
+    | Pos.PTerm => (match (defNamed schema (lit "term"))
+      | Option.some union => (alternativeOf schema union kind)
+      | Option.none => (ctor Option.none [LexLeanStd.Json::Json]))
+    | Pos.PType => (match (defNamed schema (lit "type"))
+      | Option.some union => (alternativeOf schema union kind)
+      | Option.none => (ctor Option.none [LexLeanStd.Json::Json]))
+    | Pos.PNode node => (if (isUnion schema node) then (alternativeOf schema node kind) else (ctor Option.some [LexLeanStd.Json::Json] node))
+    | Pos.PMember => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PParam => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PAny => (ctor Option.none [LexLeanStd.Json::Json])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: braceScope,
+  parameters: [schema : LexLeanStd.Json::Json, place : Pos],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match place
+    | Pos.PNode node => (ctor Option.some [LexLeanStd.Json::Json] node)
+    | Pos.PParam => (defNamed schema (lit "parameter"))
+    | Pos.PTerm => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PType => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PMember => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PAny => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: itemPlace,
+  parameters: [schema : LexLeanStd.Json::Json, place : Pos],
+  result: Pos,
+  body: (match place
+    | Pos.PNode node => (itemsOf schema node)
+    | Pos.PTerm => (ctor Pos.PAny)
+    | Pos.PType => (ctor Pos.PAny)
+    | Pos.PMember => (ctor Pos.PAny)
+    | Pos.PParam => (ctor Pos.PAny)
+    | Pos.PAny => (ctor Pos.PAny)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: code,
+  parameters: [toks : (List SurfaceLex::Spanned), position : Nat],
+  result: Nat,
+  body: (SurfaceGeneric::codeAt toks position),
+  executable: true
+}
+
+definition{
+  name: txt,
+  parameters: [toks : (List SurfaceLex::Spanned), position : Nat],
+  result: Bytes,
+  body: (SurfaceGeneric::textAt toks position),
+  executable: true
+}
+
+definition{
+  name: wordIs,
+  parameters: [toks : (List SurfaceLex::Spanned), position : Nat, expected : Bytes],
+  result: Bool,
+  body: (both ((code toks position) =? 12) (same (txt toks position) expected)),
+  executable: true
+}
+
+definition{
+  name: lastEnd,
+  parameters: [toks : (List SurfaceLex::Spanned), position : Nat],
+  result: Nat,
+  body: (if (position =? 0) then 0 else (match (SurfaceGeneric::tokenAt toks (prim subtract position 1 : Nat))
+    | Option.some found => (project found stop)
+    | Option.none => 0)),
+  executable: true
+}
+
+definition{
+  name: allDigits,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (both (0 <? (prim length text : Nat)) ((SurfaceGeneric::digitsEnd text 0) =? (prim length text : Nat))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: lowerHex,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let stop : Nat := (first (prim iterate_until (fun [text] (position : Nat) => (match (LexLeanStd.Text::byteAt text position)
+    | Option.some byte => (let number : Nat := (prim to_nat byte : Nat); (if (if (both (48 <=? number) (number <=? 57)) then true else (both (97 <=? number) (number <=? 102))) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])))
+    | Option.none => (ctor Option.none [Nat]))) ((prim length text : Nat) + 1) 0 : (Nat * Bool))); (both (stop =? (prim length text : Nat)) ((prim remainder (prim length text : Nat) 2 0 : Nat) =? 0))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tailFrom,
+  parameters: [text : Bytes, skip : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr text skip (prim subtract (prim length text : Nat) skip : Nat)),
+  executable: true
+}
+
+definition{
+  name: reservedTerm,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "let") (cons (lit "if") (cons (lit "match") (cons (lit "fun") (cons (lit "forall") (cons (lit "nil") (cons (lit "cons") (cons (lit "first") (cons (lit "second") (cons (lit "not") (cons (lit "apply") (cons (lit "ctor") (cons (lit "record") (cons (lit "project") (cons (lit "prim") (cons (lit "ref") (cons (lit "checked") (cons (lit "then") (cons (lit "else") (cons (lit "with") (cons (lit "true") (nil Bytes)))))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: plain,
+  parameters: [name : Bytes],
+  result: Bool,
+  body: (both (SurfaceGeneric::isBare name) (both (if (listed name (reservedTerm)) then false else true) (if (same name (lit "false")) then false else true))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nullaryKind,
+  parameters: [word : Bytes],
+  result: (Option Bytes),
+  body: (if (same word (lit "Bool")) then (ctor Option.some [Bytes] (lit "bool")) else (if (same word (lit "Bytes")) then (ctor Option.some [Bytes] (lit "bytes")) else (if (same word (lit "Int")) then (ctor Option.some [Bytes] (lit "int")) else (if (same word (lit "Int8")) then (ctor Option.some [Bytes] (lit "int8")) else (if (same word (lit "Int16")) then (ctor Option.some [Bytes] (lit "int16")) else (if (same word (lit "Int32")) then (ctor Option.some [Bytes] (lit "int32")) else (if (same word (lit "Int64")) then (ctor Option.some [Bytes] (lit "int64")) else (if (same word (lit "Nat")) then (ctor Option.some [Bytes] (lit "nat")) else (if (same word (lit "Ordering")) then (ctor Option.some [Bytes] (lit "ordering")) else (if (same word (lit "Prop")) then (ctor Option.some [Bytes] (lit "prop")) else (if (same word (lit "String")) then (ctor Option.some [Bytes] (lit "string")) else (if (same word (lit "Type")) then (ctor Option.some [Bytes] (lit "type")) else (if (same word (lit "UInt8")) then (ctor Option.some [Bytes] (lit "uint8")) else (if (same word (lit "UInt16")) then (ctor Option.some [Bytes] (lit "uint16")) else (if (same word (lit "UInt32")) then (ctor Option.some [Bytes] (lit "uint32")) else (if (same word (lit "UInt64")) then (ctor Option.some [Bytes] (lit "uint64")) else (if (same word (lit "Unit")) then (ctor Option.some [Bytes] (lit "unit")) else (if (same word (lit "ContractViolation")) then (ctor Option.some [Bytes] (lit "contract_violation")) else (if (same word (lit "ReasoningFailure")) then (ctor Option.some [Bytes] (lit "reasoning_failure")) else (ctor Option.none [Bytes])))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: heads,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "List") (cons (lit "Option") (cons (lit "Result") (cons (lit "Set") (cons (lit "Map") (cons (lit "Fn") (nil Bytes))))))),
+  executable: true
+}
+
+definition{
+  name: reservedType,
+  parameters: [word : Bytes],
+  result: Bool,
+  body: (match (nullaryKind word)
+    | Option.some kind => true
+    | Option.none => (listed word (heads))),
+  executable: true
+}
+
+definition{
+  name: representationOf,
+  parameters: [spelling : Bytes],
+  result: (Option Bytes),
+  body: (if (same spelling (lit "Int")) then (ctor Option.some [Bytes] (lit "int")) else (if (same spelling (lit "Int8")) then (ctor Option.some [Bytes] (lit "int8")) else (if (same spelling (lit "Int16")) then (ctor Option.some [Bytes] (lit "int16")) else (if (same spelling (lit "Int32")) then (ctor Option.some [Bytes] (lit "int32")) else (if (same spelling (lit "Int64")) then (ctor Option.some [Bytes] (lit "int64")) else (if (same spelling (lit "UInt8")) then (ctor Option.some [Bytes] (lit "uint8")) else (if (same spelling (lit "UInt16")) then (ctor Option.some [Bytes] (lit "uint16")) else (if (same spelling (lit "UInt32")) then (ctor Option.some [Bytes] (lit "uint32")) else (if (same spelling (lit "UInt64")) then (ctor Option.some [Bytes] (lit "uint64")) else (ctor Option.none [Bytes])))))))))),
+  executable: true
+}
+
+definition{
+  name: infixKind,
+  parameters: [spelling : Bytes],
+  result: (Option Bytes),
+  body: (if (same spelling (lit "+")) then (ctor Option.some [Bytes] (lit "add")) else (if (same spelling (lit "=")) then (ctor Option.some [Bytes] (lit "eq")) else (if (same spelling (lit "<=")) then (ctor Option.some [Bytes] (lit "le")) else (if (same spelling (lit "<")) then (ctor Option.some [Bytes] (lit "lt")) else (if (same spelling (lit "=?")) then (ctor Option.some [Bytes] (lit "beq")) else (if (same spelling (lit "<=?")) then (ctor Option.some [Bytes] (lit "ble")) else (if (same spelling (lit "<?")) then (ctor Option.some [Bytes] (lit "blt")) else (if (same spelling (lit "&&")) then (ctor Option.some [Bytes] (lit "and")) else (if (same spelling (lit "||")) then (ctor Option.some [Bytes] (lit "or")) else (if (same spelling (lit "/\\")) then (ctor Option.some [Bytes] (lit "prop_and")) else (if (same spelling (lit "<->")) then (ctor Option.some [Bytes] (lit "iff")) else (if (same spelling (lit "->")) then (ctor Option.some [Bytes] (lit "implies")) else (ctor Option.none [Bytes]))))))))))))),
+  executable: true
+}
+
+definition{
+  name: isInfix,
+  parameters: [spelling : Bytes],
+  result: Bool,
+  body: (match (infixKind spelling) | Option.some kind => true | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: objectOf,
+  parameters: [members : (List (Bytes * LexLeanStd.Json::Json))],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj (SurfaceGeneric::memberChain (LexLeanStd.Order::sortByKey [LexLeanStd.Json::Json] members))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: kindNode,
+  parameters: [kind : Bytes, members : (List (Bytes * LexLeanStd.Json::Json))],
+  result: LexLeanStd.Json::Json,
+  body: (objectOf (cons ((lit "kind"), (ctor LexLeanStd.Json::Json.JStr kind)) members)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: str,
+  parameters: [text : Bytes],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JStr text),
+  executable: true
+}
+
+definition{
+  name: arr,
+  parameters: [itemsRev : (List LexLeanStd.Json::Json)],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JArr (SurfaceGeneric::itemChain itemsRev)),
+  executable: true
+}
+
+definition{
+  name: one,
+  parameters: [key : String, value : LexLeanStd.Json::Json],
+  result: (List (Bytes * LexLeanStd.Json::Json)),
+  body: (cons ((lit key), value) (nil (Bytes * LexLeanStd.Json::Json))),
+  executable: true
+}
+
+definition{
+  name: two,
+  parameters: [
+    key : String,
+    value : LexLeanStd.Json::Json,
+    other : String,
+    more : LexLeanStd.Json::Json
+  ],
+  result: (List (Bytes * LexLeanStd.Json::Json)),
+  body: (cons ((lit key), value) (cons ((lit other), more) (nil (Bytes * LexLeanStd.Json::Json)))),
+  executable: true
+}
+
+definition{
+  name: withTypes,
+  parameters: [members : (List (Bytes * LexLeanStd.Json::Json)), types : LexLeanStd.Json::Json],
+  result: (List (Bytes * LexLeanStd.Json::Json)),
+  body: (match (asArr types)
+    | Option.some chain => (cons ((lit "type_arguments"), types) members)
+    | Option.none => members),
+  executable: true
+}
+
+definition{
+  name: failure,
+  parameters: [offset : Nat, message : Bytes],
+  result: (Option SurfaceLex::Failure),
+  body: (ctor Option.some [SurfaceLex::Failure] (record SurfaceLex::Failure {offset := offset, message := message})),
+  executable: true
+}
+
+definition{
+  name: readName,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, position : Nat, what : Bytes],
+  result: Got,
+  body: (let word : Bytes := (txt toks position); (if (both ((code toks position) =? 12) (SurfaceGeneric::isBare word)) then (record Got {value := (str word), pos := (position + 1), error := (ctor Option.none [SurfaceLex::Failure])}) else (record Got {value := (ctor LexLeanStd.Json::Json.JNil), pos := position, error := (failure (SurfaceGeneric::offsetAt toks size position) (cat (cat (cat (lit "expected ") what) (lit ", found ")) (SurfaceGeneric::describeAt toks position)))}))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: memberPath,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, position : Nat],
+  result: Got,
+  body: (let head : Got := (readName toks size position (lit "a name")); (match (project head error)
+    | Option.some problem => head
+    | Option.none => (let after : Nat := (project head pos); (if ((code toks after) =? 9) then (let name : Got := (readName toks size (after + 1) (lit "a name after `::`")); (match (project name error)
+      | Option.some problem => name
+      | Option.none => (record Got {value := (objectOf (two "module" (project head value) "name" (project name value))), pos := (project name pos), error := (ctor Option.none [SurfaceLex::Failure])}))) else (record Got {value := (objectOf (one "name" (project head value))), pos := after, error := (ctor Option.none [SurfaceLex::Failure])}))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: namesStep,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, what : Bytes, state : Names],
+  result: (Option Names),
+  body: (match (project state error)
+    | Option.some problem => (ctor Option.none [Names])
+    | Option.none => (if (project state more) then (let position : Nat := (project state pos); (if ((code toks position) =? 3) then (ctor Option.none [Names]) else (let name : Got := (readName toks size position what); (match (project name error)
+      | Option.some problem => (ctor Option.some [Names] (record Names {items := (project state items), pos := position, more := false, error := (project name error)}))
+      | Option.none => (if ((code toks (project name pos)) =? 6) then (ctor Option.some [Names] (record Names {items := (cons (project name value) (project state items)), pos := ((project name pos) + 1), more := true, error := (ctor Option.none [SurfaceLex::Failure])})) else (ctor Option.some [Names] (record Names {items := (cons (project name value) (project state items)), pos := (project name pos), more := false, error := (ctor Option.none [SurfaceLex::Failure])}))))))) else (ctor Option.none [Names]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readNames,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, position : Nat, what : Bytes],
+  result: Got,
+  body: (if ((code toks position) =? 2) then (let final : Names := (first (prim iterate_until (fun [size, toks, what] (state : Names) => (namesStep toks size what state)) ((prim length toks : Nat) + 2) (record Names {items := (nil LexLeanStd.Json::Json), pos := (position + 1), more := true, error := (ctor Option.none [SurfaceLex::Failure])}) : (Names * Bool))); (match (project final error)
+    | Option.some problem => (record Got {value := (ctor LexLeanStd.Json::Json.JNil), pos := (project final pos), error := (project final error)})
+    | Option.none => (if ((code toks (project final pos)) =? 3) then (record Got {value := (arr (project final items)), pos := ((project final pos) + 1), error := (ctor Option.none [SurfaceLex::Failure])}) else (record Got {value := (ctor LexLeanStd.Json::Json.JNil), pos := (project final pos), error := (failure (SurfaceGeneric::offsetAt toks size (project final pos)) (lit "expected `,` or `]`"))})))) else (record Got {value := (ctor LexLeanStd.Json::Json.JNil), pos := position, error := (failure (SurfaceGeneric::offsetAt toks size position) (lit "expected `[`"))})),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: frame,
+  parameters: [op : Nat, depth : Nat],
+  result: Frame,
+  body: (record Frame {op := op, stage := 0, depth := depth, offset := 0, word := (lit ""), place := (ctor Pos.PAny), scope := (ctor Option.none [LexLeanStd.Json::Json]), values := (nil LexLeanStd.Json::Json), members := (nil (Bytes * LexLeanStd.Json::Json)), held := (ctor LexLeanStd.Json::Json.JNil), heldMore := (ctor LexLeanStd.Json::Json.JNil), spans := (nil (Nat * Nat))}),
+  executable: true
+}
+
+definition{
+  name: staged,
+  parameters: [top : Frame, stage : Nat],
+  result: Frame,
+  body: (record Frame {op := (project top op), stage := stage, depth := (project top depth), offset := (project top offset), word := (project top word), place := (project top place), scope := (project top scope), values := (project top values), members := (project top members), held := (project top held), heldMore := (project top heldMore), spans := (project top spans)}),
+  executable: true
+}
+
+definition{
+  name: worded,
+  parameters: [top : Frame, word : Bytes, offset : Nat],
+  result: Frame,
+  body: (record Frame {op := (project top op), stage := (project top stage), depth := (project top depth), offset := offset, word := word, place := (project top place), scope := (project top scope), values := (project top values), members := (project top members), held := (project top held), heldMore := (project top heldMore), spans := (project top spans)}),
+  executable: true
+}
+
+definition{
+  name: holding,
+  parameters: [top : Frame, held : LexLeanStd.Json::Json, heldMore : LexLeanStd.Json::Json],
+  result: Frame,
+  body: (record Frame {op := (project top op), stage := (project top stage), depth := (project top depth), offset := (project top offset), word := (project top word), place := (project top place), scope := (project top scope), values := (project top values), members := (project top members), held := held, heldMore := heldMore, spans := (project top spans)}),
+  executable: true
+}
+
+definition{
+  name: adding,
+  parameters: [top : Frame, value : LexLeanStd.Json::Json],
+  result: Frame,
+  body: (record Frame {op := (project top op), stage := (project top stage), depth := (project top depth), offset := (project top offset), word := (project top word), place := (project top place), scope := (project top scope), values := (cons value (project top values)), members := (project top members), held := (project top held), heldMore := (project top heldMore), spans := (project top spans)}),
+  executable: true
+}
+
+definition{
+  name: placed,
+  parameters: [
+    top : Frame,
+    place : Pos,
+    scope : (Option LexLeanStd.Json::Json),
+    members : (List (Bytes * LexLeanStd.Json::Json))
+  ],
+  result: Frame,
+  body: (record Frame {op := (project top op), stage := (project top stage), depth := (project top depth), offset := (project top offset), word := (project top word), place := place, scope := scope, values := (project top values), members := members, held := (project top held), heldMore := (project top heldMore), spans := (project top spans)}),
+  executable: true
+}
+
+definition{
+  name: spanned,
+  parameters: [top : Frame, span : (Nat * Nat), offset : Nat],
+  result: Frame,
+  body: (record Frame {op := (project top op), stage := (project top stage), depth := (project top depth), offset := offset, word := (project top word), place := (project top place), scope := (project top scope), values := (project top values), members := (project top members), held := (project top held), heldMore := (project top heldMore), spans := (cons span (project top spans))}),
+  executable: true
+}
+
+definition{
+  name: halt,
+  parameters: [st : Rd, offset : Nat, message : Bytes],
+  result: Rd,
+  body: (record Rd {pos := (project st pos), stack := (project st stack), value := (project st value), mode := 9, goal := (project st goal), place := (project st place), depth := (project st depth), error := (failure offset message), spans := (project st spans)}),
+  executable: true
+}
+
+definition{
+  name: haltWith,
+  parameters: [st : Rd, problem : (Option SurfaceLex::Failure)],
+  result: Rd,
+  body: (record Rd {pos := (project st pos), stack := (project st stack), value := (project st value), mode := 9, goal := (project st goal), place := (project st place), depth := (project st depth), error := problem, spans := (project st spans)}),
+  executable: true
+}
+
+definition{
+  name: haltAt,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    st : Rd,
+    position : Nat,
+    message : Bytes
+  ],
+  result: Rd,
+  body: (halt st (SurfaceGeneric::offsetAt toks size position) message),
+  executable: true
+}
+
+definition{
+  name: give,
+  parameters: [st : Rd, position : Nat, value : LexLeanStd.Json::Json],
+  result: Rd,
+  body: (record Rd {pos := position, stack := (project st stack), value := value, mode := 1, goal := (project st goal), place := (project st place), depth := (project st depth), error := (ctor Option.none [SurfaceLex::Failure]), spans := (project st spans)}),
+  executable: true
+}
+
+definition{
+  name: goto,
+  parameters: [st : Rd, position : Nat, goal : Nat, place : Pos, depth : Nat],
+  result: Rd,
+  body: (record Rd {pos := position, stack := (project st stack), value := (ctor LexLeanStd.Json::Json.JNil), mode := 0, goal := goal, place := place, depth := depth, error := (ctor Option.none [SurfaceLex::Failure]), spans := (project st spans)}),
+  executable: true
+}
+
+definition{
+  name: push,
+  parameters: [st : Rd, top : Frame, position : Nat, goal : Nat, place : Pos, depth : Nat],
+  result: Rd,
+  body: (record Rd {pos := position, stack := (cons top (project st stack)), value := (ctor LexLeanStd.Json::Json.JNil), mode := 0, goal := goal, place := place, depth := depth, error := (ctor Option.none [SurfaceLex::Failure]), spans := (project st spans)}),
+  executable: true
+}
+
+definition{
+  name: wantTerm,
+  parameters: [st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (push st top position 3 (ctor Pos.PTerm) ((project top depth) + 1)),
+  executable: true
+}
+
+definition{
+  name: wantType,
+  parameters: [st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (push st top position 2 (ctor Pos.PType) ((project top depth) + 1)),
+  executable: true
+}
+
+definition{
+  name: wantParam,
+  parameters: [st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (push st top position 4 (ctor Pos.PParam) ((project top depth) + 1)),
+  executable: true
+}
+
+definition{
+  name: finished,
+  parameters: [st : Rd, value : LexLeanStd.Json::Json, spans : (List (Nat * Nat))],
+  result: Rd,
+  body: (record Rd {pos := (project st pos), stack := (project st stack), value := value, mode := 9, goal := (project st goal), place := (project st place), depth := (project st depth), error := (ctor Option.none [SurfaceLex::Failure]), spans := spans}),
+  executable: true
+}
+
+definition{
+  name: fieldsNext,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    schema : LexLeanStd.Json::Json,
+    st : Rd,
+    top : Frame,
+    position : Nat
+  ],
+  result: Rd,
+  body: (let token : Nat := (code toks position); (if (token =? 1) then (give st (position + 1) (objectOf (project top members))) else (let offset : Nat := (SurfaceGeneric::offsetAt toks size position); (let key : Bytes := (txt toks position); (if (if (token =? 11) then true else (both (token =? 12) (SurfaceGeneric::isBare key))) then (if ((code toks (position + 1)) =? 7) then (push st (worded top key offset) (position + 2) 0 (memberOf schema (project top scope) key) ((project top depth) + 1)) else (haltAt toks size st (position + 1) (lit "expected `:` after a member name"))) else (halt st offset (lit "expected a member name"))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: startTagged,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    schema : LexLeanStd.Json::Json,
+    st : Rd
+  ],
+  result: Rd,
+  body: (let position : Nat := (project st pos); (let depth : Nat := (project st depth); (let place : Pos := (project st place); (let token : Nat := (code toks position); (if (token =? 2) then (if ((code toks (position + 1)) =? 3) then (give st (position + 2) (arr (nil LexLeanStd.Json::Json))) else (let item : Pos := (itemPlace schema place); (push st (placed (frame 1 depth) item (ctor Option.none [LexLeanStd.Json::Json]) (nil (Bytes * LexLeanStd.Json::Json))) (position + 1) 0 item (depth + 1)))) else (if (token =? 0) then (fieldsNext toks size schema st (placed (frame 2 depth) place (braceScope schema place) (nil (Bytes * LexLeanStd.Json::Json))) (position + 1)) else (let word : Bytes := (txt toks position); (if (both (token =? 12) (both ((code toks (position + 1)) =? 0) (both (SurfaceGeneric::isBare word) (if (allDigits word) then false else true)))) then (fieldsNext toks size schema st (placed (frame 2 depth) place (kindScope schema place word) (cons ((lit "kind"), (str word)) (nil (Bytes * LexLeanStd.Json::Json)))) (position + 2)) else (goto st position 5 place depth))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: startGeneric,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, depth : Nat],
+  result: Rd,
+  body: (let scanned : SurfaceGeneric::Rd := (SurfaceGeneric::readFrom toks size (project st pos) depth); (match (project scanned error)
+    | Option.some problem => (haltWith st (project scanned error))
+    | Option.none => (give st (project scanned pos) (project scanned value)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: startAt,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    schema : LexLeanStd.Json::Json,
+    st : Rd
+  ],
+  result: Rd,
+  body: (let position : Nat := (project st pos); (let depth : Nat := (project st depth); (if (256 <? depth) then (haltAt toks size st position (lit "nested more deeply than the notation reads")) else (match (project st place)
+    | Pos.PTerm => (goto st position 3 (ctor Pos.PTerm) depth)
+    | Pos.PType => (goto st position 2 (ctor Pos.PType) depth)
+    | Pos.PMember => (if ((code toks position) =? 0) then (startGeneric toks size st 0) else (let member : Got := (memberPath toks size position); (match (project member error)
+      | Option.some problem => (haltWith st (project member error))
+      | Option.none => (give st (project member pos) (project member value)))))
+    | Pos.PParam => (goto st position 4 (ctor Pos.PParam) depth)
+    | Pos.PNode schemaNode => (goto st position 1 (project st place) depth)
+    | Pos.PAny => (goto st position 5 (ctor Pos.PAny) depth))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: startParam,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd],
+  result: Rd,
+  body: (let position : Nat := (project st pos); (let depth : Nat := (project st depth); (if ((code toks position) =? 0) then (goto st position 1 (ctor Pos.PParam) depth) else (let name : Got := (readName toks size position (lit "a parameter name")); (match (project name error)
+    | Option.some problem => (haltWith st (project name error))
+    | Option.none => (if ((code toks (project name pos)) =? 7) then (push st (holding (frame 20 depth) (project name value) (ctor LexLeanStd.Json::Json.JNil)) ((project name pos) + 1) 2 (ctor Pos.PType) (depth + 1)) else (haltAt toks size st (project name pos) (lit "expected `:` after a parameter name")))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: fnParams,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (if ((code toks position) =? 5) then (wantType st (staged top 1) (position + 1)) else (wantType st top position)),
+  executable: true
+}
+
+definition{
+  name: namedArgs,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (if ((code toks position) =? 5) then (give st position (kindNode (lit "named") (two "member" (project top held) "arguments" (arr (project top values))))) else (wantType st top position)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: typeParen,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, position : Nat, depth : Nat],
+  result: Rd,
+  body: (let word : Bytes := (txt toks position); (let isWord : Bool := ((code toks position) =? 12); (if (both isWord (if (same word (lit "List")) then true else (if (same word (lit "Set")) then true else (same word (lit "Option"))))) then (push st (worded (frame 12 depth) word 0) (position + 1) 2 (ctor Pos.PType) (depth + 1)) else (if (both isWord (if (same word (lit "Result")) then true else (same word (lit "Map")))) then (push st (worded (frame 13 depth) word 0) (position + 1) 2 (ctor Pos.PType) (depth + 1)) else (if (both isWord (same word (lit "Fn"))) then (if ((code toks (position + 1)) =? 4) then (fnParams toks size st (frame 14 depth) (position + 2)) else (haltAt toks size st (position + 1) (lit "expected `(` before the parameter types"))) else (let after : Nat := (if ((code toks (position + 1)) =? 9) then 3 else 1); (let infixAfter : Bool := (wordIs toks (position + after) (lit "*")); (if (both isWord (both (if infixAfter then false else true) (both (if (LexLeanStd.Text::startsWith word (lit "'")) then false else true) (if (reservedType word) then false else true)))) then (let member : Got := (memberPath toks size position); (match (project member error)
+    | Option.some problem => (haltWith st (project member error))
+    | Option.none => (namedArgs toks size st (holding (frame 16 depth) (project member value) (ctor LexLeanStd.Json::Json.JNil)) (project member pos)))) else (push st (frame 17 depth) position 2 (ctor Pos.PType) (depth + 1)))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: startType,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd],
+  result: Rd,
+  body: (let position : Nat := (project st pos); (let depth : Nat := (project st depth); (if (256 <? depth) then (haltAt toks size st position (lit "nested more deeply than the notation reads")) else (let token : Nat := (code toks position); (let word : Bytes := (txt toks position); (if (token =? 12) then (if (both ((code toks (position + 1)) =? 0) (SurfaceGeneric::isBare word)) then (goto st position 1 (ctor Pos.PType) depth) else (match (nullaryKind word)
+    | Option.some kind => (give st (position + 1) (kindNode kind (nil (Bytes * LexLeanStd.Json::Json))))
+    | Option.none => (if (both (LexLeanStd.Text::startsWith word (lit "'")) (SurfaceGeneric::isBare (tailFrom word 1))) then (give st (position + 1) (kindNode (lit "parameter") (one "name" (str (tailFrom word 1))))) else (if (listed word (heads)) then (haltAt toks size st position (cat (cat (cat (cat (lit "`") word) (lit "` takes arguments: write `(")) word) (lit " …)`"))) else (let member : Got := (memberPath toks size position); (match (project member error)
+      | Option.some problem => (haltWith st (project member error))
+      | Option.none => (give st (project member pos) (kindNode (lit "named") (two "member" (project member value) "arguments" (arr (nil LexLeanStd.Json::Json))))))))))) else (if (token =? 4) then (typeParen toks size (push st (frame 11 depth) (position + 1) 2 (ctor Pos.PType) depth) (position + 1) depth) else (haltAt toks size st position (cat (lit "expected a type, found ") (SurfaceGeneric::describeAt toks position)))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: typesNext,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (if ((code toks position) =? 3) then (give st (position + 1) (arr (project top values))) else (wantType st top position)),
+  executable: true
+}
+
+definition{
+  name: startTypes,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd],
+  result: Rd,
+  body: (let position : Nat := (project st pos); (if ((code toks position) =? 2) then (typesNext toks size st (frame 18 (project st depth)) (position + 1)) else (haltAt toks size st position (lit "expected `[`")))),
+  executable: true
+}
+
+definition{
+  name: termWord,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    st : Rd,
+    position : Nat,
+    word : Bytes
+  ],
+  result: Rd,
+  body: (let offset : Nat := (SurfaceGeneric::offsetAt toks size position); (if (same word (lit "true")) then (give st (position + 1) (kindNode (lit "bool") (one "value" (ctor LexLeanStd.Json::Json.JBool true)))) else (if (same word (lit "false")) then (give st (position + 1) (kindNode (lit "bool") (one "value" (ctor LexLeanStd.Json::Json.JBool false)))) else (if (allDigits word) then (if (both (1 <? (prim length word : Nat)) (LexLeanStd.Text::startsWith word (lit "0"))) then (halt st offset (cat (ticked word) (lit " has a leading zero"))) else (give st (position + 1) (kindNode (lit "nat") (one "value" (str word))))) else (if (LexLeanStd.Text::startsWith word (lit "0x")) then (if (lowerHex (tailFrom word 2)) then (give st (position + 1) (kindNode (lit "bytes") (one "hex" (str (tailFrom word 2))))) else (halt st offset (lit "a byte string is `0x` and an even number of lower-case hexadecimal digits"))) else (if (plain word) then (give st (position + 1) (kindNode (lit "var") (one "name" (str word)))) else (halt st offset (if (listed word (reservedTerm)) then (cat (cat (cat (ticked word) (lit " is a keyword; write `var{name: ")) word) (lit "}` for a variable of that name")) else (cat (ticked word) (lit " is not a term")))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: integerLiteral,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    st : Rd,
+    position : Nat,
+    word : Bytes
+  ],
+  result: Rd,
+  body: (let offset : Nat := (SurfaceGeneric::offsetAt toks size position); (let numeral : Bytes := (if (LexLeanStd.Text::startsWith word (lit "-")) then (tailFrom word 1) else word); (let spelling : Got := (readName toks size (position + 2) (lit "an integer type")); (match (project spelling error)
+    | Option.some problem => (haltWith st (project spelling error))
+    | Option.none => (let typeName : Bytes := (match (asStr (project spelling value))
+      | Option.some text => text
+      | Option.none => (lit "")); (match (representationOf typeName)
+      | Option.some representation => (if (if (same word (lit "-0")) then true else (both (1 <? (prim length numeral : Nat)) (LexLeanStd.Text::startsWith numeral (lit "0")))) then (halt st offset (cat (ticked word) (lit " is not a canonical integer"))) else (give st (project spelling pos) (kindNode (lit "integer") (two "representation" (str representation) "value" (str word)))))
+      | Option.none => (halt st offset (cat (ticked typeName) (lit " is not an integer type"))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: finishUntil,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (let op : Nat := (project top op); (let arguments : LexLeanStd.Json::Json := (arr (project top values)); (if (op =? 38) then (give st position (kindNode (lit "apply") (two "function" (project top held) "arguments" arguments))) else (if (op =? 40) then (give st position (kindNode (lit "constructor") (withTypes (two "constructor" (project top held) "arguments" arguments) (project top heldMore)))) else (if (op =? 46) then (give st position (kindNode (lit "call") (withTypes (two "function" (project top held) "arguments" arguments) (project top heldMore)))) else (let checks : Got := (readNames toks size (position + 1) (lit "a check")); (match (project checks error)
+    | Option.some problem => (haltWith st (project checks error))
+    | Option.none => (give st (project checks pos) (kindNode (lit "checked_apply") (withTypes (cons ((lit "checks"), (project checks value)) (two "model" (project top held) "arguments" arguments)) (project top heldMore))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: untilNext,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (let stop : Bytes := (project top word); (if (if ((prim length stop : Nat) =? 0) then ((code toks position) =? 5) else (wordIs toks position stop)) then (finishUntil toks size st top position) else (if ((code toks position) =? 99) then (halt st size (lit "expected `)`")) else (wantTerm st top position)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: recordNext,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (if ((code toks position) =? 1) then (give st (position + 1) (kindNode (lit "record") (withTypes (two "type" (project top held) "fields" (arr (project top values))) (project top heldMore)))) else (let field : Got := (readName toks size position (lit "a field name")); (match (project field error)
+    | Option.some problem => (haltWith st (project field error))
+    | Option.none => (if ((code toks (project field pos)) =? 8) then (wantTerm st (worded top (match (asStr (project field value))
+      | Option.some text => text
+      | Option.none => (lit "")) 0) ((project field pos) + 1)) else (haltAt toks size st (project field pos) (lit "expected `:=` after a field name")))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: resumeTyped,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame],
+  result: Rd,
+  body: (let position : Nat := (project st pos); (let op : Nat := (project top op); (let typed : Frame := (holding top (project top held) (project st value)); (if (op =? 41) then (give st position (kindNode (lit "function_ref") (withTypes (one "function" (project top held)) (project st value)))) else (if (op =? 42) then (if ((code toks position) =? 0) then (recordNext toks size st (staged typed 1) (position + 1)) else (haltAt toks size st position (lit "expected `{` before the fields"))) else (untilNext toks size st (staged typed 1) position)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: afterMember,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (if ((code toks position) =? 2) then (push st top position 6 (ctor Pos.PAny) (project top depth)) else (resumeTyped toks size (record Rd {pos := position, stack := (project st stack), value := (ctor LexLeanStd.Json::Json.JNil), mode := 1, goal := (project st goal), place := (project st place), depth := (project st depth), error := (ctor Option.none [SurfaceLex::Failure]), spans := (project st spans)}) top)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: primNext,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (let token : Nat := (code toks position); (if (token =? 7) then (wantType st (staged top 1) (position + 1)) else (if (if (token =? 99) then true else (token =? 5)) then (haltAt toks size st position (lit "expected `:` and the result type")) else (wantTerm st top position)))),
+  executable: true
+}
+
+definition{
+  name: matchNext,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (if (wordIs toks position (lit "|")) then (let member : Got := (memberPath toks size (position + 1)); (match (project member error)
+    | Option.some problem => (haltWith st (project member error))
+    | Option.none => (let binders : Names := (first (prim iterate_until (fun [size, toks] (state : Names) => (match (project state error)
+      | Option.some problem => (ctor Option.none [Names])
+      | Option.none => (if (wordIs toks (project state pos) (lit "=>")) then (ctor Option.none [Names]) else (let name : Got := (readName toks size (project state pos) (lit "a binder name")); (match (project name error)
+        | Option.some problem => (ctor Option.some [Names] (record Names {items := (project state items), pos := (project state pos), more := false, error := (project name error)}))
+        | Option.none => (ctor Option.some [Names] (record Names {items := (cons (project name value) (project state items)), pos := (project name pos), more := true, error := (ctor Option.none [SurfaceLex::Failure])}))))))) ((prim length toks : Nat) + 2) (record Names {items := (nil LexLeanStd.Json::Json), pos := (project member pos), more := true, error := (ctor Option.none [SurfaceLex::Failure])}) : (Names * Bool))); (match (project binders error)
+      | Option.some problem => (haltWith st (project binders error))
+      | Option.none => (wantTerm st (placed (staged top 1) (project top place) (project top scope) (two "constructor" (project member value) "binders" (arr (project binders items)))) ((project binders pos) + 1)))))) else (match (project top values)
+    | List.nil => (haltAt toks size st position (lit "a match has at least one `| …` branch"))
+    | List.cons latest earlier => (give st position (kindNode (lit "match") (two "scrutinee" (project top held) "branches" (arr (project top values))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: funParams,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame, position : Nat],
+  result: Rd,
+  body: (if ((code toks position) =? 4) then (wantParam st top (position + 1)) else (match (project top values)
+    | List.nil => (haltAt toks size st position (lit "a function takes at least one parameter"))
+    | List.cons latest earlier => (if (wordIs toks position (lit "=>")) then (wantTerm st (staged top 1) (position + 1)) else (haltAt toks size st position (lit "expected `=>`"))))),
+  executable: true
+}
+
+definition{
+  name: callOrOperand,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, position : Nat, depth : Nat],
+  result: Rd,
+  body: (let word : Bytes := (txt toks position); (let after : Nat := (if ((code toks (position + 1)) =? 9) then 3 else 1); (let infixAfter : Bool := (if ((code toks (position + after)) =? 6) then true else (both ((code toks (position + after)) =? 12) (isInfix (txt toks (position + after))))); (let tagged : Bool := ((code toks (position + 1)) =? 0); (if (both ((code toks position) =? 12) (both (plain word) (both (if infixAfter then false else true) (both (if tagged then false else true) (if (allDigits word) then false else true))))) then (let member : Got := (memberPath toks size position); (match (project member error)
+    | Option.some problem => (haltWith st (project member error))
+    | Option.none => (afterMember toks size st (holding (frame 46 depth) (project member value) (ctor LexLeanStd.Json::Json.JNil)) (project member pos)))) else (wantTerm st (frame 47 depth) position)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: termKeyword,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    st : Rd,
+    position : Nat,
+    depth : Nat,
+    keyword : Bytes
+  ],
+  result: Rd,
+  body: (let next : Nat := (position + 1); (if (if (same keyword (lit "not")) then true else (if (same keyword (lit "first")) then true else (same keyword (lit "second")))) then (wantTerm st (worded (frame 31 depth) keyword 0) next) else (if (same keyword (lit "cons")) then (wantTerm st (frame 32 depth) next) else (if (same keyword (lit "nil")) then (wantType st (frame 33 depth) next) else (if (same keyword (lit "if")) then (wantTerm st (frame 34 depth) next) else (if (same keyword (lit "let")) then (wantParam st (frame 35 depth) next) else (if (same keyword (lit "forall")) then (if ((code toks next) =? 4) then (wantParam st (frame 36 depth) (next + 1)) else (haltAt toks size st next (lit "expected `(` before the bound variable"))) else (if (same keyword (lit "fun")) then (if ((code toks next) =? 2) then (let captures : Got := (readNames toks size next (lit "a name")); (match (project captures error)
+    | Option.some problem => (haltWith st (project captures error))
+    | Option.none => (funParams toks size st (holding (frame 37 depth) (project captures value) (ctor LexLeanStd.Json::Json.JNil)) (project captures pos)))) else (funParams toks size st (holding (frame 37 depth) (arr (nil LexLeanStd.Json::Json)) (ctor LexLeanStd.Json::Json.JNil)) next)) else (if (same keyword (lit "apply")) then (wantTerm st (frame 38 depth) next) else (if (same keyword (lit "project")) then (wantTerm st (frame 39 depth) next) else (if (if (same keyword (lit "ctor")) then true else (if (same keyword (lit "ref")) then true else (if (same keyword (lit "record")) then true else (same keyword (lit "checked"))))) then (let member : Got := (memberPath toks size next); (match (project member error)
+    | Option.some problem => (haltWith st (project member error))
+    | Option.none => (afterMember toks size st (worded (holding (frame (if (same keyword (lit "ctor")) then 40 else (if (same keyword (lit "ref")) then 41 else (if (same keyword (lit "record")) then 42 else 44))) depth) (project member value) (ctor LexLeanStd.Json::Json.JNil)) (if (same keyword (lit "checked")) then (lit "with") else (lit "")) 0) (project member pos)))) else (if (same keyword (lit "prim")) then (let operation : Got := (readName toks size next (lit "a primitive operation")); (match (project operation error)
+    | Option.some problem => (haltWith st (project operation error))
+    | Option.none => (primNext toks size st (holding (frame 43 depth) (project operation value) (ctor LexLeanStd.Json::Json.JNil)) (project operation pos)))) else (if (same keyword (lit "match")) then (wantTerm st (frame 45 depth) next) else (callOrOperand toks size st position depth)))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: termParen,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, position : Nat, depth : Nat],
+  result: Rd,
+  body: (let token : Nat := (code toks position); (let word : Bytes := (txt toks position); (if (token =? 5) then (give st position (kindNode (lit "unit") (nil (Bytes * LexLeanStd.Json::Json)))) else (if (token =? 12) then (let numeral : Bytes := (if (LexLeanStd.Text::startsWith word (lit "-")) then (tailFrom word 1) else word); (if (both (allDigits numeral) ((code toks (position + 1)) =? 7)) then (integerLiteral toks size st position word) else (let genericBinder : Bool := (both (same word (lit "let")) (wordIs toks (position + 2) (lit "name"))); (let keyword : Bytes := (if (both ((code toks (position + 1)) =? 0) (if genericBinder then false else true)) then (lit "") else word); (termKeyword toks size st position depth keyword))))) else (wantTerm st (frame 47 depth) position))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: startTerm,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd],
+  result: Rd,
+  body: (let position : Nat := (project st pos); (let depth : Nat := (project st depth); (if (256 <? depth) then (haltAt toks size st position (lit "nested more deeply than the notation reads")) else (let token : Nat := (code toks position); (let word : Bytes := (txt toks position); (if (token =? 11) then (give st (position + 1) (kindNode (lit "string") (one "value" (str word)))) else (if (token =? 4) then (termParen toks size (push st (frame 30 depth) (position + 1) 3 (ctor Pos.PTerm) depth) (position + 1) depth) else (if (token =? 12) then (if (both ((code toks (position + 1)) =? 0) (SurfaceGeneric::isBare word)) then (goto st position 1 (ctor Pos.PTerm) depth) else (termWord toks size st position word)) else (haltAt toks size st position (cat (lit "expected a term, found ") (SurfaceGeneric::describeAt toks position))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: resumeTerm,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame],
+  result: Rd,
+  body: (let position : Nat := (project st pos); (let value : LexLeanStd.Json::Json := (project st value); (let op : Nat := (project top op); (let stage : Nat := (project top stage); (if (op =? 30) then (if ((code toks position) =? 5) then (give st (position + 1) value) else (haltAt toks size st position (lit "expected `)`"))) else (if (op =? 31) then (give st position (kindNode (project top word) (one "value" value))) else (if (op =? 32) then (if (stage =? 0) then (wantTerm st (staged (holding top value (ctor LexLeanStd.Json::Json.JNil)) 1) position) else (give st position (kindNode (lit "cons") (two "head" (project top held) "tail" value)))) else (if (op =? 33) then (give st position (kindNode (lit "nil") (one "element" value))) else (if (op =? 34) then (if (stage =? 0) then (if (wordIs toks position (lit "then")) then (wantTerm st (staged (holding top value (ctor LexLeanStd.Json::Json.JNil)) 1) (position + 1)) else (haltAt toks size st position (lit "expected `then`"))) else (if (stage =? 1) then (if (wordIs toks position (lit "else")) then (wantTerm st (staged (holding top (project top held) value) 2) (position + 1)) else (haltAt toks size st position (lit "expected `else`"))) else (give st position (kindNode (lit "if") (cons ((lit "else_value"), value) (two "condition" (project top held) "then_value" (project top heldMore))))))) else (if (op =? 35) then (if (stage =? 0) then (if ((code toks position) =? 8) then (wantTerm st (staged (holding top value (ctor LexLeanStd.Json::Json.JNil)) 1) (position + 1)) else (haltAt toks size st position (lit "expected `:=`"))) else (if (stage =? 1) then (if ((code toks position) =? 10) then (wantTerm st (staged (holding top (project top held) value) 2) (position + 1)) else (haltAt toks size st position (lit "expected `;`"))) else (give st position (kindNode (lit "let") (cons ((lit "body"), value) (two "binder" (project top held) "value" (project top heldMore))))))) else (if (op =? 36) then (if (stage =? 0) then (if ((code toks position) =? 5) then (if ((code toks (position + 1)) =? 6) then (wantTerm st (staged (holding top value (ctor LexLeanStd.Json::Json.JNil)) 1) (position + 2)) else (haltAt toks size st (position + 1) (lit "expected `,` before the body"))) else (haltAt toks size st position (lit "expected `)`"))) else (give st position (kindNode (lit "forall") (two "binder" (project top held) "body" value)))) else (if (op =? 37) then (if (stage =? 0) then (if ((code toks position) =? 5) then (funParams toks size st (adding top value) (position + 1)) else (haltAt toks size st position (lit "expected `)`"))) else (give st position (kindNode (lit "lambda") (cons ((lit "body"), value) (two "parameters" (arr (project top values)) "captures" (project top held)))))) else (if (op =? 38) then (if (stage =? 0) then (untilNext toks size st (staged (holding top value (ctor LexLeanStd.Json::Json.JNil)) 1) position) else (untilNext toks size st (adding top value) position)) else (if (op =? 39) then (let field : Got := (readName toks size position (lit "a field name")); (match (project field error)
+    | Option.some problem => (haltWith st (project field error))
+    | Option.none => (give st (project field pos) (kindNode (lit "project") (two "value" value "field" (project field value)))))) else (if (if (op =? 40) then true else (if (op =? 44) then true else (op =? 46))) then (if (stage =? 0) then (resumeTyped toks size st top) else (untilNext toks size st (adding top value) position)) else (if (op =? 41) then (resumeTyped toks size st top) else (if (op =? 42) then (if (stage =? 0) then (resumeTyped toks size st top) else (let assigned : Frame := (adding top (objectOf (two "field" (str (project top word)) "value" value))); (if ((code toks position) =? 6) then (recordNext toks size st assigned (position + 1)) else (if ((code toks position) =? 1) then (recordNext toks size st assigned position) else (haltAt toks size st position (lit "expected `,` or `}`")))))) else (if (op =? 43) then (if (stage =? 0) then (primNext toks size st (adding top value) position) else (give st position (kindNode (lit "primitive") (cons ((lit "result"), value) (two "operation" (project top held) "arguments" (arr (project top values))))))) else (if (op =? 45) then (if (stage =? 0) then (matchNext toks size st (staged (holding top value (ctor LexLeanStd.Json::Json.JNil)) 2) position) else (if (stage =? 1) then (matchNext toks size st (staged (adding top (objectOf (cons ((lit "body"), value) (project top members)))) 2) position) else (matchNext toks size st top position))) else (if (stage =? 0) then (if ((code toks position) =? 6) then (wantTerm st (staged (holding top value (ctor LexLeanStd.Json::Json.JNil)) 1) (position + 1)) else (match (infixKind (txt toks position))
+    | Option.some kind => (if ((code toks position) =? 12) then (wantTerm st (worded (staged (holding top value (ctor LexLeanStd.Json::Json.JNil)) 2) kind 0) (position + 1)) else (haltAt toks size st position (lit "expected an operator or `,` after the first operand")))
+    | Option.none => (haltAt toks size st position (lit "expected an operator or `,` after the first operand")))) else (if (stage =? 1) then (give st position (kindNode (lit "pair") (two "left" (project top held) "right" value))) else (let kind : Bytes := (project top word); (let implication : Bool := (same kind (lit "implies")); (give st position (kindNode kind (cons ((if implication then (lit "premise") else (lit "left")), (project top held)) (cons ((if implication then (lit "conclusion") else (lit "right")), value) (nil (Bytes * LexLeanStd.Json::Json))))))))))))))))))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: resumeType,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Rd, top : Frame],
+  result: Rd,
+  body: (let position : Nat := (project st pos); (let value : LexLeanStd.Json::Json := (project st value); (let op : Nat := (project top op); (let stage : Nat := (project top stage); (if (op =? 11) then (if ((code toks position) =? 5) then (give st (position + 1) value) else (haltAt toks size st position (lit "expected `)`"))) else (if (op =? 12) then (let word : Bytes := (project top word); (give st position (if (same word (lit "List")) then (kindNode (lit "list") (one "element" value)) else (if (same word (lit "Set")) then (kindNode (lit "set") (one "element" value)) else (kindNode (lit "option") (one "value" value)))))) else (if (op =? 13) then (if (stage =? 0) then (wantType st (staged (holding top value (ctor LexLeanStd.Json::Json.JNil)) 1) position) else (give st position (if (same (project top word) (lit "Result")) then (kindNode (lit "result") (two "ok" (project top held) "error" value)) else (kindNode (lit "map") (two "key" (project top held) "value" value))))) else (if (op =? 14) then (if (stage =? 0) then (fnParams toks size st (adding top value) position) else (give st position (kindNode (lit "function") (two "parameters" (arr (project top values)) "result" value)))) else (if (op =? 16) then (namedArgs toks size st (adding top value) position) else (if (op =? 17) then (if (stage =? 0) then (if (wordIs toks position (lit "*")) then (wantType st (staged (holding top value (ctor LexLeanStd.Json::Json.JNil)) 1) (position + 1)) else (haltAt toks size st position (lit "expected `*` between the two types of a product"))) else (give st position (kindNode (lit "product") (two "left" (project top held) "right" value)))) else (if (op =? 18) then (let collected : Frame := (adding top value); (if ((code toks position) =? 6) then (typesNext toks size st collected (position + 1)) else (if ((code toks position) =? 3) then (give st (position + 1) (arr (project collected values))) else (haltAt toks size st position (lit "expected `,` or `]`"))))) else (give st position (objectOf (two "name" (project top held) "type" value)))))))))))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: resumeTop,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    schema : LexLeanStd.Json::Json,
+    st : Rd,
+    top : Frame
+  ],
+  result: Rd,
+  body: (let position : Nat := (project st pos); (let value : LexLeanStd.Json::Json := (project st value); (if ((project top stage) =? 0) then (if ((code toks position) =? 99) then (finished st value (nil (Nat * Nat))) else (haltAt toks size st position (lit "unexpected text after the value"))) else (let collected : Frame := (spanned (adding top value) ((project top offset), (lastEnd toks position)) 0); (if ((code toks position) =? 99) then (finished st (arr (project collected values)) (project collected spans)) else (push st (worded collected (lit "") (SurfaceGeneric::offsetAt toks size position)) position 0 (project top place) 1)))))),
+  executable: true
+}
+
+definition{
+  name: resumeGeneric,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    schema : LexLeanStd.Json::Json,
+    st : Rd,
+    top : Frame
+  ],
+  result: Rd,
+  body: (let position : Nat := (project st pos); (let value : LexLeanStd.Json::Json := (project st value); (if ((project top op) =? 1) then (let collected : Frame := (adding top value); (if ((code toks position) =? 6) then (if ((code toks (position + 1)) =? 3) then (give st (position + 2) (arr (project collected values))) else (push st collected (position + 1) 0 (project top place) ((project top depth) + 1))) else (if ((code toks position) =? 3) then (give st (position + 1) (arr (project collected values))) else (haltAt toks size st position (lit "expected `,` or `]`"))))) else (let key : Bytes := (project top word); (if (SurfaceGeneric::hasKey (project top members) key) then (halt st (project top offset) (cat (cat (lit "the member `") key) (lit "` is written twice"))) else (let collected : Frame := (placed top (project top place) (project top scope) (cons (key, value) (project top members))); (if ((code toks position) =? 6) then (fieldsNext toks size schema st collected (position + 1)) else (if ((code toks position) =? 1) then (give st (position + 1) (objectOf (project collected members))) else (haltAt toks size st position (lit "expected `,` or `}`")))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: deliver,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    schema : LexLeanStd.Json::Json,
+    st : Rd
+  ],
+  result: Rd,
+  body: (match (project st stack)
+    | List.nil => (finished st (project st value) (nil (Nat * Nat)))
+    | List.cons top below => (let popped : Rd := (record Rd {pos := (project st pos), stack := below, value := (project st value), mode := 1, goal := (project st goal), place := (project st place), depth := (project st depth), error := (ctor Option.none [SurfaceLex::Failure]), spans := (project st spans)}); (let op : Nat := (project top op); (if (op =? 0) then (resumeTop toks size schema popped top) else (if (op <? 10) then (resumeGeneric toks size schema popped top) else (if (op <? 30) then (resumeType toks size popped top) else (resumeTerm toks size popped top))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: start,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    schema : LexLeanStd.Json::Json,
+    st : Rd
+  ],
+  result: Rd,
+  body: (let goal : Nat := (project st goal); (if (goal =? 0) then (startAt toks size schema st) else (if (goal =? 1) then (startTagged toks size schema st) else (if (goal =? 2) then (startType toks size st) else (if (goal =? 3) then (startTerm toks size st) else (if (goal =? 4) then (startParam toks size st) else (if (goal =? 5) then (startGeneric toks size st (project st depth)) else (startTypes toks size st)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: step,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    schema : LexLeanStd.Json::Json,
+    st : Rd
+  ],
+  result: (Option Rd),
+  body: (match (project st error)
+    | Option.some problem => (ctor Option.none [Rd])
+    | Option.none => (let mode : Nat := (project st mode); (if (mode =? 9) then (ctor Option.none [Rd]) else (ctor Option.some [Rd] (if (mode =? 0) then (start toks size schema st) else (deliver toks size schema st)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: run,
+  parameters: [
+    toks : (List SurfaceLex::Spanned),
+    size : Nat,
+    schema : LexLeanStd.Json::Json,
+    top : Frame,
+    place : Pos
+  ],
+  result: Rd,
+  body: (let initial : Rd := (record Rd {pos := 0, stack := (cons top (nil Frame)), value := (ctor LexLeanStd.Json::Json.JNil), mode := 0, goal := 0, place := place, depth := 1, error := (ctor Option.none [SurfaceLex::Failure]), spans := (nil (Nat * Nat))}); (first (prim iterate_until (fun [schema, size, toks] (st : Rd) => (step toks size schema st)) ((prim multiply (prim length toks : Nat) 16 : Nat) + 64) initial : (Rd * Bool)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: positionOf,
+  parameters: [schema : LexLeanStd.Json::Json, position : Nat],
+  result: Pos,
+  body: (if (position =? 0) then (match (getIn schema (lit "properties"))
+    | Option.some properties => (match (getIn properties (lit "declarations"))
+      | Option.some declarations => (itemsOf schema declarations)
+      | Option.none => (ctor Pos.PAny))
+    | Option.none => (ctor Pos.PAny)) else (if (position =? 1) then (ctor Pos.PTerm) else (if (position =? 2) then (ctor Pos.PType) else (match (defNamed schema (lit "proof"))
+    | Option.some proof => (ctor Pos.PNode proof)
+    | Option.none => (ctor Pos.PAny))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: outcome,
+  parameters: [final : Rd],
+  result: (Result LexLeanStd.Json::Json SurfaceLex::Failure),
+  body: (match (project final error)
+    | Option.some problem => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] problem)
+    | Option.none => (if ((project final mode) =? 9) then (ctor Result.ok [LexLeanStd.Json::Json, SurfaceLex::Failure] (project final value)) else (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] (record SurfaceLex::Failure {offset := 0, message := (lit "the reader ran out of steps")})))),
+  executable: true
+}
+
+definition{
+  name: readAll,
+  parameters: [schema : LexLeanStd.Json::Json, toks : (List SurfaceLex::Spanned), size : Nat],
+  result: Rd,
+  body: (let place : Pos := (positionOf schema 0); (if ((prim length toks : Nat) =? 0) then (record Rd {pos := 0, stack := (nil Frame), value := (arr (nil LexLeanStd.Json::Json)), mode := 9, goal := 0, place := place, depth := 1, error := (ctor Option.none [SurfaceLex::Failure]), spans := (nil (Nat * Nat))}) else (run toks size schema (worded (staged (placed (frame 0 1) place (ctor Option.none [LexLeanStd.Json::Json]) (nil (Bytes * LexLeanStd.Json::Json))) 1) (lit "") (SurfaceGeneric::offsetAt toks size 0)) place))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parseAt,
+  parameters: [schema : LexLeanStd.Json::Json, text : Bytes, position : Nat],
+  result: (Result LexLeanStd.Json::Json SurfaceLex::Failure),
+  body: (match (SurfaceLex::lexText text)
+    | Result.ok toks => (let place : Pos := (positionOf schema position); (outcome (run toks (prim length text : Nat) schema (placed (frame 0 1) place (ctor Option.none [LexLeanStd.Json::Json]) (nil (Bytes * LexLeanStd.Json::Json))) place)))
+    | Result.error problem => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] problem)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: parseSemanticModule,
+  parameters: [schema : LexLeanStd.Json::Json, text : Bytes, spec : Bytes],
+  result: (Result LexLeanStd.Json::Json SurfaceLex::Failure),
+  body: (match (SurfaceLex::lexText text)
+    | Result.ok toks => (match (outcome (readAll schema toks (prim length text : Nat)))
+      | Result.ok declarations => (ctor Result.ok [LexLeanStd.Json::Json, SurfaceLex::Failure] (objectOf (two "spec" (str spec) "declarations" declarations)))
+      | Result.error problem => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] problem))
+    | Result.error problem => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] problem)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: semanticSpans,
+  parameters: [schema : LexLeanStd.Json::Json, text : Bytes],
+  result: (Result (List (Nat * Nat)) SurfaceLex::Failure),
+  body: (match (SurfaceLex::lexText text)
+    | Result.ok toks => (let final : Rd := (readAll schema toks (prim length text : Nat)); (match (outcome final)
+      | Result.ok declarations => (ctor Result.ok [(List (Nat * Nat)), SurfaceLex::Failure] (LexLeanStd.Order::reverseList [(Nat * Nat)] (project final spans)))
+      | Result.error problem => (ctor Result.error [(List (Nat * Nat)), SurfaceLex::Failure] problem)))
+    | Result.error problem => (ctor Result.error [(List (Nat * Nat)), SurfaceLex::Failure] problem)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
