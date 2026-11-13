@@ -553,7 +553,7 @@ The workspace uses Rust edition 2021 and MSRV 1.97. The shipped crate MUST compi
 LexLean language 1.0 is pinned to:
 
 ```text
-leanprover/lean4:v4.32.1
+leanprover/lean4:v4.32.2
 ```
 
 The repository-root `lean-toolchain` file MUST contain exactly that line followed by LF.
@@ -561,10 +561,10 @@ The repository-root `lean-toolchain` file MUST contain exactly that line followe
 The corresponding Lean tag resolves to source commit:
 
 ```text
-f054605aea4b840552cca2e725580bffd1e1b704
+f3b06c705e6c85f5314019d5d3baab0fec5b580c
 ```
 
-LexLean MUST reject a verification environment whose reported Lean version is not 4.32.1. The verification attestation records the SHA-256 digest of the actual `lean`, `lake`, and `leanchecker` executables used, so platform-specific executable bytes do not need to be assumed identical.
+LexLean MUST reject a verification environment whose reported Lean version is not 4.32.2. The verification attestation records the SHA-256 digest of the actual `lean`, `lake`, and `leanchecker` executables used, so platform-specific executable bytes do not need to be assumed identical.
 
 ### 8.3 Supported hosts
 
@@ -690,14 +690,14 @@ The development container MUST install:
 - `just`;
 - `cargo-deny`;
 - `elan`;
-- `leanprover/lean4:v4.32.1`;
+- `leanprover/lean4:v4.32.2`;
 - the Rust Analyzer and Lean 4 editor extensions.
 
 Its image MUST install the pinned Rust and Lean toolchains at build, so that nothing is fetched when a session starts, and MUST NOT select an unpinned default; `RP-16` reads the Dockerfile against `rust-toolchain.toml` and `lean-toolchain`. The container configuration is development support; verification still performs its own version and digest preflight.
 
 ### 9.4 Continuous integration
 
-`ci.yml` MUST run every recipe of `just vv` from a clean checkout on Linux x86-64. It MUST install the exact Rust toolchain, Lean 4.32.1 through `elan`, `just`, and `cargo-deny`.
+`ci.yml` MUST run every recipe of `just vv` from a clean checkout on Linux x86-64. It MUST install the exact Rust toolchain, Lean 4.32.2 through `elan`, `just`, and `cargo-deny`.
 
 **What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft is the `rest` leg and nothing else: a head pushed again before it is final costs one job and not the gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. So is a ready pull request whose base branch is neither `main` nor a `release/*` line (a stacked pull request, whose base is another feature branch): only a pull request into `main` or a release line can land on a line, that pull request runs the whole gate on the tree it lands, and the stacked run says in its step summary that the base is why it is the `rest` leg alone. A ready pull request into `main` or a release line, a `workflow_dispatch`, and a push to `main` or to a release line are the whole gate, every job below. One push to `main` or to a release line is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main` or to a release line, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` runs `just vv` whole and reads no earlier run. `RP-14` runs the script against planted events, among them a ready pull request into a feature branch, into a release line, and into `main`, and a plant in it fails the case, and reads the three workflows' push triggers, which name `main` and `release/**`.
 
@@ -748,7 +748,7 @@ entrypoints = ["src/Main.lex.tex"]
 build_root = ".lexlean"
 lockfile = "lexlean.lock"
 lean_workspace = "."
-lean_toolchain = "leanprover/lean4:v4.32.1"
+lean_toolchain = "leanprover/lean4:v4.32.2"
 
 [[lexicon_source]]
 package = "lexlean.std.nat"
@@ -919,7 +919,7 @@ spec = "lexlean/lock/1"
 language = "1.0"
 compiler_semantics = "64-lowercase-hex-digits"
 project_config_sha256 = "64-lowercase-hex-digits"
-lean_toolchain = "leanprover/lean4:v4.32.1"
+lean_toolchain = "leanprover/lean4:v4.32.2"
 
 [[workspace_file]]
 path = "lean-toolchain"
@@ -8878,7 +8878,7 @@ entry_schema = "lexlean/entry/1"
 lean_backend = "3"
 latex_backend = "2"
 proof_lowering = "1"
-axiom_parser = "lean-4.32.1/2"
+axiom_parser = "lean-4.32.2/2"
 canonical_json = "1"
 ```
 
@@ -8976,7 +8976,7 @@ SHA256(
   "lexlean-semantic-v1\0"
   || frame("compiler-semantics", compiler_semantics_digest_bytes)
   || frame("language", "1.0")
-  || frame("toolchain", "leanprover/lean4:v4.32.1")
+  || frame("toolchain", "leanprover/lean4:v4.32.2")
   || frame("linked-ir", canonical_linked_ir_json)
   || frame("lexicon-closure", canonical_linked_lexicon_json)
 )
@@ -9033,7 +9033,7 @@ production root (§17.13). Paths in manifests use `/` regardless of host OS.
   "source_id": "...",
   "semantic_id": "...",
   "build_id": "...",
-  "lean_toolchain": "leanprover/lean4:v4.32.1",
+  "lean_toolchain": "leanprover/lean4:v4.32.2",
   "selection": [],
   "modules": [],
   "inputs": [],
@@ -9148,7 +9148,7 @@ This replay checks the newly loaded environment through Lean's kernel and is int
 
 ### 22.5 Axiom output
 
-With Lean 4.32.1, the accepted normalized payloads for one declaration are exactly:
+With Lean 4.32.2, the accepted normalized payloads for one declaration are exactly:
 
 ```text
 '<name>' does not depend on any axioms
@@ -9292,7 +9292,7 @@ There is no timestamp in the hashed attestation. Digital signing is outside lang
 
 A LexLean-authored compiler consumes verified generated Lean only through
 Lean's own compiler front end, at one explicit authority boundary. Lean's
-behavior there is an external authority (`LEAN-LCNF-4-32-1`), cited and pinned,
+behavior there is an external authority (`LEAN-LCNF-4-32-2`), cited and pinned,
 never a LexLean-proved fact.
 
 **Authority interface.** The adapter is a *tooling module* (§17.20): the one
@@ -9301,8 +9301,8 @@ the closed interface of every constant the adapter's own definitions use. Each
 is exactly one row, in one class:
 
 - a *call* (a definition of Lean's `Lean` namespace other than a projection,
-  recursor, instance, or matcher) names its exact signature at Lean 4.32.1
-  (`f054605aea4b840552cca2e725580bffd1e1b704`), the defining source file at
+  recursor, instance, or matcher) names its exact signature at Lean 4.32.2
+  (`f3b06c705e6c85f5314019d5d3baab0fec5b580c`), the defining source file at
   that revision with its SHA-256, and its role;
 - a *type* names its complete constructor list in Lean's order with every
   field typed, or is *opaque* when no definition of the adapter matches,
@@ -10231,11 +10231,11 @@ The authority register (`model/authorities.toml`, generated from the authority m
 
 | Authority ID | Subject |
 |---|---|
-| `LEAN-REL-4-32-1` | Lean 4.32.1 release/tag and source commit |
-| `LAKE-4-32-1` | Lake distributed with Lean 4.32.1 |
-| `LEANCHECKER-4-32-1` | `leanchecker` replay behavior and its stated non-independent status |
-| `PRINT-AXIOMS-4-32-1` | Lean 4.32.1 `#print axioms` output behavior |
-| `LEAN-LCNF-4-32-1` | Lean 4.32.1 compiler front end (LCNF): the translation of a definition and the run-time dependencies it names |
+| `LEAN-REL-4-32-2` | Lean 4.32.2 release/tag and source commit |
+| `LAKE-4-32-2` | Lake distributed with Lean 4.32.2 |
+| `LEANCHECKER-4-32-2` | `leanchecker` replay behavior and its stated non-independent status |
+| `PRINT-AXIOMS-4-32-2` | Lean 4.32.2 `#print axioms` output behavior |
+| `LEAN-LCNF-4-32-2` | Lean 4.32.2 compiler front end (LCNF): the translation of a definition and the run-time dependencies it names |
 | `UOR-GNAF-1-DRAFT-2` | UOR-GNAF v1 normative draft 0.2: what an optimality claim fixes before optimization |
 | `RUSTC-1-97-1` | Rust 1.97.1 compiler (`rustc`): the semantics of a safe Rust 2021 crate |
 | `NIST-FIPS-180-4` | FIPS PUB 180-4: the definition of SHA-256 |
@@ -10695,7 +10695,7 @@ entrypoints = ["src/Main.lex.tex"]
 build_root = ".lexlean"
 lockfile = "lexlean.lock"
 lean_workspace = "."
-lean_toolchain = "leanprover/lean4:v4.32.1"
+lean_toolchain = "leanprover/lean4:v4.32.2"
 
 [[lexicon_source]]
 package = "lexlean.std.nat"
@@ -10718,7 +10718,7 @@ child_timeout_ms = 300000
 `examples/nat-add-zero/lean-toolchain`:
 
 ```text
-leanprover/lean4:v4.32.1
+leanprover/lean4:v4.32.2
 ```
 
 `examples/nat-add-zero/lakefile.toml`:
@@ -10881,7 +10881,7 @@ language 1.1
 compiler-semantics <digest>
 language 1.2
 compiler-semantics <digest>
-lean-toolchain leanprover/lean4:v4.32.1
+lean-toolchain leanprover/lean4:v4.32.2
 ```
 
 The crate package MUST be the crate `cargo publish` would upload: the release workflow packages the crate twice to the same bytes, runs `cargo publish --dry-run`, and refuses a package whose SHA-256 differs from the one `checksums.txt` lists for the crate, from the dry-run package, or from what crates.io requires of an archive (a description, a license, a repository, the readme it names, and at most 10 MiB). It uploads to crates.io only when a `CARGO_REGISTRY_TOKEN` secret or trusted publishing authorises it, and otherwise creates the release without the upload and says so. A commit of a release line `release/vX.Y` is published as the pre-release `X.Y.0-dev.N`, `N` being the number of first-parent commits of the line at that commit, so that a release `X.Y.0` supersedes every one of them; `RP-18` reads the workflows and runs the script that decides each of these.
@@ -10957,7 +10957,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `CF-11` | `configuration-lock` | Check, build, format, and verify resolve only locked locally available dependencies. | §11.4 |
 | `CF-12` | `configuration-lock` | Network package acquisition occurs only through lock --allow-network and only for an exact configured commit. | §11.4, §25.3 |
 | `CF-13` | `configuration-lock` | The Lake workspace contains exactly one supported Lake configuration and the recorded workspace files match. | §10.4 |
-| `CF-14` | `configuration-lock` | Language 1.0 accepts only leanprover/lean4:v4.32.1 for verification. | §8.2, §10.1 |
+| `CF-14` | `configuration-lock` | Language 1.0 accepts only leanprover/lean4:v4.32.2 for verification. | §8.2, §10.1 |
 | `CF-15` | `configuration-lock` | Duplicate logical modules and case-folded path or module collisions are rejected. | §23.3 |
 | `CF-16` | `configuration-lock` | Language 1.1 has a parallel exact builtin closure and rejects a language-1.0 lock or package without altering language-1.0 identities. | §10.1 |
 | `CF-17` | `configuration-lock` | Language 1.2 declaration support accepts language 1.2 and rejects unsupported or malformed language versions. | §10.1 |
@@ -11028,7 +11028,7 @@ Every row below is normative, has honesty level `build`, and is projected byte-f
 | `SM-16` | `semantic-ir` | The language-1.1 semantic snapshot contains every closed declaration, term, recursion, match, instance, proof variant, and exact theorem axiom policy without paths or backend text. | §17.11 |
 | `SM-17` | `semantic-ir` | Language 1.1 has distinct mathematical Int, fixed-width signed and unsigned integer, UTF-8 string, byte-sequence, Option, and Result semantic types with canonical literals. | §17.11 |
 | `SM-18` | `semantic-ir` | Portable arithmetic, conversion, bitwise, bounded-shift, collection, UTF-8, byte-order, split/join, and decimal operations form one closed typed primitive vocabulary. | §17.11 |
-| `SM-19` | `semantic-ir` | Portable semantic operations generate deterministic Lean 4.32.1 definitions that elaborate and replay with exact declared computational axiom policies. | §17.11, §18, §22.6 |
+| `SM-19` | `semantic-ir` | Portable semantic operations generate deterministic Lean 4.32.2 definitions that elaborate and replay with exact declared computational axiom policies. | §17.11, §18, §22.6 |
 | `SM-20` | `semantic-ir` | Noncanonical, out-of-range, invalid-byte, ill-typed, and unbounded fixed-width values fail before either backend runs. | §17.11 |
 | `SM-21` | `semantic-ir` | Structural recursion admits byte/list values and closed Option and Result inductives while preserving termination and exhaustiveness checks. | §17.11 |
 | `SM-22` | `semantic-ir` | The public owned snapshot DTO and schemas cover every portable type, literal, primitive, and explicit definition axiom policy without backend text. | §17.11, §21 |

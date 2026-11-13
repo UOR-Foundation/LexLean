@@ -200,7 +200,7 @@ statement = "The Lake workspace contains exactly one supported Lake configuratio
 id = "CF-14"
 level = "build"
 suite = "configuration-lock"
-statement = "Language 1.0 accepts only leanprover/lean4:v4.32.1 for verification."
+statement = "Language 1.0 accepts only leanprover/lean4:v4.32.2 for verification."
 
 [[id]]
 id = "CF-15"
@@ -626,7 +626,7 @@ statement = "Portable arithmetic, conversion, bitwise, bounded-shift, collection
 id = "SM-19"
 level = "build"
 suite = "semantic-ir"
-statement = "Portable semantic operations generate deterministic Lean 4.32.1 definitions that elaborate and replay with exact declared computational axiom policies."
+statement = "Portable semantic operations generate deterministic Lean 4.32.2 definitions that elaborate and replay with exact declared computational axiom policies."
 
 [[id]]
 id = "SM-20"
