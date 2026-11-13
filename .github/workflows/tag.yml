@@ -1,9 +1,18 @@
-# The tag of a cut (SPEC.md §9.4): a push to a release line whose first
-# parent carried another workspace version is the merge of a cut (`cut.yml`).
-# Once `ci.yml` has passed on that push, this tags it `vX.Y.Z`, dispatches
-# `release.yml` on the tag (a tag pushed with the workflow token starts no
-# run), and opens the pull request that carries the line to `main`, which
-# receives a line at its tag, and merges it when the line contains `main`. Any other push ends at the first step.
+# The tag of a cut (SPEC.md §9.4): a commit on a release line whose first
+# parent carried another workspace version is the merge of a cut. `cut.yml`
+# calls this on the merge it made once the gate passed on the cut's head (a
+# merge pushed with the workflow token starts no run); a push to a line, a
+# person's merge of a cut, starts it too. Once the commit's tree is verified,
+# this tags it `vX.Y.Z`, dispatches `release.yml` on the tag (a tag pushed with
+# the workflow token starts no run), and opens the pull request that carries
+# the line to `main`, which receives a line at its tag, and merges it when the
+# line contains `main`. Any other commit ends at the first step.
+#
+# The tree is verified when `.github/release-gate.sh` finds the run of
+# `ci.yml` that `release.yml` will attach: one on the commit, or, while it is
+# a merge whose tree is its second parent's, on that parent (the cut's head).
+# A push without such a run waits for its own push run; a call has none to
+# wait for and stops.
 #
 # A gate that fails leaves the commit untagged; tag it by hand once a rerun
 # passes (`git tag -a vX.Y.Z -m "LexLean vX.Y.Z" && git push origin vX.Y.Z`),
@@ -13,21 +22,36 @@ name: tag
 on:
   push:
     branches: ["release/**"]
+  workflow_call:
+    inputs:
+      commit:
+        description: The merge of a cut on its line, which `cut.yml` made
+        type: string
+        required: true
+      line:
+        description: The release line the commit is on, `release/vX.Y`
+        type: string
+        required: true
 
 permissions:
   contents: read
-
-concurrency:
-  group: tag-${{ github.ref }}
-  cancel-in-progress: false
 
 jobs:
   tag:
     name: tag a cut
     if: github.repository == 'UOR-Foundation/LexLean'
     runs-on: ubuntu-24.04
+    # One per line, whether pushed or called (a called workflow's `github.ref`
+    # is its caller's).
+    concurrency:
+      group: tag-refs/heads/${{ inputs.line || github.ref_name }}
+      cancel-in-progress: false
     # The gate of a push that does not merge a verified tree runs for hours.
     timeout-minutes: 360
+    env:
+      COMMIT: ${{ inputs.commit || github.sha }}
+      LINE: ${{ inputs.line || github.ref_name }}
+      CALLED: ${{ inputs.commit != '' }}
     permissions:
       contents: write
       actions: write
@@ -35,6 +59,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ inputs.commit || github.sha }}
           fetch-depth: 2
       - name: Is this push a cut
         id: cut
@@ -57,7 +82,7 @@ jobs:
             exit 1
           fi
           echo "version=$version" >> "$GITHUB_OUTPUT"
-      - name: Wait for the gate of this push
+      - name: Wait for the gate of this commit's tree
         if: steps.cut.outputs.version != ''
         shell: bash
         env:
@@ -65,16 +90,23 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
+          if SHA=$COMMIT OUT="$RUNNER_TEMP/gate-evidence.txt" .github/release-gate.sh; then
+            exit 0
+          fi
+          if [ "$CALLED" = true ]; then
+            echo "::error::no run of ci.yml verified the tree of $COMMIT, and a merge made with the workflow token starts none"
+            exit 1
+          fi
           for _ in $(seq 1 340); do
-            state=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$GITHUB_SHA&event=push&per_page=1" \
+            state=$(gh api "repos/$REPO/actions/workflows/ci.yml/runs?head_sha=$COMMIT&event=push&per_page=1" \
               --jq '.workflow_runs[0] | "\(.status) \(.conclusion) \(.html_url)"' 2>/dev/null || true)
             case "$state" in
               "completed success "*) echo "gate passed: ${state##* }"; exit 0 ;;
-              completed*) echo "::error::the gate of $GITHUB_SHA did not pass: $state"; exit 1 ;;
+              completed*) echo "::error::the gate of $COMMIT did not pass: $state"; exit 1 ;;
             esac
             sleep 60
           done
-          echo "::error::the gate of $GITHUB_SHA did not finish in time"
+          echo "::error::the gate of $COMMIT did not finish in time"
           exit 1
       - name: Tag, release, and carry the line to main
         if: steps.cut.outputs.version != ''
@@ -90,18 +122,18 @@ jobs:
             tag -a "v$VERSION" -m "LexLean v$VERSION"
           git push origin "refs/tags/v$VERSION"
           gh workflow run release.yml --repo "$REPO" --ref "v$VERSION"
-          echo "Tagged v$VERSION at $GITHUB_SHA and dispatched release.yml" >> "$GITHUB_STEP_SUMMARY"
-          if [ -z "$(gh pr list --repo "$REPO" --base main --head "$GITHUB_REF_NAME" --state open --json number --jq '.[].number')" ]; then
-            gh pr create --repo "$REPO" --base main --head "$GITHUB_REF_NAME" \
+          echo "Tagged v$VERSION at $COMMIT and dispatched release.yml" >> "$GITHUB_STEP_SUMMARY"
+          if [ -z "$(gh pr list --repo "$REPO" --base main --head "$LINE" --state open --json number --jq '.[].number')" ]; then
+            gh pr create --repo "$REPO" --base main --head "$LINE" \
               --title "Land v$VERSION on main" \
-              --body "\`main\` receives \`$GITHUB_REF_NAME\` at its tag \`v$VERSION\` (SPEC.md §9.4; opened by \`tag.yml\`)." \
+              --body "\`main\` receives \`$LINE\` at its tag \`v$VERSION\` (SPEC.md §9.4; opened by \`tag.yml\`)." \
               || echo "::warning::no pull request into main opened"
           fi
           # A pull request opened with the workflow token starts no run, so the
           # gate is dispatched on the line: its plan finds the full run that
           # verified the tagged tree (the regenerated head of the cut, under
           # equal-tree merges) and runs nothing again.
-          gh workflow run ci.yml --repo "$REPO" --ref "$GITHUB_REF_NAME"
+          gh workflow run ci.yml --repo "$REPO" --ref "$LINE"
           # Only a line that contains `main` lands the verified tree unchanged;
           # then the merge needs no further gate and is made now. Otherwise
           # `main` has commits the line lacks, and the pull request waits for a
@@ -110,9 +142,9 @@ jobs:
           if git merge-base --is-ancestor FETCH_HEAD HEAD 2>/dev/null \
             || { git fetch --quiet --unshallow origin 2>/dev/null; git fetch --quiet origin main \
                  && git merge-base --is-ancestor FETCH_HEAD HEAD; }; then
-            gh pr merge --repo "$REPO" "$GITHUB_REF_NAME" --merge \
+            gh pr merge --repo "$REPO" "$LINE" --merge \
               || echo "::warning::the pull request into main did not merge"
           else
-            echo "::warning::main has commits $GITHUB_REF_NAME lacks; the pull request into main waits for a person"
-            echo "\`main\` has commits \`$GITHUB_REF_NAME\` lacks: the pull request into main is left for a person." >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::main has commits $LINE lacks; the pull request into main waits for a person"
+            echo "\`main\` has commits \`$LINE\` lacks: the pull request into main is left for a person." >> "$GITHUB_STEP_SUMMARY"
           fi
