@@ -131,15 +131,15 @@ pub fn supports_language(language: &str) -> bool {
 }
 
 /// The exact pinned Lean toolchain string (SPEC.md §8.2).
-pub const LEAN_TOOLCHAIN: &str = "leanprover/lean4:v4.32.1";
+pub const LEAN_TOOLCHAIN: &str = "leanprover/lean4:v4.32.2";
 
 /// The Lean version a verification environment must report (SPEC.md §8.2).
-pub const LEAN_VERSION: &str = "4.32.1";
+pub const LEAN_VERSION: &str = "4.32.2";
 
 /// The source commit of the pinned Lean release (SPEC.md §8.2). The tooling
 /// registry cites it and `conformance_tl_02` equates it with the pin in
 /// `model/authorities.toml`.
-pub const LEAN_GITHASH: &str = "f054605aea4b840552cca2e725580bffd1e1b704";
+pub const LEAN_GITHASH: &str = "f3b06c705e6c85f5314019d5d3baab0fec5b580c";
 
 /// The compiler crate version.
 pub const COMPILER_VERSION: &str = env!("CARGO_PKG_VERSION");

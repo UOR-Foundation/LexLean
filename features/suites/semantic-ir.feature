@@ -127,7 +127,7 @@ Feature: semantic-ir
     And no backend-specific operation or open extension is admitted
 
   @SM-19 @build
-  Scenario: Portable semantic operations generate deterministic Lean 4.32.1 definitions that elaborate and replay with exact declared computational axiom policies.
+  Scenario: Portable semantic operations generate deterministic Lean 4.32.2 definitions that elaborate and replay with exact declared computational axiom policies.
     Given the committed portable semantic-module fixture
     When LexLean builds and verifies it on the pinned toolchain
     Then the generated runtime and module elaborate and replay

@@ -37,7 +37,7 @@ tree_files = 165
 tree_sha256 = "c0d76452a429446768e2e38adba7d7c1ab1020b38c4309a11c43bd2b9c4a93a7"
 
 # The toolchains the oracle is built with, which are LexLean's own.
-lean_toolchain = "leanprover/lean4:v4.32.1"
+lean_toolchain = "leanprover/lean4:v4.32.2"
 rust_toolchain = "1.97.1"
 
 # What of the oracle is built, and the bound on one invocation of it.

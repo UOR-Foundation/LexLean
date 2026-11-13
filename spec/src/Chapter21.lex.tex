@@ -112,7 +112,7 @@ definition{
   body: constructor{
     arguments: [
       "toml",
-      (cons "spec = \"lexlean/compiler-semantics/1\"" (cons "language = \"1.0\"" (cons "project_schema = \"lexlean/project/1\"" (cons "lock_schema = \"lexlean/lock/1\"" (cons "lexicon_schema = \"lexlean/lexicon/1\"" (cons "entry_schema = \"lexlean/entry/1\"" (cons "lean_backend = \"3\"" (cons "latex_backend = \"2\"" (cons "proof_lowering = \"1\"" (cons "axiom_parser = \"lean-4.32.1/2\"" (cons "canonical_json = \"1\"" (nil String))))))))))))
+      (cons "spec = \"lexlean/compiler-semantics/1\"" (cons "language = \"1.0\"" (cons "project_schema = \"lexlean/project/1\"" (cons "lock_schema = \"lexlean/lock/1\"" (cons "lexicon_schema = \"lexlean/lexicon/1\"" (cons "entry_schema = \"lexlean/entry/1\"" (cons "lean_backend = \"3\"" (cons "latex_backend = \"2\"" (cons "proof_lowering = \"1\"" (cons "axiom_parser = \"lean-4.32.2/2\"" (cons "canonical_json = \"1\"" (nil String))))))))))))
     ],
     constructor: DocRows::Item.fence,
     type_arguments: []
@@ -300,7 +300,7 @@ definition{
   body: constructor{
     arguments: [
       "text",
-      (cons "SHA256(" (cons "  \"lexlean-semantic-v1\\0\"" (cons "  || frame(\"compiler-semantics\", compiler_semantics_digest_bytes)" (cons "  || frame(\"language\", \"1.0\")" (cons "  || frame(\"toolchain\", \"leanprover/lean4:v4.32.1\")" (cons "  || frame(\"linked-ir\", canonical_linked_ir_json)" (cons "  || frame(\"lexicon-closure\", canonical_linked_lexicon_json)" (cons ")" (nil String)))))))))
+      (cons "SHA256(" (cons "  \"lexlean-semantic-v1\\0\"" (cons "  || frame(\"compiler-semantics\", compiler_semantics_digest_bytes)" (cons "  || frame(\"language\", \"1.0\")" (cons "  || frame(\"toolchain\", \"leanprover/lean4:v4.32.2\")" (cons "  || frame(\"linked-ir\", canonical_linked_ir_json)" (cons "  || frame(\"lexicon-closure\", canonical_linked_lexicon_json)" (cons ")" (nil String)))))))))
     ],
     constructor: DocRows::Item.fence,
     type_arguments: []
@@ -459,7 +459,7 @@ definition{
   body: constructor{
     arguments: [
       "json",
-      (cons "{" (cons "  \"spec\": \"lexlean/build-manifest/1\"," (cons "  \"compiler\": {" (cons "    \"version\": \"1.0.0\"," (cons "    \"semantics_id\": \"...\"" (cons "  }," (cons "  \"language\": \"1.0\"," (cons "  \"project\": \"example-project\"," (cons "  \"source_id\": \"...\"," (cons "  \"semantic_id\": \"...\"," (cons "  \"build_id\": \"...\"," (cons "  \"lean_toolchain\": \"leanprover/lean4:v4.32.1\"," (cons "  \"selection\": []," (cons "  \"modules\": []," (cons "  \"inputs\": []," (cons "  \"outputs\": []" (cons "}" (nil String))))))))))))))))))
+      (cons "{" (cons "  \"spec\": \"lexlean/build-manifest/1\"," (cons "  \"compiler\": {" (cons "    \"version\": \"1.0.0\"," (cons "    \"semantics_id\": \"...\"" (cons "  }," (cons "  \"language\": \"1.0\"," (cons "  \"project\": \"example-project\"," (cons "  \"source_id\": \"...\"," (cons "  \"semantic_id\": \"...\"," (cons "  \"build_id\": \"...\"," (cons "  \"lean_toolchain\": \"leanprover/lean4:v4.32.2\"," (cons "  \"selection\": []," (cons "  \"modules\": []," (cons "  \"inputs\": []," (cons "  \"outputs\": []" (cons "}" (nil String))))))))))))))))))
     ],
     constructor: DocRows::Item.fence,
     type_arguments: []

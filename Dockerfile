@@ -2,7 +2,7 @@
 #
 # The image carries the compiler *and* the exact toolchain its `verify`
 # command requires. LexLean's central claim is that a document was checked by
-# Lean 4.32.1 and replayed by that toolchain's `leanchecker` (§22, R9); an
+# Lean 4.32.2 and replayed by that toolchain's `leanchecker` (§22, R9); an
 # image with the binary alone could `check` and `build` but never `verify`,
 # which is the part worth distributing. Both versions are read from the files
 # that pin them --- `rust-toolchain.toml` and `lean-toolchain` --- so the image

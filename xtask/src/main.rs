@@ -1136,7 +1136,7 @@ fn release_artifacts(root: &Path) -> Result<(), Fail> {
             .iter()
             .map(|(language, id)| (language.clone(), serde_json::Value::from(id.as_str())))
             .collect::<serde_json::Map<String, serde_json::Value>>(),
-        "lean_toolchain": "leanprover/lean4:v4.32.1",
+        "lean_toolchain": "leanprover/lean4:v4.32.2",
         "crate_sha256": crate_sha256,
         "manifest_sha256": manifest_sha256,
         "host_targets": repo_model::release::HOST_TARGETS,

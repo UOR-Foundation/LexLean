@@ -100,7 +100,7 @@ pub(crate) fn run(id: &str) {
                 assert!(
                     attestation["toolchain"][tool]["version_output"]
                         .as_str()
-                        .is_some_and(|version| version.contains("4.32.1")),
+                        .is_some_and(|version| version.contains("4.32.2")),
                     "{tool}: pinned version recorded"
                 );
             }
@@ -109,12 +109,16 @@ pub(crate) fn run(id: &str) {
             // pinned Lean identity; refusal happens before module compilation.
             for (tool, banner) in [
                 ("lean", "Lean (version 4.31.0, release)"),
+                ("lean", "Lean (version 4.32.1, release)"),
+                ("lean", "Lean (version 4.32.20, release)"),
                 ("lean", "Lean (version 4.32.10, release)"),
-                ("lean", "Lean (version 4.32.1-rc1, release)"),
-                ("lean", "Lean (version 4.31.0, built with 4.32.1)"),
+                ("lean", "Lean (version 4.32.2-rc1, release)"),
+                ("lean", "Lean (version 4.31.0, built with 4.32.2)"),
+                ("lake", "Lake version 5.0.0 (Lean version 4.32.1)"),
+                ("lake", "Lake version 5.0.0 (Lean version 4.32.20)"),
                 ("lake", "Lake version 5.0.0 (Lean version 4.32.10)"),
-                ("lake", "Lake version 5.0.0 (Lean version 4.32.1-rc1)"),
-                ("lake", "Lake version 4.32.1 (Lean version 4.31.0)"),
+                ("lake", "Lake version 5.0.0 (Lean version 4.32.2-rc1)"),
+                ("lake", "Lake version 4.32.2 (Lean version 4.31.0)"),
             ] {
                 let script = format!("#!/bin/sh\nprintf '%s\\n' '{banner}'\n");
                 let lying = support::fake_toolchain(&[(tool, &script)]);
@@ -337,7 +341,7 @@ pub(crate) fn run(id: &str) {
             });
 
             // §20.4: a warning is remapped exactly like an error. Lean
-            // 4.32.1 prints the unused-variable warning of a lifted
+            // 4.32.2 prints the unused-variable warning of a lifted
             // universal binder in the named form
             // `path:line:col: warning(name): message`, so the planted
             // message uses that form at the generated binder's own
@@ -1048,7 +1052,7 @@ pub(crate) fn run(id: &str) {
             }
 
             // §20.4: a rejection Lean reports in its named form
-            // (`error(lean.unknownIdentifier)`, the shape Lean 4.32.1
+            // (`error(lean.unknownIdentifier)`, the shape Lean 4.32.2
             // prints) is remapped like any other, not lost to a bare
             // whole-output diagnostic: the failure carries the source span
             // of the token it names and keeps the error name.

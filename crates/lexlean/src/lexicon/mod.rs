@@ -396,7 +396,7 @@ mod tests {
     }
 
     /// Every builtin Lean denotation is spelled per the conservative grammar
-    /// and names a constant that elaborates under Lean 4.32.1 at the entry's
+    /// and names a constant that elaborates under Lean 4.32.2 at the entry's
     /// signature (probed with `example : <signature> := <name>`; the list
     /// below is that probe's accepted set).
     #[test]
@@ -458,7 +458,7 @@ mod tests {
                     } else {
                         assert!(
                             KNOWN.contains(&name.as_str()),
-                            "`{name}` is not in the probed Lean 4.32.1 name set"
+                            "`{name}` is not in the probed Lean 4.32.2 name set"
                         );
                     }
                     seen += 1;

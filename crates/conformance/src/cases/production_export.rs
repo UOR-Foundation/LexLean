@@ -1241,7 +1241,11 @@ pub fn run(id: &str) {
                 (&["toolchain", "lean", "version_output"], None),
                 (
                     &["toolchain", "lean", "version_output"],
-                    Some(serde_json::json!("unrecognized banner 4.32.1")),
+                    Some(serde_json::json!("unrecognized banner 4.32.2")),
+                ),
+                (
+                    &["toolchain", "lean", "version_output"],
+                    Some(serde_json::json!("Lean (version 4.32.1, release)")),
                 ),
                 (
                     &["toolchain", "lean", "version_output"],
@@ -1250,7 +1254,7 @@ pub fn run(id: &str) {
                 (
                     &["toolchain", "lean", "version_output"],
                     Some(serde_json::json!(
-                        "Lean (version 4.31.0, built with 4.32.1)"
+                        "Lean (version 4.31.0, built with 4.32.2)"
                     )),
                 ),
                 (&["toolchain", "lake"], None),
@@ -1258,7 +1262,13 @@ pub fn run(id: &str) {
                 (&["toolchain", "lake", "version_output"], None),
                 (
                     &["toolchain", "lake", "version_output"],
-                    Some(serde_json::json!("unrecognized banner 4.32.1")),
+                    Some(serde_json::json!("unrecognized banner 4.32.2")),
+                ),
+                (
+                    &["toolchain", "lake", "version_output"],
+                    Some(serde_json::json!(
+                        "Lake version 5.0.0 (Lean version 4.32.1)"
+                    )),
                 ),
                 (
                     &["toolchain", "lake", "version_output"],
@@ -1269,7 +1279,7 @@ pub fn run(id: &str) {
                 (
                     &["toolchain", "lake", "version_output"],
                     Some(serde_json::json!(
-                        "Lake version 4.32.1 (Lean version 4.31.0)"
+                        "Lake version 4.32.2 (Lean version 4.31.0)"
                     )),
                 ),
                 (&["spec"], None),
@@ -1285,6 +1295,7 @@ pub fn run(id: &str) {
             }
             for (field, value) in [
                 ("version", "4.31.0"),
+                ("version", "4.32.1"),
                 ("githash", "0000000000000000000000000000000000000000"),
             ] {
                 let (_dir, bundle) = bundle_copy(exported);
