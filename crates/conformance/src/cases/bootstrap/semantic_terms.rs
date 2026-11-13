@@ -514,6 +514,7 @@ fn enc_proof(value: &SemanticProof) -> Value {
         SemanticProof::Reflexivity => proof("PReflexivity", Vec::new()),
         SemanticProof::Decide => proof("PDecide", Vec::new()),
         SemanticProof::Congruence => proof("PCongruence", Vec::new()),
+        SemanticProof::RegionCheck => proof("PRegionCheck", Vec::new()),
         SemanticProof::LinearArithmetic { definitions } => {
             proof("PLinearArithmetic", vec![members(definitions)])
         }
@@ -982,6 +983,7 @@ fn named() -> Vec<Vector> {
                 SemanticProof::Reflexivity,
                 SemanticProof::Decide,
                 SemanticProof::Congruence,
+                SemanticProof::RegionCheck,
             ],
         },
     );

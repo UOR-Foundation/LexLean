@@ -98,6 +98,7 @@ inductive{
     {name: PInduction, fields: [Bytes, (List Bytes), SProof]},
     {name: PNestedInduction, fields: [Bytes, SProof, SProof]},
     {name: PCongruence, fields: []},
+    {name: PRegionCheck, fields: []},
     {name: PBooleanReflection, fields: [Reflection]},
     {
       name: PLaw,
@@ -309,6 +310,7 @@ definition{
       | List.cons head rest => (member "generalizing" (namesJson generalized) (member "branches" (ctor LexLeanStd.Json::Json.JArr (proofJson branches)) (ctor LexLeanStd.Json::Json.JNil))))))
     | SProof.PNestedInduction scrutinee branches nested => (kinded "nested_induction" (member "scrutinee" (ctor LexLeanStd.Json::Json.JStr scrutinee) (member "branches" (ctor LexLeanStd.Json::Json.JArr (proofJson branches)) (member "members" (ctor LexLeanStd.Json::Json.JArr (proofJson nested)) (ctor LexLeanStd.Json::Json.JNil)))))
     | SProof.PCongruence => (kinded "congruence" (ctor LexLeanStd.Json::Json.JNil))
+    | SProof.PRegionCheck => (kinded "region_check" (ctor LexLeanStd.Json::Json.JNil))
     | SProof.PBooleanReflection reflection => (kinded "boolean_reflection" (member "reflection" (reflectionJson reflection) (ctor LexLeanStd.Json::Json.JNil)))
     | SProof.PLaw lawName typeArgs arguments premises => (kinded "law" (member "name" (ctor LexLeanStd.Json::Json.JStr lawName) (typesWhenAny "type_arguments" typeArgs (member "arguments" (ctor LexLeanStd.Json::Json.JArr (termJson arguments)) (match premises
       | List.nil => (ctor LexLeanStd.Json::Json.JNil)
