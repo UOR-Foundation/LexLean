@@ -220,6 +220,12 @@ jobs:
           LEXLEAN_VERIFY_MEMORY_KIB: "12582912"
         run: |
           set -euo pipefail
+          # Each probe that runs out of stack aborts. The runner pipes a core
+          # to a handler (apport, systemd-coredump) that copies the whole
+          # probe process, and dozens of them exhaust the runner's memory, so
+          # cores go to a plain file under a zero limit: none is written.
+          sudo sysctl -w kernel.core_pattern=core
+          ulimit -c 0
           # Rows for packages no longer in the exports are dropped; for each
           # recursive package without a row, the case whose source names its
           # root runs whole and measures it (`LEXLEAN_MEASURE_STACK=all`).
@@ -240,9 +246,17 @@ jobs:
               record_path.write_text(json.dumps(record, indent=2) + "\n")
           sources = list(pathlib.Path("crates/conformance/src/cases").rglob("*.rs"))
           cases = set()
+          # Each corpus's roots.json names the root a package exports; the
+          # case that runs the package names that root's member.
+          roots = {}
+          for corpus in ("bootstrap", "stdlib"):
+              listed = pathlib.Path("tests/production-export", corpus, "roots.json")
+              if listed.exists():
+                  for entry in json.loads(listed.read_text()).get("roots", []):
+                      roots[f"{corpus}/{entry['name']}"] = entry["root"].rsplit(".", 1)[-1]
           for package in sorted(recursive - rows):
               name = package.split("/", 1)[1]
-              root = name.split("_")[0] + "".join(part.title() for part in name.split("_")[1:])
+              root = roots.get(package) or name.split("_")[0] + "".join(part.title() for part in name.split("_")[1:])
               owners = set()
               for source in sources:
                   text = source.read_text()

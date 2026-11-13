@@ -141,7 +141,6 @@
 'LexLeanCollections.lessThan.eq_1' depends on axioms: [propext]
 'LexLeanCollections.listFold.eq_1' does not depend on any axioms
 'LexLeanLaws.append_list' does not depend on any axioms
-'LexLeanLaws.ite_eq_iff' depends on axioms: [propext]
 'LexLeanLaws.length_list' does not depend on any axioms
 'LexLeanLaws.lessThan_int' depends on axioms: [propext, Quot.sound]
 'LexLeanLaws.lessThan_int16' depends on axioms: [propext, Quot.sound]
