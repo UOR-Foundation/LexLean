@@ -200,10 +200,83 @@ pub fn driver(
 /// Returns the reason the driver's declarations do not check against the
 /// module, or the module does not render.
 pub fn driver_of(
-    mut module: ToolingModule,
+    module: ToolingModule,
     semantic_hex32: &str,
     roots: &[String],
     modules: &[String],
+) -> Result<Driver, String> {
+    driver_entry(
+        module,
+        semantic_hex32,
+        modules,
+        RUN_FUNCTION,
+        vec![texts(roots), texts(modules)],
+    )
+}
+
+/// Render the bounded kernel inspector with the extraction adapter's exact
+/// source-pinned signature and registry checks. Names remain structural terms.
+///
+/// # Errors
+/// Returns an unavailable or ill-typed embedded adapter.
+pub fn inspection_driver(
+    semantic_hex32: &str,
+    names: &[String],
+    imports: &[String],
+    nodes: u64,
+    depth: u64,
+) -> Result<Driver, String> {
+    driver_entry(
+        adapter()?.clone(),
+        semantic_hex32,
+        imports,
+        "LexLeanExtract.inspectMain",
+        vec![
+            ToolTerm::List {
+                element: ToolType::Const {
+                    name: "Lean.Name".to_owned(),
+                    arguments: Vec::new(),
+                },
+                elements: names
+                    .iter()
+                    .map(|name| {
+                        // Checked name quotations reject absent declarations before inspection.
+                        name.split('.').fold(
+                            ToolTerm::Construct {
+                                constructor: "Lean.Name.anonymous".to_owned(),
+                                type_arguments: Vec::new(),
+                                arguments: Vec::new(),
+                            },
+                            |parent, component| ToolTerm::Construct {
+                                constructor: "Lean.Name.str".to_owned(),
+                                type_arguments: Vec::new(),
+                                arguments: vec![
+                                    parent,
+                                    ToolTerm::String {
+                                        value: component.to_owned(),
+                                    },
+                                ],
+                            },
+                        )
+                    })
+                    .collect(),
+            },
+            ToolTerm::Nat {
+                value: nodes.to_string(),
+            },
+            ToolTerm::Nat {
+                value: depth.to_string(),
+            },
+        ],
+    )
+}
+
+fn driver_entry(
+    mut module: ToolingModule,
+    semantic_hex32: &str,
+    modules: &[String],
+    entry: &str,
+    arguments: Vec<ToolTerm>,
 ) -> Result<Driver, String> {
     let mut probes = Vec::new();
     let (mut calls, mut plumbing, mut opaques) = (Vec::new(), Vec::new(), Vec::new());
@@ -301,8 +374,8 @@ pub fn driver_of(
         arguments: vec![texts(&calls), rows, texts(&opaques), texts(&plumbing)],
     });
     module.declarations.push(ToolDeclaration::Evaluate {
-        function: RUN_FUNCTION.to_owned(),
-        arguments: vec![texts(roots), texts(modules)],
+        function: entry.to_owned(),
+        arguments,
     });
     crate::ir::tooling_check::check(&module)
         .map_err(|failure| format!("the extraction module: {}", failure.reason))?;

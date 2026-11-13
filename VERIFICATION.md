@@ -39,6 +39,61 @@ Outside `vv`:
 
 ## Falsifiability records
 
+### UTF-8 proof bridges remain closed
+
+Compiler `40200f4dd5` rejected a semantic theorem equating
+`utf8_encode "problem1"` with its literal bytes: the linker reported
+`LLT4001` for the unavailable `LexLeanRuntime.utf8Encode` simplification name.
+Pinned Lean 4.32.1 required its explicit String representation theorem and
+reflexivity after simplification to discharge the same literal equality.
+`conformance_sm_39` exercises the fixed language-1.2 recipe on empty, ASCII,
+and multibyte strings, rejects a false byte equality through verification,
+and refuses foreign helper names, malformed lists, and language-1.1 uses.
+The recipe names only the two admitted global helpers and does not expose
+general tactic sequencing or change historical simplify output.
+
+### absent inspection origins remain unavailable
+
+The mixed `True`, absent-name, `Eq.refl` case in `conformance_vr_28` initially
+failed with `lean.unknownIdentifier`: checked name quotation rejected the absent
+name before the adapter could inspect it. The inspection driver now constructs
+structural `Lean.Name` values. The same test passes with pinned Lean 4.32.1:
+the two present rows have native goals, the absent row has a null type and an
+explicit unrepresentable reason, and insufficient traversal fuel still refuses
+the complete report. An absence row is never proof acceptance.
+
+### compiler identity requires a clean semantic input tree
+
+A clean CI build of revision `eadeff7cfe` reported language-1.2 identity
+`91d8c0b208d5226c5cd8db1761372e17ccad485a604168a54a83455e4ad30ff7`,
+while the earlier local compiler and locks reported
+`2e4c0ddd6084eba8fa99f04ab0235bfc5775dbc0455216b6ec51abe8ce8d9750`.
+The local embedded inventory included generated
+`language/lcnf-1.2/tooling/lexlean.lock` and
+`language/lcnf-1.2/tooling/.lexlean/.lock`. The build script intentionally embeds
+every regular semantic input; ignored generated files in that tree therefore
+change the identity. Build from a clean semantic tree and run tooling commands
+in scratch copies. Before freezing the corrected compiler, compare its generated
+embedded inventory and input bytes with the committed semantic files, regenerate
+project locks using that compiler, and run `conformance_rp_10` to check the
+embedded identity against the disk recomputation and project locks.
+
+### large certificate child budgets can fail
+
+Rule30's combined autonomous controller failed certificate-B elaboration with
+`LLS8002`: `child_timeout_ms` was 600000 and the observed duration was 600003 ms.
+A retained-artifact diagnostic checked all 745 declarations successfully; their
+declaration checks alone took 676.891 seconds. Partitioning the identical commands
+into 15 groups let every group elaborate and replay within the unchanged
+600-second limit (all observed completion times were below 259 seconds).
+
+The partition regression preserves every command, its order, and the original
+certificate record. Parts live outside every original certificate's module
+prefix: `leanchecker` selects descendants as well as the named module, so nested
+parts would be replayed together again. The final module imports the checked
+chain for the unchanged axiom audit. This diagnostic is not a project
+attestation; full verification still checks and replays every staged part.
+
 ### extraction literal transport can fail
 
 `cargo test -p repo-conformance --lib extraction_literal_paths_survive_normalization`

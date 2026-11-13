@@ -2,6 +2,15 @@ Feature: verification
 
   The fixed verification pipeline, replay, axiom audit, and attestations (§22).
 
+  @VR-28 @build
+  Scenario: Kernel type inspection runs an owned bounded adapter against the pinned local Lean environment, preserves structural names, universe levels and binder visibility, rejects unresolved terms and exhausted traversal budgets, and returns inspection data without a verification attestation or proof-acceptance claim.
+    Given the pinned local Lean environment and the embedded typed inspection adapter
+    When declarations with universe parameters and implicit binders are inspected
+    Then the report preserves their complete structural kernel types without a verification attestation
+    And an absent declaration retains its ordered row without a native goal while other declarations remain inspectable
+    And exhausted node or depth budgets refuse inspection without truncated output
+    And malformed requests and unresolved terms cannot produce accepted inspection data
+
   @VR-01 @build
   Scenario: Verification runs every specified stage in order and exposes no stage-suppression option.
     Given the committed nat-add-zero example project verified against the pinned Lean 4.32.1 toolchain

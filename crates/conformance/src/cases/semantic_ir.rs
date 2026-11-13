@@ -12,6 +12,7 @@ mod bytes;
 mod names;
 mod nat_bitwise;
 mod strings;
+mod utf8_bridge;
 mod widen;
 
 /// Closed recursive decisions must use Lean's sharing kernel evaluator.
@@ -2646,6 +2647,7 @@ pub(crate) fn run(id: &str) {
         "SM-36" => boolean::run(),
         // §17.11, §17.12: bitwise primitives and shifts on unbounded Nat.
         "SM-38" => nat_bitwise::run(),
+        "SM-39" => utf8_bridge::run(),
         // §17.10: a theorem proved by a split on the value of a document
         // term.
         "SM-35" => {

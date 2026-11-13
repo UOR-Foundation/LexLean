@@ -21,6 +21,7 @@ mod reasoning;
 
 struct Render<'a> {
     prefix: &'a str,
+    language_1_2: bool,
     /// The Lean module each imported module's key names; a module not in it
     /// lies under `prefix` (§10.5).
     lean_imports: &'a std::collections::BTreeMap<String, String>,
@@ -747,6 +748,7 @@ impl Render<'_> {
     fn cross_check(&self, check: &CrossCheck, module: &str) -> String {
         let qualified = Render {
             prefix: self.prefix,
+            language_1_2: self.language_1_2,
             lean_imports: self.lean_imports,
             hypotheses: std::collections::BTreeMap::new(),
             document: false,
@@ -1243,12 +1245,23 @@ impl Render<'_> {
                 linear_arithmetic(&pad, &unfolded)
             }
             SemanticProof::Simplify { definitions } => format!(
-                "{pad}simp only [{}]\n",
+                "{pad}simp only [{}]{}\n",
                 definitions
                     .iter()
-                    .map(|member| self.member(member))
+                    .map(|member| {
+                        if self.language_1_2 && crate::ir::semantic::is_utf8_simplify_bridge(member) {
+                            format!("_root_.{}", identifier(&member.name))
+                        } else {
+                            self.member(member)
+                        }
+                    })
                     .collect::<Vec<_>>()
-                    .join(", ")
+                    .join(", "),
+                if self.language_1_2 && definitions.iter().any(crate::ir::semantic::is_utf8_simplify_bridge) {
+                    " <;> rfl"
+                } else {
+                    ""
+                }
             ),
             SemanticProof::Constructor { branches } => {
                 let mut out = format!("{pad}constructor\n");
@@ -1549,6 +1562,7 @@ fn well_founded_definition(
             })?;
     let render = Render {
         prefix: base.prefix,
+        language_1_2: base.language_1_2,
         lean_imports: base.lean_imports,
         hypotheses: plan
             .addresses
@@ -1973,6 +1987,7 @@ pub fn render_lean(
         .collect();
     let base_render = Render {
         prefix: module_prefix,
+        language_1_2: module.spec == "lexlean/semantic-module/2",
         lean_imports: &document.import_lean,
         hypotheses: std::collections::BTreeMap::new(),
         document: false,
@@ -1984,6 +1999,7 @@ pub fn render_lean(
     // reference it makes is written qualified (§17.12, models).
     let model_render = Render {
         prefix: module_prefix,
+        language_1_2: module.spec == "lexlean/semantic-module/2",
         lean_imports: &document.import_lean,
         hypotheses: std::collections::BTreeMap::new(),
         document: false,
@@ -3141,6 +3157,7 @@ pub fn render_latex(
 ) -> Result<Emitter, Diagnostic> {
     let render = Render {
         prefix: module_prefix,
+        language_1_2: module.spec == "lexlean/semantic-module/2",
         lean_imports: &checked.document.import_lean,
         hypotheses: std::collections::BTreeMap::new(),
         document: true,
@@ -3380,6 +3397,7 @@ mod byte_literal_tests {
         let imports = std::collections::BTreeMap::new();
         Render {
             prefix: "ByteFixture",
+            language_1_2: false,
             lean_imports: &imports,
             hypotheses: std::collections::BTreeMap::new(),
             document,

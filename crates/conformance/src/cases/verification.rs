@@ -36,6 +36,135 @@ const LEAN_BACKED: [&str; 14] = [
 ];
 
 pub(crate) fn run(id: &str) {
+    if id == "VR-28" {
+        let project = P::example();
+        let (exit, help, errors) = project.cli(&["inspect", "--help"]);
+        assert_eq!(exit, 0, "inspection is a public command: {errors}");
+        assert!(help.contains("--declaration") && help.contains("--max-nodes"));
+        if !support::lean_backed(id) {
+            return;
+        }
+        let (exit, _, errors) = project.cli(&[
+            "inspect",
+            "--import",
+            "Init",
+            "--declaration",
+            "Eq.refl",
+            "--max-nodes",
+            "4096",
+            "--max-depth",
+            "64",
+            "--out",
+            "inspection.json",
+        ]);
+        assert_eq!(exit, 0, "owned kernel inspection: {errors}");
+        let report: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(project.root.join("inspection.json")).expect("inspection report"),
+        )
+        .expect("inspection JSON");
+        assert_eq!(report["spec"], "lexlean/kernel-inspection/1");
+        assert!(report.get("attestation_id").is_none());
+        let declarations = report["declarations"].as_array().expect("declarations");
+        assert_eq!(declarations.len(), 1);
+        assert_eq!(declarations[0]["native"]["status"], "available");
+        let arena = declarations[0]["native"]["nodes"]
+            .as_array()
+            .expect("native arena");
+        let root = declarations[0]["native"]["root"]
+            .as_u64()
+            .expect("native root") as usize;
+        assert!(root < arena.len());
+        assert_eq!(arena[root]["k"], "p");
+        let ty = declarations[0]["type"].to_string();
+        assert!(ty.contains("forallE") && ty.contains("implicit"));
+        assert!(!declarations[0]["parameters"]
+            .as_array()
+            .expect("universe parameters")
+            .is_empty());
+        let (exit, _, errors) = project.cli(&[
+            "inspect",
+            "--import",
+            "Init",
+            "--declaration",
+            "True",
+            "--declaration",
+            "LexLeanInspectionMissing.absent",
+            "--declaration",
+            "Eq.refl",
+            "--max-nodes",
+            "4096",
+            "--max-depth",
+            "64",
+            "--out",
+            "mixed-inspection.json",
+        ]);
+        assert_eq!(
+            exit, 0,
+            "one absent name must not abort other rows: {errors}"
+        );
+        let mixed: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(project.root.join("mixed-inspection.json")).expect("mixed report"),
+        )
+        .expect("mixed inspection JSON");
+        let rows = mixed["declarations"].as_array().expect("declaration rows");
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[0]["name"], serde_json::json!({"str": [null, "True"]}));
+        assert_eq!(rows[0]["native"]["status"], "available");
+        assert_eq!(
+            rows[1]["name"],
+            serde_json::json!({"str": [{"str": [null, "LexLeanInspectionMissing"]}, "absent"]})
+        );
+        assert_eq!(rows[1]["parameters"], serde_json::json!([]));
+        assert!(rows[1]["type"].is_null());
+        assert_eq!(rows[1]["native"]["status"], "unrepresentable");
+        assert_eq!(
+            rows[1]["native"]["reason"],
+            "declaration not found in the inspected environment"
+        );
+        assert!(rows[1]["native"].get("nodes").is_none());
+        assert_eq!(
+            rows[2]["name"],
+            serde_json::json!({"str": [{"str": [null, "Eq"]}, "refl"]})
+        );
+        assert_eq!(rows[2]["native"]["status"], "available");
+        assert_eq!(mixed["process"]["exit_code"], 0);
+        assert_eq!(
+            mixed["request"]["declarations"],
+            serde_json::json!(["True", "LexLeanInspectionMissing.absent", "Eq.refl"])
+        );
+        assert!(mixed.get("attestation_id").is_none());
+        let (exit, _, _) = project.cli(&[
+            "inspect",
+            "--import",
+            "Init",
+            "--declaration",
+            "LexLeanInspectionMissing.absent",
+            "--max-nodes",
+            "1",
+            "--max-depth",
+            "1",
+            "--out",
+            "absent-over-budget.json",
+        ]);
+        assert_ne!(exit, 0, "absent names must still consume the shared budget");
+        assert!(!project.root.join("absent-over-budget.json").exists());
+        let (exit, _, _) = project.cli(&[
+            "inspect",
+            "--import",
+            "Init",
+            "--declaration",
+            "Eq.refl",
+            "--max-nodes",
+            "1",
+            "--max-depth",
+            "1",
+            "--out",
+            "refused.json",
+        ]);
+        assert_ne!(exit, 0, "bounded inspection cannot truncate a type");
+        assert!(!project.root.join("refused.json").exists());
+        return;
+    }
     // The operational cases (§22.11, §22.12) gate their own Lean-backed halves.
     if matches!(id, "VR-20" | "VR-21" | "VR-22" | "VR-23") {
         super::operational::run(id);
