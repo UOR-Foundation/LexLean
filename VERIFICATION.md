@@ -14532,3 +14532,44 @@ test result: FAILED. 0 passed; 2 failed
 `RP-19` failed at the first language-1.2 lock, whose `compiler_semantics` line
 carried the planted digit while the default build's carried the tree's. With
 each plant removed, `conformance_rp_10` and `conformance_rp_19` pass.
+
+## The `bdd` legs' evaluator and the remainder's parts (2026-11-13)
+
+On green run 43433085919 the gate took 205 minutes and 1,738 runner-minutes;
+the `bdd` legs were 688 of them. Two causes are addressed here, neither of
+which changes what a case asserts.
+
+**The reference interpreter copied every value it touched.**
+`calculus::interp` cloned the whole environment, deep, at every `let` and
+call, deep-copied a value at every variable read and field, and copied a
+list's tail at every `Cons` match. Its values now share their parts
+(`Rc`), the environment is a list whose extension shares the scope it
+extends, and a list's tail shares its items. Lookup still walks the
+bindings innermost first and charges the same depth, and every step and
+weight is charged as before, so every outcome is the one the step-for-step
+transcription of `TargetSemantics.eval` gave. Measured locally on a loaded
+4-CPU host in the debug profile the gate builds, `BS-15`'s evaluator phase
+(2,531 header and 241 render runs) took 239 s against about 800 s before; the
+evaluator, not rustc, was most of `BS-15`'s 3,880 s on that run, and every
+bootstrap, stdlib, preservation and calculus differential runs on it.
+
+**The remainder held a fixture's waiters and a duplicate fixture.** On that
+run the `rest` leg's `bdd` took 59.7 of its 76.7 minutes. Four `SL` cases
+spent about 15 minutes each blocked on one `OnceLock` (the `stdlib` export),
+holding three of the four test threads, and `MD-13` verified `models` again
+although `verified_models` is the fixture of the `MD` cases in `production`
+(it reached the remainder by default when it was registered). Two parts are
+added and `MD-13` joins its fixture's part:
+
+| Part | Cases | Case seconds on that run |
+| --- | --- | ---: |
+| `stdlib` | `SL-*` (the `stdlib` export) and `EX-09` (the `helpdesk` export), whose exports run side by side | 4,595 |
+| `language-models` | `LM-*`, each verifying its own copy of `models` | 3,043 |
+| `production` | gains `MD-13`, which now reads the fixture the part already builds | (765 in `rest`) |
+
+The remainder keeps about 5,800 case seconds, so its `bdd` falls from
+about 60 to about 24 minutes and the leg from 77 to about 42; the new legs
+are about 20 minutes each. Both new parts run in the Intel and Windows
+`moves` lane, which held them as part of `rest`, so no host lane's work
+changes. `check-test-inventory` reports the 545 tests of `bdd` as the 41
+parts, disjoint and complete (RP-13).
