@@ -116,7 +116,7 @@ fn member_fields(member: &MemberRef) -> [Value; 2] {
     ]
 }
 
-fn members(refs: &[MemberRef]) -> Value {
+pub(super) fn members(refs: &[MemberRef]) -> Value {
     list(
         refs.iter()
             .map(|member| {
@@ -149,7 +149,7 @@ fn term_chain(items: &[SemanticTerm]) -> Value {
     })
 }
 
-fn assign_chain(items: &[SemanticAssignment]) -> Value {
+pub(super) fn assign_chain(items: &[SemanticAssignment]) -> Value {
     chain(items, |item, rest| {
         term(
             "KAssign",
@@ -197,7 +197,7 @@ fn param_fields(parameter: &SemanticParameter) -> [Value; 2] {
 }
 
 #[allow(clippy::too_many_lines)]
-fn enc_term(value: &SemanticTerm) -> Value {
+pub(super) fn enc_term(value: &SemanticTerm) -> Value {
     let binary = |name: &str, left: &SemanticTerm, right: &SemanticTerm| {
         term(name, vec![enc_term(left), enc_term(right)])
     };
@@ -509,7 +509,7 @@ fn enc_reflection(reflection: &SemanticReflection) -> Value {
     }
 }
 
-fn enc_proof(value: &SemanticProof) -> Value {
+pub(super) fn enc_proof(value: &SemanticProof) -> Value {
     match value {
         SemanticProof::Reflexivity => proof("PReflexivity", Vec::new()),
         SemanticProof::Decide => proof("PDecide", Vec::new()),

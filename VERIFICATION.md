@@ -11918,6 +11918,39 @@ check` of the `bootstrap/` project passes, with each of the two roots eligible
 for `rust-std` with exactly its declared effects, and `lexlean fmt --check`
 passes.
 
+### the semantic declarations and modules are source (BS-70)
+
+`BS-70` holds the two production roots of `LexLeanBoot.SemanticDecls`
+(`bootstrap/src/SemanticDecls.lex.tex`) to `lexlean::ir::semantic`:
+`semanticDeclarationText` to the canonical JSON of the serde form of
+`SemanticDeclaration` for structures, classes, instances, inductives,
+definitions, and theorems, and `semanticModuleText` to that of `SemanticModule`, as
+`DocumentModule::to_json` embeds a semantic module. The module declares the six
+ordinary declaration kinds of SPEC.md §17.11 and §17.12 as one inductive over
+the terms and proofs of `SemanticTerms` (`BS-69`) and the types of
+`SemanticTypes` (`BS-68`). A definition's or a theorem's type parameters,
+recursive argument, axioms, executable flag, mutual group, termination, and
+production, and an inductive's mutual group, are left out exactly where the
+oracle's serde attributes skip them. Every module of the `bootstrap/` project and
+of the standard library declares only these kinds, so `semanticModuleText` writes the
+semantic modules of LexLean's own sources. Both roots admit exactly
+`allocation`, `overflow`, and `recursion`. The oracle is the existing public code
+of `semantic.rs` and its serde derivations; no Rust outside the case changes.
+
+The case holds each root to the oracle on hand-built declarations of every kind,
+with every optional member both present and absent, and a hand-built module; on
+every distinct ordinary declaration of every committed semantic module that
+links, and on every such module whose declarations are all ordinary, the
+evaluator taking the modules whose JSON is at most 262,144 bytes and the rendered
+packages all of them; and on seeded declarations. Each planted defect names the
+root and the vector that catch it, and the case asserts that the site of each
+plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree's compiler sources: `lexlean
+check` and `lexlean build` of the `bootstrap/` project pass, with each of the two
+roots eligible for `rust-std` with exactly its declared effects, and `lexlean fmt
+--check` passes.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

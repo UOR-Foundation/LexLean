@@ -292,6 +292,9 @@
     ],
     "bootstrap-semantic-terms": [
       "BS-69"
+    ],
+    "bootstrap-semantic-decls": [
+      "BS-70"
     ]
   },
   "targets": {

@@ -1,0 +1,207 @@
+\begin{lexlean}{SemanticDecls}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{SemanticTerms}
+\importmodule{SemanticTypes}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Order}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: SDecl,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {
+      name: DStructure,
+      fields: [
+        Bytes,
+        (List Bytes),
+        (List (Bytes * SemanticTypes::SemanticType)),
+        (List (Bytes * SemanticTypes::SemanticType))
+      ]
+    },
+    {
+      name: DClass,
+      fields: [
+        Bytes,
+        (List Bytes),
+        (List (Bytes * SemanticTypes::SemanticType)),
+        (List (Bytes * SemanticTypes::SemanticType))
+      ]
+    },
+    {
+      name: DInstance,
+      fields: [Bytes, (Option Bytes), Bytes, SemanticTypes::SemanticType, Nat, SemanticTerms::STerm]
+    },
+    {
+      name: DInductive,
+      fields: [
+        Bytes,
+        (List Bytes),
+        (List (Bytes * SemanticTypes::SemanticType)),
+        (List (Bytes * SemanticTypes::SemanticType)),
+        (Option Bytes)
+      ]
+    },
+    {
+      name: DDefinition,
+      fields: [
+        Bytes,
+        (List Bytes),
+        (List (Bytes * SemanticTypes::SemanticType)),
+        SemanticTypes::SemanticType,
+        (Option Bytes),
+        SemanticTerms::STerm,
+        (List Bytes),
+        Bool,
+        (Option Bytes),
+        (Option (SemanticTerms::STerm * (List ((Option Bytes) * Bytes)))),
+        (Option ((List Bytes) * (List Bytes)))
+      ]
+    },
+    {
+      name: DTheorem,
+      fields: [
+        Bytes,
+        (List Bytes),
+        (List (Bytes * SemanticTypes::SemanticType)),
+        SemanticTerms::STerm,
+        SemanticTerms::SProof,
+        (List Bytes)
+      ]
+    }
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: member,
+  parameters: [key : String, entry : LexLeanStd.Json::Json, rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JMember (lit key) entry rest),
+  executable: true
+}
+
+definition{
+  name: jnil,
+  parameters: [],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JNil),
+  executable: true
+}
+
+definition{
+  name: jtext,
+  parameters: [text : Bytes],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JStr text),
+  executable: true
+}
+
+definition{
+  name: kinded,
+  parameters: [kind : String, rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj (member "kind" (jtext (lit kind)) rest)),
+  executable: true
+}
+
+definition{
+  name: fieldsJson,
+  parameters: [entries : (List (Bytes * SemanticTypes::SemanticType))],
+  result: LexLeanStd.Json::Json,
+  body: (SemanticTerms::paramsJson entries),
+  executable: true
+}
+
+definition{
+  name: namesWhenAny,
+  parameters: [key : String, names : (List Bytes), rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (match names
+    | List.nil => rest
+    | List.cons head tail => (member key (SemanticTerms::namesJson names) rest)),
+  executable: true
+}
+
+definition{
+  name: textWhenSome,
+  parameters: [key : String, value : (Option Bytes), rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (match value | Option.some text => (member key (jtext text) rest) | Option.none => rest),
+  executable: true
+}
+
+definition{
+  name: constructorsJson,
+  parameters: [constructors : (List (Bytes * SemanticTypes::SemanticType))],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (entry : (Bytes * SemanticTypes::SemanticType)) => (cons (ctor LexLeanStd.Json::Json.JObj (member "name" (jtext (first entry)) (member "fields" (ctor LexLeanStd.Json::Json.JArr (SemanticTypes::typeJson (second entry))) (jnil)))) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [(Bytes * SemanticTypes::SemanticType)] constructors) : (List LexLeanStd.Json::Json)))),
+  executable: true
+}
+
+definition{
+  name: terminationJson,
+  parameters: [
+    termination : (Option (SemanticTerms::STerm * (List ((Option Bytes) * Bytes)))),
+    rest : LexLeanStd.Json::Json
+  ],
+  result: LexLeanStd.Json::Json,
+  body: (match termination
+    | Option.some evidenced => (member "termination" (ctor LexLeanStd.Json::Json.JObj (member "measure" (SemanticTerms::termJson (first evidenced)) (member "evidence" (SemanticTerms::membersJson (second evidenced)) (jnil)))) rest)
+    | Option.none => rest),
+  executable: true
+}
+
+definition{
+  name: productionJson,
+  parameters: [production : (Option ((List Bytes) * (List Bytes))), rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (match production
+    | Option.some declared => (member "production" (ctor LexLeanStd.Json::Json.JObj (member "targets" (SemanticTerms::namesJson (first declared)) (member "effects" (SemanticTerms::namesJson (second declared)) (jnil)))) rest)
+    | Option.none => rest),
+  executable: true
+}
+
+definition{
+  name: declarationJson,
+  parameters: [declaration : SDecl],
+  result: LexLeanStd.Json::Json,
+  body: (match declaration
+    | SDecl.DStructure named typeParameters parameters fields => (kinded "structure" (member "name" (jtext named) (member "type_parameters" (SemanticTerms::namesJson typeParameters) (member "parameters" (SemanticTerms::paramsJson parameters) (member "fields" (fieldsJson fields) (jnil))))))
+    | SDecl.DClass named typeParameters parameters fields => (kinded "class" (member "name" (jtext named) (member "type_parameters" (SemanticTerms::namesJson typeParameters) (member "parameters" (SemanticTerms::paramsJson parameters) (member "fields" (fieldsJson fields) (jnil))))))
+    | SDecl.DInstance named classModule className arguments priority assigned => (kinded "instance" (member "name" (jtext named) (member "class" (SemanticTerms::memberJson classModule className) (member "arguments" (ctor LexLeanStd.Json::Json.JArr (SemanticTypes::typeJson arguments)) (member "priority" (ctor LexLeanStd.Json::Json.JInt false priority) (member "fields" (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::termJson assigned)) (jnil)))))))
+    | SDecl.DInductive named typeParameters parameters constructors grouped => (kinded "inductive" (member "name" (jtext named) (member "type_parameters" (SemanticTerms::namesJson typeParameters) (member "parameters" (SemanticTerms::paramsJson parameters) (member "constructors" (constructorsJson constructors) (textWhenSome "mutual" grouped (jnil)))))))
+    | SDecl.DDefinition named typeParameters parameters outcome recursiveArg body axiomNames isExecutable grouped terminating produced => (kinded "definition" (member "name" (jtext named) (namesWhenAny "type_parameters" typeParameters (member "parameters" (SemanticTerms::paramsJson parameters) (member "result" (SemanticTypes::typeJson outcome) (textWhenSome "recursive_argument" recursiveArg (member "body" (SemanticTerms::termJson body) (namesWhenAny "axioms" axiomNames (if isExecutable then (member "executable" (ctor LexLeanStd.Json::Json.JBool true) (textWhenSome "mutual" grouped (terminationJson terminating (productionJson produced (jnil))))) else (textWhenSome "mutual" grouped (terminationJson terminating (productionJson produced (jnil)))))))))))))
+    | SDecl.DTheorem named typeParameters parameters statement proof axiomNames => (kinded "theorem" (member "name" (jtext named) (namesWhenAny "type_parameters" typeParameters (member "parameters" (SemanticTerms::paramsJson parameters) (member "statement" (SemanticTerms::termJson statement) (member "proof" (SemanticTerms::proofJson proof) (namesWhenAny "axioms" axiomNames (jnil))))))))),
+  executable: true
+}
+
+definition{
+  name: semanticDeclarationText,
+  parameters: [declaration : SDecl],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (declarationJson declaration)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: semanticModuleText,
+  parameters: [spec : Bytes, declarations : (List SDecl)],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (ctor LexLeanStd.Json::Json.JObj (member "spec" (jtext spec) (member "declarations" (ctor LexLeanStd.Json::Json.JArr (SemanticTerms::chainOf (prim list_fold (fun (acc : (List LexLeanStd.Json::Json)) (declaration : SDecl) => (cons (declarationJson declaration) acc)) (nil LexLeanStd.Json::Json) (LexLeanStd.Order::reverseList [SDecl] declarations) : (List LexLeanStd.Json::Json)))) (jnil))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -70,3 +70,6 @@ them and as diagnostics spell them, and the facts of its primitives and integer 
 `src/SemanticTerms.lex.tex` (SPEC.md §17.23, `BS-69`) imports `SemanticTypes` (`BS-68`) and the standard
 library's `Json` and `Order`, and writes the closed terms and proofs of the semantic module language as
 the linked IR embeds them.
+`src/SemanticDecls.lex.tex` (SPEC.md §17.23, `BS-70`) imports `SemanticTerms` (`BS-69`), `SemanticTypes`
+(`BS-68`), and the standard library's `Json` and `Order`, and writes the ordinary declarations of the
+semantic module language and its modules as the linked IR embeds them.
