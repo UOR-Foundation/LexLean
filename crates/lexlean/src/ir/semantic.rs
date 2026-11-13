@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 pub mod laws;
 pub mod model;
 pub mod reasoning;
+pub mod regions;
 mod widen;
 
 mod language_model;
@@ -703,6 +704,17 @@ pub enum SemanticReflection {
 pub enum SemanticProof {
     Reflexivity,
     Decide,
+    /// Language 1.2: a property of a decision fragment, proved by local box
+    /// obligations (§17.12, *Decision regions*). The theorem states
+    /// `breaks request = false` for a Boolean definition `breaks` that
+    /// conjoins comparisons of the request's natural-number fields with
+    /// constants and a test of a first-match `judge`'s answer. The backend
+    /// lowers the judge's rules, the property, and the property's bounding
+    /// box to the data of `LexLeanRuntime.Regions`; the kernel decides the
+    /// property's one obligation, and `LexLeanRegions.holds`, proved once,
+    /// concludes the theorem. The lowered data is definitionally the module's
+    /// own definitions, so no translation is trusted.
+    RegionCheck,
     /// Language 1.2: closed linear natural-number arithmetic. It introduces
     /// the goal's hypotheses, rewrites the fixed Boolean comparisons
     /// `Nat.beq`, `Nat.blt`, and `Nat.ble` into propositions, and runs the
@@ -2295,6 +2307,7 @@ fn proof_node_count(proof: &SemanticProof) -> u64 {
     1 + match proof {
         SemanticProof::Reflexivity
         | SemanticProof::Decide
+        | SemanticProof::RegionCheck
         | SemanticProof::LinearArithmetic { .. }
         | SemanticProof::Congruence
         | SemanticProof::Simplify { .. }
@@ -3076,6 +3089,7 @@ fn proof_terms(proof: &SemanticProof, visit: &mut impl FnMut(&SemanticTerm)) {
     match proof {
         SemanticProof::Reflexivity
         | SemanticProof::Decide
+        | SemanticProof::RegionCheck
         | SemanticProof::LinearArithmetic { .. }
         | SemanticProof::Simplify { .. }
         | SemanticProof::Congruence
@@ -3116,6 +3130,7 @@ fn proof_terms_mut(proof: &mut SemanticProof, visit: &mut impl FnMut(&mut Semant
     match proof {
         SemanticProof::Reflexivity
         | SemanticProof::Decide
+        | SemanticProof::RegionCheck
         | SemanticProof::LinearArithmetic { .. }
         | SemanticProof::Simplify { .. }
         | SemanticProof::Congruence
@@ -3273,6 +3288,7 @@ fn proof_binders(proof: &SemanticProof, visit: &mut impl FnMut(&str)) {
     match proof {
         SemanticProof::Reflexivity
         | SemanticProof::Decide
+        | SemanticProof::RegionCheck
         | SemanticProof::Simplify { .. }
         | SemanticProof::Congruence
         | SemanticProof::BooleanReflection { .. }
@@ -3577,6 +3593,7 @@ fn proof_type_arguments(proof: &SemanticProof, visit: &mut impl FnMut(&SemanticT
         SemanticProof::Reflexivity
         | SemanticProof::LinearArithmetic { .. }
         | SemanticProof::Decide
+        | SemanticProof::RegionCheck
         | SemanticProof::Simplify { .. }
         | SemanticProof::TermCases { .. }
         | SemanticProof::Congruence
@@ -8578,6 +8595,9 @@ fn check_proof(
 ) -> Result<(), String> {
     match proof {
         SemanticProof::Reflexivity | SemanticProof::Decide | SemanticProof::Congruence => Ok(()),
+        // The fragment is read from the whole module (`regions::lower`), which
+        // the module check runs once the theorem is admitted.
+        SemanticProof::RegionCheck => require_language_1_2(env, "region_check proof"),
         SemanticProof::LinearArithmetic { definitions } => {
             require_language_1_2(env, "linear_arithmetic proof")?;
             if definitions
@@ -10005,6 +10025,21 @@ impl SemanticModule {
                     let checked = check_theorem(&lowered, &mut env);
                     env.derived = false;
                     checked?;
+                    // §17.12 (decision regions): the property must lie in the
+                    // decision fragment its prior declarations define.
+                    if let SemanticDeclaration::Theorem { proof, .. } = &lowered {
+                        if matches!(proof, SemanticProof::RegionCheck) {
+                            regions::lower(&self.declarations[..index], &lowered)?;
+                        } else if serde_json::to_string(proof)
+                            .is_ok_and(|text| text.contains("\"kind\":\"region_check\""))
+                        {
+                            return Err(format!(
+                                "theorem `{}`: region_check is a whole proof, never a branch",
+                                lowered.name()
+                            )
+                            .into());
+                        }
+                    }
                     elaboration.lower(index, vec![lowered]);
                 }
                 SemanticDeclaration::Artifact { .. }
