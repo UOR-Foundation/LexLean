@@ -143,8 +143,10 @@ jobs:
       COMMIT: ${{ inputs.commit || github.sha }}
       LINE: ${{ inputs.line || github.ref_name }}
       VERSION: ${{ needs.tag.outputs.version }}
+    # Merging a pull request writes the base branch: contents, not only
+    # pull-requests.
     permissions:
-      contents: read
+      contents: write
       actions: write
       pull-requests: write
     steps:
