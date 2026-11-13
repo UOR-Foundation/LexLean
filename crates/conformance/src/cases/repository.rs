@@ -256,6 +256,28 @@ fn plan_decisions() {
     git(&["add", "."]);
     git(&["commit", "-q", "-m", "direct"]);
     let direct = git(&["rev-parse", "HEAD"]);
+    // A merge whose second parent is the equal-tree merge above: the release
+    // merge of a cut carried to `main`, whose tree is the regenerated head's.
+    let regenerated = git(&["rev-parse", "head-contains-main"]);
+    git(&["checkout", "-q", "-b", "carried", &base]);
+    git(&["merge", "-q", "--no-ff", "-m", "carry", &merge_equal]);
+    let carried = git(&["rev-parse", "HEAD"]);
+    // Carried again, to four and five equal-tree merges above that head.
+    let mut deeper = carried.clone();
+    let mut chain = Vec::new();
+    for hop in 3..=5 {
+        git(&["checkout", "-q", "-b", &format!("carried-{hop}"), &base]);
+        git(&["merge", "-q", "--no-ff", "-m", "carry", &deeper]);
+        deeper = git(&["rev-parse", "HEAD"]);
+        chain.push(deeper.clone());
+    }
+    let (four_down, five_down) = (chain[1].clone(), chain[2].clone());
+    git(&["checkout", "-q", &carried]);
+    assert_eq!(
+        git(&["rev-parse", "HEAD^{tree}"]),
+        git(&["rev-parse", &format!("{regenerated}^{{tree}}")]),
+        "the planted carry lands the regenerated head's tree"
+    );
 
     // `gh`: the runs of the second parent, and the jobs of a run, as the
     // environment names them; `STUB_FAIL` makes the call fail.
@@ -267,8 +289,13 @@ fn plan_decisions() {
         "#!/usr/bin/env bash\n\
          [ -z \"${STUB_FAIL:-}\" ] || exit 1\n\
          case \"$2\" in\n\
-           */workflows/ci.yml/runs\\?*) printf '%s\\n' \"${STUB_RUNS:-}\" ;;\n\
+           */workflows/ci.yml/runs\\?*)\n\
+             case \"${STUB_RUNS:-}\" in\n\
+               *@*) [[ \"$2\" != *\"head_sha=${STUB_RUNS#*@}&\"* ]] || printf '%s\\n' \"${STUB_RUNS%@*}\" ;;\n\
+               *) printf '%s\\n' \"${STUB_RUNS:-}\" ;;\n\
+             esac ;;\n\
            */runs/*/jobs\\?*) printf '%s\\n' \"${STUB_JOBS:-}\" ;;\n\
+           */pulls\\?*) printf '%s\\n' \"${STUB_PULLS:-}\" ;;\n\
            *) exit 2 ;;\n\
          esac\n",
     )
@@ -279,14 +306,17 @@ fn plan_decisions() {
         std::fs::set_permissions(&stub, std::fs::Permissions::from_mode(0o755)).expect("chmod");
     }
     let path = format!("{}:{}", bin.display(), std::env::var("PATH").expect("PATH"));
-    // (full, rows' parts) for one planted event.
-    let decide = |event: &str,
-                  draft: &str,
-                  base: &str,
-                  commit: &str,
-                  runs: &str,
-                  jobs: &[String],
-                  fail: bool| {
+    // (full, rows' parts) for one planted event; a dispatch names its branch
+    // and the open pull requests `gh` lists for it, as `draft<TAB>base` lines.
+    let decide_with = |event: &str,
+                       draft: &str,
+                       base: &str,
+                       commit: &str,
+                       runs: &str,
+                       jobs: &[String],
+                       fail: bool,
+                       branch: &str,
+                       pulls: &str| {
         git(&["checkout", "-q", "--detach", commit]);
         let out = dir.join("out");
         let _ = std::fs::remove_file(&out);
@@ -303,7 +333,9 @@ fn plan_decisions() {
             .env("GITHUB_OUTPUT", &out)
             .env("GITHUB_STEP_SUMMARY", dir.join("summary"))
             .env("STUB_RUNS", runs)
-            .env("STUB_JOBS", jobs.join("\n"));
+            .env("STUB_JOBS", jobs.join("\n"))
+            .env("REF", branch)
+            .env("STUB_PULLS", pulls);
         if fail {
             command.env("STUB_FAIL", "1");
         }
@@ -343,6 +375,14 @@ fn plan_decisions() {
                 .collect::<Vec<_>>(),
         )
     };
+    let decide =
+        |event: &str,
+         draft: &str,
+         base: &str,
+         commit: &str,
+         runs: &str,
+         jobs: &[String],
+         fail: bool| { decide_with(event, draft, base, commit, runs, jobs, fail, "", "") };
     let whole = ("true".to_owned(), parts.clone());
     let draft = (
         "false".to_owned(),
@@ -403,6 +443,155 @@ fn plan_decisions() {
     assert_eq!(
         decide("workflow_dispatch", "", "main", &direct, "", &[], false),
         whole
+    );
+    // A dispatch on the head branch of one open pull request of this
+    // repository is planned as that pull request (`regenerate.yml` commits
+    // to the head with the workflow token, which starts no pull request run);
+    // no pull request, several, or an unreadable list is the whole gate.
+    for (what, pulls, fail, expected) in [
+        ("a draft's head", "true\trelease/v0.4", false, &draft),
+        ("a stacked head", "false\tclaude/issue-91-h6", false, &draft),
+        (
+            "a ready head into a line",
+            "false\trelease/v0.4",
+            false,
+            &whole,
+        ),
+        ("a branch with no pull request", "", false, &whole),
+        (
+            "a branch that heads two pull requests",
+            "true\trelease/v0.4\ntrue\tmain",
+            false,
+            &whole,
+        ),
+        ("an unreadable list", "true\trelease/v0.4", true, &whole),
+    ] {
+        assert_eq!(
+            &decide_with(
+                "workflow_dispatch",
+                "",
+                "",
+                &direct,
+                "",
+                &[],
+                fail,
+                "claude/issue-91-h7",
+                pulls
+            ),
+            expected,
+            "§9.4: a dispatch on {what}"
+        );
+    }
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &direct,
+            "",
+            &[],
+            false,
+            "",
+            "true\tmain"
+        ),
+        whole,
+        "§9.4: a dispatch that names no branch is the whole gate"
+    );
+    // The tree a full run verified is not verified again when it is carried
+    // down equal-tree merges: a push of the carry, and a dispatch on a ready
+    // head that is the carry, find the run of the regenerated head two merges
+    // down; a run of another commit, or a draft, does not count.
+    let on_regenerated = format!("4242@{regenerated}");
+    assert_eq!(
+        decide("push", "", "main", &carried, &on_regenerated, &green, false),
+        nothing,
+        "§9.4: a push carrying a verified tree down two equal-tree merges"
+    );
+    assert_eq!(
+        decide(
+            "push",
+            "",
+            "main",
+            &carried,
+            &format!("4242@{direct}"),
+            &green,
+            false
+        ),
+        whole,
+        "§9.4: a run of a commit the carry does not reach"
+    );
+    // The walk is bounded as `release-gate.sh` bounds it: four merges below
+    // the pushed commit, and no fifth.
+    assert_eq!(
+        decide(
+            "push",
+            "",
+            "main",
+            &four_down,
+            &on_regenerated,
+            &green,
+            false
+        ),
+        nothing,
+        "§9.4: a verified tree four equal-tree merges below the push"
+    );
+    assert_eq!(
+        decide(
+            "push",
+            "",
+            "main",
+            &five_down,
+            &on_regenerated,
+            &green,
+            false
+        ),
+        whole,
+        "§9.4: a verified tree five merges below the push is beyond the release evidence's walk"
+    );
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &carried,
+            &on_regenerated,
+            &green,
+            false,
+            "release/v0.4",
+            "false\tmain"
+        ),
+        nothing,
+        "§9.4: a dispatch on a ready head whose tree a full run verified"
+    );
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &carried,
+            &format!("4242@{direct}"),
+            &green,
+            false,
+            "release/v0.4",
+            "false\tmain"
+        ),
+        whole,
+        "§9.4: a dispatch on a ready head no full run verified"
+    );
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &carried,
+            &on_regenerated,
+            &green,
+            false,
+            "release/v0.4",
+            "true\tmain"
+        ),
+        draft,
+        "§9.4: a draft head is planned as a draft whatever verified its tree"
     );
     assert_eq!(decide("push", "", "main", &direct, "", &[], false), whole);
     // A merge of its head's tree whose whole gate passed runs nothing.
@@ -533,8 +722,12 @@ fn plan_decisions() {
     let script_text = root_file(".github/ci-plan.sh");
     assert!(
         script_text.contains(".head_repository.full_name == \\\"$repo\\\"")
-            && script_text.contains("event=pull_request&status=success"),
-        "§9.4: only a passed pull request run of this repository counts"
+            && script_text.contains("runs?head_sha=$commit&status=success")
+            && script_text.contains(
+                "select(.event == \\\"pull_request\\\" or .event == \\\"workflow_dispatch\\\")"
+            )
+            && script_text.contains("select(.head.repo.full_name == \\\"$repo\\\")"),
+        "§9.4: only a passed pull request or dispatched run of this repository counts, and only this repository's pull request plans a dispatch"
     );
 }
 
@@ -898,7 +1091,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 494, "§31 has 494 rows");
+            assert_eq!(table.len(), 496, "§31 has 496 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -1037,6 +1230,15 @@ pub(crate) fn run(id: &str) {
             let (only_1_2, only_1_1) = support::introduced_later();
             let (ten, eleven, twelve) = support::semantics_ids(&borrowed);
             assert_eq!(twelve, recomputed, "RP-10: the 1.2 ID");
+            // §8.4: a build without production-data reports this constant in
+            // place of the ID it cannot compute. Nothing else would notice a
+            // stale one: that build locks and checks with it consistently.
+            assert_eq!(
+                lexlean::LANGUAGE_1_2_SEMANTICS_ID,
+                twelve.to_hex(),
+                "RP-10: lexlean::LANGUAGE_1_2_SEMANTICS_ID is stale; the tree's language-1.2 ID is {}",
+                twelve.to_hex()
+            );
             assert_eq!(
                 eleven,
                 lexlean::compiler_semantics_id_for("1.1"),
@@ -2290,7 +2492,8 @@ pub(crate) fn run(id: &str) {
                     && plan_job.contains("        run: .github/ci-plan.sh\n")
                     && plan_job.contains("          DRAFT: ${{ github.event.pull_request.draft }}\n")
                     && plan_job.contains("          BASE: ${{ github.event.pull_request.base.ref }}\n")
-                    && plan_job.contains("          EVENT: ${{ github.event_name }}\n"),
+                    && plan_job.contains("          EVENT: ${{ github.event_name }}\n")
+                    && plan_job.contains("          REF: ${{ github.ref_name }}\n"),
                 "§9.4: the plan runs the script on the event and the base branch, and may read the runs of the repository"
             );
             // The workflow runs the file as a command: a mode that is not
@@ -2419,8 +2622,277 @@ pub(crate) fn run(id: &str) {
         // §30.3: the crate that goes to crates.io is the crate the release
         // attaches, proved on every run, and uploaded only with a credential.
         "RP-18" => rp_18(),
+        // §8.4: a build without the production data checks and locks as the
+        // default build does, and refuses the work that needs that data.
+        "RP-19" => rp_19(),
         other => panic!("no repository case is wired for {other}"),
     }
+}
+
+/// RP-19: the binary built without `production-data`, held to the default
+/// build this harness links. The language-1.2 ID it reports is a constant,
+/// which RP-10 holds to the tree; here it must also land in the lock bytes,
+/// which is what a wrong constant would change while every verdict agreed.
+/// A file of the normative tree: its repository-relative path and its bytes,
+/// as `support::normative_rows` reads them.
+type NormativeRow = (String, Vec<u8>);
+
+/// How many bytes of a file witness that an image holds it: the whole file
+/// when it is short, else a window from its middle, past the header that
+/// every file of a kind repeats (RP-19).
+const WITNESS_BYTES: usize = 64;
+
+/// The witness of one file: its own bytes, or a window of them.
+fn witness_of(bytes: &[u8]) -> Vec<u8> {
+    if bytes.len() <= WITNESS_BYTES {
+        bytes.to_vec()
+    } else {
+        bytes[bytes.len() / 2 - WITNESS_BYTES / 2..][..WITNESS_BYTES].to_vec()
+    }
+}
+
+/// Which of `witnesses`, each a path and the bytes that witness it, occur in
+/// `image`, in one pass over it: a table of first bytes names the candidates
+/// at each position and only a candidate is compared, so the cost is the
+/// image's length and not its length times the inventory's size. RP-19 reads
+/// a binary of twenty-three megabytes against an inventory of thirty-one.
+fn witnessed(image: &[u8], witnesses: &[NormativeRow]) -> BTreeSet<String> {
+    let mut by_first: Vec<Vec<usize>> = vec![Vec::new(); 256];
+    for (index, (path, bytes)) in witnesses.iter().enumerate() {
+        assert!(!bytes.is_empty(), "{path}: a witness is not empty");
+        by_first[bytes[0] as usize].push(index);
+    }
+    let mut found = BTreeSet::new();
+    for (at, byte) in image.iter().enumerate() {
+        for index in &by_first[*byte as usize] {
+            let (path, witness) = &witnesses[*index];
+            if !found.contains(path) && image[at..].starts_with(witness) {
+                found.insert(path.clone());
+            }
+        }
+    }
+    found
+}
+
+fn rp_19() {
+    use lexlean::api::production::{
+        self, Expectation, PackageName, ProductionRequest, RootRequest, TargetRef, REQUEST_SPEC,
+    };
+    let root = support::repo_root();
+    let binary =
+        support::check_only_binary(&root).expect("the crate builds without its default features");
+
+    // The whole excluded inventory is bound to the built variant, not its
+    // largest file alone: a build that left the largest out and embedded any
+    // other would pass that and still break what RP-19 states. Every file of
+    // the inventory is witnessed by bytes of its own, and the image is read
+    // once for all of them.
+    let image = std::fs::read(binary.as_std_path()).expect("the binary is readable");
+    let rows = support::normative_rows();
+    let (library, retained_rows): (Vec<&NormativeRow>, Vec<&NormativeRow>) = rows
+        .iter()
+        .partition(|(path, _)| path.starts_with("language/preservation-1.2/library/"));
+    assert!(
+        library.len() > 10,
+        "RP-19: the excluded inventory is the library's files on disk"
+    );
+    let witnesses: Vec<NormativeRow> = library
+        .iter()
+        .map(|(path, bytes)| (path.clone(), witness_of(bytes)))
+        .collect();
+    // A file whose witness the retained data carries anyway cannot be told
+    // from that data in an image. Such a file is named here with its reason
+    // rather than passing in silence, and the reason is checked: its own
+    // bytes are embedded outside the library, so an image holding them holds
+    // no library source.
+    let retained: Vec<u8> = retained_rows
+        .iter()
+        .flat_map(|(_, bytes)| bytes.iter().copied().chain(std::iter::once(0)))
+        .collect();
+    let indistinguishable = witnessed(&retained, &witnesses);
+    for path in &indistinguishable {
+        let (_, bytes) = library
+            .iter()
+            .find(|(candidate, _)| candidate == path)
+            .expect("a file of the inventory");
+        let whole = vec![(path.clone(), bytes.clone())];
+        assert!(
+            !witnessed(&retained, &whole).is_empty(),
+            "RP-19: `{path}` cannot be told from the retained data in an image, and its own bytes are not part of that data; the inventory is not bound"
+        );
+    }
+    let found = witnessed(&image, &witnesses);
+    let embedded: Vec<&String> = found.difference(&indistinguishable).collect();
+    assert!(
+        embedded.is_empty(),
+        "RP-19: the build without production-data embeds {embedded:?} of `language/preservation-1.2/library/`"
+    );
+    // The scan finds what is there: the preservation data outside `library/`,
+    // which this build does embed, is found in the same image by the same
+    // method, so an absence above is an absence and not a broken search.
+    let siblings: Vec<NormativeRow> = retained_rows
+        .iter()
+        .filter(|(path, _)| path.starts_with("language/preservation-1.2/"))
+        .map(|(path, bytes)| (path.clone(), witness_of(bytes)))
+        .collect();
+    assert!(
+        siblings.len() > 1,
+        "RP-19: the retained preservation data is more than one file"
+    );
+    assert_eq!(
+        witnessed(&image, &siblings).len(),
+        siblings.len(),
+        "RP-19: the embedded preservation data outside `library/` is in the image"
+    );
+
+    let normalized =
+        |text: &str, project: &camino::Utf8Path| text.replace(project.as_str(), "<project>");
+    let same = |what: &str, linked: &support::P, built: &support::P, arguments: &[&str]| {
+        let (exit_a, out_a, err_a) = linked.cli(arguments);
+        let (exit_b, out_b, err_b) = support::cli_binary_in(&binary, &built.root, arguments);
+        assert_eq!(
+            exit_a,
+            exit_b,
+            "RP-19: {what}: `{}` exit code",
+            arguments.join(" ")
+        );
+        assert_eq!(
+            normalized(&out_a, &linked.root),
+            normalized(&out_b, &built.root),
+            "RP-19: {what}: `{}` stdout",
+            arguments.join(" ")
+        );
+        assert_eq!(
+            normalized(&err_a, &linked.root),
+            normalized(&err_b, &built.root),
+            "RP-19: {what}: `{}` stderr",
+            arguments.join(" ")
+        );
+    };
+
+    let (_, version, _) = support::cli_in(&root, &["--version"]);
+    let (exit, built_version, _) = support::cli_binary_in(&binary, &root, &["--version"]);
+    assert_eq!(exit, 0, "RP-19: --version");
+    // The same four lines, and a fifth that keeps it from passing for a
+    // release binary, which it cannot replace (§30.3).
+    assert_eq!(
+        format!(
+            "{version}variant check-only
+"
+        ),
+        built_version,
+        "RP-19: --version"
+    );
+
+    // A lock records its language's compiler-semantics ID, so equal lock
+    // bytes for a 1.0, 1.1, and 1.2 project are equal IDs.
+    for example in ["nat-add-zero", "semantic-1.1", "language-1.2", "production"] {
+        let linked = support::P::copy_example(example);
+        let built = support::P::copy_example(example);
+        for project in [&linked, &built] {
+            std::fs::remove_file(project.root.join("lexlean.lock").as_std_path())
+                .expect("the example has a lock");
+        }
+        same(example, &linked, &built, &["lock"]);
+        let lock = |project: &support::P| {
+            std::fs::read_to_string(project.root.join("lexlean.lock").as_std_path())
+                .expect("a lock was written")
+        };
+        assert_eq!(
+            lock(&linked),
+            lock(&built),
+            "RP-19: {example}: lexlean.lock bytes"
+        );
+        same(
+            example,
+            &linked,
+            &built,
+            &["--diagnostic-format", "json", "check"],
+        );
+    }
+    for negative in [
+        "type-parameter-capture",
+        "term-cases-scrutinee-not-inductive",
+        "induction-nested-type",
+    ] {
+        let linked = support::P::negative(negative);
+        let built = support::P::negative(negative);
+        same(
+            negative,
+            &linked,
+            &built,
+            &["--diagnostic-format", "json", "check"],
+        );
+    }
+
+    // The two commands that generate certificates are refused with LLC0205
+    // before any work is published: no build, verification, or export.
+    let refused = |project: &support::P, arguments: &[&str]| {
+        let (exit, out, err) = support::cli_binary_in(&binary, &project.root, arguments);
+        assert_eq!(
+            exit,
+            2,
+            "RP-19: `{}` exits 2: {out}{err}",
+            arguments.join(" ")
+        );
+        assert!(
+            out.contains("LLC0205") || err.contains("LLC0205"),
+            "RP-19: `{}` reports LLC0205: {out}{err}",
+            arguments.join(" ")
+        );
+        for area in ["build", "verified", "production"] {
+            assert!(
+                !project
+                    .root
+                    .join(".lexlean")
+                    .join(area)
+                    .as_std_path()
+                    .exists(),
+                "RP-19: `{}` published `.lexlean/{area}`",
+                arguments.join(" ")
+            );
+        }
+    };
+    let project = support::P::copy_example("production");
+    refused(&project, &["--diagnostic-format", "json", "verify"]);
+    let digests: std::collections::BTreeMap<String, lexlean::Sha256Digest> = production::targets()
+        .expect("targets")
+        .into_iter()
+        .map(|descriptor| (descriptor.id, descriptor.digest))
+        .collect();
+    let request = ProductionRequest {
+        spec: REQUEST_SPEC.to_owned(),
+        roots: vec![RootRequest {
+            root: "Production.Main.checkedSum".to_owned(),
+            package: PackageName {
+                name: "pkg".to_owned(),
+                version: "1.0.0".to_owned(),
+            },
+            targets: vec![TargetRef {
+                id: "rust-std".to_owned(),
+                digest: digests["rust-std"],
+            }],
+        }],
+        expect: Expectation::default(),
+        evidence: Vec::new(),
+    };
+    let project = support::P::copy_example("production");
+    std::fs::write(
+        project.root.join("request.json").as_std_path(),
+        serde_json::to_vec(&request).expect("the request serializes"),
+    )
+    .expect("write the request");
+    refused(
+        &project,
+        &[
+            "--diagnostic-format",
+            "json",
+            "production",
+            "build",
+            "--request",
+            "request.json",
+        ],
+    );
 }
 
 /// RP-16: every toolchain the Dockerfile installs is the pinned one. A Rust
@@ -3907,6 +4379,20 @@ fn release_gate_decisions() {
     git(&["commit", "-q", "-m", "main moves"]);
     git(&["merge", "-q", "--no-ff", "-m", "merge", "behind"]);
     let merge_different = git(&["rev-parse", "HEAD"]);
+    // A merge of the equal-tree merge: a cut's release merge carried on, two
+    // merges above the head whose run verified the tree.
+    git(&["checkout", "-q", "-b", "carried", &base]);
+    git(&["merge", "-q", "--no-ff", "-m", "carry", &merge_equal]);
+    let carried = git(&["rev-parse", "HEAD"]);
+    let mut deeper = carried.clone();
+    let mut chain = Vec::new();
+    for hop in 3..=5 {
+        git(&["checkout", "-q", "-b", &format!("carried-{hop}"), &base]);
+        git(&["merge", "-q", "--no-ff", "-m", "carry", &deeper]);
+        deeper = git(&["rev-parse", "HEAD"]);
+        chain.push(deeper.clone());
+    }
+    let (four_down, five_down) = (chain[1].clone(), chain[2].clone());
 
     // `gh`: the runs of a commit (`STUB_RUNS_<sha>`), the jobs of every run
     // (`STUB_JOBS`), and a download that writes one leg's transcript.
@@ -4015,6 +4501,22 @@ fn release_gate_decisions() {
         evidence.contains(&format!("gate run commit {head} (the second parent")),
         "the evidence names the parent:\n{evidence}"
     );
+    // Two equal-tree merges above the head: the head's run, as the plan finds
+    // it for the push it ran nothing for.
+    let (code, evidence, stderr) = decide(&carried, &[(head.as_str(), run_line("25"))], &green);
+    assert_eq!(
+        code, 0,
+        "the run two equal-tree merges down is the evidence: {stderr}"
+    );
+    assert!(
+        evidence.contains(&format!("gate run commit {head} (the second parent")),
+        "the evidence names the head:\n{evidence}"
+    );
+    // Four merges is the bound the plan shares; a fifth is refused.
+    let (code, _, stderr) = decide(&four_down, &[(head.as_str(), run_line("26"))], &green);
+    assert_eq!(code, 0, "four equal-tree merges down: {stderr}");
+    let (code, _, _) = decide(&five_down, &[(head.as_str(), run_line("27"))], &green);
+    assert_eq!(code, 1, "five equal-tree merges down is beyond the walk");
     // A merge whose tree no run verified: the parent's run is not evidence.
     let (code, _, stderr) = decide(
         &merge_different,
