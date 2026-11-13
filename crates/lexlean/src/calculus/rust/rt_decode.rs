@@ -17,6 +17,9 @@ pub const MODULE_PATH: &str = "language/rust-runtime-1.2/RuntimeSupport.lex.tex"
 /// Where the module of the std runtime's types, impls, and helpers is.
 pub const STD_PATH: &str = "language/rust-runtime-1.2/RuntimeStd.lex.tex";
 
+/// Where the module of the command driver is.
+pub const HOST_PATH: &str = "language/rust-runtime-1.2/RuntimeHost.lex.tex";
+
 const SYNTAX: &str = "RuntimeSyntax";
 
 impl<'a> Reader<'a> {
@@ -469,6 +472,13 @@ impl<'a> Reader<'a> {
                 let a = take(2)?;
                 Item::InnerAttr(self.string(&a[0], "an attribute")?, self.names(&a[1])?)
             }
+            "cfgItem" => {
+                let a = take(2)?;
+                Item::Cfg(
+                    self.string(&a[0], "a condition")?,
+                    Box::new(self.rt_item(&a[1])?),
+                )
+            }
             other => return fail(format!("`RtItem.{other}` is not an item")),
         })
     }
@@ -522,6 +532,17 @@ pub fn decode_std(source: &str) -> Result<Crate, String> {
     decode_at(STD_PATH, source, "stdSupportCrate")
 }
 
+/// Decode the crate a `RuntimeHost` module defines as `name`: `hostBase`,
+/// `stepFallible`, `stepPlain`, `filesOn`, `filesOff`, `processOn`, or
+/// `processOff`.
+///
+/// # Errors
+///
+/// The first rule the module breaks, as for [`decode`].
+pub fn decode_host(source: &str, name: &str) -> Result<Crate, String> {
+    decode_at(HOST_PATH, source, name)
+}
+
 fn decode_at(path: &str, source: &str, name: &str) -> Result<Crate, String> {
     with_reader(path, source, |reader| {
         let Some(support) = reader.definitions.get(name) else {
@@ -538,6 +559,15 @@ fn decode_at(path: &str, source: &str, name: &str) -> Result<Crate, String> {
 /// The module is not in the embedded tree, or is not UTF-8.
 pub fn embedded() -> Result<&'static str, String> {
     embedded_file(MODULE_PATH)
+}
+
+/// The text of the embedded `RuntimeHost` module.
+///
+/// # Errors
+///
+/// The module is not in the embedded tree, or is not UTF-8.
+pub fn embedded_host() -> Result<&'static str, String> {
+    embedded_file(HOST_PATH)
 }
 
 /// The text of the embedded `RuntimeStd` module.

@@ -2873,6 +2873,7 @@ pub fn rustc_differential(project: &P, certified: &[Certified], example: &str) -
                     .collect(),
                 sources: Vec::new(),
                 effects: Vec::new(),
+                entry: None,
             }
             .showing_effects();
             let rendered = package(&manifest)
