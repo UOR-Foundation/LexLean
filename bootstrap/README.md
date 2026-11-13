@@ -58,3 +58,6 @@ canonical project manifest of SPEC.md §10.1 and its digest.
 `src/CoreJson.lex.tex` (SPEC.md §17.23, `BS-38`) defines the kernel terms of a core module as
 inductives and imports the standard library's `Json`, whose writer it writes each declaration
 with, `Numeral`, `Order`, and `Text`, and `SurfaceLex`, whose `quoteText` escapes its strings.
+`src/CorePrint.lex.tex` (SPEC.md §17.23, `BS-39`) imports `CoreJson`, whose module types it
+prints, `AxiomOutput`, `SurfaceDoc`, `SurfaceGeneric`, `SurfaceLex`, and the standard library's
+`Json`, `Numeral`, `Order`, and `Text`.

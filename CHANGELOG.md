@@ -17,6 +17,11 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The printer of the core notation as language-1.2 source (SPEC.md §17.23,
+  §17.21, `BS-39`, #269; no new diagnostic code, no change to the
+  language-1.2 identity). `printCoreModule` of `CorePrint` returns what
+  `surface::core::print_module` returns and admits `recursion`. The register
+  is 495 IDs.
 - The canonical JSON of a native core module as language-1.2 source
   (SPEC.md §17.23, §17.10, §21.7, `BS-38`, #269; no new diagnostic code, no
   change to the language-1.2 identity). `coreJson` of `CoreJson` returns what
