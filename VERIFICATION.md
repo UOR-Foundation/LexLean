@@ -11695,6 +11695,45 @@ produces the three packages and measures the row of `print_tooling_module` in
 `tests/stack-bounds.json` (`PD-08`). The branch is stacked on `BS-24` and lands
 after it.
 
+### the grammar of a mathematical island is source (BS-42)
+
+`BS-42` holds the production root `LexLeanBoot.GrammarMath.parseMath`
+(`bootstrap/src/GrammarMath.lex.tex`) to `grammar::math::parse_math`: the covers
+of an island's atom range, or the refusal's code, message, and span. The glossary
+closure belongs to the lexicon, so the root takes its projection as the host's
+input (the math-channel edges at each atom position with their forms' frame,
+precedence, and associativity, the limits, and the budget spent before); it keeps
+the lattice's edge counter and memo itself, so every `LLS8002` falls where the
+oracle's does. The Pratt parser is a stack of frames under `iterate_until` and
+the segmentations are the oracle's worklist, so the root admits no `recursion`.
+The case builds the projection from a real closure, the built-in packages and a
+lexicon package of the case's own whose entries (`lean` denotations of `Not`,
+`Eq`, and `rfl`) reach what the committed lexicons never write: a postfix form,
+prefix and operator candidates that disagree on their profile, a surface that is
+both a prefix operator and a leaf, and leaves of two atoms that branch the token
+lattice. It holds the root to the oracle on those vectors, on the committed
+islands, and on seeded islands. Each planted defect names the one vector that
+catches it, and the case asserts that the site of each plant occurs once. One
+test of the oracle cannot be planted: a comma after the expression is bindable by
+the comma form of `lexlean.core`, which every closure holds, whatever the
+module's own test says. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `GrammarMath`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and Lean's audit reports no axiom.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace` (209 s). Its corpus is 74 named vectors, 509 committed islands (169
+under the evaluator, all under rustc), and 300 and 3,000 seeded islands. The
+evaluator agrees with the oracle on 543 runs and the rendered package under the
+pinned rustc on 3,583, and each of the 26 planted defects is detected by its own
+vector. The first runs found no fault of the module and two of the case: its
+lexicon package used core denotations, which only `lexlean.core` may use, and
+two of its surfaces were not renderer-safe in the math channel. The case then
+stops at the stack-bound step, `bootstrap/parse_math is no package of the
+committed exports`, as each bootstrap member did before its regeneration. The
+branch is based on `release/v0.4` and stacks on nothing.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

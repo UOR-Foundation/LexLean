@@ -358,5 +358,14 @@
     "width": "",
     "memory_kib": "",
     "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-grammar-math",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-grammar-math",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
   }
 ]

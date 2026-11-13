@@ -25,6 +25,7 @@ use crate::support::{self, P};
 mod cli_output;
 mod diagnostics;
 mod gnaf_validate;
+mod grammar_math;
 mod lexicon_lre;
 mod lexicon_lse;
 mod lock_text;
@@ -2574,6 +2575,7 @@ fn case(id: &str) {
         "BS-32" => content_id::case(),
         "BS-33" => project_text::case(),
         "BS-34" => manifest_text::case(),
+        "BS-42" => grammar_math::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }
