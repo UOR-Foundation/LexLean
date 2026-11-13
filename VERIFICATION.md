@@ -39,6 +39,32 @@ Outside `vv`:
 
 ## Falsifiability records
 
+### absent inspection origins remain unavailable
+
+The mixed `True`, absent-name, `Eq.refl` case in `conformance_vr_28` initially
+failed with `lean.unknownIdentifier`: checked name quotation rejected the absent
+name before the adapter could inspect it. The inspection driver now constructs
+structural `Lean.Name` values. The same test passes with pinned Lean 4.32.1:
+the two present rows have native goals, the absent row has a null type and an
+explicit unrepresentable reason, and insufficient traversal fuel still refuses
+the complete report. An absence row is never proof acceptance.
+
+### compiler identity requires a clean semantic input tree
+
+A clean CI build of revision `eadeff7cfe` reported language-1.2 identity
+`91d8c0b208d5226c5cd8db1761372e17ccad485a604168a54a83455e4ad30ff7`,
+while the earlier local compiler and locks reported
+`2e4c0ddd6084eba8fa99f04ab0235bfc5775dbc0455216b6ec51abe8ce8d9750`.
+The local embedded inventory included generated
+`language/lcnf-1.2/tooling/lexlean.lock` and
+`language/lcnf-1.2/tooling/.lexlean/.lock`. The build script intentionally embeds
+every regular semantic input; ignored generated files in that tree therefore
+change the identity. Build from a clean semantic tree and run tooling commands
+in scratch copies. Before freezing the corrected compiler, compare its generated
+embedded inventory and input bytes with the committed semantic files, regenerate
+project locks using that compiler, and run `conformance_rp_10` to check the
+embedded identity against the disk recomputation and project locks.
+
 ### large certificate child budgets can fail
 
 Rule30's combined autonomous controller failed certificate-B elaboration with

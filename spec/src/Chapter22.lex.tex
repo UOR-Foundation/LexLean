@@ -1109,7 +1109,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The compiler renders its embedded LexLean tooling adapter through the typed tooling backend and checks the pinned toolchain and registered authority signatures before use. The adapter obtains each declaration's actual kernel type and universe parameters from the loaded environment. It preserves structural names, universes, binder visibility, lambdas, dependent functions, lets, literals and projections; metadata annotations may be omitted because they do not change the kernel type. It rejects free variables, expression metavariables and universe metavariables. A shared traversal budget covers repeated occurrences, names and universes before invoking serialization, so expanding a shared expression cannot bypass the bounds. Budget exhaustion refuses the inspection; it never substitutes a truncated type." (nil String))
+      (cons "The compiler renders its embedded LexLean tooling adapter through the typed tooling backend and checks the pinned toolchain and registered authority signatures before use. For each declaration present in the loaded environment, the adapter obtains its actual kernel type and universe parameters. An absent declaration retains its requested structural name and position with empty parameters and a null type; its native-core view reports that the declaration was not found and supplies no goal arena. An absent name consumes the shared name-traversal budget and does not prevent inspection of other requested declarations. The adapter preserves structural names, universes, binder visibility, lambdas, dependent functions, lets, literals and projections; metadata annotations may be omitted because they do not change the kernel type. It rejects free variables, expression metavariables and universe metavariables. A shared traversal budget covers repeated occurrences, names and universes before invoking serialization, so expanding a shared expression cannot bypass the bounds. Budget exhaustion refuses the whole inspection; it never substitutes a truncated type or an absence row for an unresolved or over-budget type." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1123,7 +1123,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "The result binds the admitted import and declaration request, compiler identity and actual tool identities to the bounded process record and inspected data. Only a normal successful owned process with the exact output schema produces an inspection result. A malformed, noisy, timed-out or interrupted adapter fails without accepted inspection output. The caller remains responsible for owning and pinning the imported library build; inspection data alone establishes neither that ownership nor a theorem's proof acceptance." (nil String))
+      (cons "The result binds the admitted import and declaration request, compiler identity and actual tool identities to the bounded process record and inspected data. Requested declaration count, structural names and order remain exact, including absent-declaration rows; a null type with nonempty parameters is malformed. Only a normal successful owned process with the exact output schema produces an inspection result. A malformed, noisy, timed-out or interrupted adapter fails without accepted inspection output. The caller remains responsible for owning and pinning the imported library build; inspection data alone establishes neither that ownership nor a theorem's proof acceptance." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []
@@ -1137,7 +1137,7 @@ definition{
   result: DocRows::Item,
   body: constructor{
     arguments: [
-      (cons "Each declaration also carries a native-core view when its names and expressions are representable by the native-core schema. That view preserves universe parameters, binder visibility, natural literals and scalar-valued string literals and uses only backward arena references. When a kernel projection has no reported elaborator projection label, or a structural name is outside the native-core name schema, the view explicitly reports why it is unrepresentable; the complete structural kernel type remains available. Neither form is a proof candidate or acceptance receipt." (nil String))
+      (cons "Each present declaration also carries a native-core view when its names and expressions are representable by the native-core schema. That view preserves universe parameters, binder visibility, natural literals and scalar-valued string literals and uses only backward arena references. When a kernel projection has no reported elaborator projection label, or a structural name is outside the native-core name schema, the view explicitly reports why it is unrepresentable; the complete structural kernel type remains available. An absent declaration uses the same unrepresentable native status with an explicit missing-declaration reason, while its structural type is null. Neither form is a proof candidate or acceptance receipt." (nil String))
     ],
     constructor: DocRows::Item.para,
     type_arguments: []

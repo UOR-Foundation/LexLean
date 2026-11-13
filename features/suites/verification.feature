@@ -7,6 +7,7 @@ Feature: verification
     Given the pinned local Lean environment and the embedded typed inspection adapter
     When declarations with universe parameters and implicit binders are inspected
     Then the report preserves their complete structural kernel types without a verification attestation
+    And an absent declaration retains its ordered row without a native goal while other declarations remain inspectable
     And exhausted node or depth budgets refuse inspection without truncated output
     And malformed requests and unresolved terms cannot produce accepted inspection data
 

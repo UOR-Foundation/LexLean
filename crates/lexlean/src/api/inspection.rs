@@ -44,6 +44,7 @@ struct LeanIdentity {
 struct Declaration {
     name: serde_json::Value,
     parameters: Vec<serde_json::Value>,
+    // Null is the owned adapter's explicit absent-declaration row, not a type.
     #[serde(rename = "type")]
     ty: serde_json::Value,
 }
@@ -73,6 +74,7 @@ fn structural_name(name: &str) -> serde_json::Value {
 
 /// Inspect exact kernel types through the embedded LexLean-authored adapter.
 /// No caller-supplied type or receipt participates in the result.
+/// An absent declaration retains its requested row with no type or native goal.
 ///
 /// # Errors
 /// Rejects invalid bounds/names, toolchain drift, failed or noisy processes,
@@ -167,6 +169,10 @@ pub fn inspect(engine: &Engine, request: &InspectionRequest) -> Result<Vec<u8>, 
         || raw.lean.version != "4.32.1"
         || raw.lean.githash != "f054605aea4b840552cca2e725580bffd1e1b704"
         || raw.declarations.len() != request.declarations.len()
+        || raw
+            .declarations
+            .iter()
+            .any(|row| row.ty.is_null() && !row.parameters.is_empty())
         || raw
             .declarations
             .iter()

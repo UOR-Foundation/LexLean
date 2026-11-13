@@ -239,8 +239,25 @@ pub fn inspection_driver(
                 },
                 elements: names
                     .iter()
-                    .map(|name| ToolTerm::Name {
-                        value: name.clone(),
+                    .map(|name| {
+                        // Checked name quotations reject absent declarations before inspection.
+                        name.split('.').fold(
+                            ToolTerm::Construct {
+                                constructor: "Lean.Name.anonymous".to_owned(),
+                                type_arguments: Vec::new(),
+                                arguments: Vec::new(),
+                            },
+                            |parent, component| ToolTerm::Construct {
+                                constructor: "Lean.Name.str".to_owned(),
+                                type_arguments: Vec::new(),
+                                arguments: vec![
+                                    parent,
+                                    ToolTerm::String {
+                                        value: component.to_owned(),
+                                    },
+                                ],
+                            },
+                        )
                     })
                     .collect(),
             },

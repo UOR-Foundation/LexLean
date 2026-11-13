@@ -81,6 +81,73 @@ pub(crate) fn run(id: &str) {
             .as_array()
             .expect("universe parameters")
             .is_empty());
+        let (exit, _, errors) = project.cli(&[
+            "inspect",
+            "--import",
+            "Init",
+            "--declaration",
+            "True",
+            "--declaration",
+            "LexLeanInspectionMissing.absent",
+            "--declaration",
+            "Eq.refl",
+            "--max-nodes",
+            "4096",
+            "--max-depth",
+            "64",
+            "--out",
+            "mixed-inspection.json",
+        ]);
+        assert_eq!(
+            exit, 0,
+            "one absent name must not abort other rows: {errors}"
+        );
+        let mixed: serde_json::Value = serde_json::from_slice(
+            &std::fs::read(project.root.join("mixed-inspection.json")).expect("mixed report"),
+        )
+        .expect("mixed inspection JSON");
+        let rows = mixed["declarations"].as_array().expect("declaration rows");
+        assert_eq!(rows.len(), 3);
+        assert_eq!(rows[0]["name"], serde_json::json!({"str": [null, "True"]}));
+        assert_eq!(rows[0]["native"]["status"], "available");
+        assert_eq!(
+            rows[1]["name"],
+            serde_json::json!({"str": [{"str": [null, "LexLeanInspectionMissing"]}, "absent"]})
+        );
+        assert_eq!(rows[1]["parameters"], serde_json::json!([]));
+        assert!(rows[1]["type"].is_null());
+        assert_eq!(rows[1]["native"]["status"], "unrepresentable");
+        assert_eq!(
+            rows[1]["native"]["reason"],
+            "declaration not found in the inspected environment"
+        );
+        assert!(rows[1]["native"].get("nodes").is_none());
+        assert_eq!(
+            rows[2]["name"],
+            serde_json::json!({"str": [{"str": [null, "Eq"]}, "refl"]})
+        );
+        assert_eq!(rows[2]["native"]["status"], "available");
+        assert_eq!(mixed["process"]["exit_code"], 0);
+        assert_eq!(
+            mixed["request"]["declarations"],
+            serde_json::json!(["True", "LexLeanInspectionMissing.absent", "Eq.refl"])
+        );
+        assert!(mixed.get("attestation_id").is_none());
+        let (exit, _, _) = project.cli(&[
+            "inspect",
+            "--import",
+            "Init",
+            "--declaration",
+            "LexLeanInspectionMissing.absent",
+            "--max-nodes",
+            "1",
+            "--max-depth",
+            "1",
+            "--out",
+            "absent-over-budget.json",
+        ]);
+        assert_ne!(exit, 0, "absent names must still consume the shared budget");
+        assert!(!project.root.join("absent-over-budget.json").exists());
         let (exit, _, _) = project.cli(&[
             "inspect",
             "--import",

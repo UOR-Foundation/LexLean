@@ -180,6 +180,11 @@ fn expression(value: &Value, nodes: &mut Vec<CoreNode>) -> Result<usize, String>
 }
 
 pub(super) fn convert(ty: &Value, parameters: &[Value]) -> NativeType {
+    if ty.is_null() && parameters.is_empty() {
+        return NativeType::Unrepresentable {
+            reason: "declaration not found in the inspected environment".to_owned(),
+        };
+    }
     let converted = (|| {
         let levels = parameters.iter().map(name).collect::<Result<Vec<_>, _>>()?;
         let mut nodes = Vec::new();
@@ -200,6 +205,18 @@ pub(super) fn convert(ty: &Value, parameters: &[Value]) -> NativeType {
 mod tests {
     use super::*;
     use serde_json::json;
+
+    #[test]
+    fn absent_declaration_has_no_native_goal() {
+        let result = serde_json::to_value(convert(&Value::Null, &[])).unwrap();
+        assert_eq!(result["status"], "unrepresentable");
+        assert_eq!(
+            result["reason"],
+            "declaration not found in the inspected environment"
+        );
+        assert!(result.get("nodes").is_none());
+        assert!(result.get("root").is_none());
+    }
 
     #[test]
     fn structural_name_components_remain_distinct() {
