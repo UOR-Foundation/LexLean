@@ -100,17 +100,19 @@ jobs:
       - name: Reserve bounded overflow memory for the proofs
         run: |
           set -euo pipefail
-          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-case.swap"
+          sudo fallocate -l 24G "$RUNNER_TEMP/lexlean-case.swap"
           sudo chmod 600 "$RUNNER_TEMP/lexlean-case.swap"
           sudo mkswap "$RUNNER_TEMP/lexlean-case.swap"
           sudo swapon "$RUNNER_TEMP/lexlean-case.swap"
       - name: Measure
         shell: bash
         env:
-          LEXLEAN_VERIFY_WIDTH: "2"
+          LEXLEAN_VERIFY_WIDTH: "1"
+          RUST_TEST_THREADS: "1"
           LEXLEAN_VERIFY_MEMORY_KIB: "12582912"
         run: |
           set -uo pipefail
+          (while sleep 60; do echo "MEM $(date -u +%H:%M) $(free -m | awk '/Mem:/{printf "used %s avail %s ", $3, $7} /Swap:/{printf "swap %s", $3}')"; done) &
           # No Lean here: the case measures in its rustc step and stops at its
           # Lean-backed export, so the record is uploaded either way.
           LEXLEAN_MEASURE_STACK=all cargo test -p repo-conformance --all-features --test conformance -- --exact ${{ matrix.case }} --nocapture 2>&1 \
