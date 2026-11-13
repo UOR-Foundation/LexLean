@@ -17,6 +17,18 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Breaking security update: replace the single Lean 4.32.1 pin with
+  `leanprover/lean4:v4.32.2`, source commit
+  `f3b06c705e6c85f5314019d5d3baab0fec5b580c` (SPEC.md §8.2). The
+  [upstream point release](https://lean-lang.org/doc/reference/latest/releases/v4.32.2/)
+  fixes the nested-inductive kernel soundness issue
+  [leanprover/lean4#14576](https://github.com/leanprover/lean4/issues/14576).
+  All three compiler-semantics identities change; projects and generated
+  evidence must be regenerated under the new pin. The older toolchain is
+  refused. Historical evidence and frozen language-1.0/1.1 runtime text
+  retain their original bytes. This is a patch migration, not the separate
+  Lean 4.33.1 feature upgrade.
+
 - Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
   new diagnostic code; changes the language-1.2 identity). The runtime gains a
   sixth native module, `LexLeanRuntime.Regions`: a checker of local box

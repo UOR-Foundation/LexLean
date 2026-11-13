@@ -162,7 +162,7 @@ fn recompute(json: &str, name: &str, references: &[(&str, &str)]) -> String {
         &lexlean::compiler_semantics_id_for("1.2").0,
     );
     frame(&mut group, "language", b"1.2");
-    frame(&mut group, "toolchain", b"leanprover/lean4:v4.32.1");
+    frame(&mut group, "toolchain", b"leanprover/lean4:v4.32.2");
     frame(&mut group, "declaration", json.as_bytes());
     for (reference, id) in references {
         frame(&mut group, "reference", reference.as_bytes());

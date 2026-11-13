@@ -3770,7 +3770,7 @@ fn bootstrap_custody_decisions() {
     .map(|(name, digest)| (name.to_owned(), digest))
     .collect();
     let toolchains: BTreeMap<String, String> =
-        [("lean", "Lean (version 4.32.1)"), ("rustc", "rustc 1.97.1")]
+        [("lean", "Lean (version 4.32.2)"), ("rustc", "rustc 1.97.1")]
             .into_iter()
             .map(|(name, text)| (name.to_owned(), text.to_owned()))
             .collect();

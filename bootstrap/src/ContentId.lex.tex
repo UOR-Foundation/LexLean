@@ -100,7 +100,7 @@ definition{
     lexiconClosure : Bytes
   ],
   result: Bytes,
-  body: (framedHash (lit "lexlean-semantic-v1") (cat (cat (cat (cat (frame (lit "compiler-semantics") compilerSemantics) (frame (lit "language") language)) (frame (lit "toolchain") (lit "leanprover/lean4:v4.32.1"))) (frame (lit "linked-ir") linkedIr)) (frame (lit "lexicon-closure") lexiconClosure))),
+  body: (framedHash (lit "lexlean-semantic-v1") (cat (cat (cat (cat (frame (lit "compiler-semantics") compilerSemantics) (frame (lit "language") language)) (frame (lit "toolchain") (lit "leanprover/lean4:v4.32.2"))) (frame (lit "linked-ir") linkedIr)) (frame (lit "lexicon-closure") lexiconClosure))),
   axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow], targets: [rust-std]}

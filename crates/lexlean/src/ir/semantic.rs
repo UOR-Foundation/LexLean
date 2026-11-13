@@ -10340,7 +10340,7 @@ mod family_order_tests {
 
     /// `A | c1 : List (Option A) -> List A -> A | c2 : Option (List A) -> A * A -> A
     /// | c3 : Result A Nat -> A`: the motives of the recursor the pinned Lean
-    /// 4.32.1 generates for it are, in order, `A`, `List (Option A)`,
+    /// 4.32.2 generates for it are, in order, `A`, `List (Option A)`,
     /// `List A`, `Option (List A)`, `A * A`, `Except Nat A`, `Option A`
     /// (checked with `#check @A.rec`): the maximal nested applications of the
     /// fields of `A`'s constructors in field order, and only then those found

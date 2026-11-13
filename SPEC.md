@@ -534,7 +534,7 @@ The workspace uses Rust edition 2021 and MSRV 1.97. The shipped crate MUST compi
 LexLean language 1.0 is pinned to:
 
 ```text
-leanprover/lean4:v4.32.1
+leanprover/lean4:v4.32.2
 ```
 
 The repository-root `lean-toolchain` file MUST contain exactly that line followed by LF.
@@ -542,10 +542,10 @@ The repository-root `lean-toolchain` file MUST contain exactly that line followe
 The corresponding Lean tag resolves to source commit:
 
 ```text
-f054605aea4b840552cca2e725580bffd1e1b704
+f3b06c705e6c85f5314019d5d3baab0fec5b580c
 ```
 
-LexLean MUST reject a verification environment whose reported Lean version is not 4.32.1. The verification attestation records the SHA-256 digest of the actual `lean`, `lake`, and `leanchecker` executables used, so platform-specific executable bytes do not need to be assumed identical.
+LexLean MUST reject a verification environment whose reported Lean version is not 4.32.2. The verification attestation records the SHA-256 digest of the actual `lean`, `lake`, and `leanchecker` executables used, so platform-specific executable bytes do not need to be assumed identical.
 
 ### 8.3 Supported hosts
 
@@ -680,14 +680,14 @@ The development container MUST install:
 - `just`;
 - `cargo-deny`;
 - `elan`;
-- `leanprover/lean4:v4.32.1`;
+- `leanprover/lean4:v4.32.2`;
 - the Rust Analyzer and Lean 4 editor extensions.
 
 Its image MUST install the pinned Rust and Lean toolchains at build, so that nothing is fetched when a session starts, and MUST NOT select an unpinned default; `RP-16` reads the Dockerfile against `rust-toolchain.toml` and `lean-toolchain`. The container configuration is development support; verification still performs its own version and digest preflight.
 
 ### 9.4 Continuous integration
 
-`ci.yml` MUST run every recipe of `just vv` from a clean checkout on Linux x86-64. It MUST install the exact Rust toolchain, Lean 4.32.1 through `elan`, `just`, and `cargo-deny`.
+`ci.yml` MUST run every recipe of `just vv` from a clean checkout on Linux x86-64. It MUST install the exact Rust toolchain, Lean 4.32.2 through `elan`, `just`, and `cargo-deny`.
 
 **What a run is.** `ci.yml` starts with the job `plan`, which decides from the event and the repository alone, through `.github/ci-plan.sh`, what the run is before any job that costs a runner starts. A pull request that is a draft runs the initial honesty part then the `rest` leg: a head pushed again before it is final costs these two jobs and not the full gate, the run is a development signal, and a draft is not mergeable on it; marking the pull request ready, and every push to it after, run the whole gate. So is a ready pull request whose base branch is neither `main` nor a `release/*` line (a stacked pull request, whose base is another feature branch): only a pull request into `main` or a release line can land on a line, that pull request runs the whole gate on the tree it lands, and the stacked run says in its step summary that the base is why it runs honesty then the `rest` leg. A ready pull request into `main` or a release line, a `workflow_dispatch`, and a push to `main` or to a release line are the whole gate, every job below. One push to `main` or to a release line is not: when it is a merge commit whose tree is the tree of its second parent (a pull request head that already contained `main`) and a run of this workflow for that parent as a pull request of this repository passed every job, with none skipped, the join of Atlas, every host of §8.3, and every leg of `.github/vv-rows.json` among them, the push runs no job but the plan, which records the run: the tree it lands is byte for byte the tree that run verified, on the same runners and with the same pins. Any other push to `main` or to a release line, including one the plan cannot decide (a failed query, no run, a run of a draft, a merge that changed the tree, a push that is no merge), is the whole gate. `release.yml` consumes the complete same-tree gate evidence described below. `RP-14` runs the script against planted events, among them a ready pull request into a feature branch, into a release line, and into `main`, and a plant in it fails the case, and reads the CI and reproducibility workflows' push triggers, which name `main` and `release/**`.
 
@@ -744,7 +744,7 @@ entrypoints = ["src/Main.lex.tex"]
 build_root = ".lexlean"
 lockfile = "lexlean.lock"
 lean_workspace = "."
-lean_toolchain = "leanprover/lean4:v4.32.1"
+lean_toolchain = "leanprover/lean4:v4.32.2"
 
 [[lexicon_source]]
 package = "lexlean.std.nat"
@@ -915,7 +915,7 @@ spec = "lexlean/lock/1"
 language = "1.0"
 compiler_semantics = "64-lowercase-hex-digits"
 project_config_sha256 = "64-lowercase-hex-digits"
-lean_toolchain = "leanprover/lean4:v4.32.1"
+lean_toolchain = "leanprover/lean4:v4.32.2"
 
 [[workspace_file]]
 path = "lean-toolchain"
@@ -2737,7 +2737,7 @@ constructors of two members can share a name (`nil` of `List Json` and of
 `List (String * Json)`), which `induction … with` refuses. LexLean synthesizes no induction
 principle: it names the one Lean generated, as §16.9 says for `induction`, and the proof
 carries no tactic, option, or lemma. It adds no axiom of its own: the theorem's policy states
-the exact set the pinned Lean observes, which for the example's theorem under Lean 4.32.1 is
+the exact set the pinned Lean observes, which for the example's theorem under Lean 4.32.2 is
 `propext` and `Quot.sound`. The linker refuses, as `LLT4001`, a use in language
 1.1; a scrutinee that is not a theorem parameter whose type is a document inductive that
 holds itself under a container and lies in no mutual group (a type with no nested field is
@@ -3085,7 +3085,7 @@ Termination evidence is semantic data, never tactic or backend text; no
    so `Rose Item | node : Item -> List (Rose Item)` at `Rose (Rose Nat)` has
    the two members `Rose (Rose Nat)` and `List (Rose (Rose Nat))`, as
    `Rose.rec` has two motives at any instantiation. These are the motives of the recursor the
-   pinned Lean 4.32.1 generates for the group (`#check @T.rec`), in its
+   pinned Lean 4.32.2 generates for the group (`#check @T.rec`), in its
    order: for `Json` with `array (List Json)` and `object (List (String *
    Json))`, `Json`, `List Json`, `List (String * Json)`, and `String *
    Json`, so a group may decrease on any of the four, and a list of pairs
@@ -9593,7 +9593,7 @@ entry_schema = "lexlean/entry/1"
 lean_backend = "3"
 latex_backend = "2"
 proof_lowering = "1"
-axiom_parser = "lean-4.32.1/2"
+axiom_parser = "lean-4.32.2/2"
 canonical_json = "1"
 ```
 
@@ -9696,7 +9696,7 @@ SHA256(
   "lexlean-semantic-v1\0"
   || frame("compiler-semantics", compiler_semantics_digest_bytes)
   || frame("language", "1.0")
-  || frame("toolchain", "leanprover/lean4:v4.32.1")
+  || frame("toolchain", "leanprover/lean4:v4.32.2")
   || frame("linked-ir", canonical_linked_ir_json)
   || frame("lexicon-closure", canonical_linked_lexicon_json)
 )
@@ -9759,7 +9759,7 @@ and its distinction from the verification evidence of §22.
   "source_id": "...",
   "semantic_id": "...",
   "build_id": "...",
-  "lean_toolchain": "leanprover/lean4:v4.32.1",
+  "lean_toolchain": "leanprover/lean4:v4.32.2",
   "selection": [],
   "modules": [],
   "inputs": [],
@@ -9840,7 +9840,7 @@ group_digest(G) = SHA256(
   "lexlean-declaration-group-v1 "
   || frame("compiler-semantics", compiler_semantics_digest_bytes)
   || frame("language", "1.2")
-  || frame("toolchain", "leanprover/lean4:v4.32.1")
+  || frame("toolchain", "leanprover/lean4:v4.32.2")
   || for each member of G in (module, name) order:
        frame("declaration", canonical_declaration_json)
   || for each reference from a member of G to a declaration outside G,
@@ -9865,7 +9865,7 @@ statement_id(T) = SHA256(
   "lexlean-statement-v1 "
   || frame("compiler-semantics", compiler_semantics_digest_bytes)
   || frame("language", "1.2")
-  || frame("toolchain", "leanprover/lean4:v4.32.1")
+  || frame("toolchain", "leanprover/lean4:v4.32.2")
   || frame("statement", canonical_declaration_json_without_proof)
   || for each reference of that JSON, other than T itself, in (module, name)
      order, framed as for a group
@@ -9962,7 +9962,7 @@ This replay checks the newly loaded environment through Lean's kernel and is int
 
 ### 22.5 Axiom output
 
-With Lean 4.32.1, the accepted normalized payloads for one declaration are exactly:
+With Lean 4.32.2, the accepted normalized payloads for one declaration are exactly:
 
 ```text
 '<name>' does not depend on any axioms
@@ -10107,7 +10107,7 @@ There is no timestamp in the hashed attestation. Digital signing is outside lang
 
 A LexLean-authored compiler consumes verified generated Lean only through
 Lean's own compiler front end, at one explicit authority boundary. Lean's
-behavior there is an external authority (`LEAN-LCNF-4-32-1`), cited and pinned,
+behavior there is an external authority (`LEAN-LCNF-4-32-2`), cited and pinned,
 never a LexLean-proved fact.
 
 **Authority interface.** The adapter is a *tooling module* (§17.20): the one
@@ -10116,8 +10116,8 @@ the closed interface of every constant the adapter's own definitions use. Each
 is exactly one row, in one class:
 
 - a *call* (a definition of Lean's `Lean` namespace other than a projection,
-  recursor, instance, or matcher) names its exact signature at Lean 4.32.1
-  (`f054605aea4b840552cca2e725580bffd1e1b704`), the defining source file at
+  recursor, instance, or matcher) names its exact signature at Lean 4.32.2
+  (`f3b06c705e6c85f5314019d5d3baab0fec5b580c`), the defining source file at
   that revision with its SHA-256, and its role;
 - a *type* names its complete constructor list in Lean's order with every
   field typed, or is *opaque* when no definition of the adapter matches,
@@ -11036,10 +11036,10 @@ The initial repository has no `open` implementation claim. An open research or p
 
 | Authority ID | Subject |
 |---|---|
-| `LEAN-REL-4-32-1` | Lean 4.32.1 release/tag and source commit |
-| `LAKE-4-32-1` | Lake distributed with Lean 4.32.1 |
-| `LEANCHECKER-4-32-1` | `leanchecker` replay behavior and its stated non-independent status |
-| `PRINT-AXIOMS-4-32-1` | Lean 4.32.1 `#print axioms` output behavior |
+| `LEAN-REL-4-32-2` | Lean 4.32.2 release/tag and source commit |
+| `LAKE-4-32-2` | Lake distributed with Lean 4.32.2 |
+| `LEANCHECKER-4-32-2` | `leanchecker` replay behavior and its stated non-independent status |
+| `PRINT-AXIOMS-4-32-2` | Lean 4.32.2 `#print axioms` output behavior |
 
 Corresponding ledger claims are `some-true`. LexLean tests realize compatibility with those authorities but do not re-register Lean's guarantees as LexLean proofs.
 
@@ -11443,7 +11443,7 @@ entrypoints = ["src/Main.lex.tex"]
 build_root = ".lexlean"
 lockfile = "lexlean.lock"
 lean_workspace = "."
-lean_toolchain = "leanprover/lean4:v4.32.1"
+lean_toolchain = "leanprover/lean4:v4.32.2"
 
 [[lexicon_source]]
 package = "lexlean.std.nat"
@@ -11466,7 +11466,7 @@ child_timeout_ms = 300000
 `examples/nat-add-zero/lean-toolchain`:
 
 ```text
-leanprover/lean4:v4.32.1
+leanprover/lean4:v4.32.2
 ```
 
 `examples/nat-add-zero/lakefile.toml`:
@@ -11623,7 +11623,7 @@ Release binaries MUST report:
 lexlean 1.0.0
 language 1.0
 compiler-semantics <digest>
-lean-toolchain leanprover/lean4:v4.32.1
+lean-toolchain leanprover/lean4:v4.32.2
 ```
 
 A build without the `production-data` feature (§8.4) is never a release binary. It reports these four lines followed by `variant check-only`.
@@ -11701,7 +11701,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `CF-11` | `configuration-lock` | Check, build, format, and verify resolve only locked locally available dependencies. | §11.4 |
 | `CF-12` | `configuration-lock` | Network package acquisition occurs only through lock --allow-network and only for an exact configured commit. | §11.4, §25.3 |
 | `CF-13` | `configuration-lock` | The Lake workspace contains exactly one supported Lake configuration and the recorded workspace files match. | §10.4 |
-| `CF-14` | `configuration-lock` | Language 1.0 accepts only leanprover/lean4:v4.32.1 for verification. | §8.2, §10.1 |
+| `CF-14` | `configuration-lock` | Language 1.0 accepts only leanprover/lean4:v4.32.2 for verification. | §8.2, §10.1 |
 | `CF-15` | `configuration-lock` | Duplicate logical modules and case-folded path or module collisions are rejected. | §23.3 |
 | `CF-16` | `configuration-lock` | Language 1.1 has a parallel exact builtin closure and rejects a language-1.0 lock or package without altering language-1.0 identities. | §10.1 |
 | `CF-17` | `configuration-lock` | Language 1.2 declaration support accepts language 1.2 and rejects unsupported or malformed language versions. | §10.1 |
@@ -11772,7 +11772,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-16` | `semantic-ir` | The language-1.1 semantic snapshot contains every closed declaration, term, recursion, match, instance, proof variant, and exact theorem axiom policy without paths or backend text. | §17.11 |
 | `SM-17` | `semantic-ir` | Language 1.1 has distinct mathematical Int, fixed-width signed and unsigned integer, UTF-8 string, byte-sequence, Option, and Result semantic types with canonical literals. | §17.11 |
 | `SM-18` | `semantic-ir` | Portable arithmetic, conversion, bitwise, bounded-shift, collection, UTF-8, byte-order, split/join, and decimal operations form one closed typed primitive vocabulary. | §17.11 |
-| `SM-19` | `semantic-ir` | Portable semantic operations generate deterministic Lean 4.32.1 definitions that elaborate and replay with exact declared computational axiom policies. | §17.11, §18, §22.6 |
+| `SM-19` | `semantic-ir` | Portable semantic operations generate deterministic Lean 4.32.2 definitions that elaborate and replay with exact declared computational axiom policies. | §17.11, §18, §22.6 |
 | `SM-20` | `semantic-ir` | Noncanonical, out-of-range, invalid-byte, ill-typed, and unbounded fixed-width values fail before either backend runs. | §17.11 |
 | `SM-21` | `semantic-ir` | Structural recursion admits byte/list values and closed Option and Result inductives while preserving termination and exhaustiveness checks. | §17.11 |
 | `SM-22` | `semantic-ir` | The public owned snapshot DTO and schemas cover every portable type, literal, primitive, and explicit definition axiom policy without backend text. | §17.11, §21 |
@@ -11790,7 +11790,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-34` | `semantic-ir` | A version 2 core-module row may be derived, stating its name, kind, and extension state, and for a sparse casesOn its recipe, and no universe parameters, type, or value: the decoder makes the constant with the pinned Lean's own construction at the row's place in the order, and refuses the module when the name is not one the pinned Lean reserves and the row states no sparse casesOn recipe, when the construction does not make the name, or when the constant it makes is not a theorem, definition, or abbreviation as the row says; the notation writes a derived row without a type, the schema and the linker refuse a derived row that states what the construction decides, a stored row is still checked against the construction, the decoder checks that the constructors a recipe names are constructors of the type and are named once, that the module states every sparse casesOn its construction makes, and that every derived sparse casesOn is referred to by the type or value of a row, and the content of a derived row is checked by its uses alone, so that a recipe naming other valid constructors of the type is not distinguished where the use accepts it; and the shipped preservation library states every row that carries a sparse casesOn record or is named like an equation, an unfolding equation, a splitter, or an else equation as a derived row. | §17.10 |
 | `SM-35` | `semantic-ir` | A language-1.2 theorem may be proved by `term_cases`, a split on the value of a document term: the proof names a term and a nonempty, strictly sorted, duplicate-free list of prior document definitions, the term's type is an inductive type of the document, and the backend lowers the proof to a split of the goal on every constructor of that type with the hypothesis that equates the term to the constructor, then `simp only` over the named definitions, that hypothesis, and the reduction of a conditional on a decided condition, with closed propositions decided, which uses exactly the axioms the theorem's policy states; the schema, the linker, the notation, the Lean backend, the canonical LaTeX, and the formatter accept it, and a use in language 1.1, a term whose type is not an inductive type of the document, an empty list, an unsorted or repeated name, a name that is not a prior definition, and a theorem parameter that takes the hypothesis's name are each refused. | §17.10 |
 | `SM-36` | `semantic-ir` | A language-1.2 `cases` proof may split a local of type `Bool` into its two constructors: the proof names the local and gives a branch for `false` and one for `true`, each with no binders, the backend lowers it to `cases` on the local with those two alternatives, the theorem verifies with exactly the axioms its policy states, and the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it; a use in language 1.1, a missing branch, a repeated branch, a branch with a binder, and an `induction` on a Boolean are each refused. | §17.10 |
-| `SM-37` | `semantic-ir` | A language-1.2 theorem may be proved by `nested_induction`, an induction over a nested inductive type of the document, one that holds a member of itself under `List`, `Option`, `Result`, or a product and is in no mutual group: the proof names a parameter of the theorem, states one proposition for each auxiliary member of the type's recursive family in the order the pinned Lean's recursor takes them, and gives a branch for every constructor of the type and of each auxiliary member, each binding the constructor's fields followed by one hypothesis for each field that is a member of the family, in field order; the backend lowers it to `induction` over the recursor the pinned Lean generates for the type, with the propositions as its auxiliary motives and the goals taken in the order of its minor premises, so that a theorem over every value of a type with a constructor that holds a `List` of the type verifies under the pinned Lean 4.32.1 with exactly the axioms `propext` and `Quot.sound`, the set its build observes; the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it, and a use in language 1.1, a local whose type is not a nested inductive of the document or lies in a mutual group, an auxiliary member that is missing, repeated, or out of order, a missing or repeated branch, a branch with the wrong number of binders, a proposition that is not well typed, and an `induction` proof on a nested type are each refused as LLT4001. | §16.9, §17.10, §17.12 |
+| `SM-37` | `semantic-ir` | A language-1.2 theorem may be proved by `nested_induction`, an induction over a nested inductive type of the document, one that holds a member of itself under `List`, `Option`, `Result`, or a product and is in no mutual group: the proof names a parameter of the theorem, states one proposition for each auxiliary member of the type's recursive family in the order the pinned Lean's recursor takes them, and gives a branch for every constructor of the type and of each auxiliary member, each binding the constructor's fields followed by one hypothesis for each field that is a member of the family, in field order; the backend lowers it to `induction` over the recursor the pinned Lean generates for the type, with the propositions as its auxiliary motives and the goals taken in the order of its minor premises, so that a theorem over every value of a type with a constructor that holds a `List` of the type verifies under the pinned Lean 4.32.2 with exactly the axioms `propext` and `Quot.sound`, the set its build observes; the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it, and a use in language 1.1, a local whose type is not a nested inductive of the document or lies in a mutual group, an auxiliary member that is missing, repeated, or out of order, a missing or repeated branch, a branch with the wrong number of binders, a proposition that is not well typed, and an `induction` proof on a nested type are each refused as LLT4001. | §16.9, §17.10, §17.12 |
 | `SM-38` | `semantic-ir` | A language-1.2 build publishes, for every semantic module, a declaration ID for each declaration and a statement ID for each theorem: the declaration ID is a framed SHA-256 of the declaration's canonical JSON and of the declaration IDs of the project declarations it references, with declarations that reference one another hashed as one group, and the statement ID omits the theorem's proof; changing one literal of one definition changes the declaration IDs of exactly that definition and of the declarations that reach it by reference, changing a theorem's proof alone leaves its statement ID unchanged, adding or reordering independent declarations changes no ID, the IDs equal their recomputation from the specified framed inputs, the file validates against `api/schemas/declarations.schema.json`, and a language-1.0 or 1.1 build publishes none. | §21.9 |
 | `DF-01` | `declarations` | A valid type-definition sentence emits one nonrecursive sort-valued Lean def linked to its document entry. | §15.7, §18.6 |
 | `DF-02` | `declarations` | A valid term-definition sentence emits one nonrecursive explicitly typed Lean def. | §15.7, §18.6 |
