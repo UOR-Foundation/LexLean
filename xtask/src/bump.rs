@@ -133,16 +133,44 @@ pub fn bump_version(root: &Path, arguments: &[String]) -> Result<(), Fail> {
         )
         .into());
     }
+    // The lock is moved last and may fail; on failure every file this wrote,
+    // and the lock, are put back, so the command is all or nothing.
+    let originals: Vec<(&str, Vec<u8>)> = texts
+        .iter()
+        .map(|(path, _)| *path)
+        .chain(std::iter::once("Cargo.lock"))
+        .map(|path| std::fs::read(root.join(path)).map(|bytes| (path, bytes)))
+        .collect::<Result<_, _>>()?;
+    let restore = |cause: String| -> Fail {
+        for (path, bytes) in &originals {
+            if let Err(error) = std::fs::write(root.join(path), bytes) {
+                return format!("{cause}; restoring {path} failed too: {error}").into();
+            }
+        }
+        format!("{cause}; every file is restored").into()
+    };
     for (path, text) in &texts {
-        std::fs::write(root.join(path), text)?;
+        if let Err(error) = std::fs::write(root.join(path), text) {
+            return Err(restore(format!("writing {path}: {error}")));
+        }
     }
-    let status =
-        std::process::Command::new(std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned()))
-            .current_dir(root)
-            .args(["update", "--workspace", "--offline"])
-            .status()?;
-    if !status.success() {
-        return Err("cargo update --workspace --offline failed after the version moved".into());
+    let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
+    match std::process::Command::new(cargo)
+        .current_dir(root)
+        .args(["update", "--workspace", "--offline"])
+        .status()
+    {
+        Ok(status) if status.success() => {}
+        Ok(status) => {
+            return Err(restore(format!(
+                "cargo update --workspace --offline exited {status}"
+            )))
+        }
+        Err(error) => {
+            return Err(restore(format!(
+                "cargo update --workspace --offline did not run: {error}"
+            )))
+        }
     }
     println!(
         "bump-version: {old} -> {new} in {} files and Cargo.lock",

@@ -97,7 +97,12 @@ jobs:
               --body "\`main\` receives \`$GITHUB_REF_NAME\` at its tag \`v$VERSION\` (SPEC.md §9.4; opened by \`tag.yml\`)." \
               || echo "::warning::no pull request into main opened"
           fi
-          # The line contains `main`, so the merge lands the tree the tag's
-          # gate verified, and it merges itself once its checks pass.
+          # A pull request opened with the workflow token starts no run, so the
+          # gate is dispatched on the line: its plan finds the full run that
+          # verified the tagged tree (the regenerated head of the cut, under
+          # equal-tree merges) and runs nothing again. The line contains
+          # `main`, so the merge lands that tree, and it merges itself once
+          # its checks pass.
+          gh workflow run ci.yml --repo "$REPO" --ref "$GITHUB_REF_NAME"
           gh pr merge --repo "$REPO" "$GITHUB_REF_NAME" --auto --merge \
             || echo "::warning::auto-merge not enabled on the pull request into main"

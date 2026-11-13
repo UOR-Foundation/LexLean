@@ -256,6 +256,17 @@ fn plan_decisions() {
     git(&["add", "."]);
     git(&["commit", "-q", "-m", "direct"]);
     let direct = git(&["rev-parse", "HEAD"]);
+    // A merge whose second parent is the equal-tree merge above: the release
+    // merge of a cut carried to `main`, whose tree is the regenerated head's.
+    let regenerated = git(&["rev-parse", "head-contains-main"]);
+    git(&["checkout", "-q", "-b", "carried", &base]);
+    git(&["merge", "-q", "--no-ff", "-m", "carry", &merge_equal]);
+    let carried = git(&["rev-parse", "HEAD"]);
+    assert_eq!(
+        git(&["rev-parse", "HEAD^{tree}"]),
+        git(&["rev-parse", &format!("{regenerated}^{{tree}}")]),
+        "the planted carry lands the regenerated head's tree"
+    );
 
     // `gh`: the runs of the second parent, and the jobs of a run, as the
     // environment names them; `STUB_FAIL` makes the call fail.
@@ -267,7 +278,11 @@ fn plan_decisions() {
         "#!/usr/bin/env bash\n\
          [ -z \"${STUB_FAIL:-}\" ] || exit 1\n\
          case \"$2\" in\n\
-           */workflows/ci.yml/runs\\?*) printf '%s\\n' \"${STUB_RUNS:-}\" ;;\n\
+           */workflows/ci.yml/runs\\?*)\n\
+             case \"${STUB_RUNS:-}\" in\n\
+               *@*) [[ \"$2\" != *\"head_sha=${STUB_RUNS#*@}&\"* ]] || printf '%s\\n' \"${STUB_RUNS%@*}\" ;;\n\
+               *) printf '%s\\n' \"${STUB_RUNS:-}\" ;;\n\
+             esac ;;\n\
            */runs/*/jobs\\?*) printf '%s\\n' \"${STUB_JOBS:-}\" ;;\n\
            */pulls\\?*) printf '%s\\n' \"${STUB_PULLS:-}\" ;;\n\
            *) exit 2 ;;\n\
@@ -471,6 +486,74 @@ fn plan_decisions() {
         whole,
         "§9.4: a dispatch that names no branch is the whole gate"
     );
+    // The tree a full run verified is not verified again when it is carried
+    // down equal-tree merges: a push of the carry, and a dispatch on a ready
+    // head that is the carry, find the run of the regenerated head two merges
+    // down; a run of another commit, or a draft, does not count.
+    let on_regenerated = format!("4242@{regenerated}");
+    assert_eq!(
+        decide("push", "", "main", &carried, &on_regenerated, &green, false),
+        nothing,
+        "§9.4: a push carrying a verified tree down two equal-tree merges"
+    );
+    assert_eq!(
+        decide(
+            "push",
+            "",
+            "main",
+            &carried,
+            &format!("4242@{direct}"),
+            &green,
+            false
+        ),
+        whole,
+        "§9.4: a run of a commit the carry does not reach"
+    );
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &carried,
+            &on_regenerated,
+            &green,
+            false,
+            "release/v0.4",
+            "false\tmain"
+        ),
+        nothing,
+        "§9.4: a dispatch on a ready head whose tree a full run verified"
+    );
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &carried,
+            &format!("4242@{direct}"),
+            &green,
+            false,
+            "release/v0.4",
+            "false\tmain"
+        ),
+        whole,
+        "§9.4: a dispatch on a ready head no full run verified"
+    );
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &carried,
+            &on_regenerated,
+            &green,
+            false,
+            "release/v0.4",
+            "true\tmain"
+        ),
+        draft,
+        "§9.4: a draft head is planned as a draft whatever verified its tree"
+    );
     assert_eq!(decide("push", "", "main", &direct, "", &[], false), whole);
     // A merge of its head's tree whose whole gate passed runs nothing.
     assert_eq!(
@@ -600,7 +683,7 @@ fn plan_decisions() {
     let script_text = root_file(".github/ci-plan.sh");
     assert!(
         script_text.contains(".head_repository.full_name == \\\"$repo\\\"")
-            && script_text.contains("runs?head_sha=$parent&status=success")
+            && script_text.contains("runs?head_sha=$commit&status=success")
             && script_text.contains(
                 "select(.event == \\\"pull_request\\\" or .event == \\\"workflow_dispatch\\\")"
             )

@@ -74,17 +74,14 @@ hosts_passed() {
     }'
 }
 
-# The id of a pull request run, or a dispatched run, of this workflow on the second parent of HEAD
-# that ran every job of the gate and passed every one, when HEAD is a merge of
-# that parent with the same tree. A draft run has honesty and the `rest` leg, so it is
-# never one: the run must hold the join of Atlas, every exact supported-host context, and
-# every leg of the rows file, and no job that did not conclude `success`.
-verified_parent_run() {
-  local parent head_tree runs id names part job
-  parent=$(git rev-parse --verify --quiet 'HEAD^2') || return 1
-  head_tree=$(git rev-parse 'HEAD^{tree}')
-  [ "$head_tree" = "$(git rev-parse "$parent^{tree}")" ] || return 1
-  runs=$(gh api "repos/$repo/actions/workflows/ci.yml/runs?head_sha=$parent&status=success&per_page=30" \
+# The id of a pull request run, or a dispatched run, of this workflow on
+# COMMIT that ran every job of the gate and passed every one. A draft run has
+# honesty and the `rest` leg, so it is never one: the run must hold the join of
+# Atlas, every exact supported-host context, and every leg of the rows file,
+# and no job that did not conclude `success`.
+full_run_of() {
+  local commit=$1 runs id names part job
+  runs=$(gh api "repos/$repo/actions/workflows/ci.yml/runs?head_sha=$commit&status=success&per_page=30" \
     --jq ".workflow_runs[] | select(.head_repository.full_name == \"$repo\") | select(.event == \"pull_request\" or .event == \"workflow_dispatch\") | .id") || return 1
   for id in $runs; do
     names=$(gh api "repos/$repo/actions/runs/$id/jobs?per_page=100" --paginate \
@@ -102,6 +99,37 @@ verified_parent_run() {
     fi
   done
   return 1
+}
+
+# The full run (above) that verified the tree of COMMIT: one of COMMIT itself,
+# or, while the commit is a merge whose tree is the tree of its second parent,
+# one of that parent, at most four merges down. A cut lands this way: the
+# release merge lands the regenerated head's tree, and the pull request that
+# carries the line to `main` lands the release merge's.
+verified_tree_run() {
+  local commit=$1 depth=0
+  while :; do
+    if full_run_of "$commit"; then
+      return 0
+    fi
+    [ "$depth" -lt 4 ] || return 1
+    # The plan's checkout is shallow; deepen it for the commit it walks.
+    git rev-parse --verify --quiet "$commit^2" >/dev/null \
+      || git fetch --quiet --depth=2 origin "$commit" 2>/dev/null || return 1
+    git rev-parse --verify --quiet "$commit^2" >/dev/null || return 1
+    [ "$(git rev-parse "$commit^{tree}")" = "$(git rev-parse "$commit^2^{tree}")" ] || return 1
+    commit=$(git rev-parse "$commit^2")
+    depth=$((depth + 1))
+  done
+}
+
+# The verified run of the second parent of HEAD, when HEAD is a merge of that
+# parent with the same tree.
+verified_parent_run() {
+  local parent
+  parent=$(git rev-parse --verify --quiet 'HEAD^2') || return 1
+  [ "$(git rev-parse 'HEAD^{tree}')" = "$(git rev-parse "$parent^{tree}")" ] || return 1
+  verified_tree_run "$parent"
 }
 
 # A pull request's run: honesty then `rest` for a draft or a stacked base,
@@ -153,7 +181,14 @@ case "$event" in
       draft=${found%%$'\t'*}
       base=${found#*$'\t'}
       printf 'Dispatched on the head of an open pull request into `%s`: planned as that pull request.\n' "$base" >> "$summary"
-      pull_request_plan
+      # A ready head whose tree a full run already verified (the line a cut
+      # carries to `main`) is not verified again.
+      if [ "$draft" != true ] && run=$(verified_tree_run "$(git rev-parse HEAD)"); then
+        emit false '[]'
+        printf 'The tree of this head is the tree run %s of %s verified as the whole gate. Nothing is run again.\n' "$run" "$repo" >> "$summary"
+      else
+        pull_request_plan
+      fi
     else
       whole_gate 'Run on request: the whole gate.'
     fi
