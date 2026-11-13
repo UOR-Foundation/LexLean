@@ -54,7 +54,7 @@ workspace carried at those versions without a tag.
   change to the language-1.2 identity). `termText`, `canonicalKey`, `eqKey`,
   `nodeCount`, and `termDepth` of `IrTerm` return what `Term::to_json`,
   `canonical_key`, `eq_key`, `node_count`, and `depth` return, and admit
-  `recursion`. The register is 495 IDs.
+  `recursion`. The register is 497 IDs.
 - `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
   command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
   new language-1.2 module `RuntimeHost`, that calls the step and carries out each
