@@ -2821,6 +2821,7 @@ backend runs.
 | `termination` evidence | `lexlean/semantic-module/2` | `{"measure":m,"evidence":[theorem...]}` on a definition declares well-founded recursion under the recursion rules below. |
 | `linear_arithmetic` proof | `lexlean/semantic-module/2` | `{"kind":"linear_arithmetic"}`, optionally with `definitions`, a strictly sorted list of prior document definitions and no other member. It lowers to one fixed script (*Fold laws* below): `intros`; with definitions, `subst_vars`; one `simp only [...] at *` over, in order, the named definitions, the Boolean-comparison bridges `← Bool.not_eq_true, Bool.and_eq_true, Bool.or_eq_true, Bool.not_eq_true', and_true, true_and, Option.some.injEq, Nat.beq_eq, Nat.blt_eq, Nat.ble_eq`, the runtime definitions `LexLeanRuntime.subtract, LexLeanRuntime.multiply, LexLeanRuntime.negate, LexLeanRuntime.equal`, the Lean lemmas `beq_iff_eq, decide_eq_true_eq, decide_eq_false_iff_not, Nat.add_assoc, Int.add_assoc, Int.neg_neg, Int.emod_neg, Int.neg_zero, ↓reduceIte`, the registered rewrite set of the fold laws, and for each fixed-width type `T` (`UInt8`, `UInt16`, `UInt32`, `UInt64` read by `toNat`; `Int8`, `Int16`, `Int32`, `Int64` read by `toInt`) first `T.le_iff_v_le, T.lt_iff_v_lt` and then `T.reduceToNat` or `T.reduceToInt` and `← T.v_inj`; a second `simp only [...] at *` over `UInt8.toNat` … `Int64.toInt` and `BitVec.toInt_eq_toNat_cond`, which reads every remaining fixed-width value as the bounded natural number of its bits; `all_goals (repeat' split)`, which splits every `if` and `match` left in the goal; and `all_goals omega`. Each `simp only` is under `try` with the unused-argument linter off, so a goal the simplifier already closed leaves nothing for `omega`. With definitions, hypotheses equating a local with a constructor value are substituted and a measure over them unfolds to linear arithmetic. A module with this proof imports `LexLeanRuntime.Laws`. |
 | `law` proof | `lexlean/semantic-module/2` | `{"kind":"law","name":N,"type_arguments":[T...],"arguments":[...],"premises":[theorem...]}` (`type_arguments` and `premises` omitted when empty): exact application of the registered fold law `N` (*Fold laws* below) to explicit type arguments, arguments, and prior theorems discharging its premises in order. Linking checks the counts, the type arguments, each argument against the registered parameter type, and that each premise names a prior theorem; Lean checks the statement. It lowers to `exact @L (T1) … (a1) … p1 …`, `L` the law's Lean name, and a module with it imports `LexLeanRuntime.Laws`. |
+| `region_check` proof | `lexlean/semantic-module/2` | `{"kind":"region_check"}` and no other member, the whole proof of a theorem whose statement is `breaks request = false` over a decision fragment (*Decision regions* below). It lowers to `exact LexLeanRegions.holds R d P B (by decide +kernel) [(request).f1, …] rfl`, with the rules `R`, the `otherwise` answer `d`, the property `P`, and its box `B` read from the module, and a module with it imports `LexLeanRuntime.Regions`. |
 | integer order | `lexlean/semantic-module/2` | The order propositions `le` and `lt`, which language 1.1 types over `Nat` only, take two operands of one integer type: `Nat`, `Int`, or one fixed-width type. They lower to Lean's `<=` and `<` on that type, which on a fixed-width type is the order of its mathematical value. |
 | `map`, `set` types | `lexlean/semantic-module/2` | `{"kind":"map","key":K,"value":V}` and `{"kind":"set","element":K}` over an ordered key type, under the collection rules below. |
 | `map_literal`, `set_literal`, `graph_literal` terms | `lexlean/semantic-module/2` | Literal collections of literal keys, canonicalized in linking under the collection rules below. |
@@ -3249,7 +3250,7 @@ Termination evidence is semantic data, never tactic or backend text; no
    namespace `LexLeanCollections` (*Runtime modules* below).
 
 **Runtime modules.** The runtime of language 1.2 is LexLean source, not text
-of the backend: five native core modules (§17.10) of the embedded project
+of the backend: six native core modules (§17.10) of the embedded project
 `language/runtime-1.2/library/` (module prefix `LexLeanRuntime`, registry
 `language/runtime-1.2/library.toml`, tag `lexlean/runtime-library/1`), whose
 Lean the compiler generates like any other core module's:
@@ -3259,13 +3260,16 @@ fixed-width arithmetic, byte strings, and decimal text the primitives apply),
 `LexLeanRuntime.Models` (namespace `LexLeanModels`, rule 12 of the model
 rules), and `LexLeanRuntime.Reasoning` (namespace `LexLeanReasoning`, rule 11
 of the reasoning rules; it imports the first two), and `LexLeanRuntime.Laws`
-(namespace `LexLeanLaws`, *Fold laws* below; it imports the first two). A
+(namespace `LexLeanLaws`, *Fold laws* below; it imports the first two), and
+`LexLeanRuntime.Regions` (namespace `LexLeanRegions`, *Decision regions*
+below; it imports only `Init`). A
 generated language-1.2
 module publicly imports, after `Init` and before its own imports, exactly the
 runtime modules it uses: `Portable` when it applies a primitive or has a
 reasoning declaration, `Collections` under rule 6, `Models` when it has a
 model declaration, `Reasoning` when it has a reasoning declaration, and
-`Laws` when it has a `linear_arithmetic` or `law` proof; it carries no runtime
+`Laws` when it has a `linear_arithmetic` or `law` proof, and `Regions` when it
+has a `region_check` proof; it carries no runtime
 text. Every declaration of a runtime module pins its exact
 axioms; a verification that needs a runtime module compiles it before the
 project's modules, replays it with `leanchecker`, audits each of its
@@ -3273,7 +3277,8 @@ declarations, and refuses any observed axiom set but the pinned one
 (§22.3–§22.6, `RT-03`). The first four runtime modules were migrated once,
 losslessly, from the texts the backend spliced, with the equivalence evidence
 in `tests/runtime-library/MIGRATION.md`; `Laws` was exported once from Lean,
-with its evidence in `tests/runtime-library/LAWS.md`. A declaration is the same up to the
+with its evidence in `tests/runtime-library/LAWS.md`, and `Regions` likewise,
+with its evidence in `tests/runtime-library/REGIONS.md`. A declaration is the same up to the
 module that holds it, so a runtime name is `LexLeanRuntime.x`, never
 `<module>.LexLeanRuntime.x` (`RT-01`). The decoder of core module 2 (§17.10)
 is the one Lean text of the language-1.2 compiler that is not generated from a
@@ -3340,6 +3345,54 @@ rules are LexLean's own; the diagnostic each linking failure raises is
 6. **Closed instances.** `decide` evaluates a closed statement and does not
    decide one with a free variable, so a statement over all inputs is proved
    by the laws and `omega`, never by enumerating inputs.
+
+#### Decision regions (language 1.2)
+
+A property of a long first-match decision (a judge of many rules over a
+request of natural-number fields) is not proved by splitting the judge into
+cases: the cases grow with the rules. `region_check` proves it by local box
+obligations instead, through a checker proved sound once. These rules are
+LexLean's own; a linking failure is `LLT4001`, and a property Lean does not
+accept is `LLV7002`.
+
+1. **The regions module.** `LexLeanRuntime.Regions` is a native runtime
+   module (*Runtime modules* above) importing only `Init`. It declares, in
+   the namespace `LexLeanRegions`, the data `Cond` (a field, an operator code,
+   a constant), `Rule`, and `Property`; the semantics `opHolds`, `allHold`,
+   `judge`, `bad`, and `breaks`; the obligation `obligation B R d P : Bool`;
+   and `holds : obligation B R d P = true → x.length = B.length → breaks R d P
+   x = false`. Every row pins its exact axioms, within `propext` and
+   `Quot.sound`. It was exported once from Lean and its regenerated
+   environment checked declaration by declaration
+   (`tests/runtime-library/REGIONS.md`).
+2. **The shapes are the backend's.** The operator codes are 0 `x < c`, 1
+   `x ≤ c`, 2 `c < x`, 3 `c ≤ x`, 4 `x = c`, 5 `c = x`, 6 `x ≠ c`, 7 `c ≠ x`,
+   and `opHolds` writes each exactly as the backend writes the comparison
+   (`Nat.blt`, `Nat.ble`, `Nat.beq`, `!`); `allHold` folds `&&` from the left
+   and `judge` tests each rule with `if b then`. So for a module in the
+   fragment, the module's `breaks request` is definitionally `breaks R d P
+   [(request).f1, …]` of the lowered data, and the kernel checks that
+   equality when it checks the proof. The lowering is not trusted: a misread
+   module yields a proof Lean refuses, never a false theorem.
+3. **The fragment.** The theorem has one parameter, of a local structure
+   whose fields are all `Nat`, and states `breaks request = false`, where
+   `breaks` is a prior local Boolean definition whose body is a conjunction,
+   folded from the left, of comparisons of one field with one constant (a
+   literal, or a parameterless definition whose body is one), ending in
+   `judge request =? a` (the answer must not be `a`) or its negation (the
+   answer must be `a`). `judge` is a prior local `Nat` definition whose body
+   is `if t1 then a1 else if … else d`, each test a call of a prior
+   one-parameter Boolean definition, or a conjunction, of comparisons of the
+   same kind, using no `!=`, and each answer a constant. Every field is
+   bounded above by `breaks`'s own comparisons (`<`, `<=`, or `=`); its box is
+   `[0, bound]` per field. Linking refuses a theorem outside the fragment,
+   naming the part that is outside it, and a `region_check` used as a branch.
+4. **The obligation.** For each rule whose answer breaks the property, the
+   part of the rule's box inside the property's box, minus the boxes of the
+   rules before it, is empty; and the property's box minus every rule's box
+   is empty when `d` breaks it. Each is box subtraction over a few intervals,
+   which the kernel decides by `decide +kernel`; no compiled evaluation is
+   trusted (`PF-17`).
 
 #### Models, contracts, realizations, and evidence (language 1.2)
 
@@ -11781,6 +11834,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `PF-21` | `proofs` | The language-1.2 linear_arithmetic proof form reads the runtime: it rewrites less_than, equal, negate, quotient, remainder, and fixed-width order and equality into linear arithmetic over mathematical values, splits every if and match left in the goal, proves integer kernels for all inputs, and is refused by Lean on a false one. | §17.12, §16 |
 | `PF-22` | `proofs` | The runtime module LexLeanRuntime.Laws states the fold laws as LexLean source with every row's axioms pinned, and linear_arithmetic rewrites additive list, set, and map folds into sums that are linear and invariant under append and reverse, so fold equalities verify for all inputs with decide only on closed instances. | §17.12, §22.6 |
 | `PF-23` | `proofs` | The language-1.2 law proof form applies one registered fold law (fusion, the fold of a pair, or the fold of an append) to checked type arguments, arguments, and prior theorems discharging its premises, and is refused in linking for an unregistered law, a wrong argument count or type, or a missing premise, and by Lean for a statement the law does not prove. | §17.12, §16 |
+| `PF-24` | `proofs` | The runtime module LexLeanRuntime.Regions states the decision-region checker and its soundness theorem as LexLean source with every row's axioms within propext and Quot.sound, and the language-1.2 region_check proof form lowers a property of a first-match decision fragment to that checker's data, closes it with one kernel-decided obligation, is refused in linking outside the fragment or as a branch, and by Lean for a defective rule. | §17.12, §16, §22.6 |
 | `LN-01` | `lean-backend` | Each generated Lean file has the exact module, import, option, namespace, declaration, and end structure. | §18.1 |
 | `LN-02` | `lean-backend` | Imports are explicit, deduplicated, sorted, and every external global is fully qualified. | §18.3 |
 | `LN-03` | `lean-backend` | Generated Lean contains no comments, documentation, prose-bearing strings, or copied source prose. | §18.2 |
@@ -12114,7 +12168,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 495.
+**Total required capability IDs:** 496.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

@@ -17,6 +17,17 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
+  new diagnostic code; changes the language-1.2 identity). The runtime gains a
+  sixth native module, `LexLeanRuntime.Regions`: a checker of local box
+  obligations for first-match decisions over natural-number fields, and
+  `LexLeanRegions.holds`, its soundness theorem, within `propext` and
+  `Quot.sound` (`tests/runtime-library/REGIONS.md`). The language-1.2 proof
+  form `region_check` proves a property `breaks request = false` of such a
+  decision with one kernel-decided obligation and that theorem; the lowered
+  data is definitionally the module's own definitions, so the lowering is not
+  trusted. Verdant Resonance (35 rules, 15 properties), which
+  `linear_arithmetic` could not prove, verifies. The register is 496 IDs.
 - A check-only build of the crate, #495. The `lexlean` crate's
   `production-data` feature, on by default, embeds
   `language/preservation-1.2/library/`, the native preservation library that

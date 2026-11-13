@@ -204,6 +204,7 @@ fn proof(
     let (scrutinee, branches, induction) = match proof {
         SemanticProof::Reflexivity
         | SemanticProof::Decide
+        | SemanticProof::RegionCheck
         | SemanticProof::Congruence
         | SemanticProof::LinearArithmetic { .. }
         | SemanticProof::Simplify { .. }
