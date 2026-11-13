@@ -22,6 +22,7 @@
 //! faithfully.
 
 pub mod ast;
+pub mod host;
 mod lower;
 pub mod moves;
 pub mod package;

@@ -1516,6 +1516,8 @@ pub fn run(id: &str) {
         "RB-20" => super::rust_std::run(id),
         // §17.17: the runtime text is printed from the modules, never held.
         "RB-21" => super::rust_runtime_text::run(id),
+        // §17.13, §17.16: the driver of a command root.
+        "RB-24" => super::rust_driver::run(id),
         "RB-09" => {
             use lexlean::calculus::rust::runtime::{core, std};
             use lexlean::calculus::rust_library::{
