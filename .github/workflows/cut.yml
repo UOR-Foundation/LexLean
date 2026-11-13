@@ -1,0 +1,108 @@
+# A release cut in one push (SPEC.md §9.4): the version commit, its
+# regeneration, and the pull request that lands it on its line.
+#
+#   git push origin release/vX.Y:refs/heads/cut/vX.Y.Z
+#
+# `version` moves every site of the workspace version to X.Y.Z
+# (`cargo xtask bump-version`), the `## Unreleased` changelog entries becoming
+# `## X.Y.Z`, commits that on the pushed commit, and opens the pull request
+# from `cut/vX.Y.Z` into `release/vX.Y`. `regenerate.yml` then writes what the
+# version moves (every build oracle names the compiler's version), delivers
+# that to the branch, and dispatches the gate there. Merging the pull request
+# is the decision to release: `tag.yml` tags the merge once its gate passes
+# and `release.yml` publishes it. The pushed commit must be on the line, and
+# the version must follow the line's and have no tag.
+name: cut
+
+on:
+  push:
+    branches: ['cut/v[0-9]*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cut-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  version:
+    name: version commit
+    if: github.repository == 'UOR-Foundation/LexLean'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      pull-requests: write
+    outputs:
+      commit: ${{ steps.commit.outputs.commit }}
+      branch: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: The cut names a new version of a release line
+        id: cut
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#cut/v}"
+          if ! [[ "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::$GITHUB_REF_NAME does not name a version X.Y.Z"
+            exit 1
+          fi
+          line="release/v${BASH_REMATCH[1]}.${BASH_REMATCH[2]}"
+          git fetch --quiet origin "refs/heads/$line:refs/remotes/origin/$line"
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" "origin/$line"; then
+            echo "::error::$GITHUB_SHA is not on $line; push the line's head to $GITHUB_REF_NAME"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null; then
+            echo "::error::v$version is already tagged"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "line=$line" >> "$GITHUB_OUTPUT"
+      - name: Install the pinned Rust toolchain
+        run: rustup toolchain install
+      - name: Move the version
+        run: cargo xtask bump-version "${{ steps.cut.outputs.version }}"
+      - name: Commit the version and open the pull request
+        id: commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.cut.outputs.version }}
+          LINE: ${{ steps.cut.outputs.line }}
+        run: |
+          set -euo pipefail
+          git add --all
+          git -c user.name='github-actions[bot]' \
+            -c user.email='41898282+github-actions[bot]@users.noreply.github.com' \
+            commit --quiet -m "Cut LexLean $VERSION" \
+            -m "cargo xtask bump-version $VERSION: the workspace version, SPEC.md §2.3, RP-01, Cargo.lock, and the changelog's unreleased entries."
+          git push origin "HEAD:refs/heads/$GITHUB_REF_NAME"
+          echo "commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          body="Cuts LexLean $VERSION on \`$LINE\` (\`cut.yml\`). \`regenerate.yml\` writes what the version moves and dispatches the gate here. Merging releases: \`tag.yml\` tags the merge as \`v$VERSION\` once its gate passes, and \`release.yml\` publishes it. Edit the \`## $VERSION\` changelog section before merging if it needs a summary."
+          if url=$(gh pr create --repo "$GITHUB_REPOSITORY" --base "$LINE" --head "$GITHUB_REF_NAME" \
+              --title "Release $VERSION" --body "$body" 2>&1); then
+            echo "Opened $url" >> "$GITHUB_STEP_SUMMARY"
+          else
+            # The repository may not let the workflow token open pull requests.
+            echo "::warning::no pull request opened ($url)"
+            echo "Open the pull request: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/$LINE...$GITHUB_REF_NAME" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  regenerate:
+    name: regenerate
+    needs: version
+    uses: ./.github/workflows/regenerate.yml
+    # A reusable workflow is validated against what its caller grants before
+    # any of its jobs starts: `deliver` pushes and dispatches.
+    permissions:
+      contents: write
+      actions: write
+      pull-requests: read
+    with:
+      ref: ${{ needs.version.outputs.commit }}
+      branch: ${{ needs.version.outputs.branch }}

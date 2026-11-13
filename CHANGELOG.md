@@ -36,6 +36,19 @@ workspace carried at those versions without a tag.
   is cited (`LEAN-ARRAY-4-32-1`), not established here. The design and the
   decisions left to the owners are in `docs/proposals/verified-arrays.md`.
   The register is 497 IDs.
+- Releases and regeneration need no hand steps (SPEC.md §9.4). `regenerate.yml`
+  gains the job `deliver`: when the regenerated commit heads one open pull
+  request of this repository, the patch is committed on it, pushed to the pull
+  request's branch as a fast-forward, the gate is dispatched there, and the
+  `regenerate/` branch is deleted; the patch is still the run's artifact
+  otherwise. `ci.yml`'s plan treats a dispatch on a pull request's head branch
+  as that pull request (draft: honesty then `rest`), and a passed dispatched run
+  of a merged head lets the merge push run nothing, as a pull request run does.
+  A release is cut by pushing the line's head to `cut/vX.Y.Z`: `cut.yml` runs
+  the new `cargo xtask bump-version X.Y.Z` (every site of the workspace
+  version, the changelog's `## Unreleased` heading, and `Cargo.lock`), opens the
+  pull request, and regenerates it; `tag.yml` tags the merge once its gate
+  passes, dispatches `release.yml`, and opens the pull request into `main`.
 - Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
   new diagnostic code; changes the language-1.2 identity). The runtime gains a
   sixth native module, `LexLeanRuntime.Regions`: a checker of local box

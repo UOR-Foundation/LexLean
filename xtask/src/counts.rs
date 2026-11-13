@@ -475,7 +475,8 @@ fn number_map(
         let mut pairs = Vec::new();
         for (i, (a, a_old, a_new)) in counted.iter().enumerate() {
             for (b, b_old, b_new) in &counted[i + 1..] {
-                if a_old + b_old == token.value && (a_old != a_new || b_old != b_new) {
+                // An unchanged explanation can conflict with a moved pair.
+                if a_old + b_old == token.value {
                     sums.insert(a_new + b_new);
                     pairs.push(format!("{a} + {b}"));
                 }
@@ -485,6 +486,9 @@ fn number_map(
             0 => {}
             1 => {
                 let new = only(&sums);
+                if new == token.value {
+                    continue;
+                }
                 let _ = writeln!(
                     report,
                     "{id}: {} is {}: -> {new}",
@@ -721,13 +725,24 @@ fn prose(
         for token in tokens(&lines[at]) {
             let words = after(&lines, at, token.end);
             let mut by: Option<(usize, String)> = None;
+            let mut destinations = BTreeSet::new();
             for (id, map, contexts) in anchored {
                 if contexts.iter().any(|(old, context)| {
                     *old == token.value && words.starts_with(context.as_str())
                 }) {
-                    by = Some((map[&token.value], id.clone()));
-                    break;
+                    let new = map[&token.value];
+                    destinations.insert(new);
+                    by.get_or_insert_with(|| (new, id.clone()));
                 }
+            }
+            // A known anchor conflict must not use the shared-number fallback.
+            if destinations.len() > 1 {
+                flagged.push(format!(
+                    "SPEC.md:{}: {} has matching row contexts with conflicting destinations {destinations:?}; rewrite it by hand",
+                    at + 1,
+                    token.value
+                ));
+                continue;
             }
             if by.is_none() {
                 if let Some(new) = shared.get(&token.value) {
@@ -783,8 +798,130 @@ fn prose(
 
 #[cfg(test)]
 mod tests {
-    use super::{after, collapsed, following, render, rewrite, rust_literal, tokens};
-    use std::collections::BTreeMap;
+    use super::{
+        after, collapsed, following, number_map, prose, render, rewrite, rust_literal, tokens,
+        Anchored, Moved, Seen, Texts,
+    };
+    use std::collections::{BTreeMap, BTreeSet};
+
+    fn plan_pairs(values: &[(usize, usize)]) -> (BTreeMap<usize, usize>, Vec<String>) {
+        let mut table = BTreeMap::new();
+        let mut seen = Seen::new();
+        let mut moved = Vec::new();
+        for (index, &(old, new)) in values.iter().enumerate() {
+            let name = format!("COUNT_{index}");
+            table.insert(name.clone(), (old, index, old.to_string()));
+            seen.insert(
+                ("BS-05".to_owned(), "case.rs".to_owned(), name.clone()),
+                (BTreeSet::from([old]), BTreeSet::from([new])),
+            );
+            if old != new {
+                moved.push(Moved {
+                    id: "BS-05".to_owned(),
+                    file: "case.rs".to_owned(),
+                    name,
+                    old,
+                    new,
+                });
+            }
+        }
+        let mine: Vec<&Moved> = moved.iter().collect();
+        let mut flagged = Vec::new();
+        let map = number_map(
+            "BS-05",
+            &mine,
+            &table,
+            &seen,
+            "30 vectors",
+            &mut String::new(),
+            &mut flagged,
+        );
+        (map, flagged)
+    }
+
+    #[test]
+    fn pair_planner_rejects_unchanged_and_changed_explanation_collisions() {
+        for d_new in [18, 20] {
+            let (map, flagged) = plan_pairs(&[(10, 11), (20, 20), (12, 12), (18, d_new)]);
+            assert!(!map.contains_key(&30));
+            assert_eq!(flagged.len(), 1);
+            assert!(flagged[0].contains("which move differently"));
+        }
+    }
+
+    #[test]
+    fn pair_planner_accepts_agreement_but_does_not_plan_unchanged_sums() {
+        let (map, flagged) = plan_pairs(&[(10, 11), (20, 20), (12, 12), (18, 19)]);
+        assert_eq!(map.get(&30), Some(&31));
+        assert!(flagged.is_empty());
+        let (map, flagged) = plan_pairs(&[(10, 10), (20, 20), (12, 12), (18, 18)]);
+        assert!(map.is_empty());
+        assert!(flagged.is_empty());
+        let (map, flagged) = plan_pairs(&[(10, 11), (20, 19)]);
+        assert!(!map.contains_key(&30));
+        assert!(flagged.is_empty());
+    }
+
+    fn anchor(id: &str, new: usize, context: &str) -> Anchored {
+        (
+            id.to_owned(),
+            BTreeMap::from([(30, new)]),
+            vec![(30, context.to_owned())],
+        )
+    }
+
+    fn plan_prose(anchored: &[Anchored], shared: &BTreeMap<usize, usize>) -> (String, Vec<String>) {
+        let mut texts = Texts {
+            sources: BTreeMap::new(),
+            spec: "### 17.23 Bootstrap\nRun 30 vectors here.\n".to_owned(),
+            ids: String::new(),
+            features: BTreeMap::new(),
+        };
+        let mut flagged = Vec::new();
+        prose(
+            anchored,
+            shared,
+            &mut texts,
+            &mut String::new(),
+            &mut flagged,
+        );
+        (texts.spec, flagged)
+    }
+
+    #[test]
+    fn prose_planner_rejects_conflicting_anchors_without_shared_fallback() {
+        for other in [30, 32] {
+            let mut anchored = vec![
+                anchor("BS-05", 31, " vectors"),
+                anchor("BS-06", other, " vectors here"),
+            ];
+            for _ in 0..2 {
+                for shared in [BTreeMap::new(), BTreeMap::from([(30, 33)])] {
+                    let (spec, flagged) = plan_prose(&anchored, &shared);
+                    assert!(spec.contains("Run 30 vectors here."));
+                    assert!(flagged
+                        .iter()
+                        .any(|flag| flag.contains("conflicting destinations")));
+                }
+                anchored.reverse();
+            }
+        }
+    }
+
+    #[test]
+    fn prose_planner_accepts_agreeing_anchors_and_unmatched_shared_numbers() {
+        let anchored = vec![
+            anchor("BS-05", 31, " vectors"),
+            anchor("BS-06", 31, " vectors here"),
+            anchor("BS-07", 32, " other words"),
+        ];
+        let (spec, flagged) = plan_prose(&anchored, &BTreeMap::from([(30, 33)]));
+        assert!(spec.contains("Run 31 vectors here."));
+        assert!(flagged.is_empty());
+        let (spec, flagged) = plan_prose(&anchored[2..], &BTreeMap::from([(30, 33)]));
+        assert!(spec.contains("Run 33 vectors here."));
+        assert!(flagged.is_empty());
+    }
 
     #[test]
     fn prose_words_are_read_across_its_line_breaks_within_a_paragraph() {
