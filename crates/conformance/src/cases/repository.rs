@@ -256,6 +256,28 @@ fn plan_decisions() {
     git(&["add", "."]);
     git(&["commit", "-q", "-m", "direct"]);
     let direct = git(&["rev-parse", "HEAD"]);
+    // A merge whose second parent is the equal-tree merge above: the release
+    // merge of a cut carried to `main`, whose tree is the regenerated head's.
+    let regenerated = git(&["rev-parse", "head-contains-main"]);
+    git(&["checkout", "-q", "-b", "carried", &base]);
+    git(&["merge", "-q", "--no-ff", "-m", "carry", &merge_equal]);
+    let carried = git(&["rev-parse", "HEAD"]);
+    // Carried again, to four and five equal-tree merges above that head.
+    let mut deeper = carried.clone();
+    let mut chain = Vec::new();
+    for hop in 3..=5 {
+        git(&["checkout", "-q", "-b", &format!("carried-{hop}"), &base]);
+        git(&["merge", "-q", "--no-ff", "-m", "carry", &deeper]);
+        deeper = git(&["rev-parse", "HEAD"]);
+        chain.push(deeper.clone());
+    }
+    let (four_down, five_down) = (chain[1].clone(), chain[2].clone());
+    git(&["checkout", "-q", &carried]);
+    assert_eq!(
+        git(&["rev-parse", "HEAD^{tree}"]),
+        git(&["rev-parse", &format!("{regenerated}^{{tree}}")]),
+        "the planted carry lands the regenerated head's tree"
+    );
 
     // `gh`: the runs of the second parent, and the jobs of a run, as the
     // environment names them; `STUB_FAIL` makes the call fail.
@@ -267,8 +289,13 @@ fn plan_decisions() {
         "#!/usr/bin/env bash\n\
          [ -z \"${STUB_FAIL:-}\" ] || exit 1\n\
          case \"$2\" in\n\
-           */workflows/ci.yml/runs\\?*) printf '%s\\n' \"${STUB_RUNS:-}\" ;;\n\
+           */workflows/ci.yml/runs\\?*)\n\
+             case \"${STUB_RUNS:-}\" in\n\
+               *@*) [[ \"$2\" != *\"head_sha=${STUB_RUNS#*@}&\"* ]] || printf '%s\\n' \"${STUB_RUNS%@*}\" ;;\n\
+               *) printf '%s\\n' \"${STUB_RUNS:-}\" ;;\n\
+             esac ;;\n\
            */runs/*/jobs\\?*) printf '%s\\n' \"${STUB_JOBS:-}\" ;;\n\
+           */pulls\\?*) printf '%s\\n' \"${STUB_PULLS:-}\" ;;\n\
            *) exit 2 ;;\n\
          esac\n",
     )
@@ -279,14 +306,17 @@ fn plan_decisions() {
         std::fs::set_permissions(&stub, std::fs::Permissions::from_mode(0o755)).expect("chmod");
     }
     let path = format!("{}:{}", bin.display(), std::env::var("PATH").expect("PATH"));
-    // (full, rows' parts) for one planted event.
-    let decide = |event: &str,
-                  draft: &str,
-                  base: &str,
-                  commit: &str,
-                  runs: &str,
-                  jobs: &[String],
-                  fail: bool| {
+    // (full, rows' parts) for one planted event; a dispatch names its branch
+    // and the open pull requests `gh` lists for it, as `draft<TAB>base` lines.
+    let decide_with = |event: &str,
+                       draft: &str,
+                       base: &str,
+                       commit: &str,
+                       runs: &str,
+                       jobs: &[String],
+                       fail: bool,
+                       branch: &str,
+                       pulls: &str| {
         git(&["checkout", "-q", "--detach", commit]);
         let out = dir.join("out");
         let _ = std::fs::remove_file(&out);
@@ -303,7 +333,9 @@ fn plan_decisions() {
             .env("GITHUB_OUTPUT", &out)
             .env("GITHUB_STEP_SUMMARY", dir.join("summary"))
             .env("STUB_RUNS", runs)
-            .env("STUB_JOBS", jobs.join("\n"));
+            .env("STUB_JOBS", jobs.join("\n"))
+            .env("REF", branch)
+            .env("STUB_PULLS", pulls);
         if fail {
             command.env("STUB_FAIL", "1");
         }
@@ -343,6 +375,14 @@ fn plan_decisions() {
                 .collect::<Vec<_>>(),
         )
     };
+    let decide =
+        |event: &str,
+         draft: &str,
+         base: &str,
+         commit: &str,
+         runs: &str,
+         jobs: &[String],
+         fail: bool| { decide_with(event, draft, base, commit, runs, jobs, fail, "", "") };
     let whole = ("true".to_owned(), parts.clone());
     let draft = (
         "false".to_owned(),
@@ -403,6 +443,155 @@ fn plan_decisions() {
     assert_eq!(
         decide("workflow_dispatch", "", "main", &direct, "", &[], false),
         whole
+    );
+    // A dispatch on the head branch of one open pull request of this
+    // repository is planned as that pull request (`regenerate.yml` commits
+    // to the head with the workflow token, which starts no pull request run);
+    // no pull request, several, or an unreadable list is the whole gate.
+    for (what, pulls, fail, expected) in [
+        ("a draft's head", "true\trelease/v0.4", false, &draft),
+        ("a stacked head", "false\tclaude/issue-91-h6", false, &draft),
+        (
+            "a ready head into a line",
+            "false\trelease/v0.4",
+            false,
+            &whole,
+        ),
+        ("a branch with no pull request", "", false, &whole),
+        (
+            "a branch that heads two pull requests",
+            "true\trelease/v0.4\ntrue\tmain",
+            false,
+            &whole,
+        ),
+        ("an unreadable list", "true\trelease/v0.4", true, &whole),
+    ] {
+        assert_eq!(
+            &decide_with(
+                "workflow_dispatch",
+                "",
+                "",
+                &direct,
+                "",
+                &[],
+                fail,
+                "claude/issue-91-h7",
+                pulls
+            ),
+            expected,
+            "§9.4: a dispatch on {what}"
+        );
+    }
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &direct,
+            "",
+            &[],
+            false,
+            "",
+            "true\tmain"
+        ),
+        whole,
+        "§9.4: a dispatch that names no branch is the whole gate"
+    );
+    // The tree a full run verified is not verified again when it is carried
+    // down equal-tree merges: a push of the carry, and a dispatch on a ready
+    // head that is the carry, find the run of the regenerated head two merges
+    // down; a run of another commit, or a draft, does not count.
+    let on_regenerated = format!("4242@{regenerated}");
+    assert_eq!(
+        decide("push", "", "main", &carried, &on_regenerated, &green, false),
+        nothing,
+        "§9.4: a push carrying a verified tree down two equal-tree merges"
+    );
+    assert_eq!(
+        decide(
+            "push",
+            "",
+            "main",
+            &carried,
+            &format!("4242@{direct}"),
+            &green,
+            false
+        ),
+        whole,
+        "§9.4: a run of a commit the carry does not reach"
+    );
+    // The walk is bounded as `release-gate.sh` bounds it: four merges below
+    // the pushed commit, and no fifth.
+    assert_eq!(
+        decide(
+            "push",
+            "",
+            "main",
+            &four_down,
+            &on_regenerated,
+            &green,
+            false
+        ),
+        nothing,
+        "§9.4: a verified tree four equal-tree merges below the push"
+    );
+    assert_eq!(
+        decide(
+            "push",
+            "",
+            "main",
+            &five_down,
+            &on_regenerated,
+            &green,
+            false
+        ),
+        whole,
+        "§9.4: a verified tree five merges below the push is beyond the release evidence's walk"
+    );
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &carried,
+            &on_regenerated,
+            &green,
+            false,
+            "release/v0.4",
+            "false\tmain"
+        ),
+        nothing,
+        "§9.4: a dispatch on a ready head whose tree a full run verified"
+    );
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &carried,
+            &format!("4242@{direct}"),
+            &green,
+            false,
+            "release/v0.4",
+            "false\tmain"
+        ),
+        whole,
+        "§9.4: a dispatch on a ready head no full run verified"
+    );
+    assert_eq!(
+        decide_with(
+            "workflow_dispatch",
+            "",
+            "",
+            &carried,
+            &on_regenerated,
+            &green,
+            false,
+            "release/v0.4",
+            "true\tmain"
+        ),
+        draft,
+        "§9.4: a draft head is planned as a draft whatever verified its tree"
     );
     assert_eq!(decide("push", "", "main", &direct, "", &[], false), whole);
     // A merge of its head's tree whose whole gate passed runs nothing.
@@ -533,8 +722,12 @@ fn plan_decisions() {
     let script_text = root_file(".github/ci-plan.sh");
     assert!(
         script_text.contains(".head_repository.full_name == \\\"$repo\\\"")
-            && script_text.contains("event=pull_request&status=success"),
-        "§9.4: only a passed pull request run of this repository counts"
+            && script_text.contains("runs?head_sha=$commit&status=success")
+            && script_text.contains(
+                "select(.event == \\\"pull_request\\\" or .event == \\\"workflow_dispatch\\\")"
+            )
+            && script_text.contains("select(.head.repo.full_name == \\\"$repo\\\")"),
+        "§9.4: only a passed pull request or dispatched run of this repository counts, and only this repository's pull request plans a dispatch"
     );
 }
 
@@ -2299,7 +2492,8 @@ pub(crate) fn run(id: &str) {
                     && plan_job.contains("        run: .github/ci-plan.sh\n")
                     && plan_job.contains("          DRAFT: ${{ github.event.pull_request.draft }}\n")
                     && plan_job.contains("          BASE: ${{ github.event.pull_request.base.ref }}\n")
-                    && plan_job.contains("          EVENT: ${{ github.event_name }}\n"),
+                    && plan_job.contains("          EVENT: ${{ github.event_name }}\n")
+                    && plan_job.contains("          REF: ${{ github.ref_name }}\n"),
                 "§9.4: the plan runs the script on the event and the base branch, and may read the runs of the repository"
             );
             // The workflow runs the file as a command: a mode that is not
@@ -4155,6 +4349,20 @@ fn release_gate_decisions() {
     git(&["commit", "-q", "-m", "main moves"]);
     git(&["merge", "-q", "--no-ff", "-m", "merge", "behind"]);
     let merge_different = git(&["rev-parse", "HEAD"]);
+    // A merge of the equal-tree merge: a cut's release merge carried on, two
+    // merges above the head whose run verified the tree.
+    git(&["checkout", "-q", "-b", "carried", &base]);
+    git(&["merge", "-q", "--no-ff", "-m", "carry", &merge_equal]);
+    let carried = git(&["rev-parse", "HEAD"]);
+    let mut deeper = carried.clone();
+    let mut chain = Vec::new();
+    for hop in 3..=5 {
+        git(&["checkout", "-q", "-b", &format!("carried-{hop}"), &base]);
+        git(&["merge", "-q", "--no-ff", "-m", "carry", &deeper]);
+        deeper = git(&["rev-parse", "HEAD"]);
+        chain.push(deeper.clone());
+    }
+    let (four_down, five_down) = (chain[1].clone(), chain[2].clone());
 
     // `gh`: the runs of a commit (`STUB_RUNS_<sha>`), the jobs of every run
     // (`STUB_JOBS`), and a download that writes one leg's transcript.
@@ -4263,6 +4471,22 @@ fn release_gate_decisions() {
         evidence.contains(&format!("gate run commit {head} (the second parent")),
         "the evidence names the parent:\n{evidence}"
     );
+    // Two equal-tree merges above the head: the head's run, as the plan finds
+    // it for the push it ran nothing for.
+    let (code, evidence, stderr) = decide(&carried, &[(head.as_str(), run_line("25"))], &green);
+    assert_eq!(
+        code, 0,
+        "the run two equal-tree merges down is the evidence: {stderr}"
+    );
+    assert!(
+        evidence.contains(&format!("gate run commit {head} (the second parent")),
+        "the evidence names the head:\n{evidence}"
+    );
+    // Four merges is the bound the plan shares; a fifth is refused.
+    let (code, _, stderr) = decide(&four_down, &[(head.as_str(), run_line("26"))], &green);
+    assert_eq!(code, 0, "four equal-tree merges down: {stderr}");
+    let (code, _, _) = decide(&five_down, &[(head.as_str(), run_line("27"))], &green);
+    assert_eq!(code, 1, "five equal-tree merges down is beyond the walk");
     // A merge whose tree no run verified: the parent's run is not evidence.
     let (code, _, stderr) = decide(
         &merge_different,
