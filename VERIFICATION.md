@@ -11738,6 +11738,46 @@ bootstrap member did before its regeneration, which produces the
 `bootstrap/text_tokens` and `bootstrap/parse_proof_sentence` packages. The
 branch is based on `release/v0.4` and stacks on nothing.
 
+### the proposition grammar's keywords, binders, and term phrases are source (BS-43)
+
+`BS-43` holds four production roots of `LexLeanBoot.PropositionTerms`
+(`bootstrap/src/PropositionTerms.lex.tex`) to the term half of
+`grammar/proposition.rs`: `keywordEntry` to `keyword_entry`, `unknownAtom` to
+`TextParser::unknown_atom_diagnostic`, `binderAlternatives` to
+`TextParser::binder`, and `termPhrase` to `TextParser::term_phrase`. The module
+reads the text tokens and keyword occurrences of `GrammarProof` (`BS-35`) and the
+atoms of `PrimitiveScan` (`BS-03`); the glossary closure belongs to the lexicon,
+so the roots take its projection as the host's input, as `BS-42` does, with the
+text-channel edges carrying each form's category and whether it is plural or
+sentence-case. `termPhrase` gathers every alternative in the oracle's order with
+an explicit stack, so no root admits `recursion`. The case builds the projection
+from the built-in closure and the committed `peano.arith` glossary and holds the
+roots to the oracle on hand-built sentences that reach every refusal and every
+shape of a binder and a term phrase, on the 40 keyword spellings, on committed
+sentences asked at every token, and on seeded sentences. Each planted defect
+names the one vector that catches it, and the case asserts that the site of each
+plant occurs once. Two tests of the oracle cannot be planted: an atom that is a
+grammar or proof keyword is never reported unknown, but every such keyword,
+sentence-case spellings included, is the surface of a text form of
+`lexlean.core`, which every closure holds, so the glossary covers it either way.
+The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoints are `GrammarProof` and `PropositionTerms`: `lexlean check`,
+`lexlean build`, and `lexlean verify` pass, and Lean's audit reports no axiom.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace` with `BS-35` (409 s). Its corpus is 47 named vectors, 40 keywords,
+1,500 committed sentences (150 under the evaluator, 20,550 runs under rustc), and
+200 and 2,000 seeded runs. The evaluator agrees with the oracle on 40 runs of
+`keywordEntry`, 84 of `unknownAtom`, 155 of `binderAlternatives`, and 158 of
+`termPhrase`, the rendered packages under the pinned rustc on 22,637, and each of
+the 23 planted defects is detected by its own vector. The first runs found no
+fault of the module and one of the case: it read acceptance from the run's JSON
+by a tag the calculus does not write. The case then stops at the stack-bound
+step, `bootstrap/keyword_entry is no package of the committed exports`, as each
+bootstrap member did before its regeneration. The branch is stacked on `BS-35`.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

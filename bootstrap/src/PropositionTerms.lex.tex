@@ -1,0 +1,755 @@
+\begin{lexlean}{PropositionTerms}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{GrammarProof}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{PrimitiveScan}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: TEdge,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: form, type: Nat},
+    {name: stop, type: Nat},
+    {name: category, type: Nat},
+    {name: inflected, type: Bool}
+  ]
+}
+
+inductive{
+  name: TypePhrase,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TNoun, fields: [(List Nat), Nat, Nat]},
+    {name: TMath, fields: [GrammarProof::TextToken]}
+  ]
+}
+
+structure{
+  name: Binder,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: phrase, type: TypePhrase},
+    {name: spelling, type: Bytes},
+    {name: island, type: GrammarProof::TextToken},
+    {name: identStart, type: Nat},
+    {name: identEnd, type: Nat},
+    {name: keywords, type: (List GrammarProof::Keyword)}
+  ]
+}
+
+structure{
+  name: BAlt,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: upto, type: Nat}, {name: binder, type: Binder}]
+}
+
+inductive{
+  name: Term,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TIsland, fields: [GrammarProof::TextToken]},
+    {name: TNounOf, fields: [(List Nat), Nat, Nat, Term, (List GrammarProof::Keyword)]},
+    {name: TArgNil, fields: []},
+    {name: TArgCons, fields: [Term, Term]}
+  ]
+}
+
+structure{
+  name: TAlt,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: upto, type: Nat}, {name: term, type: Term}]
+}
+
+structure{
+  name: Bud,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: states, type: Nat}, {name: edges, type: Nat}, {name: memo, type: (List Nat)}]
+}
+
+structure{
+  name: Ctx,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: path, type: Bytes},
+    {name: atoms, type: (List PrimitiveScan::Atom)},
+    {name: tokens, type: (List GrammarProof::TextToken)},
+    {name: edges, type: (List (List TEdge))},
+    {name: maxStates, type: Nat},
+    {name: maxDepth, type: Nat},
+    {name: maxEdges, type: Nat}
+  ]
+}
+
+structure{
+  name: Looked,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: bud, type: Bud},
+    {name: found, type: (List TEdge)},
+    {name: error, type: (Option PrimitiveScan::Rejection)}
+  ]
+}
+
+structure{
+  name: Match,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: form, type: Nat},
+    {name: category, type: Nat},
+    {name: inflected, type: Bool},
+    {name: upto, type: Nat}
+  ]
+}
+
+structure{
+  name: Matched,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: bud, type: Bud},
+    {name: found, type: (List Match)},
+    {name: error, type: (Option PrimitiveScan::Rejection)}
+  ]
+}
+
+inductive{
+  name: Frame,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: XStart, fields: [Nat, Nat]},
+    {name: XMatches, fields: [Nat, Nat, GrammarProof::Keyword, (List TAlt), (List Match)]},
+    {
+      name: XAfterFirst,
+      fields: [
+        Nat,
+        Nat,
+        GrammarProof::Keyword,
+        (List TAlt),
+        (List Match),
+        Match,
+        GrammarProof::Keyword
+      ]
+    },
+    {
+      name: XFirsts,
+      fields: [
+        Nat,
+        Nat,
+        GrammarProof::Keyword,
+        (List TAlt),
+        (List Match),
+        Match,
+        GrammarProof::Keyword,
+        (List TAlt)
+      ]
+    },
+    {
+      name: XAfterSecond,
+      fields: [
+        Nat,
+        Nat,
+        GrammarProof::Keyword,
+        (List TAlt),
+        (List Match),
+        Match,
+        GrammarProof::Keyword,
+        (List TAlt),
+        TAlt,
+        GrammarProof::Keyword
+      ]
+    }
+  ]
+}
+
+structure{
+  name: Mach,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: stack, type: (List Frame)},
+    {name: returned, type: (List TAlt)},
+    {name: error, type: (Option PrimitiveScan::Rejection)},
+    {name: bud, type: Bud}
+  ]
+}
+
+structure{
+  name: Scan,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: bud, type: Bud},
+    {name: found, type: (Option PrimitiveScan::Rejection)},
+    {name: error, type: (Option PrimitiveScan::Rejection)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: both,
+  parameters: [left : Bool, right : Bool],
+  result: Bool,
+  body: (if left then right else false),
+  executable: true
+}
+
+definition{
+  name: same,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal left right : Bool),
+  executable: true
+}
+
+definition{
+  name: num,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Numeral::decimal number),
+  executable: true
+}
+
+definition{
+  name: natIn,
+  parameters: [needle : Nat, items : (List Nat)],
+  result: Bool,
+  body: (prim list_fold (fun [needle] (found : Bool) (item : Nat) => (if found then true else (item =? needle))) false items : Bool),
+  executable: true
+}
+
+definition{
+  name: keywordEntry,
+  parameters: [word : Bytes],
+  result: (Option Bytes),
+  body: (if (if (same word (lit "a")) then true else (same word (lit "A"))) then (ctor Option.some [Bytes] (lit "a")) else (if (if (same word (lit "an")) then true else (same word (lit "An"))) then (ctor Option.some [Bytes] (lit "an")) else (if (same word (lit "and")) then (ctor Option.some [Bytes] (lit "and")) else (if (same word (lit "as")) then (ctor Option.some [Bytes] (lit "as")) else (if (same word (lit "defined")) then (ctor Option.some [Bytes] (lit "defined")) else (if (same word (lit "every")) then (ctor Option.some [Bytes] (lit "every")) else (if (same word (lit "exactly")) then (ctor Option.some [Bytes] (lit "exactly")) else (if (same word (lit "exists")) then (ctor Option.some [Bytes] (lit "exists")) else (if (if (same word (lit "for")) then true else (same word (lit "For"))) then (ctor Option.some [Bytes] (lit "for")) else (if (same word (lit "holds")) then (ctor Option.some [Bytes] (lit "holds")) else (if (if (same word (lit "if")) then true else (same word (lit "If"))) then (ctor Option.some [Bytes] (lit "if")) else (if (same word (lit "implies")) then (ctor Option.some [Bytes] (lit "implies")) else (if (same word (lit "is")) then (ctor Option.some [Bytes] (lit "is")) else (if (if (same word (lit "not")) then true else (same word (lit "Not"))) then (ctor Option.some [Bytes] (lit "not")) else (if (same word (lit "one")) then (ctor Option.some [Bytes] (lit "one")) else (if (same word (lit "only")) then (ctor Option.some [Bytes] (lit "only")) else (if (same word (lit "or")) then (ctor Option.some [Bytes] (lit "or")) else (if (same word (lit "such")) then (ctor Option.some [Bytes] (lit "such")) else (if (same word (lit "that")) then (ctor Option.some [Bytes] (lit "that")) else (if (if (same word (lit "the")) then true else (same word (lit "The"))) then (ctor Option.some [Bytes] (lit "the")) else (if (same word (lit "then")) then (ctor Option.some [Bytes] (lit "then")) else (if (if (same word (lit "there")) then true else (same word (lit "There"))) then (ctor Option.some [Bytes] (lit "there")) else (if (same word (lit "when")) then (ctor Option.some [Bytes] (lit "when")) else (if (same word (lit "of")) then (ctor Option.some [Bytes] (lit "of")) else (ctor Option.none [Bytes]))))))))))))))))))))))))),
+  executable: true,
+  production: {effects: [allocation], targets: [rust-std]}
+}
+
+definition{
+  name: proofKeyword,
+  parameters: [word : Bytes],
+  result: Bool,
+  body: (PrimitiveScan::bytesInList word (cons (lit "Assume") (cons (lit "Apply") (cons (lit "Close") (cons (lit "Select") (cons (lit "Use") (cons (lit "alternative") (cons (lit "as") (cons (lit "by") (cons (lit "goal") (cons (lit "left") (cons (lit "reflexivity") (cons (lit "right") (cons (lit "the") (cons (lit "with") (cons (lit "witness") (nil Bytes))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: atomOr,
+  parameters: [ctx : Ctx, position : Nat],
+  result: PrimitiveScan::Atom,
+  body: (match (prim index (project ctx atoms) position : (Option PrimitiveScan::Atom))
+    | Option.some atom => atom
+    | Option.none => (record PrimitiveScan::Atom {kind := (ctor PrimitiveScan::AtomClass.Whitespace), byteStart := 0, byteEnd := 0, lineStart := 1, columnStart := 1, lineEnd := 1, columnEnd := 1, text := (lit "")})),
+  executable: true
+}
+
+definition{
+  name: tokenAt,
+  parameters: [ctx : Ctx, position : Nat],
+  result: (Option GrammarProof::TextToken),
+  body: (prim index (project ctx tokens) position : (Option GrammarProof::TextToken)),
+  executable: true
+}
+
+definition{
+  name: lastAtom,
+  parameters: [token : GrammarProof::TextToken],
+  result: Nat,
+  body: (match token
+    | GrammarProof::TextToken.TokenAtom which => which
+    | GrammarProof::TextToken.TokenIsland opening innerStart innerEnd closing shown => closing),
+  executable: true
+}
+
+definition{
+  name: placeAt,
+  parameters: [ctx : Ctx, position : Nat],
+  result: PrimitiveScan::Place,
+  body: (PrimitiveScan::placeOfAtom (project ctx path) (atomOr ctx position)),
+  executable: true
+}
+
+definition{
+  name: placed,
+  parameters: [code : Bytes, message : Bytes, place : (Option PrimitiveScan::Place)],
+  result: PrimitiveScan::Rejection,
+  body: (record PrimitiveScan::Rejection {code := code, message := message, place := place, help := (ctor Option.none [Bytes])}),
+  executable: true
+}
+
+definition{
+  name: wordAt,
+  parameters: [ctx : Ctx, position : Nat],
+  result: (Option Nat),
+  body: (match (tokenAt ctx position)
+    | Option.some token => (match token
+      | GrammarProof::TextToken.TokenAtom which => (if ((PrimitiveScan::classCode (atomOr ctx which)) =? 1) then (ctor Option.some [Nat] which) else (ctor Option.none [Nat]))
+      | GrammarProof::TextToken.TokenIsland opening innerStart innerEnd closing shown => (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: isWord,
+  parameters: [ctx : Ctx, position : Nat, word : Bytes],
+  result: (Option GrammarProof::Keyword),
+  body: (match (wordAt ctx position)
+    | Option.some which => (if (same (project (atomOr ctx which) text) word) then (match (keywordEntry word)
+      | Option.some entry => (ctor Option.some [GrammarProof::Keyword] (record GrammarProof::Keyword {atom := which, entry := entry}))
+      | Option.none => (ctor Option.none [GrammarProof::Keyword])) else (ctor Option.none [GrammarProof::Keyword]))
+    | Option.none => (ctor Option.none [GrammarProof::Keyword])),
+  executable: true
+}
+
+definition{
+  name: islandAt,
+  parameters: [ctx : Ctx, position : Nat],
+  result: (Option GrammarProof::TextToken),
+  body: (match (tokenAt ctx position)
+    | Option.some token => (match token
+      | GrammarProof::TextToken.TokenAtom which => (ctor Option.none [GrammarProof::TextToken])
+      | GrammarProof::TextToken.TokenIsland opening innerStart innerEnd closing shown => (ctor Option.some [GrammarProof::TextToken] token))
+    | Option.none => (ctor Option.none [GrammarProof::TextToken])),
+  executable: true
+}
+
+definition{
+  name: chargeState,
+  parameters: [ctx : Ctx, bud : Bud],
+  result: (Bud * (Option PrimitiveScan::Rejection)),
+  body: (let states : Nat := ((project bud states) + 1); (let after : Bud := (record Bud {states := states, edges := (project bud edges), memo := (project bud memo)}); (if ((project ctx maxStates) <? states) then (after, (ctor Option.some [PrimitiveScan::Rejection] (placed (lit "LLS8002") (cat (cat (cat (cat (lit "max_parse_states exceeded in phase parse: configured ") (num (project ctx maxStates))) (lit ", observed ")) (num states)) (lit " states")) (ctor Option.none [PrimitiveScan::Place])))) else (after, (ctor Option.none [PrimitiveScan::Rejection]))))),
+  executable: true
+}
+
+definition{
+  name: depthRefusal,
+  parameters: [ctx : Ctx, depth : Nat, position : Nat],
+  result: (Option PrimitiveScan::Rejection),
+  body: (if ((project ctx maxDepth) <? depth) then (ctor Option.some [PrimitiveScan::Rejection] (placed (lit "LLS8002") (cat (cat (cat (lit "max_scope_depth exceeded in phase parse (proposition nesting): configured ") (num (project ctx maxDepth))) (lit ", nesting depth ")) (num depth)) (match (tokenAt ctx position)
+    | Option.some token => (ctor Option.some [PrimitiveScan::Place] (placeAt ctx (GrammarProof::firstAtom token)))
+    | Option.none => (ctor Option.none [PrimitiveScan::Place])))) else (ctor Option.none [PrimitiveScan::Rejection])),
+  executable: true
+}
+
+definition{
+  name: edgesAt,
+  parameters: [ctx : Ctx, bud : Bud, position : Nat],
+  result: Looked,
+  body: (let found : (List TEdge) := (match (prim index (project ctx edges) position : (Option (List TEdge)))
+    | Option.some listed => listed
+    | Option.none => (nil TEdge)); (if (natIn position (project bud memo)) then (record Looked {bud := bud, found := found, error := (ctor Option.none [PrimitiveScan::Rejection])}) else (let count : Nat := ((project bud edges) + (prim length found : Nat)); (if ((project ctx maxEdges) <? count) then (record Looked {bud := (record Bud {states := (project bud states), edges := count, memo := (project bud memo)}), found := (nil TEdge), error := (ctor Option.some [PrimitiveScan::Rejection] (placed (lit "LLS8002") (cat (cat (cat (cat (lit "max_token_lattice_edges exceeded in phase lexical resolution: configured ") (num (project ctx maxEdges))) (lit ", observed ")) (num count)) (lit " distinct lattice edges")) (ctor Option.none [PrimitiveScan::Place])))}) else (record Looked {bud := (record Bud {states := (project bud states), edges := count, memo := (cons position (project bud memo))}), found := found, error := (ctor Option.none [PrimitiveScan::Rejection])}))))),
+  executable: true
+}
+
+definition{
+  name: tokenAfter,
+  parameters: [ctx : Ctx, from : Nat, atomEnd : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [atomEnd, ctx] (position : Nat) => (match (tokenAt ctx position)
+    | Option.some token => (if ((GrammarProof::firstAtom token) <? atomEnd) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat]))) ((prim length (project ctx tokens) : Nat) + 1) from : (Nat * Bool))),
+  executable: true
+}
+
+definition{
+  name: formMatches,
+  parameters: [ctx : Ctx, bud : Bud, position : Nat, low : Nat, high : Nat],
+  result: Matched,
+  body: (match (tokenAt ctx position)
+    | Option.some token => (match token
+      | GrammarProof::TextToken.TokenAtom which => (let looked : Looked := (edgesAt ctx bud which); (match (project looked error)
+        | Option.some problem => (record Matched {bud := (project looked bud), found := (nil Match), error := (ctor Option.some [PrimitiveScan::Rejection] problem)})
+        | Option.none => (record Matched {bud := (project looked bud), found := (prim list_fold (fun [ctx, high, low, position] (out : (List Match)) (edge : TEdge) => (prim append out (if (both (low <=? (project edge category)) ((project edge category) <=? high)) then (cons (record Match {form := (project edge form), category := (project edge category), inflected := (project edge inflected), upto := (tokenAfter ctx position (project edge stop))}) (nil Match)) else (nil Match)) : (List Match))) (nil Match) (project looked found) : (List Match)), error := (ctor Option.none [PrimitiveScan::Rejection])})))
+      | GrammarProof::TextToken.TokenIsland opening innerStart innerEnd closing shown => (record Matched {bud := bud, found := (nil Match), error := (ctor Option.none [PrimitiveScan::Rejection])}))
+    | Option.none => (record Matched {bud := bud, found := (nil Match), error := (ctor Option.none [PrimitiveScan::Rejection])})),
+  executable: true
+}
+
+definition{
+  name: atomRange,
+  parameters: [ctx : Ctx, start : Nat, stop : Nat],
+  result: (Nat * Nat),
+  body: (let firstToken : GrammarProof::TextToken := (match (tokenAt ctx start)
+    | Option.some token => token
+    | Option.none => (ctor GrammarProof::TextToken.TokenAtom 0)); (let lastIndex : Nat := (if (start <? (prim subtract stop 1 : Nat)) then (prim subtract stop 1 : Nat) else start); (let lastToken : GrammarProof::TextToken := (match (tokenAt ctx lastIndex)
+    | Option.some token => token
+    | Option.none => (ctor GrammarProof::TextToken.TokenAtom 0)); ((GrammarProof::firstAtom firstToken), ((lastAtom lastToken) + 1))))),
+  executable: true
+}
+
+definition{
+  name: wsStep,
+  parameters: [ctx : Ctx, stop : Nat, position : Nat],
+  result: (Option Nat),
+  body: (if (both (position <? stop) ((PrimitiveScan::classCode (atomOr ctx position)) =? 6)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: skipWs,
+  parameters: [ctx : Ctx, stop : Nat, position : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [ctx, stop] (current : Nat) => (wsStep ctx stop current)) ((prim length (project ctx atoms) : Nat) + 1) position : (Nat * Bool))),
+  executable: true
+}
+
+definition{
+  name: composeStep,
+  parameters: [ctx : Ctx, state : (Nat * Nat)],
+  result: (Option (Nat * Nat)),
+  body: (match (prim index (project ctx atoms) (first state) : (Option PrimitiveScan::Atom))
+    | Option.some atom => (let code : Nat := (PrimitiveScan::classCode atom); (if (both ((project atom byteStart) =? (second state)) (if (if (code =? 1) then true else (code =? 2)) then true else (both (code =? 4) (if (same (project atom text) (lit "_")) then true else (same (project atom text) (lit "'")))))) then (ctor Option.some [(Nat * Nat)] (((first state) + 1), (project atom byteEnd))) else (ctor Option.none [(Nat * Nat)])))
+    | Option.none => (ctor Option.none [(Nat * Nat)])),
+  executable: true
+}
+
+definition{
+  name: spelledFrom,
+  parameters: [ctx : Ctx, start : Nat, stop : Nat],
+  result: Bytes,
+  body: (first (first (prim iterate_until (fun [ctx, stop] (state : (Bytes * Nat)) => (if ((second state) <? stop) then (ctor Option.some [(Bytes * Nat)] ((cat (first state) (project (atomOr ctx (second state)) text)), ((second state) + 1))) else (ctor Option.none [(Bytes * Nat)]))) ((prim subtract stop start : Nat) + 1) ((lit ""), start) : ((Bytes * Nat) * Bool)))),
+  executable: true
+}
+
+definition{
+  name: binderLocal,
+  parameters: [ctx : Ctx, position : Nat, phrase : TypePhrase],
+  result: (Option BAlt),
+  body: (match (tokenAt ctx position)
+    | Option.some token => (match token
+      | GrammarProof::TextToken.TokenAtom which => (ctor Option.none [BAlt])
+      | GrammarProof::TextToken.TokenIsland opening innerStart innerEnd closing shown => (let index : Nat := (skipWs ctx innerEnd innerStart); (let atom : PrimitiveScan::Atom := (atomOr ctx index); (if (both ((PrimitiveScan::classCode atom) =? 1) (index <? (prim length (project ctx atoms) : Nat))) then (let identEnd : Nat := (first (first (prim iterate_until (fun [ctx] (state : (Nat * Nat)) => (composeStep ctx state)) ((prim length (project ctx atoms) : Nat) + 1) ((index + 1), (project atom byteEnd)) : ((Nat * Nat) * Bool)))); (if ((skipWs ctx innerEnd identEnd) =? innerEnd) then (ctor Option.some [BAlt] (record BAlt {upto := (position + 1), binder := (record Binder {phrase := phrase, spelling := (spelledFrom ctx index identEnd), island := token, identStart := index, identEnd := identEnd, keywords := (nil GrammarProof::Keyword)})})) else (ctor Option.none [BAlt]))) else (ctor Option.none [BAlt])))))
+    | Option.none => (ctor Option.none [BAlt])),
+  executable: true
+}
+
+definition{
+  name: withKeywords,
+  parameters: [alternative : BAlt, keywords : (List GrammarProof::Keyword)],
+  result: BAlt,
+  body: (let held : Binder := (project alternative binder); (record BAlt {upto := (project alternative upto), binder := (record Binder {phrase := (project held phrase), spelling := (project held spelling), island := (project held island), identStart := (project held identStart), identEnd := (project held identEnd), keywords := (prim append keywords (project held keywords) : (List GrammarProof::Keyword))})})),
+  executable: true
+}
+
+definition{
+  name: binderStart,
+  parameters: [
+    ctx : Ctx,
+    state : ((List BAlt) * Matched),
+    start : (Nat * (List GrammarProof::Keyword))
+  ],
+  result: ((List BAlt) * Matched),
+  body: (let held : Matched := (second state); (match (project held error)
+    | Option.some problem => state
+    | Option.none => (let matched : Matched := (formMatches ctx (project held bud) (first start) 0 0); (match (project matched error)
+      | Option.some problem => ((first state), matched)
+      | Option.none => (let nouns : (List BAlt) := (prim list_fold (fun [ctx, start] (out : (List BAlt)) (found : Match) => (if (project found inflected) then out else (match (binderLocal ctx (project found upto) (ctor TypePhrase.TNoun (cons (project found form) (nil Nat)) (first (atomRange ctx (first start) (project found upto))) (second (atomRange ctx (first start) (project found upto)))))
+        | Option.some alternative => (prim append out (cons (withKeywords alternative (second start)) (nil BAlt)) : (List BAlt))
+        | Option.none => out))) (first state) (project matched found) : (List BAlt)); (let island : (List BAlt) := (match (islandAt ctx (first start))
+        | Option.some token => (match (binderLocal ctx ((first start) + 1) (ctor TypePhrase.TMath token))
+          | Option.some alternative => (cons (withKeywords alternative (second start)) (nil BAlt))
+          | Option.none => (nil BAlt))
+        | Option.none => (nil BAlt)); ((prim append nouns island : (List BAlt)), matched))))))),
+  executable: true
+}
+
+definition{
+  name: context,
+  parameters: [
+    path : Bytes,
+    atoms : (List PrimitiveScan::Atom),
+    tokens : (List GrammarProof::TextToken),
+    edges : (List (List TEdge)),
+    maxEdges : Nat,
+    maxStates : Nat,
+    maxDepth : Nat
+  ],
+  result: Ctx,
+  body: (record Ctx {path := path, atoms := atoms, tokens := tokens, edges := edges, maxStates := maxStates, maxDepth := maxDepth, maxEdges := maxEdges}),
+  executable: true
+}
+
+definition{
+  name: fresh,
+  parameters: [statesBefore : Nat, edgesBefore : Nat],
+  result: Bud,
+  body: (record Bud {states := statesBefore, edges := edgesBefore, memo := (nil Nat)}),
+  executable: true
+}
+
+definition{
+  name: coveredStep,
+  parameters: [ctx : Ctx, index : Nat, state : (Nat * Scan)],
+  result: (Option (Nat * Scan)),
+  body: (let start : Nat := (first state); (let scan : Scan := (second state); (if (both (start <=? index) (match (project scan found)
+    | Option.some hit => false
+    | Option.none => (match (project scan error)
+      | Option.some problem => false
+      | Option.none => true))) then (let looked : Looked := (edgesAt ctx (project scan bud) start); (match (project looked error)
+    | Option.some problem => (ctor Option.some [(Nat * Scan)] ((start + 1), (record Scan {bud := (project looked bud), found := (project scan found), error := (ctor Option.some [PrimitiveScan::Rejection] problem)})))
+    | Option.none => (if (prim list_fold (fun [index, start] (hit : Bool) (edge : TEdge) => (if hit then true else (both (start <=? index) (index <? (project edge stop))))) false (project looked found) : Bool) then (ctor Option.some [(Nat * Scan)] ((start + 1), (record Scan {bud := (project looked bud), found := (ctor Option.some [PrimitiveScan::Rejection] (placed (lit "") (lit "") (ctor Option.none [PrimitiveScan::Place]))), error := (ctor Option.none [PrimitiveScan::Rejection])}))) else (ctor Option.some [(Nat * Scan)] ((start + 1), (record Scan {bud := (project looked bud), found := (ctor Option.none [PrimitiveScan::Rejection]), error := (ctor Option.none [PrimitiveScan::Rejection])})))))) else (ctor Option.none [(Nat * Scan)])))),
+  executable: true
+}
+
+definition{
+  name: unknownStep,
+  parameters: [ctx : Ctx, rangeStart : Nat, state : Scan, index : Nat],
+  result: Scan,
+  body: (match (project state found)
+    | Option.some hit => state
+    | Option.none => (match (project state error)
+      | Option.some problem => state
+      | Option.none => (let atom : PrimitiveScan::Atom := (atomOr ctx index); (let code : Nat := (PrimitiveScan::classCode atom); (if (if (code =? 6) then true else (both (code =? 1) (match (keywordEntry (project atom text))
+        | Option.some entry => true
+        | Option.none => (proofKeyword (project atom text))))) then state else (let final : Scan := (second (first (prim iterate_until (fun [ctx, index] (pair : (Nat * Scan)) => (coveredStep ctx index pair)) ((prim subtract index rangeStart : Nat) + 2) (rangeStart, (record Scan {bud := (project state bud), found := (ctor Option.none [PrimitiveScan::Rejection]), error := (ctor Option.none [PrimitiveScan::Rejection])})) : ((Nat * Scan) * Bool)))); (match (project final error)
+        | Option.some problem => final
+        | Option.none => (match (project final found)
+          | Option.some covered => (record Scan {bud := (project final bud), found := (ctor Option.none [PrimitiveScan::Rejection]), error := (ctor Option.none [PrimitiveScan::Rejection])})
+          | Option.none => (record Scan {bud := (project final bud), found := (ctor Option.some [PrimitiveScan::Rejection] (placed (lit "LLL1004") (cat (cat (lit "`") (project atom text)) (lit "` is not a declared atom in any visible glossary")) (ctor Option.some [PrimitiveScan::Place] (placeAt ctx index)))), error := (ctor Option.none [PrimitiveScan::Rejection])}))))))))),
+  executable: true
+}
+
+definition{
+  name: unknownAtom,
+  parameters: [
+    path : Bytes,
+    atoms : (List PrimitiveScan::Atom),
+    tokens : (List GrammarProof::TextToken),
+    edges : (List (List TEdge)),
+    maxEdges : Nat,
+    maxStates : Nat,
+    maxDepth : Nat,
+    statesBefore : Nat,
+    edgesBefore : Nat
+  ],
+  result: (Result (Option PrimitiveScan::Rejection) PrimitiveScan::Rejection),
+  body: (let ctx : Ctx := (context path atoms tokens edges maxEdges maxStates maxDepth); (let indices : (List Nat) := (prim list_fold (fun (out : (List Nat)) (token : GrammarProof::TextToken) => (match token
+    | GrammarProof::TextToken.TokenAtom which => (prim append out (cons which (nil Nat)) : (List Nat))
+    | GrammarProof::TextToken.TokenIsland opening innerStart innerEnd closing shown => out)) (nil Nat) tokens : (List Nat)); (match (prim index indices 0 : (Option Nat))
+    | Option.none => (ctor Result.ok [(Option PrimitiveScan::Rejection), PrimitiveScan::Rejection] (ctor Option.none [PrimitiveScan::Rejection]))
+    | Option.some rangeStart => (let final : Scan := (prim list_fold (fun [ctx, rangeStart] (state : Scan) (index : Nat) => (unknownStep ctx rangeStart state index)) (record Scan {bud := (fresh statesBefore edgesBefore), found := (ctor Option.none [PrimitiveScan::Rejection]), error := (ctor Option.none [PrimitiveScan::Rejection])}) indices : Scan); (match (project final error)
+      | Option.some problem => (ctor Result.error [(Option PrimitiveScan::Rejection), PrimitiveScan::Rejection] problem)
+      | Option.none => (ctor Result.ok [(Option PrimitiveScan::Rejection), PrimitiveScan::Rejection] (project final found))))))),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: binderAlternatives,
+  parameters: [
+    path : Bytes,
+    atoms : (List PrimitiveScan::Atom),
+    tokens : (List GrammarProof::TextToken),
+    edges : (List (List TEdge)),
+    maxEdges : Nat,
+    maxStates : Nat,
+    maxDepth : Nat,
+    statesBefore : Nat,
+    edgesBefore : Nat,
+    position : Nat,
+    required : Bool
+  ],
+  result: (Result (List BAlt) PrimitiveScan::Rejection),
+  body: (let ctx : Ctx := (context path atoms tokens edges maxEdges maxStates maxDepth); (let charge : (Bud * (Option PrimitiveScan::Rejection)) := (chargeState ctx (fresh statesBefore edgesBefore)); (match (second charge)
+    | Option.some problem => (ctor Result.error [(List BAlt), PrimitiveScan::Rejection] problem)
+    | Option.none => (let starts : (List (Nat * (List GrammarProof::Keyword))) := (if required then (prim append (match (isWord ctx position (lit "a"))
+      | Option.some keyword => (cons ((position + 1), (cons keyword (nil GrammarProof::Keyword))) (nil (Nat * (List GrammarProof::Keyword))))
+      | Option.none => (nil (Nat * (List GrammarProof::Keyword)))) (match (isWord ctx position (lit "an"))
+      | Option.some keyword => (cons ((position + 1), (cons keyword (nil GrammarProof::Keyword))) (nil (Nat * (List GrammarProof::Keyword))))
+      | Option.none => (nil (Nat * (List GrammarProof::Keyword)))) : (List (Nat * (List GrammarProof::Keyword)))) else (cons (position, (nil GrammarProof::Keyword)) (nil (Nat * (List GrammarProof::Keyword))))); (let final : ((List BAlt) * Matched) := (prim list_fold (fun [ctx] (state : ((List BAlt) * Matched)) (start : (Nat * (List GrammarProof::Keyword))) => (binderStart ctx state start)) ((nil BAlt), (record Matched {bud := (first charge), found := (nil Match), error := (ctor Option.none [PrimitiveScan::Rejection])})) starts : ((List BAlt) * Matched)); (match (project (second final) error)
+      | Option.some problem => (ctor Result.error [(List BAlt), PrimitiveScan::Rejection] problem)
+      | Option.none => (ctor Result.ok [(List BAlt), PrimitiveScan::Rejection] (first final)))))))),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: nounOf,
+  parameters: [
+    ctx : Ctx,
+    position : Nat,
+    found : Match,
+    args : (List Term),
+    keywords : (List GrammarProof::Keyword)
+  ],
+  result: Term,
+  body: (let range : (Nat * Nat) := (atomRange ctx (position + 1) (project found upto)); (ctor Term.TNounOf (cons (project found form) (nil Nat)) (first range) (second range) (prim list_fold (fun (rest : Term) (arg : Term) => (ctor Term.TArgCons arg rest)) (ctor Term.TArgNil) (prim list_fold (fun (turned : (List Term)) (arg : Term) => (cons arg turned)) (nil Term) args : (List Term)) : Term) keywords)),
+  executable: true
+}
+
+definition{
+  name: mk,
+  parameters: [m : Mach, stack : (List Frame), returned : (List TAlt)],
+  result: Mach,
+  body: (record Mach {stack := stack, returned := returned, error := (project m error), bud := (project m bud)}),
+  executable: true
+}
+
+definition{
+  name: failed,
+  parameters: [m : Mach, bud : Bud, problem : PrimitiveScan::Rejection],
+  result: Mach,
+  body: (record Mach {stack := (project m stack), returned := (project m returned), error := (ctor Option.some [PrimitiveScan::Rejection] problem), bud := bud}),
+  executable: true
+}
+
+definition{
+  name: startStep,
+  parameters: [ctx : Ctx, m : Mach, rest : (List Frame), position : Nat, depth : Nat],
+  result: Mach,
+  body: (let charge : (Bud * (Option PrimitiveScan::Rejection)) := (chargeState ctx (project m bud)); (match (second charge)
+    | Option.some problem => (failed m (first charge) problem)
+    | Option.none => (match (depthRefusal ctx depth position)
+      | Option.some problem => (failed m (first charge) problem)
+      | Option.none => (let alts : (List TAlt) := (match (islandAt ctx position)
+        | Option.some token => (cons (record TAlt {upto := (position + 1), term := (ctor Term.TIsland token)}) (nil TAlt))
+        | Option.none => (nil TAlt)); (match (isWord ctx position (lit "the"))
+        | Option.none => (record Mach {stack := rest, returned := alts, error := (ctor Option.none [PrimitiveScan::Rejection]), bud := (first charge)})
+        | Option.some theKw => (let matched : Matched := (formMatches ctx (first charge) (position + 1) 1 2); (match (project matched error)
+          | Option.some problem => (failed m (project matched bud) problem)
+          | Option.none => (record Mach {stack := (cons (ctor Frame.XMatches position depth theKw alts (project matched found)) rest), returned := (nil TAlt), error := (ctor Option.none [PrimitiveScan::Rejection]), bud := (project matched bud)})))))))),
+  executable: true
+}
+
+definition{
+  name: matchesStep,
+  parameters: [
+    ctx : Ctx,
+    m : Mach,
+    rest : (List Frame),
+    position : Nat,
+    depth : Nat,
+    theKw : GrammarProof::Keyword,
+    alts : (List TAlt),
+    pending : (List Match)
+  ],
+  result: Mach,
+  body: (match pending
+    | List.nil => (mk m rest alts)
+    | List.cons found later => (match (isWord ctx (project found upto) (lit "of"))
+      | Option.some ofKw => (mk m (cons (ctor Frame.XStart ((project found upto) + 1) (depth + 1)) (cons (ctor Frame.XAfterFirst position depth theKw alts later found ofKw) rest)) (nil TAlt))
+      | Option.none => (mk m (cons (ctor Frame.XMatches position depth theKw alts later) rest) (nil TAlt)))),
+  executable: true
+}
+
+definition{
+  name: firstsStep,
+  parameters: [
+    ctx : Ctx,
+    m : Mach,
+    rest : (List Frame),
+    position : Nat,
+    depth : Nat,
+    theKw : GrammarProof::Keyword,
+    alts : (List TAlt),
+    pending : (List Match),
+    found : Match,
+    ofKw : GrammarProof::Keyword,
+    firsts : (List TAlt)
+  ],
+  result: Mach,
+  body: (match firsts
+    | List.nil => (mk m (cons (ctor Frame.XMatches position depth theKw alts pending) rest) (nil TAlt))
+    | List.cons held later => (if ((project found category) =? 1) then (mk m (cons (ctor Frame.XFirsts position depth theKw (prim append alts (cons (record TAlt {upto := (project held upto), term := (nounOf ctx position found (cons (project held term) (nil Term)) (cons theKw (cons ofKw (nil GrammarProof::Keyword))))}) (nil TAlt)) : (List TAlt)) pending found ofKw later) rest) (nil TAlt)) else (match (isWord ctx (project held upto) (lit "and"))
+      | Option.some andKw => (mk m (cons (ctor Frame.XStart ((project held upto) + 1) (depth + 1)) (cons (ctor Frame.XAfterSecond position depth theKw alts pending found ofKw later held andKw) rest)) (nil TAlt))
+      | Option.none => (mk m (cons (ctor Frame.XFirsts position depth theKw alts pending found ofKw later) rest) (nil TAlt))))),
+  executable: true
+}
+
+definition{
+  name: secondsStep,
+  parameters: [
+    ctx : Ctx,
+    m : Mach,
+    rest : (List Frame),
+    position : Nat,
+    depth : Nat,
+    theKw : GrammarProof::Keyword,
+    alts : (List TAlt),
+    pending : (List Match),
+    found : Match,
+    ofKw : GrammarProof::Keyword,
+    firsts : (List TAlt),
+    held : TAlt,
+    andKw : GrammarProof::Keyword
+  ],
+  result: Mach,
+  body: (let folded : (Bud * ((List TAlt) * (Option PrimitiveScan::Rejection))) := (prim list_fold (fun [andKw, ctx, found, held, ofKw, position, theKw] (state : (Bud * ((List TAlt) * (Option PrimitiveScan::Rejection)))) (latter : TAlt) => (match (second (second state))
+    | Option.some problem => state
+    | Option.none => (let charge : (Bud * (Option PrimitiveScan::Rejection)) := (chargeState ctx (first state)); (match (second charge)
+      | Option.some problem => ((first charge), ((first (second state)), (ctor Option.some [PrimitiveScan::Rejection] problem)))
+      | Option.none => ((first charge), ((prim append (first (second state)) (cons (record TAlt {upto := (project latter upto), term := (nounOf ctx position found (cons (project held term) (cons (project latter term) (nil Term))) (cons theKw (cons ofKw (cons andKw (nil GrammarProof::Keyword)))))}) (nil TAlt)) : (List TAlt)), (ctor Option.none [PrimitiveScan::Rejection]))))))) ((project m bud), (alts, (ctor Option.none [PrimitiveScan::Rejection]))) (project m returned) : (Bud * ((List TAlt) * (Option PrimitiveScan::Rejection)))); (match (second (second folded))
+    | Option.some problem => (failed m (first folded) problem)
+    | Option.none => (record Mach {stack := (cons (ctor Frame.XFirsts position depth theKw (first (second folded)) pending found ofKw firsts) rest), returned := (nil TAlt), error := (ctor Option.none [PrimitiveScan::Rejection]), bud := (first folded)}))),
+  executable: true
+}
+
+definition{
+  name: machStep,
+  parameters: [ctx : Ctx, m : Mach],
+  result: (Option Mach),
+  body: (match (project m error)
+    | Option.some problem => (ctor Option.none [Mach])
+    | Option.none => (match (project m stack)
+      | List.nil => (ctor Option.none [Mach])
+      | List.cons frame rest => (ctor Option.some [Mach] (match frame
+        | Frame.XStart position depth => (startStep ctx m rest position depth)
+        | Frame.XMatches position depth theKw alts pending => (matchesStep ctx m rest position depth theKw alts pending)
+        | Frame.XAfterFirst position depth theKw alts pending found ofKw => (mk m (cons (ctor Frame.XFirsts position depth theKw alts pending found ofKw (project m returned)) rest) (nil TAlt))
+        | Frame.XFirsts position depth theKw alts pending found ofKw firsts => (firstsStep ctx m rest position depth theKw alts pending found ofKw firsts)
+        | Frame.XAfterSecond position depth theKw alts pending found ofKw firsts held andKw => (secondsStep ctx m rest position depth theKw alts pending found ofKw firsts held andKw))))),
+  executable: true
+}
+
+definition{
+  name: termPhrase,
+  parameters: [
+    path : Bytes,
+    atoms : (List PrimitiveScan::Atom),
+    tokens : (List GrammarProof::TextToken),
+    edges : (List (List TEdge)),
+    maxEdges : Nat,
+    maxStates : Nat,
+    maxDepth : Nat,
+    statesBefore : Nat,
+    edgesBefore : Nat,
+    position : Nat,
+    depth : Nat
+  ],
+  result: (Result (List TAlt) PrimitiveScan::Rejection),
+  body: (let ctx : Ctx := (context path atoms tokens edges maxEdges maxStates maxDepth); (let final : Mach := (first (prim iterate_until (fun [ctx] (m : Mach) => (machStep ctx m)) ((prim multiply (maxStates + 2) 64 : Nat) + 64) (record Mach {stack := (cons (ctor Frame.XStart position depth) (nil Frame)), returned := (nil TAlt), error := (ctor Option.none [PrimitiveScan::Rejection]), bud := (fresh statesBefore edgesBefore)}) : (Mach * Bool))); (match (project final error)
+    | Option.some problem => (ctor Result.error [(List TAlt), PrimitiveScan::Rejection] problem)
+    | Option.none => (ctor Result.ok [(List TAlt), PrimitiveScan::Rejection] (project final returned))))),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

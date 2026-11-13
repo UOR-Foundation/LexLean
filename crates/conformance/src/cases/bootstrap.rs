@@ -31,6 +31,7 @@ mod lexicon_lse;
 mod lock_text;
 mod manifest_text;
 mod project_text;
+mod proposition_terms;
 mod runtime_validate;
 mod rust_assemble;
 mod rust_bodies;
@@ -2576,6 +2577,7 @@ fn case(id: &str) {
         "BS-33" => project_text::case(),
         "BS-34" => manifest_text::case(),
         "BS-35" => grammar_proof::case(),
+        "BS-43" => proposition_terms::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

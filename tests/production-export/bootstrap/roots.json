@@ -511,6 +511,38 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "keyword_entry",
+      "root": "LexLeanBoot.PropositionTerms.keywordEntry",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "unknown_atom",
+      "root": "LexLeanBoot.PropositionTerms.unknownAtom",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "binder_alternatives",
+      "root": "LexLeanBoot.PropositionTerms.binderAlternatives",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "term_phrase",
+      "root": "LexLeanBoot.PropositionTerms.termPhrase",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

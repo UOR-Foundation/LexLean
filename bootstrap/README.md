@@ -57,3 +57,5 @@ canonical project manifest of SPEC.md §10.1 and its digest.
 `Numeral`, `Order`, and `Text`, and writes the build manifest of SPEC.md §21.6.
 `src/GrammarProof.lex.tex` (SPEC.md §17.23, `BS-35`) imports `PrimitiveScan`, whose atoms, places,
 and refusals it reads and returns, and the standard library's `Text`.
+`src/PropositionTerms.lex.tex` (SPEC.md §17.23, `BS-43`) imports `GrammarProof`, whose text tokens
+and keyword occurrences it reads and returns, `PrimitiveScan`, and the standard library's `Numeral`.
