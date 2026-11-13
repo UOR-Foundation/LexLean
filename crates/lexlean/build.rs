@@ -28,6 +28,9 @@ const SEMANTIC_DIRS: [(&str, &str); 4] = [
     ("tests/golden/canonical-json", "tests/golden/canonical-json"),
 ];
 
+/// The embedded directory the `production-data` feature carries.
+const PRODUCTION_DATA_DIR: &str = "language/preservation-1.2/library";
+
 fn main() {
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("cargo sets this"));
 
@@ -46,7 +49,16 @@ fn main() {
     // Bytewise-sorted repository-relative path order, the §11.5 tree order.
     files.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
 
+    // Without `production-data` the native preservation library is left out
+    // (SPEC.md §8.4): only certificate generation reads it, and it is most of
+    // the embedded bytes. Its files are absent, not empty, so a reader that
+    // reached one would find it missing rather than read an empty library.
+    let production_data = env::var_os("CARGO_FEATURE_PRODUCTION_DATA").is_some();
     let mut out = String::new();
+    out.push_str(&format!(
+        "/// Whether this build embeds the production data (`{PRODUCTION_DATA_DIR}/`).\n\
+         pub const PRODUCTION_DATA: bool = {production_data};\n\n"
+    ));
     out.push_str(
         "/// Every embedded normative file as `(repository-relative path, bytes)`,\n\
          /// in bytewise-sorted path order.\n\
@@ -54,6 +66,9 @@ fn main() {
     );
     for (rel, abs) in &files {
         println!("cargo:rerun-if-changed={}", abs.display());
+        if !production_data && rel.starts_with(&format!("{PRODUCTION_DATA_DIR}/")) {
+            continue;
+        }
         out.push_str(&format!(
             "    ({:?}, include_bytes!({:?})),\n",
             rel,
