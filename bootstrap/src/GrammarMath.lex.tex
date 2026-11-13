@@ -1,0 +1,751 @@
+\begin{lexlean}{GrammarMath}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Text}
+\importmodule{PrimitiveScan}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: LeafKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: LForm, fields: [Nat]}, {name: LIdent, fields: [Bytes]}]
+}
+
+inductive{
+  name: Math,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: MNumeral, fields: [Bytes, Nat, Nat]},
+    {name: MLeaf, fields: [(List LeafKind), Nat, Nat]},
+    {name: MLexeme, fields: [Bytes, Nat, Nat]},
+    {name: MReference, fields: [Bytes, Bytes, Nat, Nat]},
+    {name: MCall, fields: [Math, Math, Nat, Nat, Nat, Nat, (List Nat)]},
+    {name: MPrefix, fields: [(List Nat), Nat, Nat, Math]},
+    {name: MPostfix, fields: [(List Nat), Nat, Nat, Math]},
+    {name: MInfix, fields: [(List Nat), Nat, Nat, Math, Math]},
+    {name: MParen, fields: [Math, Nat, Nat]},
+    {name: MArgNil, fields: []},
+    {name: MArgCons, fields: [Math, Math]}
+  ]
+}
+
+structure{
+  name: Edge,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: form, type: Nat},
+    {name: stop, type: Nat},
+    {name: frame, type: Nat},
+    {name: precedence, type: Nat},
+    {name: associativity, type: Nat}
+  ]
+}
+
+structure{
+  name: Val,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: ast, type: Math},
+    {name: startsAt, type: Nat},
+    {name: endsAt, type: Nat},
+    {name: code, type: Bytes}
+  ]
+}
+
+structure{
+  name: Choice,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: position, type: Nat}, {name: upto, type: Nat}]
+}
+
+structure{
+  name: Met,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: position, type: Nat}, {name: ends, type: (List Nat)}]
+}
+
+structure{
+  name: Bud,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: states, type: Nat}, {name: edges, type: Nat}, {name: memo, type: (List Nat)}]
+}
+
+inductive{
+  name: Frame,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: FExpr, fields: [Nat, Nat]},
+    {name: FLoop, fields: [Nat, Nat, (Option Nat)]},
+    {name: FInfix, fields: [Nat, Nat, Val, (List Nat), Nat, Nat, (Option Nat)]},
+    {name: FPrimary, fields: [Nat]},
+    {name: FParen, fields: [Nat, Nat]},
+    {name: FPrefix, fields: [(List Nat), Nat, Nat, Nat]},
+    {name: FPostfix, fields: [Nat]},
+    {name: FCall, fields: [Val, Nat, (List Nat), (List Val), Nat]}
+  ]
+}
+
+structure{
+  name: Ctx,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: path, type: Bytes},
+    {name: atoms, type: (List PrimitiveScan::Atom)},
+    {name: stop, type: Nat},
+    {name: edges, type: (List (List Edge))},
+    {name: maxStates, type: Nat},
+    {name: maxDepth, type: Nat},
+    {name: maxEdges, type: Nat},
+    {name: chosen, type: (List Choice)}
+  ]
+}
+
+structure{
+  name: Mach,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: cursor, type: Nat},
+    {name: stack, type: (List Frame)},
+    {name: value, type: (Option Val)},
+    {name: error, type: (Option PrimitiveScan::Rejection)},
+    {name: bud, type: Bud},
+    {name: met, type: (List Met)}
+  ]
+}
+
+structure{
+  name: Looked,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: bud, type: Bud},
+    {name: found, type: (List Edge)},
+    {name: error, type: (Option PrimitiveScan::Rejection)}
+  ]
+}
+
+structure{
+  name: Braced,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: cursor, type: Nat}, {name: spelled, type: Bytes}, {name: closed, type: Bool}]
+}
+
+structure{
+  name: Composed,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: spelled, type: Bytes}, {name: next, type: Nat}, {name: reach, type: Nat}]
+}
+
+structure{
+  name: Pass,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: result, type: (Result Val PrimitiveScan::Rejection)},
+    {name: bud, type: Bud},
+    {name: met, type: (List Met)}
+  ]
+}
+
+structure{
+  name: Outer,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: queue, type: (List (List Choice))},
+    {name: enqueued, type: (List Bytes)},
+    {name: covers, type: (List Val)},
+    {name: failure, type: (Option PrimitiveScan::Rejection)},
+    {name: bud, type: Bud}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: both,
+  parameters: [left : Bool, right : Bool],
+  result: Bool,
+  body: (if left then right else false),
+  executable: true
+}
+
+definition{
+  name: same,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal left right : Bool),
+  executable: true
+}
+
+definition{
+  name: num,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Numeral::decimal number),
+  executable: true
+}
+
+definition{
+  name: encN,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (cat (num number) (lit ",")),
+  executable: true
+}
+
+definition{
+  name: encB,
+  parameters: [piece : Bytes],
+  result: Bytes,
+  body: (cat (cat (num (prim length piece : Nat)) (lit ":")) piece),
+  executable: true
+}
+
+definition{
+  name: encNs,
+  parameters: [items : (List Nat)],
+  result: Bytes,
+  body: (prim list_fold (fun (out : Bytes) (item : Nat) => (cat out (encN item))) (encN (prim length items : Nat)) items : Bytes),
+  executable: true
+}
+
+definition{
+  name: reverseNats,
+  parameters: [items : (List Nat)],
+  result: (List Nat),
+  body: (prim list_fold (fun (turned : (List Nat)) (item : Nat) => (cons item turned)) (nil Nat) items : (List Nat)),
+  executable: true
+}
+
+definition{
+  name: reverseVals,
+  parameters: [items : (List Val)],
+  result: (List Val),
+  body: (prim list_fold (fun (turned : (List Val)) (item : Val) => (cons item turned)) (nil Val) items : (List Val)),
+  executable: true
+}
+
+definition{
+  name: reverseMets,
+  parameters: [items : (List Met)],
+  result: (List Met),
+  body: (prim list_fold (fun (turned : (List Met)) (item : Met) => (cons item turned)) (nil Met) items : (List Met)),
+  executable: true
+}
+
+definition{
+  name: natIn,
+  parameters: [needle : Nat, items : (List Nat)],
+  result: Bool,
+  body: (prim list_fold (fun [needle] (found : Bool) (item : Nat) => (if found then true else (item =? needle))) false items : Bool),
+  executable: true
+}
+
+definition{
+  name: bytesIn,
+  parameters: [needle : Bytes, items : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun [needle] (found : Bool) (item : Bytes) => (if found then true else (same item needle))) false items : Bool),
+  executable: true
+}
+
+definition{
+  name: insertNat,
+  parameters: [sorted : (List Nat), number : Nat],
+  result: (List Nat),
+  body: (let folded : (Bool * (List Nat)) := (prim list_fold (fun [number] (state : (Bool * (List Nat))) (item : Nat) => (if (first state) then (true, (cons item (second state))) else (if (number <? item) then (true, (cons item (cons number (second state)))) else (if (number =? item) then (true, (cons item (second state))) else (false, (cons item (second state))))))) (false, (nil Nat)) sorted : (Bool * (List Nat))); (reverseNats (if (first folded) then (second folded) else (cons number (second folded))))),
+  executable: true
+}
+
+definition{
+  name: atomAt,
+  parameters: [ctx : Ctx, position : Nat],
+  result: (Option PrimitiveScan::Atom),
+  body: (prim index (project ctx atoms) position : (Option PrimitiveScan::Atom)),
+  executable: true
+}
+
+definition{
+  name: atomOr,
+  parameters: [ctx : Ctx, position : Nat],
+  result: PrimitiveScan::Atom,
+  body: (match (atomAt ctx position)
+    | Option.some atom => atom
+    | Option.none => (record PrimitiveScan::Atom {kind := (ctor PrimitiveScan::AtomClass.Whitespace), byteStart := 0, byteEnd := 0, lineStart := 1, columnStart := 1, lineEnd := 1, columnEnd := 1, text := (lit "")})),
+  executable: true
+}
+
+definition{
+  name: classAt,
+  parameters: [ctx : Ctx, position : Nat],
+  result: Nat,
+  body: (match (atomAt ctx position)
+    | Option.some atom => (PrimitiveScan::classCode atom)
+    | Option.none => 7),
+  executable: true
+}
+
+definition{
+  name: isAtom,
+  parameters: [atom : PrimitiveScan::Atom, code : Nat, spelled : Bytes],
+  result: Bool,
+  body: (both ((PrimitiveScan::classCode atom) =? code) (same (project atom text) spelled)),
+  executable: true
+}
+
+definition{
+  name: wsStep,
+  parameters: [ctx : Ctx, position : Nat],
+  result: (Option Nat),
+  body: (if (position <? (project ctx stop)) then (if ((classAt ctx position) =? 6) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])) else (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: skipWs,
+  parameters: [ctx : Ctx, position : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [ctx] (current : Nat) => (wsStep ctx current)) ((prim length (project ctx atoms) : Nat) + 1) position : (Nat * Bool))),
+  executable: true
+}
+
+definition{
+  name: placeAt,
+  parameters: [ctx : Ctx, position : Nat],
+  result: PrimitiveScan::Place,
+  body: (PrimitiveScan::placeOfAtom (project ctx path) (atomOr ctx position)),
+  executable: true
+}
+
+definition{
+  name: spanHere,
+  parameters: [ctx : Ctx, position : Nat],
+  result: PrimitiveScan::Place,
+  body: (let here : Nat := (skipWs ctx position); (if (here <? (project ctx stop)) then (placeAt ctx here) else (placeAt ctx (prim subtract (project ctx stop) 1 : Nat)))),
+  executable: true
+}
+
+definition{
+  name: refusal,
+  parameters: [code : Bytes, message : Bytes, place : (Option PrimitiveScan::Place)],
+  result: PrimitiveScan::Rejection,
+  body: (record PrimitiveScan::Rejection {code := code, message := message, place := place, help := (ctor Option.none [Bytes])}),
+  executable: true
+}
+
+definition{
+  name: placed,
+  parameters: [code : Bytes, message : Bytes, place : PrimitiveScan::Place],
+  result: PrimitiveScan::Rejection,
+  body: (refusal code message (ctor Option.some [PrimitiveScan::Place] place)),
+  executable: true
+}
+
+definition{
+  name: chargeState,
+  parameters: [ctx : Ctx, bud : Bud],
+  result: (Bud * (Option PrimitiveScan::Rejection)),
+  body: (let states : Nat := ((project bud states) + 1); (let after : Bud := (record Bud {states := states, edges := (project bud edges), memo := (project bud memo)}); (if ((project ctx maxStates) <? states) then (after, (ctor Option.some [PrimitiveScan::Rejection] (refusal (lit "LLS8002") (cat (cat (cat (cat (lit "max_parse_states exceeded in phase parse: configured ") (num (project ctx maxStates))) (lit ", observed ")) (num states)) (lit " states")) (ctor Option.none [PrimitiveScan::Place])))) else (after, (ctor Option.none [PrimitiveScan::Rejection]))))),
+  executable: true
+}
+
+definition{
+  name: edgesAt,
+  parameters: [ctx : Ctx, bud : Bud, position : Nat],
+  result: Looked,
+  body: (let found : (List Edge) := (match (prim index (project ctx edges) position : (Option (List Edge)))
+    | Option.some listed => listed
+    | Option.none => (nil Edge)); (if (natIn position (project bud memo)) then (record Looked {bud := bud, found := found, error := (ctor Option.none [PrimitiveScan::Rejection])}) else (let count : Nat := ((project bud edges) + (prim length found : Nat)); (if ((project ctx maxEdges) <? count) then (record Looked {bud := (record Bud {states := (project bud states), edges := count, memo := (project bud memo)}), found := (nil Edge), error := (ctor Option.some [PrimitiveScan::Rejection] (refusal (lit "LLS8002") (cat (cat (cat (cat (lit "max_token_lattice_edges exceeded in phase lexical resolution: configured ") (num (project ctx maxEdges))) (lit ", observed ")) (num count)) (lit " distinct lattice edges")) (ctor Option.none [PrimitiveScan::Place])))}) else (record Looked {bud := (record Bud {states := (project bud states), edges := count, memo := (cons position (project bud memo))}), found := found, error := (ctor Option.none [PrimitiveScan::Rejection])}))))),
+  executable: true
+}
+
+definition{
+  name: mathVal,
+  parameters: [ast : Math, startsAt : Nat, endsAt : Nat, code : Bytes],
+  result: Val,
+  body: (record Val {ast := ast, startsAt := startsAt, endsAt := endsAt, code := code}),
+  executable: true
+}
+
+definition{
+  name: kindCode,
+  parameters: [kinds : (List LeafKind)],
+  result: Bytes,
+  body: (prim list_fold (fun (out : Bytes) (kind : LeafKind) => (cat out (match kind
+    | LeafKind.LForm form => (cat (lit "F") (encN form))
+    | LeafKind.LIdent spelled => (cat (lit "I") (encB spelled))))) (encN (prim length kinds : Nat)) kinds : Bytes),
+  executable: true
+}
+
+definition{
+  name: argChain,
+  parameters: [args : (List Val)],
+  result: Math,
+  body: (prim list_fold (fun (rest : Math) (arg : Val) => (ctor Math.MArgCons (project arg ast) rest)) (ctor Math.MArgNil) (reverseVals args) : Math),
+  executable: true
+}
+
+definition{
+  name: callVal,
+  parameters: [
+    head : Val,
+    args : (List Val),
+    upto : Nat,
+    opening : Nat,
+    closing : Nat,
+    commas : (List Nat)
+  ],
+  result: Val,
+  body: (mathVal (ctor Math.MCall (project head ast) (argChain args) (project head startsAt) upto opening closing commas) (project head startsAt) upto (cat (cat (cat (cat (cat (lit "C") (project head code)) (prim list_fold (fun (out : Bytes) (arg : Val) => (cat out (project arg code))) (encN (prim length args : Nat)) args : Bytes)) (encN upto)) (cat (encN opening) (encN closing))) (encNs commas))),
+  executable: true
+}
+
+definition{
+  name: opVal,
+  parameters: [
+    tag : Bytes,
+    candidates : (List Nat),
+    opStart : Nat,
+    opEnd : Nat,
+    arg : Val,
+    prefixed : Bool
+  ],
+  result: Val,
+  body: (let code : Bytes := (cat (cat (cat (cat tag (encNs candidates)) (encN opStart)) (encN opEnd)) (project arg code)); (if prefixed then (mathVal (ctor Math.MPrefix candidates opStart opEnd (project arg ast)) opStart (project arg endsAt) code) else (mathVal (ctor Math.MPostfix candidates opStart opEnd (project arg ast)) (project arg startsAt) opEnd code))),
+  executable: true
+}
+
+definition{
+  name: infixVal,
+  parameters: [candidates : (List Nat), opStart : Nat, opEnd : Nat, lhs : Val, rhs : Val],
+  result: Val,
+  body: (mathVal (ctor Math.MInfix candidates opStart opEnd (project lhs ast) (project rhs ast)) (project lhs startsAt) (project rhs endsAt) (cat (cat (cat (cat (cat (lit "X") (encNs candidates)) (encN opStart)) (encN opEnd)) (project lhs code)) (project rhs code))),
+  executable: true
+}
+
+definition{
+  name: mk,
+  parameters: [m : Mach, cursor : Nat, stack : (List Frame), value : (Option Val)],
+  result: Mach,
+  body: (record Mach {cursor := cursor, stack := stack, value := value, error := (project m error), bud := (project m bud), met := (project m met)}),
+  executable: true
+}
+
+definition{
+  name: failed,
+  parameters: [m : Mach, problem : PrimitiveScan::Rejection],
+  result: Mach,
+  body: (record Mach {cursor := (project m cursor), stack := (project m stack), value := (project m value), error := (ctor Option.some [PrimitiveScan::Rejection] problem), bud := (project m bud), met := (project m met)}),
+  executable: true
+}
+
+definition{
+  name: withBud,
+  parameters: [m : Mach, bud : Bud],
+  result: Mach,
+  body: (record Mach {cursor := (project m cursor), stack := (project m stack), value := (project m value), error := (project m error), bud := bud, met := (project m met)}),
+  executable: true
+}
+
+definition{
+  name: braceStep,
+  parameters: [ctx : Ctx, state : Braced],
+  result: (Option Braced),
+  body: (if (project state closed) then (ctor Option.none [Braced]) else (let position : Nat := (project state cursor); (if (position <? (project ctx stop)) then (match (atomAt ctx position)
+    | Option.some atom => (if (isAtom atom 3 (lit "}")) then (ctor Option.some [Braced] (record Braced {cursor := (position + 1), spelled := (project state spelled), closed := true})) else (if ((PrimitiveScan::classCode atom) =? 6) then (ctor Option.some [Braced] (record Braced {cursor := (position + 1), spelled := (project state spelled), closed := false})) else (ctor Option.some [Braced] (record Braced {cursor := (position + 1), spelled := (cat (project state spelled) (project atom text)), closed := false}))))
+    | Option.none => (ctor Option.none [Braced])) else (ctor Option.none [Braced])))),
+  executable: true
+}
+
+definition{
+  name: braces,
+  parameters: [ctx : Ctx, position : Nat],
+  result: (Result Braced PrimitiveScan::Rejection),
+  body: (let here : Nat := (skipWs ctx position); (if (both (here <? (project ctx stop)) (isAtom (atomOr ctx here) 3 (lit "{"))) then (let final : Braced := (first (prim iterate_until (fun [ctx] (state : Braced) => (braceStep ctx state)) ((prim length (project ctx atoms) : Nat) + 1) (record Braced {cursor := (here + 1), spelled := (lit ""), closed := false}) : (Braced * Bool))); (if (project final closed) then (ctor Result.ok [Braced, PrimitiveScan::Rejection] final) else (ctor Result.error [Braced, PrimitiveScan::Rejection] (placed (lit "LLP2003") (lit "unclosed `{` argument") (spanHere ctx (project final cursor)))))) else (ctor Result.error [Braced, PrimitiveScan::Rejection] (placed (lit "LLP2003") (lit "expected `{`") (spanHere ctx here))))),
+  executable: true
+}
+
+definition{
+  name: composeStep,
+  parameters: [ctx : Ctx, state : Composed],
+  result: (Option Composed),
+  body: (match (atomAt ctx (project state next))
+    | Option.some atom => (let code : Nat := (PrimitiveScan::classCode atom); (if (both ((project atom byteStart) =? (project state reach)) (if (if (code =? 1) then true else (code =? 2)) then true else (both (code =? 4) (if (same (project atom text) (lit "_")) then true else (same (project atom text) (lit "'")))))) then (ctor Option.some [Composed] (record Composed {spelled := (cat (project state spelled) (project atom text)), next := ((project state next) + 1), reach := (project atom byteEnd)})) else (ctor Option.none [Composed])))
+    | Option.none => (ctor Option.none [Composed])),
+  executable: true
+}
+
+definition{
+  name: composedAt,
+  parameters: [ctx : Ctx, atom : PrimitiveScan::Atom, position : Nat],
+  result: Composed,
+  body: (first (prim iterate_until (fun [ctx] (state : Composed) => (composeStep ctx state)) ((prim length (project ctx atoms) : Nat) + 1) (record Composed {spelled := (project atom text), next := (position + 1), reach := (project atom byteEnd)}) : (Composed * Bool))),
+  executable: true
+}
+
+definition{
+  name: chosenAt,
+  parameters: [ctx : Ctx, position : Nat],
+  result: (Option Nat),
+  body: (prim list_fold (fun [position] (found : (Option Nat)) (choice : Choice) => (if ((project choice position) =? position) then (ctor Option.some [Nat] (project choice upto)) else found)) (ctor Option.none [Nat]) (project ctx chosen) : (Option Nat)),
+  executable: true
+}
+
+definition{
+  name: leafStep,
+  parameters: [
+    ctx : Ctx,
+    m : Mach,
+    rest : (List Frame),
+    depth : Nat,
+    position : Nat,
+    atom : PrimitiveScan::Atom,
+    leaves : (List Edge)
+  ],
+  result: Mach,
+  body: (let stop : Nat := (project ctx stop); (let identifier : (Option Composed) := (if ((PrimitiveScan::classCode atom) =? 1) then (let composed : Composed := (composedAt ctx atom position); (if ((project composed next) <=? stop) then (ctor Option.some [Composed] composed) else (ctor Option.none [Composed]))) else (ctor Option.none [Composed])); (let leafEnds : (List Nat) := (prim list_fold (fun (sorted : (List Nat)) (edge : Edge) => (insertNat sorted (project edge stop))) (nil Nat) leaves : (List Nat)); (let ends : (List Nat) := (match identifier
+    | Option.some composed => (insertNat leafEnds (project composed next))
+    | Option.none => leafEnds); (match (prim index ends 0 : (Option Nat))
+    | Option.none => (failed m (placed (lit "LLL1004") (cat (cat (lit "unknown atom `") (project atom text)) (lit "` in a mathematical island")) (placeAt ctx position)))
+    | Option.some shortest => (let upto : Nat := (match (chosenAt ctx position)
+      | Option.some picked => (if (natIn picked ends) then picked else shortest)
+      | Option.none => shortest); (let met : (List Met) := (if (1 <? (prim length ends : Nat)) then (cons (record Met {position := position, ends := ends}) (project m met)) else (project m met)); (let forms : (List LeafKind) := (prim list_fold (fun [upto] (kinds : (List LeafKind)) (edge : Edge) => (if ((project edge stop) =? upto) then (cons (ctor LeafKind.LForm (project edge form)) kinds) else kinds)) (nil LeafKind) leaves : (List LeafKind)); (let kinds : (List LeafKind) := (prim list_fold (fun (turned : (List LeafKind)) (kind : LeafKind) => (cons kind turned)) (match identifier
+      | Option.some composed => (if ((project composed next) =? upto) then (cons (ctor LeafKind.LIdent (project composed spelled)) (nil LeafKind)) else (nil LeafKind))
+      | Option.none => (nil LeafKind)) forms : (List LeafKind)); (let leaf : Val := (mathVal (ctor Math.MLeaf kinds position upto) position upto (cat (cat (cat (lit "L") (kindCode kinds)) (encN position)) (encN upto))); (record Mach {cursor := upto, stack := (cons (ctor Frame.FPostfix depth) rest), value := (ctor Option.some [Val] leaf), error := (project m error), bud := (project m bud), met := met}))))))))))),
+  executable: true
+}
+
+definition{
+  name: profileAgrees,
+  parameters: [head : Edge, edges : (List Edge), withFrame : Bool],
+  result: Bool,
+  body: (prim list_fold (fun [head, withFrame] (fine : Bool) (edge : Edge) => (if fine then (both ((project edge stop) =? (project head stop)) (both ((project edge precedence) =? (project head precedence)) (if withFrame then (both ((project edge associativity) =? (project head associativity)) ((project edge frame) =? (project head frame))) else true))) else false)) true edges : Bool),
+  executable: true
+}
+
+definition{
+  name: formsOf,
+  parameters: [edges : (List Edge)],
+  result: (List Nat),
+  body: (reverseNats (prim list_fold (fun (out : (List Nat)) (edge : Edge) => (cons (project edge form) out)) (nil Nat) edges : (List Nat))),
+  executable: true
+}
+
+definition{
+  name: keepEdges,
+  parameters: [edges : (List Edge), stop : Nat, low : Nat, high : Nat],
+  result: (List Edge),
+  body: (prim list_fold (fun [high, low, stop] (out : (List Edge)) (edge : Edge) => (prim append out (if (both ((project edge stop) <=? stop) (both (low <=? (project edge frame)) ((project edge frame) <=? high))) then (cons edge (nil Edge)) else (nil Edge)) : (List Edge))) (nil Edge) edges : (List Edge)),
+  executable: true
+}
+
+definition{
+  name: formStep,
+  parameters: [
+    ctx : Ctx,
+    m : Mach,
+    rest : (List Frame),
+    depth : Nat,
+    position : Nat,
+    atom : PrimitiveScan::Atom
+  ],
+  result: Mach,
+  body: (let looked : Looked := (edgesAt ctx (project m bud) position); (let charged : Mach := (withBud m (project looked bud)); (match (project looked error)
+    | Option.some problem => (failed charged problem)
+    | Option.none => (let stop : Nat := (project ctx stop); (let prefixes : (List Edge) := (keepEdges (project looked found) stop 2 2); (let leaves : (List Edge) := (keepEdges (project looked found) stop 0 1); (match (prim index prefixes 0 : (Option Edge))
+      | Option.some head => (if (profileAgrees head prefixes false) then (if ((prim length leaves : Nat) =? 0) then (mk charged (project head stop) (cons (ctor Frame.FExpr (project head precedence) (depth + 1)) (cons (ctor Frame.FPrefix (formsOf prefixes) position (project head stop) depth) rest)) (ctor Option.none [Val])) else (failed charged (placed (lit "LLP2002") (lit "this surface is both a prefix operator and a leaf; LexLean does not guess") (placeAt ctx position)))) else (failed charged (placed (lit "LLP2002") (lit "prefix candidates disagree on their profile; LexLean does not guess") (placeAt ctx position))))
+      | Option.none => (leafStep ctx charged rest depth position atom leaves)))))))),
+  executable: true
+}
+
+definition{
+  name: primaryStep,
+  parameters: [ctx : Ctx, m : Mach, rest : (List Frame), depth : Nat],
+  result: Mach,
+  body: (let charge : (Bud * (Option PrimitiveScan::Rejection)) := (chargeState ctx (project m bud)); (let counted : Mach := (withBud m (first charge)); (match (second charge)
+    | Option.some problem => (failed counted problem)
+    | Option.none => (if ((project ctx maxDepth) <? depth) then (failed counted (placed (lit "LLS8002") (cat (cat (cat (cat (lit "max_scope_depth exceeded in phase parse (mathematical grouping): configured ") (num (project ctx maxDepth))) (lit ", nesting depth ")) (num depth)) (lit "")) (spanHere ctx (project m cursor)))) else (let position : Nat := (skipWs ctx (project m cursor)); (if (position <? (project ctx stop)) then (let atom : PrimitiveScan::Atom := (atomOr ctx position); (let code : Nat := (PrimitiveScan::classCode atom); (if (code =? 2) then (mk counted (position + 1) (cons (ctor Frame.FPostfix depth) rest) (ctor Option.some [Val] (mathVal (ctor Math.MNumeral (project atom text) position (position + 1)) position (position + 1) (cat (cat (cat (lit "N") (encB (project atom text))) (encN position)) (encN (position + 1)))))) else (if (isAtom atom 3 (lit "(")) then (mk counted (position + 1) (cons (ctor Frame.FExpr 0 (depth + 1)) (cons (ctor Frame.FParen position depth) rest)) (ctor Option.none [Val])) else (if (if (isAtom atom 3 (lit "{")) then true else (isAtom atom 3 (lit "}"))) then (failed counted (placed (lit "LLP2004") (lit "braces do not group mathematical terms") (placeAt ctx position))) else (if (isAtom atom 0 (lit "\\lexeme")) then (match (braces ctx (position + 1))
+      | Result.ok braced => (mk counted (project braced cursor) (cons (ctor Frame.FPostfix depth) rest) (ctor Option.some [Val] (mathVal (ctor Math.MLexeme (project braced spelled) position (project braced cursor)) position (project braced cursor) (cat (cat (cat (lit "E") (encB (project braced spelled))) (encN position)) (encN (project braced cursor))))))
+      | Result.error problem => (failed counted problem)) else (if (isAtom atom 0 (lit "\\reference")) then (match (braces ctx (position + 1))
+      | Result.ok braced => (let spelled : Bytes := (project braced spelled); (match (LexLeanStd.Text::find spelled (lit "::"))
+        | Option.some split => (let qualifier : Bytes := (LexLeanStd.Text::sliceOr spelled 0 split); (let component : Bytes := (LexLeanStd.Text::sliceOr spelled (split + 2) (prim subtract (prim length spelled : Nat) (split + 2) : Nat)); (mk counted (project braced cursor) (cons (ctor Frame.FPostfix depth) rest) (ctor Option.some [Val] (mathVal (ctor Math.MReference qualifier component position (project braced cursor)) position (project braced cursor) (cat (cat (cat (cat (lit "R") (encB qualifier)) (encB component)) (encN position)) (encN (project braced cursor))))))))
+        | Option.none => (failed counted (placed (lit "LLR3005") (cat (cat (lit "`") spelled) (lit "` is not a `Module::component` reference")) (placeAt ctx position)))))
+      | Result.error problem => (failed counted problem)) else (formStep ctx (mk counted position rest (ctor Option.none [Val])) rest depth position atom)))))))) else (failed (mk counted position rest (ctor Option.none [Val])) (placed (lit "LLP2001") (lit "expected a mathematical expression") (spanHere ctx position))))))))),
+  executable: true
+}
+
+definition{
+  name: loopStep,
+  parameters: [
+    ctx : Ctx,
+    m : Mach,
+    rest : (List Frame),
+    minBp : Nat,
+    depth : Nat,
+    last : (Option Nat),
+    lhs : Val
+  ],
+  result: Mach,
+  body: (let position : Nat := (skipWs ctx (project m cursor)); (let done : Mach := (mk m position rest (ctor Option.some [Val] lhs)); (if (position <? (project ctx stop)) then (let looked : Looked := (edgesAt ctx (project m bud) position); (let charged : Mach := (withBud done (project looked bud)); (match (project looked error)
+    | Option.some problem => (failed charged problem)
+    | Option.none => (let operators : (List Edge) := (keepEdges (project looked found) (project ctx stop) 3 4); (match (prim index operators 0 : (Option Edge))
+      | Option.none => charged
+      | Option.some head => (if (profileAgrees head operators true) then (let precedence : Nat := (project head precedence); (if (precedence <? minBp) then charged else (if ((project head frame) =? 3) then (mk charged (project head stop) (cons (ctor Frame.FLoop minBp depth last) rest) (ctor Option.some [Val] (opVal (lit "P") (formsOf operators) position (project head stop) lhs false))) else (if (match last
+        | Option.some held => (held =? precedence)
+        | Option.none => false) then (failed charged (placed (lit "LLP2004") (lit "a nonassociative chain requires explicit parentheses") (spanHere ctx position))) else (let associativity : Nat := (project head associativity); (let next : Nat := (if (associativity =? 2) then precedence else (precedence + 1)); (let remember : (Option Nat) := (if (if (associativity =? 1) then true else (associativity =? 2)) then (ctor Option.none [Nat]) else (ctor Option.some [Nat] precedence)); (mk charged (project head stop) (cons (ctor Frame.FExpr next (depth + 1)) (cons (ctor Frame.FInfix minBp depth lhs (formsOf operators) position (project head stop) remember) rest)) (ctor Option.none [Val]))))))))) else (failed charged (placed (lit "LLP2002") (lit "operator candidates at this surface disagree on precedence, associativity, or frame; LexLean does not guess") (spanHere ctx position))))))))) else done))),
+  executable: true
+}
+
+definition{
+  name: valueOr,
+  parameters: [m : Mach],
+  result: Val,
+  body: (match (project m value)
+    | Option.some held => held
+    | Option.none => (mathVal (ctor Math.MArgNil) 0 0 (lit ""))),
+  executable: true
+}
+
+definition{
+  name: runFrame,
+  parameters: [ctx : Ctx, m : Mach, rest : (List Frame), frame : Frame],
+  result: Mach,
+  body: (let held : Val := (valueOr m); (match frame
+    | Frame.FExpr minBp depth => (let charge : (Bud * (Option PrimitiveScan::Rejection)) := (chargeState ctx (project m bud)); (let counted : Mach := (withBud m (first charge)); (match (second charge)
+      | Option.some problem => (failed counted problem)
+      | Option.none => (mk counted (project m cursor) (cons (ctor Frame.FPrimary depth) (cons (ctor Frame.FLoop minBp depth (ctor Option.none [Nat])) rest)) (ctor Option.none [Val])))))
+    | Frame.FPrimary depth => (primaryStep ctx m rest depth)
+    | Frame.FLoop minBp depth last => (loopStep ctx m rest minBp depth last held)
+    | Frame.FInfix minBp depth lhs candidates opStart opEnd remember => (mk m (project m cursor) (cons (ctor Frame.FLoop minBp depth remember) rest) (ctor Option.some [Val] (infixVal candidates opStart opEnd lhs held)))
+    | Frame.FParen start depth => (let position : Nat := (skipWs ctx (project m cursor)); (if (both (position <? (project ctx stop)) (isAtom (atomOr ctx position) 3 (lit ")"))) then (mk m (position + 1) (cons (ctor Frame.FPostfix depth) rest) (ctor Option.some [Val] (mathVal (ctor Math.MParen (project held ast) start (position + 1)) start (position + 1) (cat (cat (cat (lit "G") (project held code)) (encN start)) (encN (position + 1)))))) else (failed (mk m position rest (ctor Option.none [Val])) (placed (lit "LLP2004") (lit "unclosed grouping parenthesis") (spanHere ctx position)))))
+    | Frame.FPrefix candidates opStart opEnd depth => (mk m (project m cursor) (cons (ctor Frame.FPostfix depth) rest) (ctor Option.some [Val] (opVal (lit "Q") candidates opStart opEnd held true)))
+    | Frame.FPostfix depth => (let position : Nat := (skipWs ctx (project m cursor)); (if (both (position <? (project ctx stop)) (isAtom (atomOr ctx position) 3 (lit "("))) then (mk m (position + 1) (cons (ctor Frame.FExpr 0 (depth + 1)) (cons (ctor Frame.FCall held position (nil Nat) (nil Val) depth) rest)) (ctor Option.none [Val])) else (mk m position rest (ctor Option.some [Val] held))))
+    | Frame.FCall head opening commas args depth => (let gathered : (List Val) := (cons held args); (let position : Nat := (skipWs ctx (project m cursor)); (let here : PrimitiveScan::Atom := (atomOr ctx position); (if (both (position <? (project ctx stop)) (isAtom here 4 (lit ","))) then (mk m (position + 1) (cons (ctor Frame.FExpr 0 (depth + 1)) (cons (ctor Frame.FCall head opening (cons position commas) gathered depth) rest)) (ctor Option.none [Val])) else (if (both (position <? (project ctx stop)) (isAtom here 3 (lit ")"))) then (mk m (position + 1) (cons (ctor Frame.FPostfix depth) rest) (ctor Option.some [Val] (callVal head (reverseVals gathered) (position + 1) opening position (reverseNats commas)))) else (failed (mk m position rest (ctor Option.none [Val])) (placed (lit "LLP2004") (lit "expected `,` or `)` in a call argument list") (spanHere ctx position)))))))))),
+  executable: true
+}
+
+definition{
+  name: machStep,
+  parameters: [ctx : Ctx, m : Mach],
+  result: (Option Mach),
+  body: (match (project m error)
+    | Option.some problem => (ctor Option.none [Mach])
+    | Option.none => (match (project m stack)
+      | List.nil => (ctor Option.none [Mach])
+      | List.cons frame rest => (ctor Option.some [Mach] (runFrame ctx m rest frame)))),
+  executable: true
+}
+
+definition{
+  name: cover,
+  parameters: [ctx : Ctx, start : Nat, bud : Bud],
+  result: Pass,
+  body: (let final : Mach := (first (prim iterate_until (fun [ctx] (m : Mach) => (machStep ctx m)) (prim multiply ((prim subtract (project ctx stop) start : Nat) + 4) 16 : Nat) (record Mach {cursor := start, stack := (cons (ctor Frame.FExpr 0 1) (nil Frame)), value := (ctor Option.none [Val]), error := (ctor Option.none [PrimitiveScan::Rejection]), bud := bud, met := (nil Met)}) : (Mach * Bool))); (let met : (List Met) := (reverseMets (project final met)); (match (project final error)
+    | Option.some problem => (record Pass {result := (ctor Result.error [Val, PrimitiveScan::Rejection] problem), bud := (project final bud), met := met})
+    | Option.none => (let position : Nat := (skipWs ctx (project final cursor)); (if (position <? (project ctx stop)) then (let atom : PrimitiveScan::Atom := (atomOr ctx position); (let code : Nat := (PrimitiveScan::classCode atom); (let quick : Bool := (if (if (code =? 1) then true else (if (code =? 2) then true else (if (code =? 3) then true else (code =? 6)))) then true else (same (project atom text) (lit ","))); (let looked : Looked := (if quick then (record Looked {bud := (project final bud), found := (nil Edge), error := (ctor Option.none [PrimitiveScan::Rejection])}) else (edgesAt ctx (project final bud) position)); (let unexpected : PrimitiveScan::Rejection := (placed (lit "LLP2004") (cat (cat (lit "unexpected `") (project atom text)) (lit "` after the expression")) (placeAt ctx position)); (match (project looked error)
+      | Option.some problem => (record Pass {result := (ctor Result.error [Val, PrimitiveScan::Rejection] problem), bud := (project looked bud), met := met})
+      | Option.none => (record Pass {result := (ctor Result.error [Val, PrimitiveScan::Rejection] (if (if quick then true else (0 <? (prim length (project looked found) : Nat))) then unexpected else (placed (lit "LLL1004") (cat (cat (lit "unknown atom `") (project atom text)) (lit "` in a mathematical island")) (placeAt ctx position)))), bud := (project looked bud), met := met}))))))) else (record Pass {result := (ctor Result.ok [Val, PrimitiveScan::Rejection] (valueOr final)), bud := (project final bud), met := met})))))),
+  executable: true
+}
+
+definition{
+  name: choiceKey,
+  parameters: [chosen : (List Choice)],
+  result: Bytes,
+  body: (prim list_fold (fun (out : Bytes) (choice : Choice) => (cat (cat out (encN (project choice position))) (encN (project choice upto)))) (lit "") chosen : Bytes),
+  executable: true
+}
+
+definition{
+  name: insertChoice,
+  parameters: [chosen : (List Choice), position : Nat, upto : Nat],
+  result: (List Choice),
+  body: (let folded : (Bool * (List Choice)) := (prim list_fold (fun [position, upto] (state : (Bool * (List Choice))) (choice : Choice) => (if (first state) then (true, (cons choice (second state))) else (if (position <? (project choice position)) then (true, (cons choice (cons (record Choice {position := position, upto := upto}) (second state)))) else (false, (cons choice (second state)))))) (false, (nil Choice)) chosen : (Bool * (List Choice))); (prim list_fold (fun (turned : (List Choice)) (choice : Choice) => (cons choice turned)) (nil Choice) (if (first folded) then (second folded) else (cons (record Choice {position := position, upto := upto}) (second folded))) : (List Choice))),
+  executable: true
+}
+
+definition{
+  name: choicePresent,
+  parameters: [chosen : (List Choice), position : Nat],
+  result: Bool,
+  body: (prim list_fold (fun [position] (found : Bool) (choice : Choice) => (if found then true else ((project choice position) =? position))) false chosen : Bool),
+  executable: true
+}
+
+definition{
+  name: enqueue,
+  parameters: [
+    chosen : (List Choice),
+    met : (List Met),
+    queue : (List (List Choice)),
+    enqueued : (List Bytes)
+  ],
+  result: ((List (List Choice)) * (List Bytes)),
+  body: (prim list_fold (fun [chosen] (state : ((List (List Choice)) * (List Bytes))) (point : Met) => (if (choicePresent chosen (project point position)) then state else (second (prim list_fold (fun [chosen, point] (inner : (Bool * ((List (List Choice)) * (List Bytes)))) (upto : Nat) => (if (first inner) then (false, (second inner)) else (let next : (List Choice) := (insertChoice chosen (project point position) upto); (let key : Bytes := (choiceKey next); (if (bytesIn key (second (second inner))) then (false, (second inner)) else (false, ((cons next (first (second inner))), (cons key (second (second inner)))))))))) (true, state) (project point ends) : (Bool * ((List (List Choice)) * (List Bytes))))))) (queue, enqueued) met : ((List (List Choice)) * (List Bytes))),
+  executable: true
+}
+
+definition{
+  name: outerStep,
+  parameters: [ctx : Ctx, start : Nat, state : Outer],
+  result: (Option Outer),
+  body: (match (project state queue)
+    | List.nil => (ctor Option.none [Outer])
+    | List.cons chosen rest => (let pass : Pass := (cover (record Ctx {path := (project ctx path), atoms := (project ctx atoms), stop := (project ctx stop), edges := (project ctx edges), maxStates := (project ctx maxStates), maxDepth := (project ctx maxDepth), maxEdges := (project ctx maxEdges), chosen := chosen}) start (project state bud)); (let grown : ((List (List Choice)) * (List Bytes)) := (enqueue chosen (project pass met) rest (project state enqueued)); (ctor Option.some [Outer] (match (project pass result)
+      | Result.ok found => (record Outer {queue := (first grown), enqueued := (second grown), covers := (if (prim list_fold (fun [found] (seen : Bool) (held : Val) => (if seen then true else (same (project held code) (project found code)))) false (project state covers) : Bool) then (project state covers) else (prim append (project state covers) (cons found (nil Val)) : (List Val))), failure := (project state failure), bud := (project pass bud)})
+      | Result.error problem => (record Outer {queue := (first grown), enqueued := (second grown), covers := (project state covers), failure := (match (project state failure)
+        | Option.some earlier => (project state failure)
+        | Option.none => (ctor Option.some [PrimitiveScan::Rejection] problem)), bud := (project pass bud)})))))),
+  executable: true
+}
+
+definition{
+  name: parseMath,
+  parameters: [
+    path : Bytes,
+    atoms : (List PrimitiveScan::Atom),
+    start : Nat,
+    stop : Nat,
+    edges : (List (List Edge)),
+    maxEdges : Nat,
+    maxStates : Nat,
+    maxDepth : Nat,
+    statesBefore : Nat,
+    edgesBefore : Nat
+  ],
+  result: (Result (List Math) PrimitiveScan::Rejection),
+  body: (let ctx : Ctx := (record Ctx {path := path, atoms := atoms, stop := stop, edges := edges, maxStates := maxStates, maxDepth := maxDepth, maxEdges := maxEdges, chosen := (nil Choice)}); (let final : Outer := (first (prim iterate_until (fun [ctx, start] (state : Outer) => (outerStep ctx start state)) ((prim multiply (maxStates + 2) ((prim subtract stop start : Nat) + 2) : Nat) + 2) (record Outer {queue := (cons (nil Choice) (nil (List Choice))), enqueued := (cons (lit "") (nil Bytes)), covers := (nil Val), failure := (ctor Option.none [PrimitiveScan::Rejection]), bud := (record Bud {states := statesBefore, edges := edgesBefore, memo := (nil Nat)})}) : (Outer * Bool))); (if ((prim length (project final covers) : Nat) =? 0) then (match (project final failure)
+    | Option.some problem => (ctor Result.error [(List Math), PrimitiveScan::Rejection] problem)
+    | Option.none => (ctor Result.error [(List Math), PrimitiveScan::Rejection] (placed (lit "LLI9001") (lit "phase parse: the token lattice produced neither a cover nor a failure") (record PrimitiveScan::Place {path := path, byteStart := 0, byteEnd := 0, lineStart := 1, columnStart := 1, lineEnd := 1, columnEnd := 1})))) else (ctor Result.ok [(List Math), PrimitiveScan::Rejection] (prim list_fold (fun (out : (List Math)) (held : Val) => (prim append out (cons (project held ast) (nil Math)) : (List Math))) (nil Math) (project final covers) : (List Math)))))),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
