@@ -288,6 +288,53 @@
 'LexLeanBoot.GnafValidate.render' does not depend on any axioms
 'LexLeanBoot.GnafValidate.universeSize' does not depend on any axioms
 'LexLeanBoot.GnafValidate.validateRequest' does not depend on any axioms
+'LexLeanBoot.IrDocument.Block' does not depend on any axioms
+'LexLeanBoot.IrDocument.DocumentModule' does not depend on any axioms
+'LexLeanBoot.IrDocument.PhraseItem' does not depend on any axioms
+'LexLeanBoot.IrDocument.blockJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrDocument.chainOf' does not depend on any axioms
+'LexLeanBoot.IrDocument.defaultImport' does not depend on any axioms
+'LexLeanBoot.IrDocument.foreignImports' does not depend on any axioms
+'LexLeanBoot.IrDocument.itemJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrDocument.jarr' does not depend on any axioms
+'LexLeanBoot.IrDocument.jbytes' does not depend on any axioms
+'LexLeanBoot.IrDocument.jnil' does not depend on any axioms
+'LexLeanBoot.IrDocument.jobj' does not depend on any axioms
+'LexLeanBoot.IrDocument.linkedJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrDocument.linkedText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrDocument.moduleJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrDocument.moduleText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrDocument.optionalTail' does not depend on any axioms
+'LexLeanBoot.IrDocument.phraseJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrDocument.projectSemanticId' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrDocument.textArray' does not depend on any axioms
+'LexLeanBoot.IrProof.AxiomPolicy' does not depend on any axioms
+'LexLeanBoot.IrProof.DeclBody' does not depend on any axioms
+'LexLeanBoot.IrProof.DeclKind' does not depend on any axioms
+'LexLeanBoot.IrProof.Declaration' does not depend on any axioms
+'LexLeanBoot.IrProof.Proof' does not depend on any axioms
+'LexLeanBoot.IrProof.Walk' does not depend on any axioms
+'LexLeanBoot.IrProof.bindAll' does not depend on any axioms
+'LexLeanBoot.IrProof.bodyJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrProof.caseLocals' does not depend on any axioms
+'LexLeanBoot.IrProof.declarationJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrProof.declarationText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrProof.jarr' does not depend on any axioms
+'LexLeanBoot.IrProof.jnil' does not depend on any axioms
+'LexLeanBoot.IrProof.jobj' does not depend on any axioms
+'LexLeanBoot.IrProof.kindName' does not depend on any axioms
+'LexLeanBoot.IrProof.listed' does not depend on any axioms
+'LexLeanBoot.IrProof.permits' depends on axioms: [propext]
+'LexLeanBoot.IrProof.policyJson' does not depend on any axioms
+'LexLeanBoot.IrProof.proofJson' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrProof.proofText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrProof.sameNames' does not depend on any axioms
+'LexLeanBoot.IrProof.sortedUnique' depends on axioms: [propext]
+'LexLeanBoot.IrProof.tagged' does not depend on any axioms
+'LexLeanBoot.IrProof.targetJson' does not depend on any axioms
+'LexLeanBoot.IrProof.termWith' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.IrProof.textChain' does not depend on any axioms
+'LexLeanBoot.IrProof.walkStep' does not depend on any axioms
 'LexLeanBoot.IrTerm.CoreRef' does not depend on any axioms
 'LexLeanBoot.IrTerm.GlobalRef' does not depend on any axioms
 'LexLeanBoot.IrTerm.Renumber' does not depend on any axioms
@@ -1366,6 +1413,125 @@
 'LexLeanBoot.RustValidate.widthKind' does not depend on any axioms
 'LexLeanBoot.RustValidate.wrapConstruct' does not depend on any axioms
 'LexLeanBoot.RustValidate.zeroStep' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.SDecl' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.constructorsJson' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.declarationJson' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.fieldsJson' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.jnil' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.jtext' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.kinded' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.lit' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.member' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.namesWhenAny' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.productionJson' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.semanticDeclarationText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SemanticDecls.semanticModuleText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SemanticDecls.terminationJson' does not depend on any axioms
+'LexLeanBoot.SemanticDecls.textWhenSome' does not depend on any axioms
+'LexLeanBoot.SemanticModels.ArtifactRole' does not depend on any axioms
+'LexLeanBoot.SemanticModels.ArtifactSchema' does not depend on any axioms
+'LexLeanBoot.SemanticModels.CompositeForm' does not depend on any axioms
+'LexLeanBoot.SemanticModels.CompositeJunction' does not depend on any axioms
+'LexLeanBoot.SemanticModels.ContractPredicate' does not depend on any axioms
+'LexLeanBoot.SemanticModels.ContractState' does not depend on any axioms
+'LexLeanBoot.SemanticModels.ContractValidator' does not depend on any axioms
+'LexLeanBoot.SemanticModels.EvidenceClaim' does not depend on any axioms
+'LexLeanBoot.SemanticModels.ModelBinder' does not depend on any axioms
+'LexLeanBoot.SemanticModels.ModelDeclaration' does not depend on any axioms
+'LexLeanBoot.SemanticModels.ModelUse' does not depend on any axioms
+'LexLeanBoot.SemanticModels.NeuralArchitecture' does not depend on any axioms
+'LexLeanBoot.SemanticModels.NeuralDecoder' does not depend on any axioms
+'LexLeanBoot.SemanticModels.NeuralLayer' does not depend on any axioms
+'LexLeanBoot.SemanticModels.RealizationDescriptor' does not depend on any axioms
+'LexLeanBoot.SemanticModels.RealizationRule' does not depend on any axioms
+'LexLeanBoot.SemanticModels.RealizationState' does not depend on any axioms
+'LexLeanBoot.SemanticModels.StatisticalScheme' does not depend on any axioms
+'LexLeanBoot.SemanticModels.TensorElement' does not depend on any axioms
+'LexLeanBoot.SemanticModels.artifactRoleJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.artifactSchemaJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.compositeFormJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.compositeJunctionJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.contractPredicateJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.contractStateJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.contractValidatorJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.evidenceClaimJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.lit' does not depend on any axioms
+'LexLeanBoot.SemanticModels.modelBinderJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.modelDeclarationJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.modelDeclarationText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SemanticModels.modelUseJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.neuralArchitectureJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.neuralDecoderJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.neuralLayerJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.objectOf' does not depend on any axioms
+'LexLeanBoot.SemanticModels.realizationDescriptorJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.realizationRuleJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.realizationStateJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.statisticalSchemeJson' does not depend on any axioms
+'LexLeanBoot.SemanticModels.tensorElementJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.AnyDeclaration' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.GenerationPolicy' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.LogicInvariant' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.OverflowDisposition' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.ReasoningAnswer' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.ReasoningClaim' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.ReasoningDeclaration' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.ReasoningStrategy' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.RuleBinding' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.SamplingDistribution' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.SamplingGenerator' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.SearchOrder' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.TokenizerScheme' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.anyDeclarationJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.generationPolicyJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.lit' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.logicInvariantJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.objectOf' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.overflowDispositionJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.reasoningAnswerJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.reasoningClaimJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.reasoningDeclarationJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.reasoningDeclarationText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SemanticReasoning.reasoningStrategyJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.ruleBindingJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.samplingDistributionJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.samplingGeneratorJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.searchOrderJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.tokenizerSchemeJson' does not depend on any axioms
+'LexLeanBoot.SemanticReasoning.wholeSemanticModuleText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SemanticTerms.Reflection' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.SProof' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.STerm' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.chainOf' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.kinded' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.lit' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.member' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.memberJson' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.membersJson' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.namesJson' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.paramJson' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.paramsJson' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.proofJson' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.reflectionJson' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.semanticProofText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SemanticTerms.semanticTermText' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SemanticTerms.termJson' does not depend on any axioms
+'LexLeanBoot.SemanticTerms.typesWhenAny' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.PrimitiveFacts' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.SemanticInteger' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.SemanticPrimitive' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.SemanticType' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.cat' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.displayItems' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.integerName' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.kinded' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.lit' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.member' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.primitiveFacts' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.typeDisplay' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.typeJson' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.typeSpelling' does not depend on any axioms
+'LexLeanBoot.SemanticTypes.typeText' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.StructuralGrammar.Arg' does not depend on any axioms
 'LexLeanBoot.StructuralGrammar.ArgAt' does not depend on any axioms
 'LexLeanBoot.StructuralGrammar.ArgScan' does not depend on any axioms

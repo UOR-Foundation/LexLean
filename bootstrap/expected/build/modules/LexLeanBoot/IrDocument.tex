@@ -1,0 +1,159 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{PhraseItem}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{WWord}: \texttt{(ByteArray, ByteArray)}.\par
+\noindent Constructor \texttt{WMath}: \texttt{(LexLeanBoot.IrTerm.Term)}.\par
+\noindent Constructor \texttt{WPunct}: \texttt{(ByteArray)}.\par
+\subsection*{\texttt{Block}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{BSection}: \texttt{(ByteArray, List (PhraseItem), LexLeanBoot.IrTerm.Term, Block)}.\par
+\noindent Constructor \texttt{BDecl}: \texttt{(LexLeanBoot.IrProof.Declaration)}.\par
+\noindent Constructor \texttt{BNil}: \texttt{()}.\par
+\noindent Constructor \texttt{BItem}: \texttt{(Block, Block)}.\par
+\subsection*{\texttt{DocumentModule}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{name}: \texttt{ByteArray}.\par
+\noindent Field \texttt{leanModule}: \texttt{ByteArray}.\par
+\noindent Field \texttt{sourcePath}: \texttt{ByteArray}.\par
+\noindent Field \texttt{sourceSha256}: \texttt{ByteArray}.\par
+\noindent Field \texttt{origin}: \texttt{Option (ByteArray)}.\par
+\noindent Field \texttt{glossary}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{imports}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{importLean}: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Field \texttt{title}: \texttt{List (PhraseItem)}.\par
+\noindent Field \texttt{blocks}: \texttt{Block}.\par
+\noindent Field \texttt{core}: \texttt{Option (ByteArray)}.\par
+\noindent Field \texttt{semantic}: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\noindent Field \texttt{tooling}: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\subsection*{\texttt{jnil}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JNil}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{jobj}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(members : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JObj (members)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{jarr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JArr (items)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{jbytes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JStr (text)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{chainOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (LexLeanStd.Json.Json))}.\par
+\noindent Closure 1: binds \texttt{(chain, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (chain : LexLeanStd.Json.Json) (item : LexLeanStd.Json.Json) => LexLeanStd.Json.Json.JItem (item) (chain))) (jnil) (LexLeanStd.Order.reverseList (LexLeanStd.Json.Json) (items)) : LexLeanStd.Json.Json)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{textArray}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(texts : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(acc, text)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{jarr (chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (text : ByteArray) => (jbytes (text) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (texts)) : List (LexLeanStd.Json.Json))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{itemJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(item : PhraseItem) (state : LexLeanBoot.IrTerm.Renumber)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber))}.\par
+\noindent Definition: \texttt{(match item with | PhraseItem.WWord entry form => (jobj (LexLeanBoot.IrTerm.member ("k") (LexLeanBoot.IrTerm.jtext ("word")) (LexLeanBoot.IrTerm.member ("entry") (jbytes (entry)) (LexLeanBoot.IrTerm.member ("form") (jbytes (form)) (jnil)))), state) | PhraseItem.WMath term => (let written : (Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber)) := LexLeanBoot.IrTerm.termJson (term) (state); (jobj (LexLeanBoot.IrTerm.member ("k") (LexLeanBoot.IrTerm.jtext ("math")) (LexLeanBoot.IrTerm.member ("t") ((written).1) (jnil))), (written).2)) | PhraseItem.WPunct entry => (jobj (LexLeanBoot.IrTerm.member ("k") (LexLeanBoot.IrTerm.jtext ("punct")) (LexLeanBoot.IrTerm.member ("entry") (jbytes (entry)) (jnil))), state))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{phraseJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (PhraseItem)) (state : LexLeanBoot.IrTerm.Renumber)}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(chain, written)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber))}.\par
+\noindent Definition: \texttt{(let folded : (Prod (List (LexLeanStd.Json.Json)) (LexLeanBoot.IrTerm.Renumber)) := (LexLeanCollections.listFold ((fun (acc : (Prod (List (LexLeanStd.Json.Json)) (LexLeanBoot.IrTerm.Renumber))) (item : PhraseItem) => (let written : (Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber)) := itemJson (item) ((acc).2); (((written).1 :: (acc).1), (written).2)))) ((([] : List (LexLeanStd.Json.Json)), state)) (items) : (Prod (List (LexLeanStd.Json.Json)) (LexLeanBoot.IrTerm.Renumber))); (jarr ((LexLeanCollections.listFold ((fun (chain : LexLeanStd.Json.Json) (written : LexLeanStd.Json.Json) => LexLeanStd.Json.Json.JItem (written) (chain))) (jnil) ((folded).1) : LexLeanStd.Json.Json)), (folded).2))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{blockJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(block : Block) (state : LexLeanBoot.IrTerm.Renumber)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber))}.\par
+\noindent Definition: \texttt{(match block with | Block.BSection component heading params nested => (let headed : (Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber)) := phraseJson (heading) (state); (let bound : (Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber)) := LexLeanBoot.IrTerm.termJson (params) ((headed).2); (let inner : (Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber)) := blockJson (nested) ((bound).2); (jobj (LexLeanBoot.IrTerm.member ("k") (LexLeanBoot.IrTerm.jtext ("section")) (LexLeanBoot.IrTerm.member ("component") (jbytes (component)) (LexLeanBoot.IrTerm.member ("heading") ((headed).1) (LexLeanBoot.IrTerm.member ("params") (jarr ((bound).1)) (LexLeanBoot.IrTerm.member ("blocks") (jarr ((inner).1)) (jnil)))))), (inner).2)))) | Block.BDecl declaration => (let written : (Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber)) := LexLeanBoot.IrProof.declarationJson (declaration) (state); (jobj (LexLeanBoot.IrTerm.member ("k") (LexLeanBoot.IrTerm.jtext ("declaration")) (LexLeanBoot.IrTerm.member ("d") ((written).1) (jnil))), (written).2)) | Block.BNil => (jnil, state) | Block.BItem head tail => (let written : (Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber)) := blockJson (head) (state); (let rest : (Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber)) := blockJson (tail) ((written).2); (LexLeanStd.Json.Json.JItem ((written).1) ((rest).1), (rest).2))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{defaultImport}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(linked : DocumentModule) (imported : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let leanName : ByteArray := (linked).leanModule; (let short : Nat := (LexLeanRuntime.length ((linked).name) : Nat); (let total : Nat := (LexLeanRuntime.length (leanName) : Nat); (let stem : ByteArray := (if LexLeanStd.Text.endsWith (leanName) ((linked).name) then LexLeanStd.Text.sliceOr (leanName) (0) ((LexLeanRuntime.subtract (total) (short) : Nat)) else ByteArray.mk \#[]); (LexLeanRuntime.append (stem) (imported) : ByteArray)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{foreignImports}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(linked : DocumentModule)}.\par
+\noindent Closure 1: binds \texttt{(rest, entry)}, captures \texttt{(linked)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (rest : LexLeanStd.Json.Json) (entry : (Prod (ByteArray) (ByteArray))) => (if (LexLeanRuntime.equal ((entry).2) (defaultImport (linked) ((entry).1)) : Bool) then rest else LexLeanStd.Json.Json.JMember ((entry).1) (jbytes ((entry).2)) (rest)))) (jnil) ((linked).importLean) : LexLeanStd.Json.Json)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{optionalTail}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(linked : DocumentModule)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(let withTooling : LexLeanStd.Json.Json := (match (linked).tooling with | Option.some value => LexLeanBoot.IrTerm.member ("tooling") (value) (jnil) | Option.none => jnil); (let withSemantic : LexLeanStd.Json.Json := (match (linked).semantic with | Option.some value => LexLeanBoot.IrTerm.member ("semantic") (value) (withTooling) | Option.none => withTooling); (let withCore : LexLeanStd.Json.Json := (match (linked).core with | Option.some text => LexLeanBoot.IrTerm.member ("core") (jbytes (text)) (withSemantic) | Option.none => withSemantic); (let foreign : LexLeanStd.Json.Json := foreignImports (linked); (let withForeign : LexLeanStd.Json.Json := (match foreign with | LexLeanStd.Json.Json.JNil => withCore | LexLeanStd.Json.Json.JBool \_ => withCore | LexLeanStd.Json.Json.JInt \_ \_ => withCore | LexLeanStd.Json.Json.JStr \_ => withCore | LexLeanStd.Json.Json.JArr \_ => withCore | LexLeanStd.Json.Json.JObj \_ => withCore | LexLeanStd.Json.Json.JItem \_ \_ => withCore | LexLeanStd.Json.Json.JMember \_ \_ \_ => LexLeanBoot.IrTerm.member ("import\_lean") (jobj (foreign)) (withCore)); (match (linked).origin with | Option.some named => LexLeanBoot.IrTerm.member ("origin") (jbytes (named)) (withForeign) | Option.none => withForeign))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{moduleJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(linked : DocumentModule)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(let titled : (Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber)) := phraseJson ((linked).title) (LexLeanBoot.IrTerm.hashing); (let inner : (Prod (LexLeanStd.Json.Json) (LexLeanBoot.IrTerm.Renumber)) := blockJson ((linked).blocks) ((titled).2); jobj (LexLeanBoot.IrTerm.member ("name") (jbytes ((linked).name)) (LexLeanBoot.IrTerm.member ("lean\_module") (jbytes ((linked).leanModule)) (LexLeanBoot.IrTerm.member ("glossary") (textArray ((linked).glossary)) (LexLeanBoot.IrTerm.member ("imports") (textArray ((linked).imports)) (LexLeanBoot.IrTerm.member ("title") ((titled).1) (LexLeanBoot.IrTerm.member ("blocks") (jarr ((inner).1)) (optionalTail (linked))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{linkedJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(modules : List ((Prod (ByteArray) (DocumentModule))))}.\par
+\noindent Closure 1: binds \texttt{(acc, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{jobj (LexLeanBoot.IrTerm.member ("spec") (LexLeanBoot.IrTerm.jtext ("lexlean/linked-ir/1")) (LexLeanBoot.IrTerm.member ("modules") (jarr (chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (entry : (Prod (ByteArray) (DocumentModule))) => (moduleJson ((entry).2) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList ((Prod (ByteArray) (DocumentModule))) (LexLeanStd.Order.sortByKey (DocumentModule) (modules))) : List (LexLeanStd.Json.Json))))) (jnil)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{moduleText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(linked : DocumentModule)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJson (moduleJson (linked))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{linkedText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(modules : List ((Prod (ByteArray) (DocumentModule))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJson (linkedJson (modules))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{projectSemanticId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(compilerSemantics : ByteArray) (language : ByteArray) (modules : List ((Prod (ByteArray) (DocumentModule)))) (lexiconClosure : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanBoot.ContentId.semanticId (compilerSemantics) (language) (LexLeanStd.Json.writeJson (linkedJson (modules))) (lexiconClosure)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

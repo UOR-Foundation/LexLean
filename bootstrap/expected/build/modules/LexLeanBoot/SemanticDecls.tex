@@ -1,0 +1,115 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{SDecl}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{DStructure}: \texttt{(ByteArray, List (ByteArray), List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))), List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))))}.\par
+\noindent Constructor \texttt{DClass}: \texttt{(ByteArray, List (ByteArray), List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))), List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))))}.\par
+\noindent Constructor \texttt{DInstance}: \texttt{(ByteArray, Option (ByteArray), ByteArray, LexLeanBoot.SemanticTypes.SemanticType, Nat, LexLeanBoot.SemanticTerms.STerm)}.\par
+\noindent Constructor \texttt{DInductive}: \texttt{(ByteArray, List (ByteArray), List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))), List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))), Option (ByteArray))}.\par
+\noindent Constructor \texttt{DDefinition}: \texttt{(ByteArray, List (ByteArray), List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))), LexLeanBoot.SemanticTypes.SemanticType, Option (ByteArray), LexLeanBoot.SemanticTerms.STerm, List (ByteArray), Bool, Option (ByteArray), Option ((Prod (LexLeanBoot.SemanticTerms.STerm) (List ((Prod (Option (ByteArray)) (ByteArray)))))), Option ((Prod (List (ByteArray)) (List (ByteArray)))))}.\par
+\noindent Constructor \texttt{DTheorem}: \texttt{(ByteArray, List (ByteArray), List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))), LexLeanBoot.SemanticTerms.STerm, LexLeanBoot.SemanticTerms.SProof, List (ByteArray))}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{member}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (entry : LexLeanStd.Json.Json) (rest : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JMember (lit (key)) (entry) (rest)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{jnil}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JNil}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{jtext}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JStr (text)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{kinded}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : String) (rest : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JObj (member ("kind") (jtext (lit (kind))) (rest))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{fieldsJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanBoot.SemanticTerms.paramsJson (entries)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{namesWhenAny}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (names : List (ByteArray)) (rest : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match names with | List.nil => rest | List.cons \_ \_ => member (key) (LexLeanBoot.SemanticTerms.namesJson (names)) (rest))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{textWhenSome}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (value : Option (ByteArray)) (rest : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | Option.some text => member (key) (jtext (text)) (rest) | Option.none => rest)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{constructorsJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(constructors : List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))))}.\par
+\noindent Closure 1: binds \texttt{(acc, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (entry : (Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))) => (LexLeanStd.Json.Json.JObj (member ("name") (jtext ((entry).1)) (member ("fields") (LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTypes.typeJson ((entry).2))) (jnil))) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))) (constructors)) : List (LexLeanStd.Json.Json))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{terminationJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(termination : Option ((Prod (LexLeanBoot.SemanticTerms.STerm) (List ((Prod (Option (ByteArray)) (ByteArray))))))) (rest : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match termination with | Option.some evidenced => member ("termination") (LexLeanStd.Json.Json.JObj (member ("measure") (LexLeanBoot.SemanticTerms.termJson ((evidenced).1)) (member ("evidence") (LexLeanBoot.SemanticTerms.membersJson ((evidenced).2)) (jnil)))) (rest) | Option.none => rest)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{productionJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(production : Option ((Prod (List (ByteArray)) (List (ByteArray))))) (rest : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match production with | Option.some declared => member ("production") (LexLeanStd.Json.Json.JObj (member ("targets") (LexLeanBoot.SemanticTerms.namesJson ((declared).1)) (member ("effects") (LexLeanBoot.SemanticTerms.namesJson ((declared).2)) (jnil)))) (rest) | Option.none => rest)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{declarationJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(declaration : SDecl)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match declaration with | SDecl.DStructure named typeParameters parameters fields => kinded ("structure") (member ("name") (jtext (named)) (member ("type\_parameters") (LexLeanBoot.SemanticTerms.namesJson (typeParameters)) (member ("parameters") (LexLeanBoot.SemanticTerms.paramsJson (parameters)) (member ("fields") (fieldsJson (fields)) (jnil))))) | SDecl.DClass named typeParameters parameters fields => kinded ("class") (member ("name") (jtext (named)) (member ("type\_parameters") (LexLeanBoot.SemanticTerms.namesJson (typeParameters)) (member ("parameters") (LexLeanBoot.SemanticTerms.paramsJson (parameters)) (member ("fields") (fieldsJson (fields)) (jnil))))) | SDecl.DInstance named classModule className arguments priority assigned => kinded ("instance") (member ("name") (jtext (named)) (member ("class") (LexLeanBoot.SemanticTerms.memberJson (classModule) (className)) (member ("arguments") (LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTypes.typeJson (arguments))) (member ("priority") (LexLeanStd.Json.Json.JInt (false) (priority)) (member ("fields") (LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.termJson (assigned))) (jnil)))))) | SDecl.DInductive named typeParameters parameters constructors grouped => kinded ("inductive") (member ("name") (jtext (named)) (member ("type\_parameters") (LexLeanBoot.SemanticTerms.namesJson (typeParameters)) (member ("parameters") (LexLeanBoot.SemanticTerms.paramsJson (parameters)) (member ("constructors") (constructorsJson (constructors)) (textWhenSome ("mutual") (grouped) (jnil)))))) | SDecl.DDefinition named typeParameters parameters outcome recursiveArg body axiomNames isExecutable grouped terminating produced => kinded ("definition") (member ("name") (jtext (named)) (namesWhenAny ("type\_parameters") (typeParameters) (member ("parameters") (LexLeanBoot.SemanticTerms.paramsJson (parameters)) (member ("result") (LexLeanBoot.SemanticTypes.typeJson (outcome)) (textWhenSome ("recursive\_argument") (recursiveArg) (member ("body") (LexLeanBoot.SemanticTerms.termJson (body)) (namesWhenAny ("axioms") (axiomNames) ((if isExecutable then member ("executable") (LexLeanStd.Json.Json.JBool (true)) (textWhenSome ("mutual") (grouped) (terminationJson (terminating) (productionJson (produced) (jnil)))) else textWhenSome ("mutual") (grouped) (terminationJson (terminating) (productionJson (produced) (jnil)))))))))))) | SDecl.DTheorem named typeParameters parameters statement proof axiomNames => kinded ("theorem") (member ("name") (jtext (named)) (namesWhenAny ("type\_parameters") (typeParameters) (member ("parameters") (LexLeanBoot.SemanticTerms.paramsJson (parameters)) (member ("statement") (LexLeanBoot.SemanticTerms.termJson (statement)) (member ("proof") (LexLeanBoot.SemanticTerms.proofJson (proof)) (namesWhenAny ("axioms") (axiomNames) (jnil))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{semanticDeclarationText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(declaration : SDecl)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJson (declarationJson (declaration))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{semanticModuleText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(spec : ByteArray) (declarations : List (SDecl))}.\par
+\noindent Closure 1: binds \texttt{(acc, declaration)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJson (LexLeanStd.Json.Json.JObj (member ("spec") (jtext (spec)) (member ("declarations") (LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (declaration : SDecl) => (declarationJson (declaration) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (SDecl) (declarations)) : List (LexLeanStd.Json.Json))))) (jnil))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

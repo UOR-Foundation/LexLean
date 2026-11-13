@@ -1,0 +1,201 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{LogicInvariant}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{LogicInvariantOf}: \texttt{((Prod (Option (ByteArray)) (ByteArray)), (Prod (Option (ByteArray)) (ByteArray)))}.\par
+\subsection*{\texttt{RuleBinding}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{RuleBindingOf}: \texttt{(ByteArray, LexLeanBoot.SemanticTypes.SemanticType, LexLeanBoot.SemanticTerms.STerm)}.\par
+\subsection*{\texttt{ReasoningAnswer}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{ReasoningAnswerOf}: \texttt{(ByteArray, LexLeanBoot.SemanticTypes.SemanticType, LexLeanBoot.SemanticTerms.STerm)}.\par
+\subsection*{\texttt{SearchOrder}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{SearchOrderBreadthFirst}: \texttt{()}.\par
+\noindent Constructor \texttt{SearchOrderDepthFirst}: \texttt{()}.\par
+\subsection*{\texttt{ReasoningStrategy}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{ReasoningStrategyForward}: \texttt{(Option (LexLeanBoot.SemanticTerms.STerm))}.\par
+\noindent Constructor \texttt{ReasoningStrategySearch}: \texttt{(SearchOrder, Option (LexLeanBoot.SemanticTerms.STerm), Option (LexLeanBoot.SemanticTerms.STerm), Bool)}.\par
+\noindent Constructor \texttt{ReasoningStrategyGenerateAndVerify}: \texttt{(LexLeanBoot.SemanticTerms.STerm, Option (LexLeanBoot.SemanticTerms.STerm))}.\par
+\subsection*{\texttt{ReasoningClaim}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{ReasoningClaimInitialInvariant}: \texttt{((Prod (Option (ByteArray)) (ByteArray)))}.\par
+\noindent Constructor \texttt{ReasoningClaimTerminates}: \texttt{((Prod (Option (ByteArray)) (ByteArray)))}.\par
+\noindent Constructor \texttt{ReasoningClaimObservationInvariant}: \texttt{((Prod (Option (ByteArray)) (ByteArray)), (Prod (Option (ByteArray)) (ByteArray)), (Prod (Option (ByteArray)) (ByteArray)))}.\par
+\noindent Constructor \texttt{ReasoningClaimAnswerCorrect}: \texttt{((Prod (Option (ByteArray)) (ByteArray)))}.\par
+\subsection*{\texttt{TokenizerScheme}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{TokenizerSchemeByteLevel}: \texttt{()}.\par
+\noindent Constructor \texttt{TokenizerSchemeLongestMatch}: \texttt{()}.\par
+\subsection*{\texttt{OverflowDisposition}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{OverflowDispositionRefuse}: \texttt{()}.\par
+\noindent Constructor \texttt{OverflowDispositionKeepLast}: \texttt{()}.\par
+\subsection*{\texttt{SamplingGenerator}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{SamplingGeneratorXorshift32}: \texttt{()}.\par
+\subsection*{\texttt{SamplingDistribution}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{SamplingDistributionProportional}: \texttt{()}.\par
+\subsection*{\texttt{GenerationPolicy}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{GenerationPolicyGreedy}: \texttt{()}.\par
+\noindent Constructor \texttt{GenerationPolicySample}: \texttt{(SamplingGenerator, SamplingDistribution)}.\par
+\subsection*{\texttt{ReasoningDeclaration}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{ReasoningDeclarationLogic}: \texttt{(ByteArray, List (ByteArray), LexLeanBoot.SemanticModels.ContractState, (Prod (Option (ByteArray)) (ByteArray)), Option (LogicInvariant), Option ((Prod (Option (ByteArray)) (ByteArray))), List (ByteArray))}.\par
+\noindent Constructor \texttt{ReasoningDeclarationInferenceRule}: \texttt{(ByteArray, List (ByteArray), LexLeanBoot.SemanticModels.ModelUse, Option (RuleBinding), LexLeanBoot.SemanticTerms.STerm, LexLeanBoot.SemanticTerms.STerm, (Prod (Option (ByteArray)) (ByteArray)), Option ((Prod (Option (ByteArray)) (ByteArray))), Bool, List (ByteArray))}.\par
+\noindent Constructor \texttt{ReasoningDeclarationVerifier}: \texttt{(ByteArray, List (ByteArray), LexLeanBoot.SemanticModels.ModelBinder, LexLeanBoot.SemanticModels.ModelBinder, (Prod (Option (ByteArray)) (ByteArray)), (Prod (Option (ByteArray)) (ByteArray)), (Prod (Option (ByteArray)) (ByteArray)), Option ((Prod (Option (ByteArray)) (ByteArray))), List (ByteArray))}.\par
+\noindent Constructor \texttt{ReasoningDeclarationReasoner}: \texttt{(ByteArray, List (ByteArray), Option (LexLeanBoot.SemanticModels.ModelUse), LexLeanBoot.SemanticModels.ModelBinder, Option (LexLeanBoot.SemanticTerms.STerm), List (LexLeanBoot.SemanticModels.ModelUse), ReasoningStrategy, Option (ReasoningAnswer), LexLeanBoot.SemanticModels.ModelUse, List (ReasoningClaim), Bool, List (ByteArray))}.\par
+\noindent Constructor \texttt{ReasoningDeclarationTokenizer}: \texttt{(ByteArray, List (ByteArray), TokenizerScheme, LexLeanBoot.SemanticModels.ModelUse, List (ByteArray))}.\par
+\noindent Constructor \texttt{ReasoningDeclarationContextWindow}: \texttt{(ByteArray, Nat, OverflowDisposition, List (ByteArray))}.\par
+\noindent Constructor \texttt{ReasoningDeclarationTextGenerator}: \texttt{(ByteArray, (Prod (Option (ByteArray)) (ByteArray)), (Prod (Option (ByteArray)) (ByteArray)), LexLeanBoot.SemanticModels.ModelUse, Nat, (Prod (Option (ByteArray)) (ByteArray)), GenerationPolicy, List (ByteArray))}.\par
+\noindent Constructor \texttt{ReasoningDeclarationTextClassifier}: \texttt{(ByteArray, (Prod (Option (ByteArray)) (ByteArray)), LexLeanBoot.SemanticModels.ModelUse, List (ByteArray))}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{objectOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))}.\par
+\noindent Closure 1: binds \texttt{(rest, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JObj ((LexLeanCollections.listFold ((fun (rest : LexLeanStd.Json.Json) (entry : (Prod (ByteArray) (LexLeanStd.Json.Json))) => LexLeanStd.Json.Json.JMember ((entry).1) ((entry).2) (rest))) (LexLeanStd.Json.Json.JNil) (entries) : LexLeanStd.Json.Json))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{logicInvariantJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : LogicInvariant)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | LogicInvariant.LogicInvariantOf part0 part1 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("predicate"), LexLeanBoot.SemanticTerms.memberJson ((part0).1) ((part0).2)) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("preserves"), LexLeanBoot.SemanticTerms.memberJson ((part1).1) ((part1).2)) :: entries1); objectOf (entries2))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{ruleBindingJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : RuleBinding)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | RuleBinding.RuleBindingOf part0 part1 part2 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("name"), LexLeanStd.Json.Json.JStr (part0)) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("type"), LexLeanBoot.SemanticTypes.typeJson (part1)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("candidates"), LexLeanBoot.SemanticTerms.termJson (part2)) :: entries2); objectOf (entries3)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reasoningAnswerJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : ReasoningAnswer)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | ReasoningAnswer.ReasoningAnswerOf part0 part1 part2 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("name"), LexLeanStd.Json.Json.JStr (part0)) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("type"), LexLeanBoot.SemanticTypes.typeJson (part1)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("value"), LexLeanBoot.SemanticTerms.termJson (part2)) :: entries2); objectOf (entries3)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{searchOrderJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : SearchOrder)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | SearchOrder.SearchOrderBreadthFirst => LexLeanStd.Json.Json.JStr (lit ("breadth\_first")) | SearchOrder.SearchOrderDepthFirst => LexLeanStd.Json.Json.JStr (lit ("depth\_first")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reasoningStrategyJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : ReasoningStrategy)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | ReasoningStrategy.ReasoningStrategyForward part0 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("forward"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part0 with | Option.some present => ((lit ("fuel"), LexLeanBoot.SemanticTerms.termJson (present)) :: entries1) | Option.none => entries1); objectOf (entries2))) | ReasoningStrategy.ReasoningStrategySearch part0 part1 part2 part3 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("search"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("order"), searchOrderJson (part0)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part1 with | Option.some present => ((lit ("fuel"), LexLeanBoot.SemanticTerms.termJson (present)) :: entries2) | Option.none => entries2); (let entries4 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part2 with | Option.some present => ((lit ("frontier"), LexLeanBoot.SemanticTerms.termJson (present)) :: entries3) | Option.none => entries3); (let entries5 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (if part3 then ((lit ("deduplicate"), LexLeanStd.Json.Json.JBool (true)) :: entries4) else entries4); objectOf (entries5)))))) | ReasoningStrategy.ReasoningStrategyGenerateAndVerify part0 part1 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("generate\_and\_verify"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("generator"), LexLeanBoot.SemanticTerms.termJson (part0)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part1 with | Option.some present => ((lit ("budget"), LexLeanBoot.SemanticTerms.termJson (present)) :: entries2) | Option.none => entries2); objectOf (entries3)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reasoningClaimJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : ReasoningClaim)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | ReasoningClaim.ReasoningClaimInitialInvariant part0 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("initial\_invariant"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("theorem"), LexLeanBoot.SemanticTerms.memberJson ((part0).1) ((part0).2)) :: entries1); objectOf (entries2))) | ReasoningClaim.ReasoningClaimTerminates part0 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("terminates"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("theorem"), LexLeanBoot.SemanticTerms.memberJson ((part0).1) ((part0).2)) :: entries1); objectOf (entries2))) | ReasoningClaim.ReasoningClaimObservationInvariant part0 part1 part2 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("observation\_invariant"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("predicate"), LexLeanBoot.SemanticTerms.memberJson ((part0).1) ((part0).2)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("initial"), LexLeanBoot.SemanticTerms.memberJson ((part1).1) ((part1).2)) :: entries2); (let entries4 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("preserved"), LexLeanBoot.SemanticTerms.memberJson ((part2).1) ((part2).2)) :: entries3); objectOf (entries4))))) | ReasoningClaim.ReasoningClaimAnswerCorrect part0 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("answer\_correct"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("theorem"), LexLeanBoot.SemanticTerms.memberJson ((part0).1) ((part0).2)) :: entries1); objectOf (entries2))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tokenizerSchemeJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : TokenizerScheme)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | TokenizerScheme.TokenizerSchemeByteLevel => LexLeanStd.Json.Json.JStr (lit ("byte\_level")) | TokenizerScheme.TokenizerSchemeLongestMatch => LexLeanStd.Json.Json.JStr (lit ("longest\_match")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{overflowDispositionJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : OverflowDisposition)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | OverflowDisposition.OverflowDispositionRefuse => LexLeanStd.Json.Json.JStr (lit ("refuse")) | OverflowDisposition.OverflowDispositionKeepLast => LexLeanStd.Json.Json.JStr (lit ("keep\_last")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{samplingGeneratorJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : SamplingGenerator)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | SamplingGenerator.SamplingGeneratorXorshift32 => LexLeanStd.Json.Json.JStr (lit ("xorshift32")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{samplingDistributionJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : SamplingDistribution)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | SamplingDistribution.SamplingDistributionProportional => LexLeanStd.Json.Json.JStr (lit ("proportional")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{generationPolicyJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : GenerationPolicy)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | GenerationPolicy.GenerationPolicyGreedy => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("greedy"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); objectOf (entries1)) | GenerationPolicy.GenerationPolicySample part0 part1 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("sample"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("generator"), samplingGeneratorJson (part0)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("distribution"), samplingDistributionJson (part1)) :: entries2); objectOf (entries3)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reasoningDeclarationJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : ReasoningDeclaration)}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 3: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 4: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 5: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 6: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 7: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 8: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 9: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 10: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 11: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 12: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 13: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 14: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 15: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | ReasoningDeclaration.ReasoningDeclarationLogic part0 part1 part2 part3 part4 part5 part6 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("logic"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("name"), LexLeanStd.Json.Json.JStr (part0)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part1 with | List.nil => entries2 | List.cons \_ \_ => ((lit ("type\_parameters"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part1)) : List (LexLeanStd.Json.Json))))) :: entries2)); (let entries4 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("state"), LexLeanBoot.SemanticModels.contractStateJson (part2)) :: entries3); (let entries5 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("relation"), LexLeanBoot.SemanticTerms.memberJson ((part3).1) ((part3).2)) :: entries4); (let entries6 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part4 with | Option.some present => ((lit ("invariant"), logicInvariantJson (present)) :: entries5) | Option.none => entries5); (let entries7 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part5 with | Option.some present => ((lit ("ranking"), LexLeanBoot.SemanticTerms.memberJson ((present).1) ((present).2)) :: entries6) | Option.none => entries6); (let entries8 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part6 with | List.nil => entries7 | List.cons \_ \_ => ((lit ("axioms"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part6)) : List (LexLeanStd.Json.Json))))) :: entries7)); objectOf (entries8))))))))) | ReasoningDeclaration.ReasoningDeclarationInferenceRule part0 part1 part2 part3 part4 part5 part6 part7 part8 part9 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("inference\_rule"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("name"), LexLeanStd.Json.Json.JStr (part0)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part1 with | List.nil => entries2 | List.cons \_ \_ => ((lit ("type\_parameters"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part1)) : List (LexLeanStd.Json.Json))))) :: entries2)); (let entries4 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("logic"), LexLeanBoot.SemanticModels.modelUseJson (part2)) :: entries3); (let entries5 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part3 with | Option.some present => ((lit ("binding"), ruleBindingJson (present)) :: entries4) | Option.none => entries4); (let entries6 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("guard"), LexLeanBoot.SemanticTerms.termJson (part4)) :: entries5); (let entries7 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("conclusion"), LexLeanBoot.SemanticTerms.termJson (part5)) :: entries6); (let entries8 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("soundness"), LexLeanBoot.SemanticTerms.memberJson ((part6).1) ((part6).2)) :: entries7); (let entries9 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part7 with | Option.some present => ((lit ("progress"), LexLeanBoot.SemanticTerms.memberJson ((present).1) ((present).2)) :: entries8) | Option.none => entries8); (let entries10 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (if part8 then ((lit ("executable"), LexLeanStd.Json.Json.JBool (true)) :: entries9) else entries9); (let entries11 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part9 with | List.nil => entries10 | List.cons \_ \_ => ((lit ("axioms"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part9)) : List (LexLeanStd.Json.Json))))) :: entries10)); objectOf (entries11)))))))))))) | ReasoningDeclaration.ReasoningDeclarationVerifier part0 part1 part2 part3 part4 part5 part6 part7 part8 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("verifier"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("name"), LexLeanStd.Json.Json.JStr (part0)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part1 with | List.nil => entries2 | List.cons \_ \_ => ((lit ("type\_parameters"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part1)) : List (LexLeanStd.Json.Json))))) :: entries2)); (let entries4 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("subject"), LexLeanBoot.SemanticModels.modelBinderJson (part2)) :: entries3); (let entries5 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("candidate"), LexLeanBoot.SemanticModels.modelBinderJson (part3)) :: entries4); (let entries6 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("specification"), LexLeanBoot.SemanticTerms.memberJson ((part4).1) ((part4).2)) :: entries5); (let entries7 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("check"), LexLeanBoot.SemanticTerms.memberJson ((part5).1) ((part5).2)) :: entries6); (let entries8 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("sound"), LexLeanBoot.SemanticTerms.memberJson ((part6).1) ((part6).2)) :: entries7); (let entries9 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part7 with | Option.some present => ((lit ("complete"), LexLeanBoot.SemanticTerms.memberJson ((present).1) ((present).2)) :: entries8) | Option.none => entries8); (let entries10 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part8 with | List.nil => entries9 | List.cons \_ \_ => ((lit ("axioms"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part8)) : List (LexLeanStd.Json.Json))))) :: entries9)); objectOf (entries10))))))))))) | ReasoningDeclaration.ReasoningDeclarationReasoner part0 part1 part2 part3 part4 part5 part6 part7 part8 part9 part10 part11 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("reasoner"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("name"), LexLeanStd.Json.Json.JStr (part0)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part1 with | List.nil => entries2 | List.cons \_ \_ => ((lit ("type\_parameters"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part1)) : List (LexLeanStd.Json.Json))))) :: entries2)); (let entries4 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part2 with | Option.some present => ((lit ("logic"), LexLeanBoot.SemanticModels.modelUseJson (present)) :: entries3) | Option.none => entries3); (let entries5 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("observation"), LexLeanBoot.SemanticModels.modelBinderJson (part3)) :: entries4); (let entries6 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part4 with | Option.some present => ((lit ("observe"), LexLeanBoot.SemanticTerms.termJson (present)) :: entries5) | Option.none => entries5); (let entries7 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("rules"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : LexLeanBoot.SemanticModels.ModelUse) => (LexLeanBoot.SemanticModels.modelUseJson (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (LexLeanBoot.SemanticModels.ModelUse) (part5)) : List (LexLeanStd.Json.Json))))) :: entries6); (let entries8 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("strategy"), reasoningStrategyJson (part6)) :: entries7); (let entries9 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part7 with | Option.some present => ((lit ("answer"), reasoningAnswerJson (present)) :: entries8) | Option.none => entries8); (let entries10 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("verifier"), LexLeanBoot.SemanticModels.modelUseJson (part8)) :: entries9); (let entries11 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part9 with | List.nil => entries10 | List.cons \_ \_ => ((lit ("claims"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ReasoningClaim) => (reasoningClaimJson (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ReasoningClaim) (part9)) : List (LexLeanStd.Json.Json))))) :: entries10)); (let entries12 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (if part10 then ((lit ("executable"), LexLeanStd.Json.Json.JBool (true)) :: entries11) else entries11); (let entries13 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part11 with | List.nil => entries12 | List.cons \_ \_ => ((lit ("axioms"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part11)) : List (LexLeanStd.Json.Json))))) :: entries12)); objectOf (entries13)))))))))))))) | ReasoningDeclaration.ReasoningDeclarationTokenizer part0 part1 part2 part3 part4 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("tokenizer"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("name"), LexLeanStd.Json.Json.JStr (part0)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part1 with | List.nil => entries2 | List.cons \_ \_ => ((lit ("type\_parameters"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part1)) : List (LexLeanStd.Json.Json))))) :: entries2)); (let entries4 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("scheme"), tokenizerSchemeJson (part2)) :: entries3); (let entries5 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("vocabulary"), LexLeanBoot.SemanticModels.modelUseJson (part3)) :: entries4); (let entries6 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part4 with | List.nil => entries5 | List.cons \_ \_ => ((lit ("axioms"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part4)) : List (LexLeanStd.Json.Json))))) :: entries5)); objectOf (entries6))))))) | ReasoningDeclaration.ReasoningDeclarationContextWindow part0 part1 part2 part3 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("context\_window"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("name"), LexLeanStd.Json.Json.JStr (part0)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("capacity"), LexLeanStd.Json.Json.JInt (false) (part1)) :: entries2); (let entries4 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("overflow"), overflowDispositionJson (part2)) :: entries3); (let entries5 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part3 with | List.nil => entries4 | List.cons \_ \_ => ((lit ("axioms"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part3)) : List (LexLeanStd.Json.Json))))) :: entries4)); objectOf (entries5)))))) | ReasoningDeclaration.ReasoningDeclarationTextGenerator part0 part1 part2 part3 part4 part5 part6 part7 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("text\_generator"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("name"), LexLeanStd.Json.Json.JStr (part0)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("tokenizer"), LexLeanBoot.SemanticTerms.memberJson ((part1).1) ((part1).2)) :: entries2); (let entries4 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("window"), LexLeanBoot.SemanticTerms.memberJson ((part2).1) ((part2).2)) :: entries3); (let entries5 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("scorer"), LexLeanBoot.SemanticModels.modelUseJson (part3)) :: entries4); (let entries6 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("max\_tokens"), LexLeanStd.Json.Json.JInt (false) (part4)) :: entries5); (let entries7 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("stop"), LexLeanBoot.SemanticTerms.memberJson ((part5).1) ((part5).2)) :: entries6); (let entries8 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("policy"), generationPolicyJson (part6)) :: entries7); (let entries9 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part7 with | List.nil => entries8 | List.cons \_ \_ => ((lit ("axioms"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part7)) : List (LexLeanStd.Json.Json))))) :: entries8)); objectOf (entries9)))))))))) | ReasoningDeclaration.ReasoningDeclarationTextClassifier part0 part1 part2 part3 => (let entries1 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("kind"), LexLeanStd.Json.Json.JStr (lit ("text\_classifier"))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))); (let entries2 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("name"), LexLeanStd.Json.Json.JStr (part0)) :: entries1); (let entries3 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("tokenizer"), LexLeanBoot.SemanticTerms.memberJson ((part1).1) ((part1).2)) :: entries2); (let entries4 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := ((lit ("model"), LexLeanBoot.SemanticModels.modelUseJson (part2)) :: entries3); (let entries5 : List ((Prod (ByteArray) (LexLeanStd.Json.Json))) := (match part3 with | List.nil => entries4 | List.cons \_ \_ => ((lit ("axioms"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (item : ByteArray) => (LexLeanStd.Json.Json.JStr (item) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (part3)) : List (LexLeanStd.Json.Json))))) :: entries4)); objectOf (entries5)))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reasoningDeclarationText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : ReasoningDeclaration)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJson (reasoningDeclarationJson (value))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{AnyDeclaration}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{AnyOrdinary}: \texttt{(LexLeanBoot.SemanticDecls.SDecl)}.\par
+\noindent Constructor \texttt{AnyModel}: \texttt{(LexLeanBoot.SemanticModels.ModelDeclaration)}.\par
+\noindent Constructor \texttt{AnyReasoning}: \texttt{(ReasoningDeclaration)}.\par
+\subsection*{\texttt{anyDeclarationJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : AnyDeclaration)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match value with | AnyDeclaration.AnyOrdinary declared => LexLeanBoot.SemanticDecls.declarationJson (declared) | AnyDeclaration.AnyModel declared => LexLeanBoot.SemanticModels.modelDeclarationJson (declared) | AnyDeclaration.AnyReasoning declared => reasoningDeclarationJson (declared))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wholeSemanticModuleText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(spec : ByteArray) (declarations : List (AnyDeclaration))}.\par
+\noindent Closure 1: binds \texttt{(acc, declared)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJson (objectOf (((lit ("spec"), LexLeanStd.Json.Json.JStr (spec)) :: ((lit ("declarations"), LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTerms.chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (declared : AnyDeclaration) => (anyDeclarationJson (declared) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (AnyDeclaration) (declarations)) : List (LexLeanStd.Json.Json))))) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

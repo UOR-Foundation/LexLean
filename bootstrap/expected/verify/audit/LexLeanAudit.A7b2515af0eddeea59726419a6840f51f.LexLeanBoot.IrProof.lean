@@ -1,0 +1,29 @@
+module
+import LexLeanBoot.IrProof
+#print axioms LexLeanBoot.IrProof.AxiomPolicy
+#print axioms LexLeanBoot.IrProof.DeclBody
+#print axioms LexLeanBoot.IrProof.DeclKind
+#print axioms LexLeanBoot.IrProof.Declaration
+#print axioms LexLeanBoot.IrProof.Proof
+#print axioms LexLeanBoot.IrProof.Walk
+#print axioms LexLeanBoot.IrProof.bindAll
+#print axioms LexLeanBoot.IrProof.bodyJson
+#print axioms LexLeanBoot.IrProof.caseLocals
+#print axioms LexLeanBoot.IrProof.declarationJson
+#print axioms LexLeanBoot.IrProof.declarationText
+#print axioms LexLeanBoot.IrProof.jarr
+#print axioms LexLeanBoot.IrProof.jnil
+#print axioms LexLeanBoot.IrProof.jobj
+#print axioms LexLeanBoot.IrProof.kindName
+#print axioms LexLeanBoot.IrProof.listed
+#print axioms LexLeanBoot.IrProof.permits
+#print axioms LexLeanBoot.IrProof.policyJson
+#print axioms LexLeanBoot.IrProof.proofJson
+#print axioms LexLeanBoot.IrProof.proofText
+#print axioms LexLeanBoot.IrProof.sameNames
+#print axioms LexLeanBoot.IrProof.sortedUnique
+#print axioms LexLeanBoot.IrProof.tagged
+#print axioms LexLeanBoot.IrProof.targetJson
+#print axioms LexLeanBoot.IrProof.termWith
+#print axioms LexLeanBoot.IrProof.textChain
+#print axioms LexLeanBoot.IrProof.walkStep

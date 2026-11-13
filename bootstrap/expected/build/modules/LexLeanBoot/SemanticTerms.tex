@@ -1,0 +1,191 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{STerm}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{TVar}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{TNat}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{TInteger}: \texttt{(LexLeanBoot.SemanticTypes.SemanticInteger, ByteArray)}.\par
+\noindent Constructor \texttt{TString}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{TBytes}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{TPrimitive}: \texttt{(LexLeanBoot.SemanticTypes.SemanticPrimitive, STerm, LexLeanBoot.SemanticTypes.SemanticType)}.\par
+\noindent Constructor \texttt{TBool}: \texttt{(Bool)}.\par
+\noindent Constructor \texttt{TUnit}: \texttt{()}.\par
+\noindent Constructor \texttt{TNil}: \texttt{(LexLeanBoot.SemanticTypes.SemanticType)}.\par
+\noindent Constructor \texttt{TCons}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TRecord}: \texttt{(Option (ByteArray), ByteArray, LexLeanBoot.SemanticTypes.SemanticType, STerm)}.\par
+\noindent Constructor \texttt{TConstructor}: \texttt{(Option (ByteArray), ByteArray, LexLeanBoot.SemanticTypes.SemanticType, STerm)}.\par
+\noindent Constructor \texttt{TInstanceValue}: \texttt{(Option (ByteArray), ByteArray, LexLeanBoot.SemanticTypes.SemanticType, Option (ByteArray), ByteArray)}.\par
+\noindent Constructor \texttt{TProject}: \texttt{(STerm, ByteArray)}.\par
+\noindent Constructor \texttt{TCall}: \texttt{(Option (ByteArray), ByteArray, LexLeanBoot.SemanticTypes.SemanticType, STerm)}.\par
+\noindent Constructor \texttt{TIf}: \texttt{(STerm, STerm, STerm)}.\par
+\noindent Constructor \texttt{TMatch}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TEq}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TLe}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TLt}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TAdd}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TBeq}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TBle}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TBlt}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TAnd}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TPropAnd}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TOr}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TNot}: \texttt{(STerm)}.\par
+\noindent Constructor \texttt{TImplies}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TIff}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TForall}: \texttt{(ByteArray, LexLeanBoot.SemanticTypes.SemanticType, STerm)}.\par
+\noindent Constructor \texttt{TLet}: \texttt{(ByteArray, LexLeanBoot.SemanticTypes.SemanticType, STerm, STerm)}.\par
+\noindent Constructor \texttt{TPair}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TFirst}: \texttt{(STerm)}.\par
+\noindent Constructor \texttt{TSecond}: \texttt{(STerm)}.\par
+\noindent Constructor \texttt{TLambda}: \texttt{(List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))), List (ByteArray), STerm)}.\par
+\noindent Constructor \texttt{TApply}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{TFunctionRef}: \texttt{(Option (ByteArray), ByteArray, LexLeanBoot.SemanticTypes.SemanticType)}.\par
+\noindent Constructor \texttt{TMapLiteral}: \texttt{(LexLeanBoot.SemanticTypes.SemanticType, LexLeanBoot.SemanticTypes.SemanticType, STerm)}.\par
+\noindent Constructor \texttt{TSetLiteral}: \texttt{(LexLeanBoot.SemanticTypes.SemanticType, STerm)}.\par
+\noindent Constructor \texttt{TGraphLiteral}: \texttt{(LexLeanBoot.SemanticTypes.SemanticType, STerm, STerm)}.\par
+\noindent Constructor \texttt{TCheckedApply}: \texttt{(Option (ByteArray), ByteArray, LexLeanBoot.SemanticTypes.SemanticType, STerm, List (ByteArray))}.\par
+\noindent Constructor \texttt{KEnd}: \texttt{()}.\par
+\noindent Constructor \texttt{KItem}: \texttt{(STerm, STerm)}.\par
+\noindent Constructor \texttt{KAssign}: \texttt{(ByteArray, STerm, STerm)}.\par
+\noindent Constructor \texttt{KBranch}: \texttt{(Option (ByteArray), ByteArray, List (ByteArray), STerm, STerm)}.\par
+\noindent Constructor \texttt{KEntry}: \texttt{(STerm, STerm, STerm)}.\par
+\noindent Constructor \texttt{KEdge}: \texttt{(STerm, STerm, STerm)}.\par
+\subsection*{\texttt{Reflection}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{RList}: \texttt{(ByteArray, ByteArray, Option (ByteArray), ByteArray, Option (ByteArray), ByteArray, ByteArray)}.\par
+\noindent Constructor \texttt{RRecord}: \texttt{(ByteArray, Option (ByteArray), ByteArray, Option (ByteArray), ByteArray, List ((Prod (ByteArray) (ByteArray))))}.\par
+\subsection*{\texttt{SProof}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{PReflexivity}: \texttt{()}.\par
+\noindent Constructor \texttt{PDecide}: \texttt{()}.\par
+\noindent Constructor \texttt{PLinearArithmetic}: \texttt{(List ((Prod (Option (ByteArray)) (ByteArray))))}.\par
+\noindent Constructor \texttt{PSimplify}: \texttt{(List ((Prod (Option (ByteArray)) (ByteArray))))}.\par
+\noindent Constructor \texttt{PConstructor}: \texttt{(SProof)}.\par
+\noindent Constructor \texttt{PCases}: \texttt{(ByteArray, SProof)}.\par
+\noindent Constructor \texttt{PTermCases}: \texttt{(STerm, List ((Prod (Option (ByteArray)) (ByteArray))))}.\par
+\noindent Constructor \texttt{PInduction}: \texttt{(ByteArray, List (ByteArray), SProof)}.\par
+\noindent Constructor \texttt{PNestedInduction}: \texttt{(ByteArray, SProof, SProof)}.\par
+\noindent Constructor \texttt{PCongruence}: \texttt{()}.\par
+\noindent Constructor \texttt{PBooleanReflection}: \texttt{(Reflection)}.\par
+\noindent Constructor \texttt{PLaw}: \texttt{(ByteArray, LexLeanBoot.SemanticTypes.SemanticType, STerm, List ((Prod (Option (ByteArray)) (ByteArray))))}.\par
+\noindent Constructor \texttt{PApply}: \texttt{(Option (ByteArray), ByteArray, LexLeanBoot.SemanticTypes.SemanticType, STerm)}.\par
+\noindent Constructor \texttt{QEnd}: \texttt{()}.\par
+\noindent Constructor \texttt{QItem}: \texttt{(SProof, SProof)}.\par
+\noindent Constructor \texttt{QBranch}: \texttt{(ByteArray, List (ByteArray), SProof, SProof)}.\par
+\noindent Constructor \texttt{QMember}: \texttt{(LexLeanBoot.SemanticTypes.SemanticType, ByteArray, STerm, SProof, SProof)}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{member}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (entry : LexLeanStd.Json.Json) (rest : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JMember (lit (key)) (entry) (rest)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{kinded}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : String) (rest : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JObj (member ("kind") (LexLeanStd.Json.Json.JStr (lit (kind))) (rest))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{memberJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(owner : Option (ByteArray)) (named : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JObj ((match owner with | Option.some source => member ("module") (LexLeanStd.Json.Json.JStr (source)) (member ("name") (LexLeanStd.Json.Json.JStr (named)) (LexLeanStd.Json.Json.JNil)) | Option.none => member ("name") (LexLeanStd.Json.Json.JStr (named)) (LexLeanStd.Json.Json.JNil)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{paramJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(named : ByteArray) (typed : LexLeanBoot.SemanticTypes.SemanticType)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JObj (member ("name") (LexLeanStd.Json.Json.JStr (named)) (member ("type") (LexLeanBoot.SemanticTypes.typeJson (typed)) (LexLeanStd.Json.Json.JNil)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{chainOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (LexLeanStd.Json.Json))}.\par
+\noindent Closure 1: binds \texttt{(chain, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (chain : LexLeanStd.Json.Json) (item : LexLeanStd.Json.Json) => LexLeanStd.Json.Json.JItem (item) (chain))) (LexLeanStd.Json.Json.JNil) (LexLeanStd.Order.reverseList (LexLeanStd.Json.Json) (items)) : LexLeanStd.Json.Json)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{paramsJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(entries : List ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))))}.\par
+\noindent Closure 1: binds \texttt{(acc, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JArr (chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (entry : (Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))) => (paramJson ((entry).1) ((entry).2) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList ((Prod (ByteArray) (LexLeanBoot.SemanticTypes.SemanticType))) (entries)) : List (LexLeanStd.Json.Json))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{namesJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(names : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(acc, named)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JArr (chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (named : ByteArray) => (LexLeanStd.Json.Json.JStr (named) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList (ByteArray) (names)) : List (LexLeanStd.Json.Json))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{membersJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(refs : List ((Prod (Option (ByteArray)) (ByteArray))))}.\par
+\noindent Closure 1: binds \texttt{(acc, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JArr (chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (entry : (Prod (Option (ByteArray)) (ByteArray))) => (memberJson ((entry).1) ((entry).2) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList ((Prod (Option (ByteArray)) (ByteArray))) (refs)) : List (LexLeanStd.Json.Json))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{typesWhenAny}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (types : LexLeanBoot.SemanticTypes.SemanticType) (rest : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match types with | LexLeanBoot.SemanticTypes.SemanticType.SType => rest | LexLeanBoot.SemanticTypes.SemanticType.SNat => rest | LexLeanBoot.SemanticTypes.SemanticType.SBool => rest | LexLeanBoot.SemanticTypes.SemanticType.SProp => rest | LexLeanBoot.SemanticTypes.SemanticType.SUnit => rest | LexLeanBoot.SemanticTypes.SemanticType.SInt => rest | LexLeanBoot.SemanticTypes.SemanticType.SInt8 => rest | LexLeanBoot.SemanticTypes.SemanticType.SInt16 => rest | LexLeanBoot.SemanticTypes.SemanticType.SInt32 => rest | LexLeanBoot.SemanticTypes.SemanticType.SInt64 => rest | LexLeanBoot.SemanticTypes.SemanticType.SUInt8 => rest | LexLeanBoot.SemanticTypes.SemanticType.SUInt16 => rest | LexLeanBoot.SemanticTypes.SemanticType.SUInt32 => rest | LexLeanBoot.SemanticTypes.SemanticType.SUInt64 => rest | LexLeanBoot.SemanticTypes.SemanticType.SString => rest | LexLeanBoot.SemanticTypes.SemanticType.SBytes => rest | LexLeanBoot.SemanticTypes.SemanticType.SOrdering => rest | LexLeanBoot.SemanticTypes.SemanticType.SContractViolation => rest | LexLeanBoot.SemanticTypes.SemanticType.SReasoningFailure => rest | LexLeanBoot.SemanticTypes.SemanticType.SParameter \_ => rest | LexLeanBoot.SemanticTypes.SemanticType.SOption \_ => rest | LexLeanBoot.SemanticTypes.SemanticType.SResult \_ \_ => rest | LexLeanBoot.SemanticTypes.SemanticType.SList \_ => rest | LexLeanBoot.SemanticTypes.SemanticType.SNamed \_ \_ \_ => rest | LexLeanBoot.SemanticTypes.SemanticType.SProduct \_ \_ => rest | LexLeanBoot.SemanticTypes.SemanticType.SFunction \_ \_ => rest | LexLeanBoot.SemanticTypes.SemanticType.SMap \_ \_ => rest | LexLeanBoot.SemanticTypes.SemanticType.SSet \_ => rest | LexLeanBoot.SemanticTypes.SemanticType.SNil => rest | LexLeanBoot.SemanticTypes.SemanticType.SItem \_ \_ => member (key) (LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTypes.typeJson (types))) (rest))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{termJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(term : STerm)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match term with | STerm.TVar named => kinded ("var") (member ("name") (LexLeanStd.Json.Json.JStr (named)) (LexLeanStd.Json.Json.JNil)) | STerm.TNat digits => kinded ("nat") (member ("value") (LexLeanStd.Json.Json.JStr (digits)) (LexLeanStd.Json.Json.JNil)) | STerm.TInteger family digits => kinded ("integer") (member ("representation") (LexLeanStd.Json.Json.JStr (LexLeanBoot.SemanticTypes.integerName (family))) (member ("value") (LexLeanStd.Json.Json.JStr (digits)) (LexLeanStd.Json.Json.JNil))) | STerm.TString content => kinded ("string") (member ("value") (LexLeanStd.Json.Json.JStr (content)) (LexLeanStd.Json.Json.JNil)) | STerm.TBytes digits => kinded ("bytes") (member ("hex") (LexLeanStd.Json.Json.JStr (digits)) (LexLeanStd.Json.Json.JNil)) | STerm.TPrimitive operation arguments outcome => kinded ("primitive") (member ("operation") (LexLeanStd.Json.Json.JStr ((LexLeanBoot.SemanticTypes.primitiveFacts (operation)).serdeName)) (member ("arguments") (LexLeanStd.Json.Json.JArr (termJson (arguments))) (member ("result") (LexLeanBoot.SemanticTypes.typeJson (outcome)) (LexLeanStd.Json.Json.JNil)))) | STerm.TBool flag => kinded ("bool") (member ("value") (LexLeanStd.Json.Json.JBool (flag)) (LexLeanStd.Json.Json.JNil)) | STerm.TUnit => kinded ("unit") (LexLeanStd.Json.Json.JNil) | STerm.TNil element => kinded ("nil") (member ("element") (LexLeanBoot.SemanticTypes.typeJson (element)) (LexLeanStd.Json.Json.JNil)) | STerm.TCons head tail => kinded ("cons") (member ("head") (termJson (head)) (member ("tail") (termJson (tail)) (LexLeanStd.Json.Json.JNil))) | STerm.TRecord recordRefA recordRefB typeArgs assigned => kinded ("record") (member ("type") (memberJson (recordRefA) (recordRefB)) (typesWhenAny ("type\_arguments") (typeArgs) (member ("fields") (LexLeanStd.Json.Json.JArr (termJson (assigned))) (LexLeanStd.Json.Json.JNil)))) | STerm.TConstructor builtA builtB typeArgs arguments => kinded ("constructor") (member ("constructor") (memberJson (builtA) (builtB)) (typesWhenAny ("type\_arguments") (typeArgs) (member ("arguments") (LexLeanStd.Json.Json.JArr (termJson (arguments))) (LexLeanStd.Json.Json.JNil)))) | STerm.TInstanceValue classRefA classRefB typeArgs resolvedA resolvedB => kinded ("instance\_value") (member ("class") (memberJson (classRefA) (classRefB)) (member ("arguments") (LexLeanStd.Json.Json.JArr (LexLeanBoot.SemanticTypes.typeJson (typeArgs))) (member ("resolved") (memberJson (resolvedA) (resolvedB)) (LexLeanStd.Json.Json.JNil)))) | STerm.TProject subject field => kinded ("project") (member ("value") (termJson (subject)) (member ("field") (LexLeanStd.Json.Json.JStr (field)) (LexLeanStd.Json.Json.JNil))) | STerm.TCall functionA functionB typeArgs arguments => kinded ("call") (member ("function") (memberJson (functionA) (functionB)) (typesWhenAny ("type\_arguments") (typeArgs) (member ("arguments") (LexLeanStd.Json.Json.JArr (termJson (arguments))) (LexLeanStd.Json.Json.JNil)))) | STerm.TIf condition whenTrue whenFalse => kinded ("if") (member ("condition") (termJson (condition)) (member ("then\_value") (termJson (whenTrue)) (member ("else\_value") (termJson (whenFalse)) (LexLeanStd.Json.Json.JNil)))) | STerm.TMatch scrutinee branches => kinded ("match") (member ("scrutinee") (termJson (scrutinee)) (member ("branches") (LexLeanStd.Json.Json.JArr (termJson (branches))) (LexLeanStd.Json.Json.JNil))) | STerm.TEq left right => kinded ("eq") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TLe left right => kinded ("le") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TLt left right => kinded ("lt") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TAdd left right => kinded ("add") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TBeq left right => kinded ("beq") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TBle left right => kinded ("ble") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TBlt left right => kinded ("blt") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TAnd left right => kinded ("and") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TPropAnd left right => kinded ("prop\_and") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TOr left right => kinded ("or") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TNot subject => kinded ("not") (member ("value") (termJson (subject)) (LexLeanStd.Json.Json.JNil)) | STerm.TImplies premise conclusion => kinded ("implies") (member ("premise") (termJson (premise)) (member ("conclusion") (termJson (conclusion)) (LexLeanStd.Json.Json.JNil))) | STerm.TIff left right => kinded ("iff") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TForall binderA binderB body => kinded ("forall") (member ("binder") (paramJson (binderA) (binderB)) (member ("body") (termJson (body)) (LexLeanStd.Json.Json.JNil))) | STerm.TLet binderA binderB bound body => kinded ("let") (member ("binder") (paramJson (binderA) (binderB)) (member ("value") (termJson (bound)) (member ("body") (termJson (body)) (LexLeanStd.Json.Json.JNil)))) | STerm.TPair left right => kinded ("pair") (member ("left") (termJson (left)) (member ("right") (termJson (right)) (LexLeanStd.Json.Json.JNil))) | STerm.TFirst subject => kinded ("first") (member ("value") (termJson (subject)) (LexLeanStd.Json.Json.JNil)) | STerm.TSecond subject => kinded ("second") (member ("value") (termJson (subject)) (LexLeanStd.Json.Json.JNil)) | STerm.TLambda parameters captures body => kinded ("lambda") (member ("parameters") (paramsJson (parameters)) (member ("captures") (namesJson (captures)) (member ("body") (termJson (body)) (LexLeanStd.Json.Json.JNil)))) | STerm.TApply function arguments => kinded ("apply") (member ("function") (termJson (function)) (member ("arguments") (LexLeanStd.Json.Json.JArr (termJson (arguments))) (LexLeanStd.Json.Json.JNil))) | STerm.TFunctionRef functionA functionB typeArgs => kinded ("function\_ref") (member ("function") (memberJson (functionA) (functionB)) (typesWhenAny ("type\_arguments") (typeArgs) (LexLeanStd.Json.Json.JNil))) | STerm.TMapLiteral keyType valueType entries => kinded ("map\_literal") (member ("key") (LexLeanBoot.SemanticTypes.typeJson (keyType)) (member ("value") (LexLeanBoot.SemanticTypes.typeJson (valueType)) (member ("entries") (LexLeanStd.Json.Json.JArr (termJson (entries))) (LexLeanStd.Json.Json.JNil)))) | STerm.TSetLiteral element elements => kinded ("set\_literal") (member ("element") (LexLeanBoot.SemanticTypes.typeJson (element)) (member ("elements") (LexLeanStd.Json.Json.JArr (termJson (elements))) (LexLeanStd.Json.Json.JNil))) | STerm.TGraphLiteral node nodes edges => kinded ("graph\_literal") (member ("node") (LexLeanBoot.SemanticTypes.typeJson (node)) (member ("nodes") (LexLeanStd.Json.Json.JArr (termJson (nodes))) (member ("edges") (LexLeanStd.Json.Json.JArr (termJson (edges))) (LexLeanStd.Json.Json.JNil)))) | STerm.TCheckedApply modelA modelB typeArgs arguments checks => kinded ("checked\_apply") (member ("model") (memberJson (modelA) (modelB)) (typesWhenAny ("type\_arguments") (typeArgs) (member ("arguments") (LexLeanStd.Json.Json.JArr (termJson (arguments))) (member ("checks") (namesJson (checks)) (LexLeanStd.Json.Json.JNil))))) | STerm.KEnd => LexLeanStd.Json.Json.JNil | STerm.KItem head tail => LexLeanStd.Json.Json.JItem (termJson (head)) (termJson (tail)) | STerm.KAssign field assigned tail => LexLeanStd.Json.Json.JItem (LexLeanStd.Json.Json.JObj (member ("field") (LexLeanStd.Json.Json.JStr (field)) (member ("value") (termJson (assigned)) (LexLeanStd.Json.Json.JNil)))) (termJson (tail)) | STerm.KBranch owner named bound body tail => LexLeanStd.Json.Json.JItem (LexLeanStd.Json.Json.JObj (member ("constructor") (memberJson (owner) (named)) (member ("binders") (namesJson (bound)) (member ("body") (termJson (body)) (LexLeanStd.Json.Json.JNil))))) (termJson (tail)) | STerm.KEntry key entry tail => LexLeanStd.Json.Json.JItem (LexLeanStd.Json.Json.JObj (member ("key") (termJson (key)) (member ("value") (termJson (entry)) (LexLeanStd.Json.Json.JNil)))) (termJson (tail)) | STerm.KEdge source target tail => LexLeanStd.Json.Json.JItem (LexLeanStd.Json.Json.JObj (member ("source") (termJson (source)) (member ("target") (termJson (target)) (LexLeanStd.Json.Json.JNil)))) (termJson (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reflectionJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(reflection : Reflection)}.\par
+\noindent Closure 1: binds \texttt{(acc, entry)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match reflection with | Reflection.RList parameter values booleanA booleanB propositionA propositionB comparison => kinded ("list") (member ("parameter") (LexLeanStd.Json.Json.JStr (parameter)) (member ("values") (LexLeanStd.Json.Json.JStr (values)) (member ("boolean\_definition") (memberJson (booleanA) (booleanB)) (member ("proposition\_definition") (memberJson (propositionA) (propositionB)) (member ("comparison") (LexLeanStd.Json.Json.JStr (comparison)) (LexLeanStd.Json.Json.JNil)))))) | Reflection.RRecord recordName booleanA booleanB propositionA propositionB fields => kinded ("record") (member ("record") (LexLeanStd.Json.Json.JStr (recordName)) (member ("boolean\_definition") (memberJson (booleanA) (booleanB)) (member ("proposition\_definition") (memberJson (propositionA) (propositionB)) (member ("fields") (LexLeanStd.Json.Json.JArr (chainOf ((LexLeanCollections.listFold ((fun (acc : List (LexLeanStd.Json.Json)) (entry : (Prod (ByteArray) (ByteArray))) => (LexLeanStd.Json.Json.JObj (member ("field") (LexLeanStd.Json.Json.JStr ((entry).1)) (member ("expected") (LexLeanStd.Json.Json.JStr ((entry).2)) (LexLeanStd.Json.Json.JNil))) :: acc))) (([] : List (LexLeanStd.Json.Json))) (LexLeanStd.Order.reverseList ((Prod (ByteArray) (ByteArray))) (fields)) : List (LexLeanStd.Json.Json))))) (LexLeanStd.Json.Json.JNil))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{proofJson}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(proof : SProof)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{(match proof with | SProof.PReflexivity => kinded ("reflexivity") (LexLeanStd.Json.Json.JNil) | SProof.PDecide => kinded ("decide") (LexLeanStd.Json.Json.JNil) | SProof.PLinearArithmetic definitions => kinded ("linear\_arithmetic") ((match definitions with | List.nil => LexLeanStd.Json.Json.JNil | List.cons \_ \_ => member ("definitions") (membersJson (definitions)) (LexLeanStd.Json.Json.JNil))) | SProof.PSimplify definitions => kinded ("simplify") (member ("definitions") (membersJson (definitions)) (LexLeanStd.Json.Json.JNil)) | SProof.PConstructor branches => kinded ("constructor") (member ("branches") (LexLeanStd.Json.Json.JArr (proofJson (branches))) (LexLeanStd.Json.Json.JNil)) | SProof.PCases scrutinee branches => kinded ("cases") (member ("scrutinee") (LexLeanStd.Json.Json.JStr (scrutinee)) (member ("branches") (LexLeanStd.Json.Json.JArr (proofJson (branches))) (LexLeanStd.Json.Json.JNil))) | SProof.PTermCases scrutinee definitions => kinded ("term\_cases") (member ("scrutinee") (termJson (scrutinee)) (member ("definitions") (membersJson (definitions)) (LexLeanStd.Json.Json.JNil))) | SProof.PInduction scrutinee generalized branches => kinded ("induction") (member ("scrutinee") (LexLeanStd.Json.Json.JStr (scrutinee)) ((match generalized with | List.nil => member ("branches") (LexLeanStd.Json.Json.JArr (proofJson (branches))) (LexLeanStd.Json.Json.JNil) | List.cons \_ \_ => member ("generalizing") (namesJson (generalized)) (member ("branches") (LexLeanStd.Json.Json.JArr (proofJson (branches))) (LexLeanStd.Json.Json.JNil))))) | SProof.PNestedInduction scrutinee branches nested => kinded ("nested\_induction") (member ("scrutinee") (LexLeanStd.Json.Json.JStr (scrutinee)) (member ("branches") (LexLeanStd.Json.Json.JArr (proofJson (branches))) (member ("members") (LexLeanStd.Json.Json.JArr (proofJson (nested))) (LexLeanStd.Json.Json.JNil)))) | SProof.PCongruence => kinded ("congruence") (LexLeanStd.Json.Json.JNil) | SProof.PBooleanReflection reflection => kinded ("boolean\_reflection") (member ("reflection") (reflectionJson (reflection)) (LexLeanStd.Json.Json.JNil)) | SProof.PLaw lawName typeArgs arguments premises => kinded ("law") (member ("name") (LexLeanStd.Json.Json.JStr (lawName)) (typesWhenAny ("type\_arguments") (typeArgs) (member ("arguments") (LexLeanStd.Json.Json.JArr (termJson (arguments))) ((match premises with | List.nil => LexLeanStd.Json.Json.JNil | List.cons \_ \_ => member ("premises") (membersJson (premises)) (LexLeanStd.Json.Json.JNil)))))) | SProof.PApply theoremRefA theoremRefB typeArgs arguments => kinded ("apply") (member ("theorem") (memberJson (theoremRefA) (theoremRefB)) (typesWhenAny ("type\_arguments") (typeArgs) (member ("arguments") (LexLeanStd.Json.Json.JArr (termJson (arguments))) (LexLeanStd.Json.Json.JNil)))) | SProof.QEnd => LexLeanStd.Json.Json.JNil | SProof.QItem head tail => LexLeanStd.Json.Json.JItem (proofJson (head)) (proofJson (tail)) | SProof.QBranch built bound proved tail => LexLeanStd.Json.Json.JItem (LexLeanStd.Json.Json.JObj (member ("constructor") (LexLeanStd.Json.Json.JStr (built)) (member ("binders") (namesJson (bound)) (member ("proof") (proofJson (proved)) (LexLeanStd.Json.Json.JNil))))) (proofJson (tail)) | SProof.QMember typed bound statement branches tail => LexLeanStd.Json.Json.JItem (LexLeanStd.Json.Json.JObj (member ("type") (LexLeanBoot.SemanticTypes.typeJson (typed)) (member ("binder") (LexLeanStd.Json.Json.JStr (bound)) (member ("statement") (termJson (statement)) (member ("branches") (LexLeanStd.Json.Json.JArr (proofJson (branches))) (LexLeanStd.Json.Json.JNil)))))) (proofJson (tail)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{semanticTermText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(term : STerm)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJson (termJson (term))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{semanticProofText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(proof : SProof)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.writeJson (proofJson (proof))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}
