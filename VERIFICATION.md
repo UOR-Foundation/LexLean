@@ -12542,6 +12542,12 @@ the first panic message, trimmed.
 
 | `SP-32` | `backend/semantic.rs`: the clause is written only for a mutual group | `` `paramsOf` matches a parameter before its argument and states the argument ``, the generated definition with no clause; the issue's project on that binary: `LLV7013` in `__rel_1` |
 | `SP-33` | `calculus/rust/lower.rs`: `fold` does not read `Expr::Clone` | `the arm reads the box and binds nothing`, the arm being `Let { pat: Bind(Local(2)), value: Unbox(Boxed(2)) }` then `Move(Local(2))`; the issue's project on that binary: `LLV7015` at `Corr.mCons` in `fun1` |
+| `RB-24` | `crates/lexlean/src/calculus/rust/package.rs`: the output of the driver is printed as `leave(status, &errors, &output)` | `the fixture command runs to its fixed result` (status `3`, standard output `err`, standard error `out`) |
+| `RB-24` | `compiler/src/RuntimeHost.lex.tex`: `process_wait` records `status.code()` as `None` | `a child's status dropped` (the driver exits `90`, not `3`) |
+| `RB-24` | `compiler/src/RuntimeHost.lex.tex`: `drive` passes `None` as the state of every step | `the state of the previous step passed to the next` (no result within 120 seconds) |
+| `RB-24` | `compiler/src/RuntimeHost.lex.tex`: `files_list` reverses the sorted names | `a listing in the reverse of byte order` (the driver exits `90`, not `3`) |
+| `RB-24` | `compiler/src/RuntimeHost.lex.tex`: `processOn` validated by a root that admits only `files` | `hidden-effect` (`Command` realizes `process`, which the root does not admit) |
+| `RB-24` | `compiler/src/RuntimeHost.lex.tex`: the `not_unix` twin of `end_group` removed | `cfg-pair` |
 | `TC-01` | `calculus/mod.rs`: `canonical` binds parameters but keeps their spelling | `assertion left == right failed: adt-evaluation` (alpha variant bytes differ) |
 | `TC-02` | `calculus/check.rs`: the match exhaustiveness test made `false &&` | `an invalid program loads: expected `the match is not exhaustive: Adt { constructor: 2 } is not covered`` |
 | `MD-01` | `ir/semantic.rs`: the language-1.1 gate `first_language_1_2_construct` made `&& false` | `tests/negative/model-under-1.1: expected "`contract declaration` is a language-1.2 construct"` |
