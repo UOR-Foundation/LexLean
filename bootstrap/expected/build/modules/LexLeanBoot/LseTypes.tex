@@ -1,0 +1,577 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Fuel}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{FZ}: \texttt{()}.\par
+\noindent Constructor \texttt{FS}: \texttt{(Fuel)}.\par
+\subsection*{\texttt{CRow}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{package}: \texttt{ByteArray}.\par
+\noindent Field \texttt{entry}: \texttt{ByteArray}.\par
+\noindent Field \texttt{kind}: \texttt{Nat}.\par
+\noindent Field \texttt{signature}: \texttt{LexLeanBoot.LexiconLse.Lse}.\par
+\noindent Field \texttt{defined}: \texttt{Bool}.\par
+\subsection*{\texttt{Ck}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{metas}: \texttt{List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse)))}.\par
+\noindent Field \texttt{nextMeta}: \texttt{Nat}.\par
+\noindent Field \texttt{literals}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{freshCounter}: \texttt{Nat}.\par
+\noindent Field \texttt{exhausted}: \texttt{Bool}.\par
+\noindent Field \texttt{rows}: \texttt{List (CRow)}.\par
+\noindent Field \texttt{fallback}: \texttt{Nat}.\par
+\subsection*{\texttt{Bd}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{mode}: \texttt{Nat}.\par
+\noindent Field \texttt{name}: \texttt{ByteArray}.\par
+\noindent Field \texttt{ty}: \texttt{LexLeanBoot.LexiconLse.Lse}.\par
+\subsection*{\texttt{Sr}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{out}: \texttt{LexLeanBoot.LexiconLse.Lse}.\par
+\noindent Field \texttt{ck}: \texttt{Ck}.\par
+\subsection*{\texttt{Sb}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{chain}: \texttt{LexLeanBoot.LexiconLse.Lse}.\par
+\noindent Field \texttt{renames}: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Field \texttt{shadowed}: \texttt{Bool}.\par
+\noindent Field \texttt{ck}: \texttt{Ck}.\par
+\subsection*{\texttt{Ls}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{items}: \texttt{List (Bd)}.\par
+\noindent Field \texttt{ck}: \texttt{Ck}.\par
+\subsection*{\texttt{Ur}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{error}: \texttt{Option (ByteArray)}.\par
+\noindent Field \texttt{ck}: \texttt{Ck}.\par
+\subsection*{\texttt{Ir}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{ty}: \texttt{LexLeanBoot.LexiconLse.Lse}.\par
+\noindent Field \texttt{error}: \texttt{Option (ByteArray)}.\par
+\noindent Field \texttt{ck}: \texttt{Ck}.\par
+\subsection*{\texttt{Checked}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{ty}: \texttt{LexLeanBoot.LexiconLse.Lse}.\par
+\noindent Field \texttt{literals}: \texttt{List (Option (LexLeanBoot.LexiconLse.Lse))}.\par
+\subsection*{\texttt{Fl}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{binders}: \texttt{List (Bd)}.\par
+\noindent Field \texttt{body}: \texttt{LexLeanBoot.LexiconLse.Lse}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (left) (right) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{shown}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expr : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (lit ("`")) (LexLeanBoot.LexiconLse.printLse (expr) (false))) (lit ("`"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mkFuel}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(depth : Nat)}.\par
+\noindent Closure 1: binds \texttt{(rest)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Fuel}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterateUntil ((fun (rest : Fuel) => Option.some (Fuel.FS (rest)))) (depth) (Fuel.FZ) : (Prod (Fuel) (Bool)))).1}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isMeta}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(name : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(Nat.beq (LexLeanBoot.LexiconLse.byteNum (name) (0)) (63))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{metaOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expr : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match expr with | LexLeanBoot.LexiconLse.Lse.LLocal name => (if isMeta (name) then Option.some (name) else Option.none) | LexLeanBoot.LexiconLse.Lse.LSortProp => Option.none | LexLeanBoot.LexiconLse.Lse.LSortType \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LNat \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LNil => Option.none | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{kindOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expr : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match expr with | LexLeanBoot.LexiconLse.Lse.LSortProp => 0 | LexLeanBoot.LexiconLse.Lse.LSortType \_ => 1 | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => 2 | LexLeanBoot.LexiconLse.Lse.LLocal \_ => 3 | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => 4 | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => 5 | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => 6 | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => 7 | LexLeanBoot.LexiconLse.Lse.LNat \_ => 8 | LexLeanBoot.LexiconLse.Lse.LNil => 9 | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => 9 | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => 9)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{atomKey}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expr : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(match expr with | LexLeanBoot.LexiconLse.Lse.LConst p e \_ => cat (cat (p) (lit ("::"))) (e) | LexLeanBoot.LexiconLse.Lse.LLocal name => name | LexLeanBoot.LexiconLse.Lse.LNat digits => digits | LexLeanBoot.LexiconLse.Lse.LSortProp => ByteArray.mk \#[] | LexLeanBoot.LexiconLse.Lse.LSortType \_ => ByteArray.mk \#[] | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => ByteArray.mk \#[] | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => ByteArray.mk \#[] | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => ByteArray.mk \#[] | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => ByteArray.mk \#[] | LexLeanBoot.LexiconLse.Lse.LNil => ByteArray.mk \#[] | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => ByteArray.mk \#[] | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => ByteArray.mk \#[])}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{ckWith}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck) (metas : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse)))) (nextMeta : Nat) (literals : List (ByteArray)) (freshCounter : Nat) (exhausted : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ck}.\par
+\noindent Definition: \texttt{(\{ metas := metas, nextMeta := nextMeta, literals := literals, freshCounter := freshCounter, exhausted := exhausted, rows := (st).rows, fallback := (st).fallback \} : Ck)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{ckExhaust}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ck}.\par
+\noindent Definition: \texttt{ckWith (st) ((st).metas) ((st).nextMeta) ((st).literals) ((st).freshCounter) (true)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{ckSolve}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck) (name : ByteArray) (solution : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ck}.\par
+\noindent Definition: \texttt{ckWith (st) (((name, solution) :: (st).metas)) ((st).nextMeta) ((st).literals) ((st).freshCounter) ((st).exhausted)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{freshMeta}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Sr}.\par
+\noindent Definition: \texttt{(\{ out := LexLeanBoot.LexiconLse.Lse.LLocal (cat (lit ("?")) (LexLeanStd.Numeral.decimal ((st).nextMeta))), ck := ckWith (st) ((st).metas) (((st).nextMeta + 1)) ((st).literals) ((st).freshCounter) ((st).exhausted) \} : Sr)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{literalMeta}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Sr}.\par
+\noindent Definition: \texttt{(let made : Sr := freshMeta (st); (let after : Ck := (made).ck; (\{ out := (made).out, ck := ckWith (after) ((after).metas) ((after).nextMeta) ((cat (lit ("?")) (LexLeanStd.Numeral.decimal ((st).nextMeta)) :: (after).literals)) ((after).freshCounter) ((after).exhausted) \} : Sr)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{freshLocal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck) (base : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (ByteArray) (Ck))}.\par
+\noindent Definition: \texttt{(let counter : Nat := ((st).freshCounter + 1); (cat (cat (base) (ByteArray.mk \#[35])) (LexLeanStd.Numeral.decimal (counter)), ckWith (st) ((st).metas) ((st).nextMeta) ((st).literals) (counter) ((st).exhausted)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{solvedOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(metas : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse)))) (name : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, row)}, captures \texttt{(name)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (LexLeanBoot.LexiconLse.Lse)) (row : (Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse))) => (match found with | Option.some \_ => found | Option.none => (if (LexLeanRuntime.equal ((row).1) (name) : Bool) then Option.some ((row).2) else Option.none)))) (Option.none) (metas) : Option (LexLeanBoot.LexiconLse.Lse))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lookupRow}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck) (package : ByteArray) (entry : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, row)}, captures \texttt{(entry, package)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Nat) (Bool))}.\par
+\noindent Definition: \texttt{(match (LexLeanCollections.listFold ((fun (found : Option (CRow)) (row : CRow) => (match found with | Option.some \_ => found | Option.none => (if (if (LexLeanRuntime.equal ((row).package) (package) : Bool) then (LexLeanRuntime.equal ((row).entry) (entry) : Bool) else false) then Option.some (row) else Option.none)))) (Option.none) ((st).rows) : Option (CRow)) with | Option.some row => ((row).kind, (row).defined) | Option.none => ((st).fallback, false))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{signatureOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck) (package : ByteArray) (entry : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, row)}, captures \texttt{(entry, package)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.LexiconLse.Lse}.\par
+\noindent Definition: \texttt{(match (LexLeanCollections.listFold ((fun (found : Option (CRow)) (row : CRow) => (match found with | Option.some \_ => found | Option.none => (if (if (LexLeanRuntime.equal ((row).package) (package) : Bool) then (LexLeanRuntime.equal ((row).entry) (entry) : Bool) else false) then Option.some (row) else Option.none)))) (Option.none) ((st).rows) : Option (CRow)) with | Option.some row => (row).signature | Option.none => LexLeanBoot.LexiconLse.Lse.LSortProp)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unfoldsConst}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck) (package : ByteArray) (entry : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let found : (Prod (Nat) (Bool)) := lookupRow (st) (package) (entry); (if (Nat.beq ((found).1) (1)) then true else (if (Nat.beq ((found).1) (3)) then (found).2 else false)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{mayUnfold}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => false | Fuel.FS f => (match expr with | LexLeanBoot.LexiconLse.Lse.LConst p e \_ => unfoldsConst (st) (p) (e) | LexLeanBoot.LexiconLse.Lse.LApp g \_ => mayUnfold (f) (st) (g) | LexLeanBoot.LexiconLse.Lse.LSortProp => false | LexLeanBoot.LexiconLse.Lse.LSortType \_ => false | LexLeanBoot.LexiconLse.Lse.LLocal \_ => false | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => false | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => false | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => false | LexLeanBoot.LexiconLse.Lse.LNat \_ => false | LexLeanBoot.LexiconLse.Lse.LNil => false | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => false | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => false))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{both}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Option (LexLeanBoot.LexiconLse.Lse)) (right : Option (LexLeanBoot.LexiconLse.Lse))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (LexLeanBoot.LexiconLse.Lse) (LexLeanBoot.LexiconLse.Lse)))}.\par
+\noindent Definition: \texttt{(match left with | Option.none => Option.none | Option.some l => (match right with | Option.none => Option.none | Option.some r => Option.some ((l, r))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{zonk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (metas : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse)))) (expr : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => Option.none | Fuel.FS f => (match expr with | LexLeanBoot.LexiconLse.Lse.LLocal name => (if isMeta (name) then (match solvedOf (metas) (name) with | Option.some solution => zonk (f) (metas) (solution) | Option.none => Option.some (LexLeanBoot.LexiconLse.Lse.LLocal (name))) else Option.some (LexLeanBoot.LexiconLse.Lse.LLocal (name))) | LexLeanBoot.LexiconLse.Lse.LApp g args => (match both (zonk (f) (metas) (g)) (zonk (f) (metas) (args)) with | Option.some zs => Option.some (LexLeanBoot.LexiconLse.Lse.LApp ((zs).1) ((zs).2)) | Option.none => Option.none) | LexLeanBoot.LexiconLse.Lse.LArg h t => (match both (zonk (f) (metas) (h)) (zonk (f) (metas) (t)) with | Option.some zs => Option.some (LexLeanBoot.LexiconLse.Lse.LArg ((zs).1) ((zs).2)) | Option.none => Option.none) | LexLeanBoot.LexiconLse.Lse.LPi bs body => (match both (zonk (f) (metas) (bs)) (zonk (f) (metas) (body)) with | Option.some zs => Option.some (LexLeanBoot.LexiconLse.Lse.LPi ((zs).1) ((zs).2)) | Option.none => Option.none) | LexLeanBoot.LexiconLse.Lse.LLam bs body => (match both (zonk (f) (metas) (bs)) (zonk (f) (metas) (body)) with | Option.some zs => Option.some (LexLeanBoot.LexiconLse.Lse.LLam ((zs).1) ((zs).2)) | Option.none => Option.none) | LexLeanBoot.LexiconLse.Lse.LBinder m n t r => (match both (zonk (f) (metas) (t)) (zonk (f) (metas) (r)) with | Option.some zs => Option.some (LexLeanBoot.LexiconLse.Lse.LBinder (m) (n) ((zs).1) ((zs).2)) | Option.none => Option.none) | LexLeanBoot.LexiconLse.Lse.LLet n t v body => (match both (zonk (f) (metas) (t)) (zonk (f) (metas) (v)) with | Option.some zs => (match zonk (f) (metas) (body) with | Option.some zbody => Option.some (LexLeanBoot.LexiconLse.Lse.LLet (n) ((zs).1) ((zs).2) (zbody)) | Option.none => Option.none) | Option.none => Option.none) | LexLeanBoot.LexiconLse.Lse.LSortProp => Option.some (LexLeanBoot.LexiconLse.Lse.LSortProp) | LexLeanBoot.LexiconLse.Lse.LSortType u => Option.some (LexLeanBoot.LexiconLse.Lse.LSortType (u)) | LexLeanBoot.LexiconLse.Lse.LConst p e us => Option.some (LexLeanBoot.LexiconLse.Lse.LConst (p) (e) (us)) | LexLeanBoot.LexiconLse.Lse.LNat digits => Option.some (LexLeanBoot.LexiconLse.Lse.LNat (digits)) | LexLeanBoot.LexiconLse.Lse.LNil => Option.some (LexLeanBoot.LexiconLse.Lse.LNil)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{zonkSt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Sr}.\par
+\noindent Definition: \texttt{(match zonk (fuel) ((st).metas) (expr) with | Option.some done => (\{ out := done, ck := st \} : Sr) | Option.none => (\{ out := expr, ck := ckExhaust (st) \} : Sr))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{unionOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Option (List (ByteArray))) (right : Option (List (ByteArray)))}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (List (ByteArray))}.\par
+\noindent Definition: \texttt{(match left with | Option.none => Option.none | Option.some l => (match right with | Option.none => Option.none | Option.some r => Option.some ((LexLeanCollections.listFold ((fun (acc : List (ByteArray)) (item : ByteArray) => (item :: acc))) (r) (l) : List (ByteArray)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{boundIn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(names : List (ByteArray)) (wanted : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, item)}, captures \texttt{(wanted)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (item : ByteArray) => (if found then true else (LexLeanRuntime.equal (item) (wanted) : Bool)))) (false) (names) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{freeLocals}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Free}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (expr : LexLeanBoot.LexiconLse.Lse) (bound : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (List (ByteArray))}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => Option.none | Fuel.FS f => (match expr with | LexLeanBoot.LexiconLse.Lse.LLocal name => (if boundIn (bound) (name) then Option.some (([] : List (ByteArray))) else Option.some ((name :: ([] : List (ByteArray))))) | LexLeanBoot.LexiconLse.Lse.LApp g args => unionOf (freeLocals (f) (g) (bound)) (freeLocals (f) (args) (bound)) | LexLeanBoot.LexiconLse.Lse.LArg h t => unionOf (freeLocals (f) (h) (bound)) (freeLocals (f) (t) (bound)) | LexLeanBoot.LexiconLse.Lse.LPi bs body => freeBinders (f) (bs) (bound) (body) | LexLeanBoot.LexiconLse.Lse.LLam bs body => freeBinders (f) (bs) (bound) (body) | LexLeanBoot.LexiconLse.Lse.LLet n t v body => unionOf (unionOf (freeLocals (f) (t) (bound)) (freeLocals (f) (v) (bound))) (freeLocals (f) (body) ((n :: bound))) | LexLeanBoot.LexiconLse.Lse.LSortProp => Option.some (([] : List (ByteArray))) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => Option.some (([] : List (ByteArray))) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => Option.some (([] : List (ByteArray))) | LexLeanBoot.LexiconLse.Lse.LNat \_ => Option.some (([] : List (ByteArray))) | LexLeanBoot.LexiconLse.Lse.LNil => Option.some (([] : List (ByteArray))) | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => Option.some (([] : List (ByteArray)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{freeBinders}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Free}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (chain : LexLeanBoot.LexiconLse.Lse) (bound : List (ByteArray)) (body : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (List (ByteArray))}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => Option.none | Fuel.FS f => (match chain with | LexLeanBoot.LexiconLse.Lse.LBinder \_ n t r => unionOf (freeLocals (f) (t) (bound)) (freeBinders (f) (r) ((n :: bound)) (body)) | LexLeanBoot.LexiconLse.Lse.LNil => freeLocals (f) (body) (bound) | LexLeanBoot.LexiconLse.Lse.LSortProp => freeLocals (f) (body) (bound) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => freeLocals (f) (body) (bound) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => freeLocals (f) (body) (bound) | LexLeanBoot.LexiconLse.Lse.LLocal \_ => freeLocals (f) (body) (bound) | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => freeLocals (f) (body) (bound) | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => freeLocals (f) (body) (bound) | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => freeLocals (f) (body) (bound) | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => freeLocals (f) (body) (bound) | LexLeanBoot.LexiconLse.Lse.LNat \_ => freeLocals (f) (body) (bound) | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => freeLocals (f) (body) (bound)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{flagOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(flagged : (Prod (Bool) (Ck)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(flagged).1}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{hasUnsolved}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Closure 1: binds \texttt{(found, name)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (Bool) (Ck))}.\par
+\noindent Definition: \texttt{(let zonked : Sr := zonkSt (fuel) (st) (expr); (match freeLocals (fuel) ((zonked).out) (([] : List (ByteArray))) with | Option.some names => ((LexLeanCollections.listFold ((fun (found : Bool) (name : ByteArray) => (if found then true else isMeta (name)))) (false) (names) : Bool), (zonked).ck) | Option.none => (true, ckExhaust ((zonked).ck))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{substIn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Subst}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse) (name : ByteArray) (replacement : LexLeanBoot.LexiconLse.Lse) (avoid : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Sr}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => (\{ out := expr, ck := ckExhaust (st) \} : Sr) | Fuel.FS f => (match expr with | LexLeanBoot.LexiconLse.Lse.LLocal lname => (if (LexLeanRuntime.equal (lname) (name) : Bool) then (\{ out := replacement, ck := st \} : Sr) else (\{ out := LexLeanBoot.LexiconLse.Lse.LLocal (lname), ck := st \} : Sr)) | LexLeanBoot.LexiconLse.Lse.LApp g args => (let sg : Sr := substIn (f) (st) (g) (name) (replacement) (avoid); (let sa : Sr := substIn (f) ((sg).ck) (args) (name) (replacement) (avoid); (\{ out := LexLeanBoot.LexiconLse.Lse.LApp ((sg).out) ((sa).out), ck := (sa).ck \} : Sr))) | LexLeanBoot.LexiconLse.Lse.LArg h t => (let sh : Sr := substIn (f) (st) (h) (name) (replacement) (avoid); (let stl : Sr := substIn (f) ((sh).ck) (t) (name) (replacement) (avoid); (\{ out := LexLeanBoot.LexiconLse.Lse.LArg ((sh).out) ((stl).out), ck := (stl).ck \} : Sr))) | LexLeanBoot.LexiconLse.Lse.LPi bs body => (let sb : Sb := substChain (f) (st) (bs) (name) (replacement) (avoid) (([] : List ((Prod (ByteArray) (ByteArray))))) (false); (let sbody : Sr := substBody (f) (sb) (body) (name) (replacement) (avoid); (\{ out := LexLeanBoot.LexiconLse.Lse.LPi ((sb).chain) ((sbody).out), ck := (sbody).ck \} : Sr))) | LexLeanBoot.LexiconLse.Lse.LLam bs body => (let sb : Sb := substChain (f) (st) (bs) (name) (replacement) (avoid) (([] : List ((Prod (ByteArray) (ByteArray))))) (false); (let sbody : Sr := substBody (f) (sb) (body) (name) (replacement) (avoid); (\{ out := LexLeanBoot.LexiconLse.Lse.LLam ((sb).chain) ((sbody).out), ck := (sbody).ck \} : Sr))) | LexLeanBoot.LexiconLse.Lse.LLet bound t v body => (let stt : Sr := substIn (f) (st) (t) (name) (replacement) (avoid); (let sv : Sr := substIn (f) ((stt).ck) (v) (name) (replacement) (avoid); (if (LexLeanRuntime.equal (bound) (name) : Bool) then (\{ out := LexLeanBoot.LexiconLse.Lse.LLet (bound) ((stt).out) ((sv).out) (body), ck := (sv).ck \} : Sr) else (if boundIn (avoid) (bound) then (let named : (Prod (ByteArray) (Ck)) := freshLocal ((sv).ck) (bound); (let renamed : Sr := substIn (f) ((named).2) (body) (bound) (LexLeanBoot.LexiconLse.Lse.LLocal ((named).1)) (([] : List (ByteArray))); (let sbody : Sr := substIn (f) ((renamed).ck) ((renamed).out) (name) (replacement) (avoid); (\{ out := LexLeanBoot.LexiconLse.Lse.LLet ((named).1) ((stt).out) ((sv).out) ((sbody).out), ck := (sbody).ck \} : Sr)))) else (let sbody : Sr := substIn (f) ((sv).ck) (body) (name) (replacement) (avoid); (\{ out := LexLeanBoot.LexiconLse.Lse.LLet (bound) ((stt).out) ((sv).out) ((sbody).out), ck := (sbody).ck \} : Sr)))))) | LexLeanBoot.LexiconLse.Lse.LBinder m n t r => (\{ out := LexLeanBoot.LexiconLse.Lse.LBinder (m) (n) (t) (r), ck := st \} : Sr) | LexLeanBoot.LexiconLse.Lse.LSortProp => (\{ out := LexLeanBoot.LexiconLse.Lse.LSortProp, ck := st \} : Sr) | LexLeanBoot.LexiconLse.Lse.LSortType u => (\{ out := LexLeanBoot.LexiconLse.Lse.LSortType (u), ck := st \} : Sr) | LexLeanBoot.LexiconLse.Lse.LConst p e us => (\{ out := LexLeanBoot.LexiconLse.Lse.LConst (p) (e) (us), ck := st \} : Sr) | LexLeanBoot.LexiconLse.Lse.LNat digits => (\{ out := LexLeanBoot.LexiconLse.Lse.LNat (digits), ck := st \} : Sr) | LexLeanBoot.LexiconLse.Lse.LNil => (\{ out := LexLeanBoot.LexiconLse.Lse.LNil, ck := st \} : Sr)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{substChain}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Subst}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (chain : LexLeanBoot.LexiconLse.Lse) (name : ByteArray) (replacement : LexLeanBoot.LexiconLse.Lse) (avoid : List (ByteArray)) (renames : List ((Prod (ByteArray) (ByteArray)))) (shadowed : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Sb}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => (\{ chain := chain, renames := renames, shadowed := shadowed, ck := ckExhaust (st) \} : Sb) | Fuel.FS f => (match chain with | LexLeanBoot.LexiconLse.Lse.LBinder m n t r => (let renamedTy : Sr := substBody (f) ((\{ chain := chain, renames := renames, shadowed := shadowed, ck := st \} : Sb)) (t) (name) (replacement) (avoid); (let substituted : Sr := renamedTy; (if (LexLeanRuntime.equal (n) (name) : Bool) then (let rest : Sb := substChain (f) ((substituted).ck) (r) (name) (replacement) (avoid) (renames) (true); (\{ chain := LexLeanBoot.LexiconLse.Lse.LBinder (m) (n) ((substituted).out) ((rest).chain), renames := (rest).renames, shadowed := (rest).shadowed, ck := (rest).ck \} : Sb)) else (if boundIn (avoid) (n) then (let named : (Prod (ByteArray) (Ck)) := freshLocal ((substituted).ck) (n); (let rest : Sb := substChain (f) ((named).2) (r) (name) (replacement) (avoid) (((n, (named).1) :: renames)) (shadowed); (\{ chain := LexLeanBoot.LexiconLse.Lse.LBinder (m) ((named).1) ((substituted).out) ((rest).chain), renames := (rest).renames, shadowed := (rest).shadowed, ck := (rest).ck \} : Sb))) else (let rest : Sb := substChain (f) ((substituted).ck) (r) (name) (replacement) (avoid) (renames) (shadowed); (\{ chain := LexLeanBoot.LexiconLse.Lse.LBinder (m) (n) ((substituted).out) ((rest).chain), renames := (rest).renames, shadowed := (rest).shadowed, ck := (rest).ck \} : Sb)))))) | LexLeanBoot.LexiconLse.Lse.LNil => (\{ chain := LexLeanBoot.LexiconLse.Lse.LNil, renames := renames, shadowed := shadowed, ck := st \} : Sb) | LexLeanBoot.LexiconLse.Lse.LSortProp => (\{ chain := LexLeanBoot.LexiconLse.Lse.LNil, renames := renames, shadowed := shadowed, ck := st \} : Sb) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => (\{ chain := LexLeanBoot.LexiconLse.Lse.LNil, renames := renames, shadowed := shadowed, ck := st \} : Sb) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => (\{ chain := LexLeanBoot.LexiconLse.Lse.LNil, renames := renames, shadowed := shadowed, ck := st \} : Sb) | LexLeanBoot.LexiconLse.Lse.LLocal \_ => (\{ chain := LexLeanBoot.LexiconLse.Lse.LNil, renames := renames, shadowed := shadowed, ck := st \} : Sb) | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => (\{ chain := LexLeanBoot.LexiconLse.Lse.LNil, renames := renames, shadowed := shadowed, ck := st \} : Sb) | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => (\{ chain := LexLeanBoot.LexiconLse.Lse.LNil, renames := renames, shadowed := shadowed, ck := st \} : Sb) | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => (\{ chain := LexLeanBoot.LexiconLse.Lse.LNil, renames := renames, shadowed := shadowed, ck := st \} : Sb) | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => (\{ chain := LexLeanBoot.LexiconLse.Lse.LNil, renames := renames, shadowed := shadowed, ck := st \} : Sb) | LexLeanBoot.LexiconLse.Lse.LNat \_ => (\{ chain := LexLeanBoot.LexiconLse.Lse.LNil, renames := renames, shadowed := shadowed, ck := st \} : Sb) | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => (\{ chain := LexLeanBoot.LexiconLse.Lse.LNil, renames := renames, shadowed := shadowed, ck := st \} : Sb)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{substBody}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Subst}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (sb : Sb) (body : LexLeanBoot.LexiconLse.Lse) (name : ByteArray) (replacement : LexLeanBoot.LexiconLse.Lse) (avoid : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Sr}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => (\{ out := body, ck := ckExhaust ((sb).ck) \} : Sr) | Fuel.FS f => (let renamedBody : Sr := applyRenames (f) ((sb).ck) (body) (LexLeanStd.Order.reverseList ((Prod (ByteArray) (ByteArray))) ((sb).renames)); (if (sb).shadowed then renamedBody else substIn (f) ((renamedBody).ck) ((renamedBody).out) (name) (replacement) (avoid))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{applyRenames}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Subst}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse) (renames : List ((Prod (ByteArray) (ByteArray))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Sr}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => (\{ out := expr, ck := ckExhaust (st) \} : Sr) | Fuel.FS f => (match renames with | List.nil => (\{ out := expr, ck := st \} : Sr) | List.cons rename rest => (let once : Sr := substIn (f) (st) (expr) ((rename).1) (LexLeanBoot.LexiconLse.Lse.LLocal ((rename).2)) (([] : List (ByteArray))); applyRenames (f) ((once).ck) ((once).out) (rest))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{subst}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse) (name : ByteArray) (replacement : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Sr}.\par
+\noindent Definition: \texttt{(match freeLocals (fuel) (replacement) (([] : List (ByteArray))) with | Option.some avoid => substIn (fuel) (st) (expr) (name) (replacement) (avoid) | Option.none => (\{ out := expr, ck := ckExhaust (st) \} : Sr))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{substTypes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (items : List (Bd)) (name : ByteArray) (replacement : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ls}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => (\{ items := items, ck := ckExhaust (st) \} : Ls) | Fuel.FS f => (match items with | List.nil => (\{ items := ([] : List (Bd)), ck := st \} : Ls) | List.cons item rest => (let changed : Sr := subst (f) (st) ((item).ty) (name) (replacement); (let others : Ls := substTypes (f) ((changed).ck) (rest) (name) (replacement); (\{ items := ((\{ mode := (item).mode, name := (item).name, ty := (changed).out \} : Bd) :: (others).items), ck := (others).ck \} : Ls)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{chainItems}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (chain : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => ([] : List (LexLeanBoot.LexiconLse.Lse)) | Fuel.FS f => (match chain with | LexLeanBoot.LexiconLse.Lse.LArg h t => (h :: chainItems (f) (t)) | LexLeanBoot.LexiconLse.Lse.LNil => ([] : List (LexLeanBoot.LexiconLse.Lse)) | LexLeanBoot.LexiconLse.Lse.LSortProp => ([] : List (LexLeanBoot.LexiconLse.Lse)) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => ([] : List (LexLeanBoot.LexiconLse.Lse)) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => ([] : List (LexLeanBoot.LexiconLse.Lse)) | LexLeanBoot.LexiconLse.Lse.LLocal \_ => ([] : List (LexLeanBoot.LexiconLse.Lse)) | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => ([] : List (LexLeanBoot.LexiconLse.Lse)) | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => ([] : List (LexLeanBoot.LexiconLse.Lse)) | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => ([] : List (LexLeanBoot.LexiconLse.Lse)) | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => ([] : List (LexLeanBoot.LexiconLse.Lse)) | LexLeanBoot.LexiconLse.Lse.LNat \_ => ([] : List (LexLeanBoot.LexiconLse.Lse)) | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => ([] : List (LexLeanBoot.LexiconLse.Lse))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{binderItems}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (chain : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (Bd)}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => ([] : List (Bd)) | Fuel.FS f => (match chain with | LexLeanBoot.LexiconLse.Lse.LBinder m n t r => ((\{ mode := m, name := n, ty := t \} : Bd) :: binderItems (f) (r)) | LexLeanBoot.LexiconLse.Lse.LNil => ([] : List (Bd)) | LexLeanBoot.LexiconLse.Lse.LSortProp => ([] : List (Bd)) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => ([] : List (Bd)) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => ([] : List (Bd)) | LexLeanBoot.LexiconLse.Lse.LLocal \_ => ([] : List (Bd)) | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => ([] : List (Bd)) | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => ([] : List (Bd)) | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => ([] : List (Bd)) | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => ([] : List (Bd)) | LexLeanBoot.LexiconLse.Lse.LNat \_ => ([] : List (Bd)) | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => ([] : List (Bd))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{chainOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (Bd))}.\par
+\noindent Closure 1: binds \texttt{(chain, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.LexiconLse.Lse}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (chain : LexLeanBoot.LexiconLse.Lse) (item : Bd) => LexLeanBoot.LexiconLse.Lse.LBinder ((item).mode) ((item).name) ((item).ty) (chain))) (LexLeanBoot.LexiconLse.Lse.LNil) (LexLeanStd.Order.reverseList (Bd) (items)) : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{flattenInto}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (expr : LexLeanBoot.LexiconLse.Lse) (pi : Bool)}.\par
+\noindent Closure 1: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Closure 2: binds \texttt{(acc, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Fl}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => (\{ binders := ([] : List (Bd)), body := expr \} : Fl) | Fuel.FS f => (match expr with | LexLeanBoot.LexiconLse.Lse.LPi bs body => (if pi then (let inner : Fl := flattenInto (f) (body) (pi); (\{ binders := (LexLeanCollections.listFold ((fun (acc : List (Bd)) (item : Bd) => (item :: acc))) ((inner).binders) (LexLeanStd.Order.reverseList (Bd) (binderItems (f) (bs))) : List (Bd)), body := (inner).body \} : Fl)) else (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LPi (bs) (body) \} : Fl)) | LexLeanBoot.LexiconLse.Lse.LLam bs body => (if pi then (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LLam (bs) (body) \} : Fl) else (let inner : Fl := flattenInto (f) (body) (pi); (\{ binders := (LexLeanCollections.listFold ((fun (acc : List (Bd)) (item : Bd) => (item :: acc))) ((inner).binders) (LexLeanStd.Order.reverseList (Bd) (binderItems (f) (bs))) : List (Bd)), body := (inner).body \} : Fl))) | LexLeanBoot.LexiconLse.Lse.LSortProp => (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LSortProp \} : Fl) | LexLeanBoot.LexiconLse.Lse.LSortType u => (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LSortType (u) \} : Fl) | LexLeanBoot.LexiconLse.Lse.LConst p e us => (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LConst (p) (e) (us) \} : Fl) | LexLeanBoot.LexiconLse.Lse.LLocal name => (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LLocal (name) \} : Fl) | LexLeanBoot.LexiconLse.Lse.LApp g args => (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LApp (g) (args) \} : Fl) | LexLeanBoot.LexiconLse.Lse.LLet n t v body => (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LLet (n) (t) (v) (body) \} : Fl) | LexLeanBoot.LexiconLse.Lse.LNat digits => (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LNat (digits) \} : Fl) | LexLeanBoot.LexiconLse.Lse.LNil => (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LNil \} : Fl) | LexLeanBoot.LexiconLse.Lse.LArg h t => (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LArg (h) (t) \} : Fl) | LexLeanBoot.LexiconLse.Lse.LBinder m n t r => (\{ binders := ([] : List (Bd)), body := LexLeanBoot.LexiconLse.Lse.LBinder (m) (n) (t) (r) \} : Fl)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{modeName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(mode : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanBoot.LexiconLse.modeText (mode)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rigidClass}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (e : LexLeanBoot.LexiconLse.Lse) (a : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(let ke : Nat := kindOf (e); (if (Nat.beq (ke) (kindOf (a))) then (if (Nat.blt (ke) (2)) then 0 else (if (if (Nat.beq (ke) (2)) then true else (if (Nat.beq (ke) (3)) then true else (Nat.beq (ke) (8)))) then (if (LexLeanRuntime.equal (atomKey (e)) (atomKey (a)) : Bool) then 0 else 3) else (if (Nat.beq (ke) (4)) then (match e with | LexLeanBoot.LexiconLse.Lse.LApp \_ xs => (match a with | LexLeanBoot.LexiconLse.Lse.LApp \_ ys => (if (Nat.beq ((LexLeanRuntime.length (chainItems (fuel) (xs)) : Nat)) ((LexLeanRuntime.length (chainItems (fuel) (ys)) : Nat))) then 1 else 3) | LexLeanBoot.LexiconLse.Lse.LSortProp => 3 | LexLeanBoot.LexiconLse.Lse.LSortType \_ => 3 | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => 3 | LexLeanBoot.LexiconLse.Lse.LLocal \_ => 3 | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => 3 | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => 3 | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => 3 | LexLeanBoot.LexiconLse.Lse.LNat \_ => 3 | LexLeanBoot.LexiconLse.Lse.LNil => 3 | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => 3 | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => 3) | LexLeanBoot.LexiconLse.Lse.LSortProp => 3 | LexLeanBoot.LexiconLse.Lse.LSortType \_ => 3 | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => 3 | LexLeanBoot.LexiconLse.Lse.LLocal \_ => 3 | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => 3 | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => 3 | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => 3 | LexLeanBoot.LexiconLse.Lse.LNat \_ => 3 | LexLeanBoot.LexiconLse.Lse.LNil => 3 | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => 3 | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => 3) else (if (if (Nat.beq (ke) (5)) then true else (Nat.beq (ke) (6))) then 2 else 3)))) else 3))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{appParts}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expr : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (LexLeanBoot.LexiconLse.Lse) (LexLeanBoot.LexiconLse.Lse))}.\par
+\noindent Definition: \texttt{(match expr with | LexLeanBoot.LexiconLse.Lse.LApp g args => (g, args) | LexLeanBoot.LexiconLse.Lse.LSortProp => (LexLeanBoot.LexiconLse.Lse.LNil, LexLeanBoot.LexiconLse.Lse.LNil) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => (LexLeanBoot.LexiconLse.Lse.LNil, LexLeanBoot.LexiconLse.Lse.LNil) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => (LexLeanBoot.LexiconLse.Lse.LNil, LexLeanBoot.LexiconLse.Lse.LNil) | LexLeanBoot.LexiconLse.Lse.LLocal \_ => (LexLeanBoot.LexiconLse.Lse.LNil, LexLeanBoot.LexiconLse.Lse.LNil) | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => (LexLeanBoot.LexiconLse.Lse.LNil, LexLeanBoot.LexiconLse.Lse.LNil) | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => (LexLeanBoot.LexiconLse.Lse.LNil, LexLeanBoot.LexiconLse.Lse.LNil) | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => (LexLeanBoot.LexiconLse.Lse.LNil, LexLeanBoot.LexiconLse.Lse.LNil) | LexLeanBoot.LexiconLse.Lse.LNat \_ => (LexLeanBoot.LexiconLse.Lse.LNil, LexLeanBoot.LexiconLse.Lse.LNil) | LexLeanBoot.LexiconLse.Lse.LNil => (LexLeanBoot.LexiconLse.Lse.LNil, LexLeanBoot.LexiconLse.Lse.LNil) | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => (LexLeanBoot.LexiconLse.Lse.LNil, LexLeanBoot.LexiconLse.Lse.LNil) | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => (LexLeanBoot.LexiconLse.Lse.LNil, LexLeanBoot.LexiconLse.Lse.LNil))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{urOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ur}.\par
+\noindent Definition: \texttt{(\{ error := Option.none, ck := st \} : Ur)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{urFail}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck) (message : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ur}.\par
+\noindent Definition: \texttt{(\{ error := Option.some (message), ck := st \} : Ur)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{unify}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Unify}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expected : LexLeanBoot.LexiconLse.Lse) (actual : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ur}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => urOk (ckExhaust (st)) | Fuel.FS f => (let ze : Sr := zonkSt (f) (st) (expected); (let za : Sr := zonkSt (f) ((ze).ck) (actual); (let e : LexLeanBoot.LexiconLse.Lse := (ze).out; (let a : LexLeanBoot.LexiconLse.Lse := (za).out; (let st2 : Ck := (za).ck; (match metaOf (e) with | Option.some m => (if (LexLeanRuntime.equal (atomKey (a)) (m) : Bool) then (if (Nat.beq (kindOf (a)) (3)) then urOk (st2) else urOk (ckSolve (st2) (m) (a))) else urOk (ckSolve (st2) (m) (a))) | Option.none => (match metaOf (a) with | Option.some m => urOk (ckSolve (st2) (m) (e)) | Option.none => unifyRigid (f) (st2) (e) (a)))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{unifyRigid}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Unify}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (e : LexLeanBoot.LexiconLse.Lse) (a : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ur}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => urOk (ckExhaust (st)) | Fuel.FS f => (let cls : Nat := rigidClass (f) (e) (a); (if (Nat.beq (cls) (0)) then urOk (st) else (if (Nat.beq (cls) (1)) then (if (if mayUnfold (f) (st) (e) then true else mayUnfold (f) (st) (a)) then urOk (st) else (let pe : (Prod (LexLeanBoot.LexiconLse.Lse) (LexLeanBoot.LexiconLse.Lse)) := appParts (e); (let pa : (Prod (LexLeanBoot.LexiconLse.Lse) (LexLeanBoot.LexiconLse.Lse)) := appParts (a); (let head : Ur := unify (f) (st) ((pe).1) ((pa).1); (match (head).error with | Option.some \_ => head | Option.none => unifyArgs (f) ((head).ck) ((pe).2) ((pa).2)))))) else (if (Nat.beq (cls) (2)) then unifyBinding (f) (st) (e) (a) else (if (if mayUnfold (f) (st) (e) then true else mayUnfold (f) (st) (a)) then urOk (st) else (let ue : (Prod (Bool) (Ck)) := hasUnsolved (f) (st) (e); (if flagOf (ue) then urOk ((ue).2) else (let ua : (Prod (Bool) (Ck)) := hasUnsolved (f) ((ue).2) (a); (if flagOf (ua) then urOk ((ua).2) else (let txtE : ByteArray := shown (e); (let txtA : ByteArray := shown (a); urFail ((ua).2) (cat (cat (cat (lit ("expected ")) (txtE)) (lit (", found "))) (txtA))))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{unifyArgs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Unify}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (xs : LexLeanBoot.LexiconLse.Lse) (ys : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ur}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => urOk (ckExhaust (st)) | Fuel.FS f => (match xs with | LexLeanBoot.LexiconLse.Lse.LArg x xt => (match ys with | LexLeanBoot.LexiconLse.Lse.LArg y yt => (let once : Ur := unify (f) (st) (x) (y); (match (once).error with | Option.some \_ => once | Option.none => unifyArgs (f) ((once).ck) (xt) (yt))) | LexLeanBoot.LexiconLse.Lse.LNil => urOk (st) | LexLeanBoot.LexiconLse.Lse.LSortProp => urOk (st) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LLocal \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LNat \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => urOk (st)) | LexLeanBoot.LexiconLse.Lse.LNil => urOk (st) | LexLeanBoot.LexiconLse.Lse.LSortProp => urOk (st) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LLocal \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LNat \_ => urOk (st) | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => urOk (st)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{unifyBinding}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Unify}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (e : LexLeanBoot.LexiconLse.Lse) (a : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ur}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => urOk (ckExhaust (st)) | Fuel.FS f => (let pi : Bool := (Nat.beq (kindOf (e)) (5)); (let fe : Fl := flattenInto (f) (e) (pi); (let fa : Fl := flattenInto (f) (a) (pi); (let ne : Nat := (LexLeanRuntime.length ((fe).binders) : Nat); (let na : Nat := (LexLeanRuntime.length ((fa).binders) : Nat); (if (Nat.beq (ne) (na)) then unifyPiLoop (f) (st) ((fe).binders) ((fa).binders) ((fa).body) ((fe).body) (e) (a) else (let txtE : ByteArray := shown (e); (let txtA : ByteArray := shown (a); urFail (st) (cat (cat (cat (cat (cat (cat (txtE) (lit (" binds "))) (LexLeanStd.Numeral.decimal (ne))) (lit (" arguments but "))) (txtA)) (lit (" binds "))) (LexLeanStd.Numeral.decimal (na))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{unifyPiLoop}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Unify}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expectedBinders : List (Bd)) (laterBinders : List (Bd)) (actualBody : LexLeanBoot.LexiconLse.Lse) (expectedBody : LexLeanBoot.LexiconLse.Lse) (e : LexLeanBoot.LexiconLse.Lse) (a : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ur}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => urOk (ckExhaust (st)) | Fuel.FS f => (match expectedBinders with | List.nil => unify (f) (st) (expectedBody) (actualBody) | List.cons be restE => (match laterBinders with | List.nil => unify (f) (st) (expectedBody) (actualBody) | List.cons ba restA => (if (Nat.beq ((be).mode) ((ba).mode)) then (let once : Ur := unify (f) (st) ((be).ty) ((ba).ty); (match (once).error with | Option.some \_ => once | Option.none => (let renamed : LexLeanBoot.LexiconLse.Lse := LexLeanBoot.LexiconLse.Lse.LLocal ((be).name); (let laterTyped : Ls := substTypes (f) ((once).ck) (restA) ((ba).name) (renamed); (let bodyRenamed : Sr := subst (f) ((laterTyped).ck) (actualBody) ((ba).name) (renamed); (let next : Ur := unifyPiLoop (f) ((bodyRenamed).ck) (restE) ((laterTyped).items) ((bodyRenamed).out) (expectedBody) (e) (a); (\{ error := (next).error, ck := (next).ck \} : Ur))))))) else (let txtE : ByteArray := shown (e); (let txtA : ByteArray := shown (a); urFail (st) (cat (cat (cat (cat (cat (cat (cat (cat (cat (cat (cat (lit ("binder `")) ((be).name)) (lit ("` is "))) (modeName ((be).mode))) (lit (" in "))) (txtE)) (lit (" but `"))) ((ba).name)) (lit ("` is "))) (modeName ((ba).mode))) (lit (" in "))) (txtA))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{irOk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(ty : LexLeanBoot.LexiconLse.Lse) (st : Ck)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(\{ ty := ty, error := Option.none, ck := st \} : Ir)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{irFail}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck) (message : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(\{ ty := LexLeanBoot.LexiconLse.Lse.LSortProp, error := Option.some (message), ck := st \} : Ir)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{irMeta}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Ck)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(let made : Sr := freshMeta (st); irOk ((made).out) ((made).ck))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{scopeFind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(scope : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse)))) (name : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, row)}, captures \texttt{(name)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Option (LexLeanBoot.LexiconLse.Lse)) (row : (Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse))) => (match found with | Option.some \_ => found | Option.none => (if (LexLeanRuntime.equal ((row).1) (name) : Bool) then Option.some ((row).2) else Option.none)))) (Option.none) (scope) : Option (LexLeanBoot.LexiconLse.Lse))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{plural}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(count : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(if (Nat.beq (count) (1)) then ByteArray.mk \#[] else lit ("s"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{requireSort}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse) (ty : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(let zonked : Sr := zonkSt (fuel) (st) (ty); (let z : LexLeanBoot.LexiconLse.Lse := (zonked).out; (let st2 : Ck := (zonked).ck; (let ke : Nat := kindOf (expr); (if (if (Nat.beq (ke) (8)) then true else (Nat.beq (ke) (6))) then (let txtExpr : ByteArray := shown (expr); irFail (st2) (cat (txtExpr) (lit (" is a term, not a type")))) else (if (Nat.blt (kindOf (z)) (2)) then irOk (z) (st2) else (match metaOf (z) with | Option.some \_ => irOk (z) (st2) | Option.none => (if mayUnfold (fuel) (st2) (z) then irOk (z) (st2) else (let txtExpr : ByteArray := shown (expr); (let txtZ : ByteArray := shown (z); irFail (st2) (cat (cat (cat (txtExpr) (lit (" is not a type: its type is "))) (txtZ)) (ByteArray.mk \#[]))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{infer}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Infer}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse) (scope : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => irFail (ckExhaust (st)) (ByteArray.mk \#[]) | Fuel.FS f => (match expr with | LexLeanBoot.LexiconLse.Lse.LSortProp => irOk (LexLeanBoot.LexiconLse.Lse.LSortType (LexLeanBoot.LexiconLse.Universe.UNum (1))) (st) | LexLeanBoot.LexiconLse.Lse.LSortType u => irOk (LexLeanBoot.LexiconLse.Lse.LSortType (LexLeanBoot.LexiconLse.Universe.USucc (u))) (st) | LexLeanBoot.LexiconLse.Lse.LConst p e \_ => (let found : (Prod (Nat) (Bool)) := lookupRow (st) (p) (e); (let k : Nat := (found).1; (if (Nat.beq (k) (0)) then irFail (st) (cat (cat (cat (cat (lit ("`")) (p)) (lit ("::"))) (e)) (lit ("` does not resolve"))) else (if (Nat.beq (k) (1)) then irMeta (st) else (if (Nat.beq (k) (2)) then irFail (st) (cat (cat (cat (cat (lit ("`")) (p)) (lit ("::"))) (e)) (lit ("` has no signature and cannot appear in an expression"))) else irOk (signatureOf (st) (p) (e)) (st)))))) | LexLeanBoot.LexiconLse.Lse.LLocal name => (if isMeta (name) then irMeta (st) else (match scopeFind (scope) (name) with | Option.some ty => irOk (ty) (st) | Option.none => irFail (st) (cat (cat (lit ("local `")) (name)) (lit ("` is not in scope"))))) | LexLeanBoot.LexiconLse.Lse.LNat \_ => (let made : Sr := literalMeta (st); irOk ((made).out) ((made).ck)) | LexLeanBoot.LexiconLse.Lse.LApp g args => (let kg : Nat := kindOf (g); (if (if (Nat.blt (kg) (2)) then true else (Nat.beq (kg) (8))) then (let txtExpr : ByteArray := shown (expr); (let txtG : ByteArray := shown (g); irFail (st) (cat (cat (cat (txtExpr) (lit (" applies "))) (txtG)) (lit (", which is not a function"))))) else (let fnTy : Ir := infer (f) (st) (g) (scope); (match (fnTy).error with | Option.some \_ => fnTy | Option.none => (let items : List (LexLeanBoot.LexiconLse.Lse) := chainItems (f) (args); inferApp (f) ((fnTy).ck) (expr) (g) (items) ((LexLeanRuntime.length (items) : Nat)) ((fnTy).ty) (0) (scope)))))) | LexLeanBoot.LexiconLse.Lse.LPi bs body => inferBinding (f) (st) (bs) (body) (scope) (false) (bs) | LexLeanBoot.LexiconLse.Lse.LLam bs body => inferBinding (f) (st) (bs) (body) (scope) (true) (bs) | LexLeanBoot.LexiconLse.Lse.LLet n t v body => (let declared : Ir := expectType (f) (st) (t) (scope); (match (declared).error with | Option.some \_ => declared | Option.none => (let bound : Ir := infer (f) ((declared).ck) (v) (scope); (match (bound).error with | Option.some \_ => bound | Option.none => (let agreed : Ur := unify (f) ((bound).ck) (t) ((bound).ty); (match (agreed).error with | Option.some message => irFail ((agreed).ck) (message) | Option.none => infer (f) ((agreed).ck) (body) (((n, t) :: scope)))))))) | LexLeanBoot.LexiconLse.Lse.LNil => irOk (LexLeanBoot.LexiconLse.Lse.LSortProp) (st) | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => irOk (LexLeanBoot.LexiconLse.Lse.LSortProp) (st) | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => irOk (LexLeanBoot.LexiconLse.Lse.LSortProp) (st)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{inferBinding}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Infer}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (chain : LexLeanBoot.LexiconLse.Lse) (body : LexLeanBoot.LexiconLse.Lse) (scope : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse)))) (lam : Bool) (binders : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => irFail (ckExhaust (st)) (ByteArray.mk \#[]) | Fuel.FS f => (match chain with | LexLeanBoot.LexiconLse.Lse.LBinder \_ n t r => (let typedBinder : Ir := expectType (f) (st) (t) (scope); (match (typedBinder).error with | Option.some \_ => typedBinder | Option.none => (let next : Ir := inferBinding (f) ((typedBinder).ck) (r) (body) (((n, t) :: scope)) (lam) (binders); (\{ ty := (next).ty, error := (next).error, ck := (next).ck \} : Ir)))) | LexLeanBoot.LexiconLse.Lse.LNil => (if lam then (let inner : Ir := infer (f) (st) (body) (scope); (match (inner).error with | Option.some \_ => inner | Option.none => irOk (LexLeanBoot.LexiconLse.Lse.LPi (binders) ((inner).ty)) ((inner).ck))) else expectType (f) (st) (body) (scope)) | LexLeanBoot.LexiconLse.Lse.LSortProp => expectType (f) (st) (body) (scope) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => expectType (f) (st) (body) (scope) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => expectType (f) (st) (body) (scope) | LexLeanBoot.LexiconLse.Lse.LLocal \_ => expectType (f) (st) (body) (scope) | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => expectType (f) (st) (body) (scope) | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => expectType (f) (st) (body) (scope) | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => expectType (f) (st) (body) (scope) | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => expectType (f) (st) (body) (scope) | LexLeanBoot.LexiconLse.Lse.LNat \_ => expectType (f) (st) (body) (scope) | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => expectType (f) (st) (body) (scope)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{expectType}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Infer}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse) (scope : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => irFail (ckExhaust (st)) (ByteArray.mk \#[]) | Fuel.FS f => (let inferred : Ir := infer (f) (st) (expr) (scope); (match (inferred).error with | Option.some \_ => inferred | Option.none => requireSort (f) ((inferred).ck) (expr) ((inferred).ty))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{inferRest}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Infer}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (remaining : List (LexLeanBoot.LexiconLse.Lse)) (scope : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => irFail (ckExhaust (st)) (ByteArray.mk \#[]) | Fuel.FS f => (match remaining with | List.nil => irMeta (st) | List.cons argument more => (let seen : Ir := infer (f) (st) (argument) (scope); (match (seen).error with | Option.some \_ => seen | Option.none => (let next : Ir := inferRest (f) ((seen).ck) (more) (scope); (\{ ty := (next).ty, error := (next).error, ck := (next).ck \} : Ir))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{inferApp}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Infer}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse) (g : LexLeanBoot.LexiconLse.Lse) (remaining : List (LexLeanBoot.LexiconLse.Lse)) (total : Nat) (fty : LexLeanBoot.LexiconLse.Lse) (supplied : Nat) (scope : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => irFail (ckExhaust (st)) (ByteArray.mk \#[]) | Fuel.FS f => (match remaining with | List.nil => irOk (fty) (st) | List.cons \_ \_ => (let zonked : Sr := zonkSt (f) (st) (fty); (let z : LexLeanBoot.LexiconLse.Lse := (zonked).out; (let st2 : Ck := (zonked).ck; (match z with | LexLeanBoot.LexiconLse.Lse.LPi bs body => inferBinders (f) (st2) (expr) (g) (binderItems (f) (bs)) (body) (remaining) (total) (supplied) (scope) | LexLeanBoot.LexiconLse.Lse.LSortProp => inferStuck (f) (st2) (expr) (g) (remaining) (total) (supplied) (z) (scope) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => inferStuck (f) (st2) (expr) (g) (remaining) (total) (supplied) (z) (scope) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => inferStuck (f) (st2) (expr) (g) (remaining) (total) (supplied) (z) (scope) | LexLeanBoot.LexiconLse.Lse.LLocal \_ => inferStuck (f) (st2) (expr) (g) (remaining) (total) (supplied) (z) (scope) | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => inferStuck (f) (st2) (expr) (g) (remaining) (total) (supplied) (z) (scope) | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => inferStuck (f) (st2) (expr) (g) (remaining) (total) (supplied) (z) (scope) | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => inferStuck (f) (st2) (expr) (g) (remaining) (total) (supplied) (z) (scope) | LexLeanBoot.LexiconLse.Lse.LNat \_ => inferStuck (f) (st2) (expr) (g) (remaining) (total) (supplied) (z) (scope) | LexLeanBoot.LexiconLse.Lse.LNil => inferStuck (f) (st2) (expr) (g) (remaining) (total) (supplied) (z) (scope) | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => inferStuck (f) (st2) (expr) (g) (remaining) (total) (supplied) (z) (scope) | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => inferStuck (f) (st2) (expr) (g) (remaining) (total) (supplied) (z) (scope)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{inferStuck}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Infer}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse) (g : LexLeanBoot.LexiconLse.Lse) (remaining : List (LexLeanBoot.LexiconLse.Lse)) (total : Nat) (supplied : Nat) (z : LexLeanBoot.LexiconLse.Lse) (scope : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => irFail (ckExhaust (st)) (ByteArray.mk \#[]) | Fuel.FS f => (match metaOf (z) with | Option.some \_ => inferRest (f) (st) (remaining) (scope) | Option.none => (if mayUnfold (f) (st) (z) then inferRest (f) (st) (remaining) (scope) else (let txtExpr : ByteArray := shown (expr); (let txtG : ByteArray := shown (g); (let txtZ : ByteArray := shown (z); irFail (st) (cat (cat (cat (cat (cat (cat (cat (cat (cat (txtExpr) (lit (" supplies "))) (LexLeanStd.Numeral.decimal (total))) (lit (" explicit argument"))) (plural (total))) (lit (" but "))) (txtG)) (lit (" accepts "))) (LexLeanStd.Numeral.decimal (supplied))) (cat (cat (lit (": after them its type is ")) (txtZ)) (lit (", not a function"))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{inferBinders}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Infer}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse) (g : LexLeanBoot.LexiconLse.Lse) (binders : List (Bd)) (body : LexLeanBoot.LexiconLse.Lse) (remaining : List (LexLeanBoot.LexiconLse.Lse)) (total : Nat) (supplied : Nat) (scope : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => irFail (ckExhaust (st)) (ByteArray.mk \#[]) | Fuel.FS f => (match binders with | List.nil => inferApp (f) (st) (expr) (g) (remaining) (total) (body) (supplied) (scope) | List.cons binder rest => (if (Nat.beq ((binder).mode) (0)) then (match remaining with | List.nil => irOk (LexLeanBoot.LexiconLse.Lse.LPi (chainOf (binders)) (body)) (st) | List.cons argument more => (let actual : Ir := infer (f) (st) (argument) (scope); (match (actual).error with | Option.some \_ => actual | Option.none => (let agreed : Ur := unify (f) ((actual).ck) ((binder).ty) ((actual).ty); (match (agreed).error with | Option.some message => irFail ((agreed).ck) (message) | Option.none => inferInstantiate (f) ((agreed).ck) (expr) (g) (binder) (argument) (rest) (body) (more) (total) ((supplied + 1)) (scope)))))) else (let made : Sr := freshMeta (st); inferInstantiate (f) ((made).ck) (expr) (g) (binder) ((made).out) (rest) (body) (remaining) (total) (supplied) (scope)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{inferInstantiate}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Mutual recursion group \texttt{Infer}, decreasing on \texttt{fuel}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (expr : LexLeanBoot.LexiconLse.Lse) (g : LexLeanBoot.LexiconLse.Lse) (binder : Bd) (value : LexLeanBoot.LexiconLse.Lse) (rest : List (Bd)) (body : LexLeanBoot.LexiconLse.Lse) (remaining : List (LexLeanBoot.LexiconLse.Lse)) (total : Nat) (supplied : Nat) (scope : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ir}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => irFail (ckExhaust (st)) (ByteArray.mk \#[]) | Fuel.FS f => (let later : Ls := substTypes (f) (st) (rest) ((binder).name) (value); (let newBody : Sr := subst (f) ((later).ck) (body) ((binder).name) (value); inferBinders (f) ((newBody).ck) (expr) (g) ((later).items) ((newBody).out) (remaining) (total) (supplied) (scope))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{literalTypes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (metas : List (ByteArray))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{(Prod (List (Option (LexLeanBoot.LexiconLse.Lse))) (Ck))}.\par
+\noindent Definition: \texttt{(match fuel with | Fuel.FZ => (([] : List (Option (LexLeanBoot.LexiconLse.Lse))), ckExhaust (st)) | Fuel.FS f => (match metas with | List.nil => (([] : List (Option (LexLeanBoot.LexiconLse.Lse))), st) | List.cons metaName more => (let solved : Sr := zonkSt (f) (st) (LexLeanBoot.LexiconLse.Lse.LLocal (metaName)); (let pending : (Prod (Bool) (Ck)) := hasUnsolved (f) ((solved).ck) ((solved).out); (let others : (Prod (List (Option (LexLeanBoot.LexiconLse.Lse))) (Ck)) := literalTypes (f) ((pending).2) (more); (((if flagOf (pending) then Option.none else Option.some ((solved).out)) :: (others).1), (others).2))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{typedCk}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(typed : (Prod (List (Option (LexLeanBoot.LexiconLse.Lse))) (Ck)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ck}.\par
+\noindent Definition: \texttt{(typed).2}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{finish}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (st : Ck) (ty : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Checked)}.\par
+\noindent Definition: \texttt{(let zonked : Sr := zonkSt (fuel) (st) (ty); (let typed : (Prod (List (Option (LexLeanBoot.LexiconLse.Lse))) (Ck)) := literalTypes (fuel) ((zonked).ck) (LexLeanStd.Order.reverseList (ByteArray) ((st).literals)); (if (typedCk (typed)).exhausted then Except.error (lit ("the checker's bound on nesting is exhausted")) else Except.ok ((\{ ty := (zonked).out, literals := (typed).1 \} : Checked)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{start}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(rows : List (CRow)) (fallback : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Ck}.\par
+\noindent Definition: \texttt{(\{ metas := ([] : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse)))), nextMeta := 0, literals := ([] : List (ByteArray)), freshCounter := 0, exhausted := false, rows := rows, fallback := fallback \} : Ck)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{outcome}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(fuel : Fuel) (result : Ir)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (ByteArray) (Checked)}.\par
+\noindent Definition: \texttt{(if ((result).ck).exhausted then Except.error (lit ("the checker's bound on nesting is exhausted")) else (match (result).error with | Option.some message => Except.error (message) | Option.none => finish (fuel) ((result).ck) ((result).ty)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{checkSignature}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(signature : LexLeanBoot.LexiconLse.Lse) (rows : List (CRow)) (fallback : Nat) (depth : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Except (ByteArray) (Checked)}.\par
+\noindent Definition: \texttt{(let fuel : Fuel := mkFuel (depth); (let typed : Ir := expectType (fuel) (start (rows) (fallback)) (signature) (([] : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse))))); outcome (fuel) (typed)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{checkValue}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : LexLeanBoot.LexiconLse.Lse) (signature : Option (LexLeanBoot.LexiconLse.Lse)) (rows : List (CRow)) (fallback : Nat) (depth : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow, recursion}.\par
+\noindent Type: \texttt{Except (ByteArray) (Checked)}.\par
+\noindent Definition: \texttt{(let fuel : Fuel := mkFuel (depth); (let inferred : Ir := infer (fuel) (start (rows) (fallback)) (value) (([] : List ((Prod (ByteArray) (LexLeanBoot.LexiconLse.Lse))))); (match signature with | Option.none => outcome (fuel) (inferred) | Option.some sig => (if (if ((inferred).ck).exhausted then true else (match (inferred).error with | Option.some \_ => true | Option.none => false)) then outcome (fuel) (inferred) else (let agreed : Ur := unify (fuel) ((inferred).ck) (sig) ((inferred).ty); (match (agreed).error with | Option.some message => (let txtValue : ByteArray := shown (value); (let txtSig : ByteArray := shown (sig); outcome (fuel) (irFail ((agreed).ck) (cat (cat (cat (cat (cat (lit ("defined value ")) (txtValue)) (lit (" does not match the signature "))) (txtSig)) (lit (": "))) (message))))) | Option.none => outcome (fuel) (irOk ((inferred).ty) ((agreed).ck))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

@@ -40,7 +40,7 @@ const CERTIFICATE_BUDGET: u64 = 3_145_728;
 
 /// The programs the evaluator is given: those of at most this many nodes.
 const EVALUATOR_NODES: usize = 300;
-const VECTORS: usize = 150;
+const VECTORS: usize = 152;
 const VECTORS_WITHIN: usize = 67;
 const EVALUATOR_MUTANTS: usize = 143;
 
