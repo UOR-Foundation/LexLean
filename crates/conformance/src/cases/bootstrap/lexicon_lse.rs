@@ -162,7 +162,7 @@ fn binder_chain(binders: &[LseBinder]) -> Value {
 }
 
 /// An expression as the module's `Lse`.
-fn enc_lse(expression: &Lse) -> Value {
+pub(super) fn enc_lse(expression: &Lse) -> Value {
     match expression {
         Lse::SortProp => adt("Lse", "LSortProp", Vec::new()),
         Lse::SortType(universe) => adt("Lse", "LSortType", vec![enc_universe(universe)]),
@@ -576,7 +576,7 @@ fn drawn_binders(seeded: &mut Seeded, depth: usize) -> Vec<LseBinder> {
 }
 
 /// An expression of at most `depth` levels.
-fn drawn_lse(seeded: &mut Seeded, depth: usize) -> Lse {
+pub(super) fn drawn_lse(seeded: &mut Seeded, depth: usize) -> Lse {
     let kind = if depth == 0 {
         seeded.below(5)
     } else {

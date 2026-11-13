@@ -358,5 +358,14 @@
     "width": "",
     "memory_kib": "",
     "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-lse-scopes",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lse-scopes",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
   }
 ]

@@ -17,6 +17,13 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The scopes, references, and outer shape of a LexLean Semantic Expression as
+  language-1.2 source, the second slice of the lexicon closure (SPEC.md §17.23,
+  §13.8, `BS-51`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `checkScopes`, `referencedConsts`, and `outerShape` of `LseScopes`
+  return what `Lse::check_scopes`, `referenced_consts`, and
+  `outer_explicit_binders` with `result` return, over the expressions of
+  `BS-25`. None admits `recursion`.
 - `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
   command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
   new language-1.2 module `RuntimeHost`, that calls the step and carries out each
