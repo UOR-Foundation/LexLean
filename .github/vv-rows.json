@@ -358,5 +358,23 @@
     "width": "",
     "memory_kib": "",
     "hints": ""
+  },
+  {
+    "part": "bdd-stdlib",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "stdlib",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-language-models",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "language-models",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
   }
 ]

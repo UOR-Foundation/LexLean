@@ -5,10 +5,14 @@
 //! the LexLean evaluator, so any divergence fails verification.
 
 use std::cmp::Ordering;
+use std::ops::Deref;
+use std::rc::Rc;
 
 use super::{Arm, Expr, IntKind, OrderingValue, Outcome, Prim, Program, Shape, Ty, Value};
 
-/// A runtime value.
+/// A runtime value. Its parts are shared, so a copy (a variable read, a
+/// binding, a field) costs a reference count and not the size of the value;
+/// what a value is, and every step charged for it, is unchanged.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Rv {
     Unit,
@@ -16,18 +20,68 @@ pub enum Rv {
     Nat(u64),
     Int(i64),
     Fixed(IntKind, i128),
-    Str(String),
-    Bytes(Vec<u8>),
+    Str(Rc<str>),
+    Bytes(Rc<[u8]>),
     Ord(Ordering),
     None,
-    Some(Box<Rv>),
-    Ok(Box<Rv>),
-    Err(Box<Rv>),
-    List(Vec<Rv>),
-    Pair(Box<Rv>, Box<Rv>),
-    Adt(u64, Vec<Rv>),
-    Closure(u64, Vec<Rv>),
+    Some(Rc<Rv>),
+    Ok(Rc<Rv>),
+    Err(Rc<Rv>),
+    List(Seq),
+    Pair(Rc<Rv>, Rc<Rv>),
+    Adt(u64, Rc<[Rv]>),
+    Closure(u64, Rc<[Rv]>),
 }
+
+/// The items of a list from `start` on: the tail of a list shares its
+/// items, so taking it (`Cons`) does not copy them.
+#[derive(Debug, Clone)]
+pub struct Seq {
+    items: Rc<[Rv]>,
+    start: usize,
+}
+
+impl Seq {
+    fn tail(&self) -> Self {
+        Self {
+            items: Rc::clone(&self.items),
+            start: self.start + 1,
+        }
+    }
+}
+
+impl Deref for Seq {
+    type Target = [Rv];
+    fn deref(&self) -> &[Rv] {
+        &self.items[self.start..]
+    }
+}
+
+impl From<Vec<Rv>> for Seq {
+    fn from(items: Vec<Rv>) -> Self {
+        Self {
+            items: items.into(),
+            start: 0,
+        }
+    }
+}
+
+impl FromIterator<Rv> for Seq {
+    fn from_iter<I: IntoIterator<Item = Rv>>(items: I) -> Self {
+        Self {
+            items: items.into_iter().collect(),
+            start: 0,
+        }
+    }
+}
+
+impl PartialEq for Seq {
+    fn eq(&self, other: &Self) -> bool {
+        **self == **other
+    }
+}
+
+impl Eq for Seq {}
 
 /// A runtime outcome; steps are charged exactly as the denotation charges
 /// them.
@@ -61,7 +115,8 @@ fn weight(value: &Rv) -> u64 {
         Rv::Str(text) => 1 + text.chars().count() as u64,
         Rv::Bytes(octets) => 1 + octets.len() as u64,
         Rv::Some(inner) | Rv::Ok(inner) | Rv::Err(inner) => 1 + weight(inner),
-        Rv::List(items) | Rv::Adt(_, items) | Rv::Closure(_, items) => 1 + weights(items),
+        Rv::List(items) => 1 + weights(items),
+        Rv::Adt(_, items) | Rv::Closure(_, items) => 1 + weights(items),
         Rv::Pair(left, right) => 1 + weight(left) + weight(right),
         Rv::Unit
         | Rv::Bool(_)
@@ -106,7 +161,7 @@ fn fixed_value(kind: IntKind, number: i128) -> Option<Rv> {
 }
 
 fn option(value: Option<Rv>) -> Out {
-    Out::Value(value.map_or(Rv::None, |value| Rv::Some(Box::new(value))), 0)
+    Out::Value(value.map_or(Rv::None, |value| Rv::Some(Rc::new(value))), 0)
 }
 
 /// Wrap a mathematical result into `kind` by two's complement truncation.
@@ -212,10 +267,10 @@ fn primitive(operation: &Prim, values: &[Rv]) -> Out {
         (Prim::BoolAnd, [Bool(a), Bool(b)]) => Out::Value(Bool(*a && *b), 0),
         (Prim::BoolOr, [Bool(a), Bool(b)]) => Out::Value(Bool(*a || *b), 0),
         (Prim::Append, [List(a), List(b)]) => {
-            Out::Value(List(a.iter().chain(b).cloned().collect()), 0)
+            Out::Value(List(a.iter().chain(b.iter()).cloned().collect()), 0)
         }
         (Prim::Append, [Bytes(a), Bytes(b)]) => {
-            Out::Value(Bytes(a.iter().chain(b).copied().collect()), 0)
+            Out::Value(Bytes(a.iter().chain(b.iter()).copied().collect()), 0)
         }
         (Prim::Length, [List(a)]) => nat_result(a.len() as u128),
         (Prim::Length, [Bytes(a)]) => nat_result(a.len() as u128),
@@ -230,18 +285,20 @@ fn primitive(operation: &Prim, values: &[Rv]) -> Out {
                 .map(|byte| Fixed(IntKind::U8, i128::from(*byte))),
         ),
         (Prim::Slice, [List(a), Nat(start), Nat(count)]) => {
-            option(slice(a, *start, *count).map(|part| List(part.to_vec())))
+            option(slice(a, *start, *count).map(|part| List(part.iter().cloned().collect())))
         }
         (Prim::Slice, [Bytes(a), Nat(start), Nat(count)]) => {
-            option(slice(a, *start, *count).map(|part| Bytes(part.to_vec())))
+            option(slice(a, *start, *count).map(|part| Bytes(part.into())))
         }
-        (Prim::Utf8Encode, [Str(a)]) => Out::Value(Bytes(a.as_bytes().to_vec()), 0),
-        (Prim::Utf8Decode, [Bytes(a)]) => option(String::from_utf8(a.clone()).ok().map(Str)),
+        (Prim::Utf8Encode, [Str(a)]) => Out::Value(Bytes(a.as_bytes().into()), 0),
+        (Prim::Utf8Decode, [Bytes(a)]) => {
+            option(std::str::from_utf8(a).ok().map(|text| Str(text.into())))
+        }
         (Prim::CompareBytes, [Bytes(a), Bytes(b)]) => Out::Value(Rv::Ord(a.cmp(b)), 0),
         (Prim::SplitExact, [Str(text), Str(delimiter), Fixed(IntKind::U32, maximum)]) => {
-            let fields: Vec<Rv> = text
-                .split(delimiter.as_str())
-                .map(|field| Str(field.to_owned()))
+            let fields: Seq = text
+                .split(&**delimiter)
+                .map(|field| Str(field.into()))
                 .collect();
             option(
                 (!delimiter.is_empty() && fields.len() as i128 <= *maximum).then_some(List(fields)),
@@ -249,14 +306,14 @@ fn primitive(operation: &Prim, values: &[Rv]) -> Out {
         }
         (Prim::Join, [List(items), Str(delimiter)]) => {
             let mut texts = Vec::new();
-            for item in items {
+            for item in items.iter() {
                 let Str(text) = item else { return Out::Stuck };
-                texts.push(text.as_str());
+                texts.push(&**text);
             }
-            Out::Value(Str(texts.join(delimiter)), 0)
+            Out::Value(Str(texts.join(delimiter).into()), 0)
         }
-        (Prim::FormatDecimal, [Int(a)]) => Out::Value(Str(a.to_string()), 0),
-        (Prim::FormatDecimal, [Fixed(_, a)]) => Out::Value(Str(a.to_string()), 0),
+        (Prim::FormatDecimal, [Int(a)]) => Out::Value(Str(a.to_string().into()), 0),
+        (Prim::FormatDecimal, [Fixed(_, a)]) => Out::Value(Str(a.to_string().into()), 0),
         (Prim::Convert { target }, [Int(a)]) => option(fixed_value(*target, i128::from(*a))),
         (Prim::Convert { target }, [Fixed(_, a)]) => option(fixed_value(*target, *a)),
         (Prim::Compare, [left, right]) => {
@@ -265,7 +322,7 @@ fn primitive(operation: &Prim, values: &[Rv]) -> Out {
         (Prim::ParseDecimal { target: Ty::Int }, [Str(text)]) => match parse_decimal(text) {
             None => Out::Value(Rv::None, 0),
             Some(Ok(number)) => i64::try_from(number).map_or(Out::Overflow(0), |number| {
-                Out::Value(Rv::Some(Box::new(Int(number))), 0)
+                Out::Value(Rv::Some(Rc::new(Int(number))), 0)
             }),
             Some(Err(())) => Out::Overflow(0),
         },
@@ -297,7 +354,7 @@ fn compare(left: &Rv, right: &Rv) -> Option<Ordering> {
             decided => Some(decided),
         },
         (Rv::List(left), Rv::List(right)) => {
-            for (a, b) in left.iter().zip(right) {
+            for (a, b) in left.iter().zip(right.iter()) {
                 match compare(a, b)? {
                     Ordering::Equal => {}
                     decided => return Some(decided),
@@ -324,23 +381,21 @@ fn destruct(shape: Shape, value: &Rv) -> Option<Vec<Rv>> {
         (Shape::None, Rv::None) | (Shape::Unit, Rv::Unit) => Some(Vec::new()),
         (Shape::Some, Rv::Some(inner))
         | (Shape::Ok, Rv::Ok(inner))
-        | (Shape::Error, Rv::Err(inner)) => Some(vec![inner.as_ref().clone()]),
+        | (Shape::Error, Rv::Err(inner)) => Some(vec![Rv::clone(inner)]),
         (Shape::Nil, Rv::List(items)) if items.is_empty() => Some(Vec::new()),
         (Shape::Cons, Rv::List(items)) if !items.is_empty() => {
-            Some(vec![items[0].clone(), Rv::List(items[1..].to_vec())])
+            Some(vec![items[0].clone(), Rv::List(items.tail())])
         }
         (Shape::Zero, Rv::Nat(0)) => Some(Vec::new()),
         (Shape::Succ, Rv::Nat(number)) if *number > 0 => Some(vec![Rv::Nat(number - 1)]),
-        (Shape::Pair, Rv::Pair(left, right)) => {
-            Some(vec![left.as_ref().clone(), right.as_ref().clone()])
-        }
+        (Shape::Pair, Rv::Pair(left, right)) => Some(vec![Rv::clone(left), Rv::clone(right)]),
         (Shape::True, Rv::Bool(true))
         | (Shape::False, Rv::Bool(false))
         | (Shape::Lt, Rv::Ord(Ordering::Less))
         | (Shape::Eq, Rv::Ord(Ordering::Equal))
         | (Shape::Gt, Rv::Ord(Ordering::Greater)) => Some(Vec::new()),
         (Shape::Adt { constructor }, Rv::Adt(tag, fields)) if *tag == constructor => {
-            Some(fields.clone())
+            Some(fields.to_vec())
         }
         _ => None,
     }
@@ -350,15 +405,19 @@ fn construct(shape: Shape, values: Vec<Rv>) -> Out {
     let mut values = values;
     match (shape, values.len()) {
         (Shape::None, 0) => Out::Value(Rv::None, 0),
-        (Shape::Some, 1) => Out::Value(Rv::Some(Box::new(values.remove(0))), 0),
-        (Shape::Ok, 1) => Out::Value(Rv::Ok(Box::new(values.remove(0))), 0),
-        (Shape::Error, 1) => Out::Value(Rv::Err(Box::new(values.remove(0))), 0),
-        (Shape::Nil, 0) => Out::Value(Rv::List(Vec::new()), 0),
+        (Shape::Some, 1) => Out::Value(Rv::Some(Rc::new(values.remove(0))), 0),
+        (Shape::Ok, 1) => Out::Value(Rv::Ok(Rc::new(values.remove(0))), 0),
+        (Shape::Error, 1) => Out::Value(Rv::Err(Rc::new(values.remove(0))), 0),
+        (Shape::Nil, 0) => Out::Value(Rv::List(Seq::from(Vec::new())), 0),
         (Shape::Cons, 2) => match values.remove(1) {
-            Rv::List(mut items) => {
-                items.insert(0, values.remove(0));
-                Out::Value(Rv::List(items), 0)
-            }
+            Rv::List(items) => Out::Value(
+                Rv::List(
+                    std::iter::once(values.remove(0))
+                        .chain(items.iter().cloned())
+                        .collect(),
+                ),
+                0,
+            ),
             _ => Out::Stuck,
         },
         (Shape::Zero, 0) => Out::Value(Rv::Nat(0), 0),
@@ -368,7 +427,7 @@ fn construct(shape: Shape, values: Vec<Rv>) -> Out {
         },
         (Shape::Pair, 2) => {
             let right = values.remove(1);
-            Out::Value(Rv::Pair(Box::new(values.remove(0)), Box::new(right)), 0)
+            Out::Value(Rv::Pair(Rc::new(values.remove(0)), Rc::new(right)), 0)
         }
         (Shape::True, 0) => Out::Value(Rv::Bool(true), 0),
         (Shape::False, 0) => Out::Value(Rv::Bool(false), 0),
@@ -376,29 +435,51 @@ fn construct(shape: Shape, values: Vec<Rv>) -> Out {
         (Shape::Lt, 0) => Out::Value(Rv::Ord(Ordering::Less), 0),
         (Shape::Eq, 0) => Out::Value(Rv::Ord(Ordering::Equal), 0),
         (Shape::Gt, 0) => Out::Value(Rv::Ord(Ordering::Greater), 0),
-        (Shape::Adt { constructor }, _) => Out::Value(Rv::Adt(constructor, values), 0),
+        (Shape::Adt { constructor }, _) => Out::Value(Rv::Adt(constructor, values.into()), 0),
         _ => Out::Stuck,
     }
 }
 
-type Env = Vec<(u64, Rv)>;
+/// The bindings in scope, innermost first. A binding is pushed in front of
+/// the bindings it extends, which it shares, so extending a scope costs one
+/// binding and not a copy of the scope.
+type Env = Option<Rc<Binding>>;
+
+struct Binding {
+    name: u64,
+    value: Rv,
+    outer: Env,
+}
 
 /// The innermost binding of `name` and the number of bindings examined
 /// before it (`depth`).
 fn lookup(env: &Env, name: u64) -> Option<(Rv, u64)> {
-    env.iter()
-        .rev()
-        .enumerate()
-        .find(|(_, (bound, _))| *bound == name)
-        .map(|(depth, (_, value))| (value.clone(), depth as u64))
+    let mut depth = 0;
+    let mut at = env.as_deref();
+    while let Some(binding) = at {
+        if binding.name == name {
+            return Some((binding.value.clone(), depth));
+        }
+        depth += 1;
+        at = binding.outer.as_deref();
+    }
+    None
 }
 
+/// `env` extended by `names` bound to `values` in order, so the last name is
+/// the innermost binding.
 fn bind_all(names: &[u64], values: Vec<Rv>, env: &Env) -> Option<Env> {
     if names.len() != values.len() {
         return None;
     }
     let mut out = env.clone();
-    out.extend(names.iter().copied().zip(values));
+    for (name, value) in names.iter().copied().zip(values) {
+        out = Some(Rc::new(Binding {
+            name,
+            value,
+            outer: out,
+        }));
+    }
     Some(out)
 }
 
@@ -414,7 +495,7 @@ impl Interp<'_> {
         else {
             return Out::Stuck;
         };
-        let Some(env) = bind_all(&callee.parameters, values, &Vec::new()) else {
+        let Some(env) = bind_all(&callee.parameters, values, &None) else {
             return Out::Stuck;
         };
         add_steps(self.eval(remaining, &env, &callee.body), steps)
@@ -451,8 +532,11 @@ impl Interp<'_> {
             Expr::Let {
                 name, bound, body, ..
             } => Self::propagate(self.eval(remaining, env, bound), |value, steps| {
-                let mut extended = env.clone();
-                extended.push((*name, value));
+                let extended = Some(Rc::new(Binding {
+                    name: *name,
+                    value,
+                    outer: env.clone(),
+                }));
                 add_steps(self.eval(remaining, &extended, body), steps + 1)
             }),
             Expr::Cond {
@@ -486,7 +570,7 @@ impl Interp<'_> {
             }
             Expr::Closure { function, captures } => {
                 Self::propagate_list(self.eval_list(remaining, env, captures), |values, steps| {
-                    Out::Value(Rv::Closure(*function, values), steps + 1)
+                    Out::Value(Rv::Closure(*function, values.into()), steps + 1)
                 })
             }
             Expr::Apply { target, operands } => {
@@ -498,7 +582,7 @@ impl Interp<'_> {
                         self.eval_list(remaining, env, operands),
                         |values, steps| {
                             let passed = captured.len() as u64;
-                            let mut all = captured;
+                            let mut all = captured.to_vec();
                             all.extend(values);
                             self.call(remaining, function, all, target_steps + steps + 1 + passed)
                         },
@@ -514,14 +598,14 @@ impl Interp<'_> {
             Expr::First { value } => Self::propagate(
                 self.eval(remaining, env, value),
                 |value, steps| match value {
-                    Rv::Pair(left, _) => Out::Value(*left, steps + 1),
+                    Rv::Pair(left, _) => Out::Value(Rv::clone(&left), steps + 1),
                     _ => Out::Stuck,
                 },
             ),
             Expr::Second { value } => Self::propagate(
                 self.eval(remaining, env, value),
                 |value, steps| match value {
-                    Rv::Pair(_, right) => Out::Value(*right, steps + 1),
+                    Rv::Pair(_, right) => Out::Value(Rv::clone(&right), steps + 1),
                     _ => Out::Stuck,
                 },
             ),
@@ -597,12 +681,12 @@ pub fn to_runtime(value: &Value) -> Option<Rv> {
         Value::I16 { value } => fixed_value(IntKind::I16, number(value)?)?,
         Value::I32 { value } => fixed_value(IntKind::I32, number(value)?)?,
         Value::I64 { value } => fixed_value(IntKind::I64, number(value)?)?,
-        Value::String { value } => Rv::Str(value.clone()),
+        Value::String { value } => Rv::Str(value.as_str().into()),
         Value::Bytes { hex } => Rv::Bytes(
             (0..hex.len())
                 .step_by(2)
                 .map(|at| u8::from_str_radix(hex.get(at..at + 2)?, 16).ok())
-                .collect::<Option<Vec<u8>>>()?,
+                .collect::<Option<Rc<[u8]>>>()?,
         ),
         Value::Ordering { value } => Rv::Ord(match value {
             OrderingValue::Lt => Ordering::Less,
@@ -610,12 +694,14 @@ pub fn to_runtime(value: &Value) -> Option<Rv> {
             OrderingValue::Gt => Ordering::Greater,
         }),
         Value::None => Rv::None,
-        Value::Some { value } => Rv::Some(Box::new(to_runtime(value)?)),
-        Value::Ok { value } => Rv::Ok(Box::new(to_runtime(value)?)),
-        Value::Error { value } => Rv::Err(Box::new(to_runtime(value)?)),
-        Value::List { items } => Rv::List(items.iter().map(to_runtime).collect::<Option<_>>()?),
+        Value::Some { value } => Rv::Some(Rc::new(to_runtime(value)?)),
+        Value::Ok { value } => Rv::Ok(Rc::new(to_runtime(value)?)),
+        Value::Error { value } => Rv::Err(Rc::new(to_runtime(value)?)),
+        Value::List { items } => Rv::List(Seq::from(
+            items.iter().map(to_runtime).collect::<Option<Vec<_>>>()?,
+        )),
         Value::Pair { left, right } => {
-            Rv::Pair(Box::new(to_runtime(left)?), Box::new(to_runtime(right)?))
+            Rv::Pair(Rc::new(to_runtime(left)?), Rc::new(to_runtime(right)?))
         }
         Value::Adt {
             constructor,
@@ -657,7 +743,7 @@ pub fn from_runtime(value: &Rv) -> Value {
             }
         }
         Rv::Str(value) => Value::String {
-            value: value.clone(),
+            value: value.to_string(),
         },
         Rv::Bytes(bytes) => Value::Bytes {
             hex: bytes.iter().map(|byte| format!("{byte:02x}")).collect(),
@@ -714,7 +800,7 @@ pub fn run(program: &Program, fuel: u64, entry: u64, arguments: &[Value]) -> Out
     else {
         return Outcome::Stuck;
     };
-    let Some(env) = bind_all(&function.parameters, values, &Vec::new()) else {
+    let Some(env) = bind_all(&function.parameters, values, &None) else {
         return Outcome::Stuck;
     };
     match interp.eval(fuel, &env, &function.body) {
