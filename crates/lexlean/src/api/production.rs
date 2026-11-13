@@ -1000,24 +1000,31 @@ fn manifest_for(
         .functions
         .get(usize::try_from(entry).map_err(|error| error.to_string())?)
         .ok_or_else(|| format!("the program has no function {entry}"))?;
+    let exports = vec![Export {
+        function: entry,
+        name: EXPORT_NAME.to_owned(),
+        parameters: vec![Passing::Own; function.types.len()],
+        errors: if fallible.get(entry as usize).copied().unwrap_or(false) {
+            Errors::Overflow
+        } else {
+            Errors::None
+        },
+    }];
+    // A root of the type of a command's step is a command: its package gets
+    // a driver. A root of any other type is an ordinary pure root and gets
+    // none, so no error code is needed to tell them apart (§17.13).
+    let command = target == "rust-std"
+        && crate::calculus::rust::host::recognize(program, &exports, EXPORT_NAME).is_ok();
     Ok(Manifest {
         spec: package::MANIFEST_SPEC.to_owned(),
         name: package.name.clone(),
         version: package.version.clone(),
         profile: target.to_owned(),
         program: program.clone(),
-        exports: vec![Export {
-            function: entry,
-            name: EXPORT_NAME.to_owned(),
-            parameters: vec![Passing::Own; function.types.len()],
-            errors: if fallible.get(entry as usize).copied().unwrap_or(false) {
-                Errors::Overflow
-            } else {
-                Errors::None
-            },
-        }],
+        exports,
         sources: vec![semantic_id.to_hex()],
         effects,
+        entry: command.then(|| EXPORT_NAME.to_owned()),
     })
 }
 
