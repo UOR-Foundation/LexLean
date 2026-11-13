@@ -71,6 +71,13 @@ jobs:
           sudo mkswap "$RUNNER_TEMP/lexlean-regenerate.swap"
           sudo swapon "$RUNNER_TEMP/lexlean-regenerate.swap"
           sudo sysctl vm.swappiness=10
+      - name: Refresh the project locks
+        shell: bash
+        run: |
+          set -euo pipefail
+          cargo build -q -p lexlean
+          L="$PWD/target/debug/lexlean"
+          for p in bootstrap stdlib compiler; do (cd "$p" && "$L" lock); done
       - name: Run the write recipes
         shell: bash
         env:
