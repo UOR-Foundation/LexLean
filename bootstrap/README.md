@@ -64,3 +64,6 @@ canonical JSON of a linked proof and declaration and checks an axiom policy.
 `src/IrDocument.lex.tex` (SPEC.md §17.23, `BS-67`) imports `IrTerm`, `IrProof`, and `ContentId`, and
 the standard library's `Json`, `Order`, and `Text`, and writes the canonical JSON of a linked module
 and of a linked project, and the project's semantic ID.
+`src/SemanticTypes.lex.tex` (SPEC.md §17.23, `BS-68`) imports the standard library's `Json`, `Order`,
+and `Text`, and writes the closed types of the semantic module language as the linked IR embeds
+them and as diagnostics spell them, and the facts of its primitives and integer families.

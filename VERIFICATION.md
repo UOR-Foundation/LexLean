@@ -11856,6 +11856,38 @@ check` of the `bootstrap/` project passes, with each of the three roots eligible
 for `rust-std` with exactly its declared effects, and `lexlean fmt --check`
 passes.
 
+### the semantic types are source (BS-68)
+
+`BS-68` holds the four production roots of `LexLeanBoot.SemanticTypes`
+(`bootstrap/src/SemanticTypes.lex.tex`) to `lexlean::ir::semantic`:
+`primitiveFacts` to the serialized name, `language_1_2`, `widening`, and
+`function_argument` of `SemanticPrimitive`; `integerName` to the serialized
+name of `SemanticInteger`; `typeText` to the canonical JSON of the serde form of
+`SemanticType`, as `DocumentModule::to_json` embeds a semantic module; and
+`typeSpelling` to `Display for SemanticType`. The module declares the closed
+types of SPEC.md §17.11 and §17.12, the 56 primitives, and the nine integer
+families as inductives. The type arguments of a named type and the parameters
+of a function type are a chain of cells of the type itself, so that `typeText`
+is one structural recursion and `typeSpelling` a mutual recursion of a type and
+the spellings of a chain. `primitiveFacts` and `integerName` admit exactly
+`allocation`, `typeText` exactly `allocation`, `overflow`, and `recursion`,
+and `typeSpelling` exactly `allocation` and `recursion`. The oracle is the existing public code of `semantic.rs` and its
+serde derivations; no Rust outside the case changes.
+
+The case holds each root to the oracle on hand-built types that reach every
+constructor and every unit type; on every primitive and every integer family the
+module names, each read back through the oracle's serialized name, so that a
+name the oracle does not have fails the case; on every distinct type of every
+committed semantic module that links, found as each JSON object of the module
+that reads back as a type; and on seeded types. Each planted defect names the
+root and the vector that catch it, and the case asserts that the site of each
+plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree's compiler sources: `lexlean
+check` of the `bootstrap/` project passes, with each of the four roots eligible
+for `rust-std` with exactly its declared effects, and `lexlean fmt --check`
+passes.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the

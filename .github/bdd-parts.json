@@ -286,6 +286,9 @@
     ],
     "bootstrap-ir-document": [
       "BS-67"
+    ],
+    "bootstrap-semantic-types": [
+      "BS-68"
     ]
   },
   "targets": {

@@ -58,6 +58,13 @@ workspace carried at those versions without a tag.
   A landing that moves the language-1.2 ID now also updates the constant;
   `RP-10` names the new value when it is stale.
 
+- The closed types of the semantic module language, its primitives, and its integer
+  families as language-1.2 source, fourth slice of the typed IR (SPEC.md §17.23, §17.11,
+  §17.12, `BS-68`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `primitiveFacts`, `integerName`, `typeText`, and `typeSpelling` of
+  `SemanticTypes` return the facts of `SemanticPrimitive` and `SemanticInteger`, the
+  canonical JSON of the serde form of `SemanticType`, and its `Display`. The register
+  is 500 IDs.
 - The document IR, the linked project, and the semantic ID as language-1.2 source, third
   slice of the typed IR (SPEC.md §17.23, §17.5, §17.9, §21.4, `BS-67`, #269; no new
   diagnostic code, no change to the language-1.2 identity). `moduleText`,
