@@ -3,7 +3,7 @@
 # Once `ci.yml` has passed on that push, this tags it `vX.Y.Z`, dispatches
 # `release.yml` on the tag (a tag pushed with the workflow token starts no
 # run), and opens the pull request that carries the line to `main`, which
-# receives a line at its tag, with auto-merge on. Any other push ends at the first step.
+# receives a line at its tag, and merges it when the line contains `main`. Any other push ends at the first step.
 #
 # A gate that fails leaves the commit untagged; tag it by hand once a rerun
 # passes (`git tag -a vX.Y.Z -m "LexLean vX.Y.Z" && git push origin vX.Y.Z`),
@@ -100,9 +100,19 @@ jobs:
           # A pull request opened with the workflow token starts no run, so the
           # gate is dispatched on the line: its plan finds the full run that
           # verified the tagged tree (the regenerated head of the cut, under
-          # equal-tree merges) and runs nothing again. The line contains
-          # `main`, so the merge lands that tree, and it merges itself once
-          # its checks pass.
+          # equal-tree merges) and runs nothing again.
           gh workflow run ci.yml --repo "$REPO" --ref "$GITHUB_REF_NAME"
-          gh pr merge --repo "$REPO" "$GITHUB_REF_NAME" --auto --merge \
-            || echo "::warning::auto-merge not enabled on the pull request into main"
+          # Only a line that contains `main` lands the verified tree unchanged;
+          # then the merge needs no further gate and is made now. Otherwise
+          # `main` has commits the line lacks, and the pull request waits for a
+          # person to reconcile them.
+          git fetch --quiet origin main
+          if git merge-base --is-ancestor FETCH_HEAD HEAD 2>/dev/null \
+            || { git fetch --quiet --unshallow origin 2>/dev/null; git fetch --quiet origin main \
+                 && git merge-base --is-ancestor FETCH_HEAD HEAD; }; then
+            gh pr merge --repo "$REPO" "$GITHUB_REF_NAME" --merge \
+              || echo "::warning::the pull request into main did not merge"
+          else
+            echo "::warning::main has commits $GITHUB_REF_NAME lacks; the pull request into main waits for a person"
+            echo "\`main\` has commits \`$GITHUB_REF_NAME\` lacks: the pull request into main is left for a person." >> "$GITHUB_STEP_SUMMARY"
+          fi

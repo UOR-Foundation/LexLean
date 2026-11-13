@@ -54,6 +54,11 @@ if [ -s "$dir/regenerated.patch" ]; then
 fi
 if git diff --cached --quiet; then
   say "The regenerated tree of \`$commit\` is the committed tree: nothing to deliver."
+  # A caller's branch was pushed with the workflow token, which started no
+  # run: the gate is dispatched for it all the same.
+  if [ -n "${BRANCH:-}" ]; then
+    gh workflow run ci.yml --repo "$repo" --ref "$branch"
+  fi
 else
   paths=$(git diff --cached --name-only | wc -l)
   {
