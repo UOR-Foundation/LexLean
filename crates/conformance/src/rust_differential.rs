@@ -684,6 +684,7 @@ pub fn manifest(differential: &Differential, profile: Profile) -> Manifest {
             .collect(),
         sources: Vec::new(),
         effects: Vec::new(),
+        entry: None,
     }
     .showing_effects()
 }
