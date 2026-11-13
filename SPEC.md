@@ -284,6 +284,8 @@ The completed repository MUST have this layout. Additional files are allowed onl
 │   └── workflows/
 │       ├── ci.yml
 │       └── reproducibility.yml
+├── assets/
+│   └── lexlean-logo.svg
 ├── AGENTS.md
 ├── CONFORMANCE.md
 ├── ERRORS.md
