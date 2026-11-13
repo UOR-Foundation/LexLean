@@ -28,8 +28,14 @@ while :; do
     --jq '[.artifacts[] | select(.expired | not)] | max_by(.created_at) | .id // empty' 2>/dev/null) || id=
   if [ -n "$id" ]; then
     rm -rf "$dir/artifact" "$dir/artifact.zip"
-    gh api "repos/$repo/actions/artifacts/$id/zip" > "$dir/artifact.zip" \
-      || fail "the artifact $id of run $run did not download"
+    # An artifact is listed a few seconds before its upload is finalized, and
+    # a download in that window fails: retry with backoff before giving up.
+    for wait in 5 10 20 40 0; do
+      gh api "repos/$repo/actions/artifacts/$id/zip" > "$dir/artifact.zip" && break
+      [ "$wait" -gt 0 ] || fail "the artifact $id of run $run did not download"
+      echo "take-bootstrap-export: artifact $id did not download; again in ${wait}s" >&2
+      sleep "$wait"
+    done
     mkdir -p "$dir/artifact" && unzip -q "$dir/artifact.zip" -d "$dir/artifact" \
       || fail "the artifact $id of run $run did not unpack"
     rm -f "$dir/artifact.zip"
