@@ -17,6 +17,10 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, §10.2), by the maintainer's decision: the extraction of its export wrote
+  more than the default 33,554,432 bytes on `lean`'s output once the front end's
+  components (`BS-36`) joined it. The register is unchanged.
 - The printer of the semantic notation as language-1.2 source (SPEC.md
   §17.23, §17.21, `BS-36`, #269; no new diagnostic code, no change to the
   language-1.2 identity). `printAt` and `printSemanticModule` of
