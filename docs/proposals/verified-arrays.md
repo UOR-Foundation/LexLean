@@ -1,6 +1,6 @@
 # Arrays of fixed-width integers: design
 
-Written 2026-11-12 for owner acceptance. Normative text is `SPEC.md` §17.12, *Arrays*; this document explains the design, records the evidence, and lists what is left to the owners. Register row: `SM-39`. Register total on this branch: 494.
+Written 2026-11-12 for owner acceptance. Normative text is `SPEC.md` §17.12, *Arrays*; this document explains the design, records the evidence, and lists what is left to the owners. Register row: `SM-39`. Register total on this branch: 495 (after merging RB-24, which added its own row).
 
 ## 1. Summary
 
