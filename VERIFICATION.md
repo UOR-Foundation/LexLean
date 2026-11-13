@@ -11992,7 +11992,10 @@ with exactly its declared effects, and `lexlean fmt --check` passes.
 decoding half of `lexlean::ir::semantic::SemanticModule::parse`: serde's typed
 decoding of the module and everything it holds, the comparison with the
 canonical form, and the closed-schema walk that names the first member serde
-ignored. The root returns the module's specification and declarations, in the
+ignored. The standard library's reader takes canonical text only, so the
+module reads JSON text as serde does: whitespace between tokens, members in any
+order and repeated, every escape including surrogate pairs, and integers
+without fractions or exponents. The root returns the module's specification and declarations, in the
 representation `SemanticReasoning` (`BS-72`) writes, or the rejection the parser
 reports first. The decoders are generated from the description of the oracle's
 types that writes `BS-71` and `BS-72`; each recurses on a count of the
@@ -12010,13 +12013,13 @@ distinct semantic module of every committed project that links, modules of the
 mutations of ten example modules and twenty short committed modules: a member
 removed, an unknown member with the value `0`, `false`, or `[]`, an omitted
 default written out, a kind renamed, a string or count of another type, a
-negative count, an array replaced by an object, and two texts out of canonical
-form. The case asserts that every outcome occurs among them. The evaluator takes
+negative count, an array replaced by an object, and texts out of canonical
+form (whitespace, members out of order, an escaped key). The case asserts that every outcome occurs among them. The evaluator takes
 the committed modules whose JSON is at most 16,384 bytes and the rendered package
 all of them. Each planted defect weakens one decoding rule (the nesting limit,
 the canonical comparison, the unit-variant rule, either omitted default, the
 unknown-member and duplicate-member rules, negative counts, one kind, and the
-path's index syntax), and the runs detect it; the case asserts that the site of
+path's index syntax, whitespace, and `\u` escapes), and the runs detect it; the case asserts that the site of
 each plant occurs once. The row's statement carries no counts.
 
 Measured with the compiler binary of this tree's compiler sources: `lexlean

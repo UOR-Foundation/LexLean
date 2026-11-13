@@ -6,11 +6,317 @@
 \importmodule{SemanticTerms}
 \importmodule{SemanticTypes}
 \importmodule{LexLeanStd.Json}
-\importmodule{LexLeanStd.JsonRead}
 \importmodule{LexLeanStd.Numeral}
 \importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
 \title{Natural number addition}
 \begin{semanticmodule}
+inductive{
+  name: LooseFrame,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: LooseArr, fields: [LexLeanStd.Json::Json]},
+    {name: LooseObj, fields: [Bytes, LexLeanStd.Json::Json]}
+  ]
+}
+
+inductive{
+  name: LooseReading,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: LooseRead, fields: [Nat, Nat, (List LooseFrame), LexLeanStd.Json::Json]}]
+}
+
+definition{
+  name: byteAt,
+  parameters: [text : Bytes, position : Nat],
+  result: Nat,
+  body: (match (prim index text position : (Option UInt8))
+    | Option.some byte => (prim to_nat byte : Nat)
+    | Option.none => 256),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isDigit,
+  parameters: [value : Nat],
+  result: Bool,
+  body: ((47 <? value) && (value <? 58)),
+  executable: true
+}
+
+definition{
+  name: digitAt,
+  parameters: [text : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (if (isDigit (byteAt text position)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: digitsUntil,
+  parameters: [text : Bytes, start : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [text] (position : Nat) => (digitAt text position)) ((prim length text : Nat) + 1) start : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: looseInteger,
+  parameters: [text : Bytes, position : Nat],
+  result: (Option (Nat * LexLeanStd.Json::Json)),
+  body: (let negative : Bool := ((byteAt text position) =? 45); (let start : Nat := (if negative then (position + 1) else position); (let stop : Nat := (digitsUntil text start); (let next : Nat := (byteAt text stop); (if ((stop =? start) || ((((byteAt text start) =? 48) && (1 <? (prim subtract stop start : Nat))) || ((next =? 46) || ((next =? 101) || (next =? 69))))) then (ctor Option.none [(Nat * LexLeanStd.Json::Json)]) else (match (LexLeanStd.Numeral::parseDecimal (LexLeanStd.Text::sliceOr text start (prim subtract stop start : Nat)))
+    | Option.some magnitude => (ctor Option.some [(Nat * LexLeanStd.Json::Json)] (stop, (ctor LexLeanStd.Json::Json.JInt (if (magnitude =? 0) then false else negative) magnitude)))
+    | Option.none => (ctor Option.none [(Nat * LexLeanStd.Json::Json)]))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: hexDigit,
+  parameters: [value : Nat],
+  result: Nat,
+  body: (if (isDigit value) then (prim subtract value 48 : Nat) else (if ((64 <? value) && (value <? 71)) then (prim subtract value 55 : Nat) else (if ((96 <? value) && (value <? 103)) then (prim subtract value 87 : Nat) else 16))),
+  executable: true
+}
+
+definition{
+  name: hexAt,
+  parameters: [text : Bytes, position : Nat],
+  result: (Option Nat),
+  body: (let d0 : Nat := (hexDigit (byteAt text position)); (let d1 : Nat := (hexDigit (byteAt text (position + 1))); (let d2 : Nat := (hexDigit (byteAt text (position + 2))); (let d3 : Nat := (hexDigit (byteAt text (position + 3))); (if ((15 <? d0) || ((15 <? d1) || ((15 <? d2) || (15 <? d3)))) then (ctor Option.none [Nat]) else (ctor Option.some [Nat] ((((prim multiply d0 4096 : Nat) + (prim multiply d1 256 : Nat)) + (prim multiply d2 16 : Nat)) + d3))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: byteTable,
+  parameters: [],
+  result: Bytes,
+  body: 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f606162636465666768696a6b6c6d6e6f707172737475767778797a7b7c7d7e7f808182838485868788898a8b8c8d8e8f909192939495969798999a9b9c9d9e9fa0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3f4f5f6f7f8f9fafbfcfdfeff,
+  executable: true
+}
+
+definition{
+  name: oneByte,
+  parameters: [value : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr (byteTable) value 1),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: trailing,
+  parameters: [code : Nat, scale : Nat],
+  result: Bytes,
+  body: (oneByte (128 + (prim remainder (prim quotient code scale 0 : Nat) 64 0 : Nat))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: utf8Of,
+  parameters: [code : Nat],
+  result: Bytes,
+  body: (if (code <? 128) then (oneByte code) else (if (code <? 2048) then (prim append (oneByte (192 + (prim quotient code 64 0 : Nat))) (trailing code 1) : Bytes) else (if (code <? 65536) then (prim append (prim append (oneByte (224 + (prim quotient code 4096 0 : Nat))) (trailing code 64) : Bytes) (trailing code 1) : Bytes) else (prim append (prim append (prim append (oneByte (240 + (prim quotient code 262144 0 : Nat))) (trailing code 4096) : Bytes) (trailing code 64) : Bytes) (trailing code 1) : Bytes)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: plainEscape,
+  parameters: [letter : Nat],
+  result: Bytes,
+  body: (if (letter =? 34) then 0x22 else (if (letter =? 92) then 0x5c else (if (letter =? 47) then 0x2f else (if (letter =? 98) then 0x08 else (if (letter =? 102) then 0x0c else (if (letter =? 110) then 0x0a else (if (letter =? 114) then 0x0d else (if (letter =? 116) then 0x09 else 0x)))))))),
+  executable: true
+}
+
+definition{
+  name: unicodeEscape,
+  parameters: [text : Bytes, position : Nat],
+  result: (Option (Nat * Bytes)),
+  body: (match (hexAt text (position + 2))
+    | Option.none => (ctor Option.none [(Nat * Bytes)])
+    | Option.some high => (if ((55295 <? high) && (high <? 56320)) then (if (((byteAt text (position + 6)) =? 92) && ((byteAt text (position + 7)) =? 117)) then (match (hexAt text (position + 8))
+      | Option.none => (ctor Option.none [(Nat * Bytes)])
+      | Option.some low => (if ((56319 <? low) && (low <? 57344)) then (ctor Option.some [(Nat * Bytes)] ((position + 12), (utf8Of ((65536 + (prim multiply (prim subtract high 55296 : Nat) 1024 : Nat)) + (prim subtract low 56320 : Nat))))) else (ctor Option.none [(Nat * Bytes)]))) else (ctor Option.none [(Nat * Bytes)])) else (if ((56319 <? high) && (high <? 57344)) then (ctor Option.none [(Nat * Bytes)]) else (ctor Option.some [(Nat * Bytes)] ((position + 6), (utf8Of high)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: looseEscape,
+  parameters: [text : Bytes, position : Nat, out : Bytes],
+  result: (Option (Nat * (Bytes * Nat))),
+  body: (let letter : Nat := (byteAt text (position + 1)); (if (letter =? 117) then (match (unicodeEscape text position)
+    | Option.some decoded => (ctor Option.some [(Nat * (Bytes * Nat))] ((first decoded), ((prim append out (second decoded) : Bytes), 0)))
+    | Option.none => (ctor Option.some [(Nat * (Bytes * Nat))] (position, (out, 2)))) else (let piece : Bytes := (plainEscape letter); (if (prim equal piece 0x : Bool) then (ctor Option.some [(Nat * (Bytes * Nat))] (position, (out, 2))) else (ctor Option.some [(Nat * (Bytes * Nat))] ((position + 2), ((prim append out piece : Bytes), 0))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: looseStringStep,
+  parameters: [text : Bytes, state : (Nat * (Bytes * Nat))],
+  result: (Option (Nat * (Bytes * Nat))),
+  body: (let position : Nat := (first state); (let out : Bytes := (first (second state)); (if ((second (second state)) =? 0) then (let byte : Nat := (byteAt text position); (if (byte =? 34) then (ctor Option.some [(Nat * (Bytes * Nat))] ((position + 1), (out, 1))) else (if (byte =? 92) then (looseEscape text position out) else (if ((byte <? 32) || (byte =? 256)) then (ctor Option.some [(Nat * (Bytes * Nat))] (position, (out, 2))) else (ctor Option.some [(Nat * (Bytes * Nat))] ((position + 1), ((prim append out (LexLeanStd.Text::sliceOr text position 1) : Bytes), 0))))))) else (ctor Option.none [(Nat * (Bytes * Nat))])))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: looseString,
+  parameters: [text : Bytes, start : Nat],
+  result: (Option (Nat * Bytes)),
+  body: (let done : ((Nat * (Bytes * Nat)) * Bool) := (prim iterate_until (fun [text] (state : (Nat * (Bytes * Nat))) => (looseStringStep text state)) ((prim length text : Nat) + 1) (start, (0x, 0)) : ((Nat * (Bytes * Nat)) * Bool)); (if ((second (second (first done))) =? 1) then (ctor Option.some [(Nat * Bytes)] ((first (first done)), (first (second (first done))))) else (ctor Option.none [(Nat * Bytes)]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: spineStep,
+  parameters: [state : (LexLeanStd.Json::Json * LexLeanStd.Json::Json)],
+  result: (Option (LexLeanStd.Json::Json * LexLeanStd.Json::Json)),
+  body: (match (first state)
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [(LexLeanStd.Json::Json * LexLeanStd.Json::Json)])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [(LexLeanStd.Json::Json * LexLeanStd.Json::Json)])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [(LexLeanStd.Json::Json * LexLeanStd.Json::Json)])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [(LexLeanStd.Json::Json * LexLeanStd.Json::Json)])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [(LexLeanStd.Json::Json * LexLeanStd.Json::Json)])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [(LexLeanStd.Json::Json * LexLeanStd.Json::Json)])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.some [(LexLeanStd.Json::Json * LexLeanStd.Json::Json)] (rest, (ctor LexLeanStd.Json::Json.JItem element (second state))))
+    | LexLeanStd.Json::Json.JMember key inner rest => (ctor Option.some [(LexLeanStd.Json::Json * LexLeanStd.Json::Json)] (rest, (ctor LexLeanStd.Json::Json.JMember key inner (second state))))),
+  executable: true
+}
+
+definition{
+  name: reversedSpine,
+  parameters: [spine : LexLeanStd.Json::Json, fuel : Nat],
+  result: LexLeanStd.Json::Json,
+  body: (second (first (prim iterate_until (fun (state : (LexLeanStd.Json::Json * LexLeanStd.Json::Json)) => (spineStep state)) fuel (spine, (ctor LexLeanStd.Json::Json.JNil)) : ((LexLeanStd.Json::Json * LexLeanStd.Json::Json) * Bool)))),
+  executable: true
+}
+
+definition{
+  name: looseBroken,
+  parameters: [position : Nat],
+  result: LooseReading,
+  body: (ctor LooseReading.LooseRead position 9 (nil LooseFrame) (ctor LexLeanStd.Json::Json.JNil)),
+  executable: true
+}
+
+definition{
+  name: looseComplete,
+  parameters: [position : Nat, stack : (List LooseFrame), value : LexLeanStd.Json::Json],
+  result: LooseReading,
+  body: (match stack
+    | List.nil => (ctor LooseReading.LooseRead position 7 (nil LooseFrame) value)
+    | List.cons top below => (match top
+      | LooseFrame.LooseArr acc => (ctor LooseReading.LooseRead position 5 (cons (ctor LooseFrame.LooseArr (ctor LexLeanStd.Json::Json.JItem value acc)) below) (ctor LexLeanStd.Json::Json.JNil))
+      | LooseFrame.LooseObj key acc => (ctor LooseReading.LooseRead position 5 (cons (ctor LooseFrame.LooseObj 0x (ctor LexLeanStd.Json::Json.JMember key value acc)) below) (ctor LexLeanStd.Json::Json.JNil)))),
+  executable: true
+}
+
+definition{
+  name: looseClose,
+  parameters: [text : Bytes, position : Nat, stack : (List LooseFrame)],
+  result: LooseReading,
+  body: (match stack
+    | List.nil => (looseBroken position)
+    | List.cons top below => (match top
+      | LooseFrame.LooseArr acc => (looseComplete (position + 1) below (ctor LexLeanStd.Json::Json.JArr (reversedSpine acc ((prim length text : Nat) + 1))))
+      | LooseFrame.LooseObj key acc => (looseComplete (position + 1) below (ctor LexLeanStd.Json::Json.JObj (reversedSpine acc ((prim length text : Nat) + 1)))))),
+  executable: true
+}
+
+definition{
+  name: looseValueAt,
+  parameters: [text : Bytes, position : Nat, mode : Nat, stack : (List LooseFrame), byte : Nat],
+  result: LooseReading,
+  body: (if (byte =? 34) then (match (looseString text (position + 1))
+    | Option.some scanned => (looseComplete (first scanned) stack (ctor LexLeanStd.Json::Json.JStr (second scanned)))
+    | Option.none => (looseBroken position)) else (if (byte =? 116) then (if (prim equal (LexLeanStd.Text::sliceOr text position 4) 0x74727565 : Bool) then (looseComplete (position + 4) stack (ctor LexLeanStd.Json::Json.JBool true)) else (looseBroken position)) else (if (byte =? 102) then (if (prim equal (LexLeanStd.Text::sliceOr text position 5) 0x66616c7365 : Bool) then (looseComplete (position + 5) stack (ctor LexLeanStd.Json::Json.JBool false)) else (looseBroken position)) else (if (byte =? 91) then (ctor LooseReading.LooseRead (position + 1) 1 (cons (ctor LooseFrame.LooseArr (ctor LexLeanStd.Json::Json.JNil)) stack) (ctor LexLeanStd.Json::Json.JNil)) else (if (byte =? 123) then (ctor LooseReading.LooseRead (position + 1) 3 (cons (ctor LooseFrame.LooseObj 0x (ctor LexLeanStd.Json::Json.JNil)) stack) (ctor LexLeanStd.Json::Json.JNil)) else (if ((byte =? 93) && (mode =? 1)) then (looseClose text position stack) else (if ((byte =? 45) || (isDigit byte)) then (match (looseInteger text position)
+    | Option.some read => (looseComplete (first read) stack (second read))
+    | Option.none => (looseBroken position)) else (looseBroken position)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: looseKeyAt,
+  parameters: [text : Bytes, position : Nat, mode : Nat, stack : (List LooseFrame), byte : Nat],
+  result: LooseReading,
+  body: (if (byte =? 34) then (match (looseString text (position + 1))
+    | Option.some scanned => (match stack
+      | List.nil => (looseBroken position)
+      | List.cons top below => (match top
+        | LooseFrame.LooseArr acc => (looseBroken position)
+        | LooseFrame.LooseObj pending acc => (ctor LooseReading.LooseRead (first scanned) 4 (cons (ctor LooseFrame.LooseObj (second scanned) acc) below) (ctor LexLeanStd.Json::Json.JNil))))
+    | Option.none => (looseBroken position)) else (if ((byte =? 125) && (mode =? 3)) then (looseClose text position stack) else (looseBroken position))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: looseAfterAt,
+  parameters: [text : Bytes, position : Nat, stack : (List LooseFrame), byte : Nat],
+  result: LooseReading,
+  body: (match stack
+    | List.nil => (looseBroken position)
+    | List.cons top below => (match top
+      | LooseFrame.LooseArr acc => (if (byte =? 44) then (ctor LooseReading.LooseRead (position + 1) 0 stack (ctor LexLeanStd.Json::Json.JNil)) else (if (byte =? 93) then (looseClose text position stack) else (looseBroken position)))
+      | LooseFrame.LooseObj key acc => (if (byte =? 44) then (ctor LooseReading.LooseRead (position + 1) 2 stack (ctor LexLeanStd.Json::Json.JNil)) else (if (byte =? 125) then (looseClose text position stack) else (looseBroken position))))),
+  executable: true
+}
+
+definition{
+  name: isSpace,
+  parameters: [byte : Nat],
+  result: Bool,
+  body: ((byte =? 32) || ((byte =? 10) || ((byte =? 13) || (byte =? 9)))),
+  executable: true
+}
+
+definition{
+  name: looseAdvance,
+  parameters: [
+    text : Bytes,
+    position : Nat,
+    mode : Nat,
+    stack : (List LooseFrame),
+    done : LexLeanStd.Json::Json
+  ],
+  result: LooseReading,
+  body: (let byte : Nat := (byteAt text position); (if (isSpace byte) then (ctor LooseReading.LooseRead (position + 1) mode stack done) else (if (mode =? 7) then (ctor LooseReading.LooseRead position (if (byte =? 256) then 8 else 9) stack done) else (if (byte =? 256) then (looseBroken position) else (if ((mode =? 0) || (mode =? 1)) then (looseValueAt text position mode stack byte) else (if ((mode =? 2) || (mode =? 3)) then (looseKeyAt text position mode stack byte) else (if (mode =? 4) then (if (byte =? 58) then (ctor LooseReading.LooseRead (position + 1) 0 stack done) else (looseBroken position)) else (looseAfterAt text position stack byte)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: looseStep,
+  parameters: [text : Bytes, state : LooseReading],
+  result: (Option LooseReading),
+  body: (match state
+    | LooseReading.LooseRead position mode stack done => (if (8 <=? mode) then (ctor Option.none [LooseReading]) else (ctor Option.some [LooseReading] (looseAdvance text position mode stack done)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readLoose,
+  parameters: [text : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match (first (prim iterate_until (fun [text] (state : LooseReading) => (looseStep text state)) ((prim length text : Nat) + 3) (ctor LooseReading.LooseRead 0 0 (nil LooseFrame) (ctor LexLeanStd.Json::Json.JNil)) : (LooseReading * Bool)))
+    | LooseReading.LooseRead position mode stack done => (if (mode =? 8) then (ctor Option.some [LexLeanStd.Json::Json] done) else (ctor Option.none [LexLeanStd.Json::Json]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
 structure{
   name: KeyCheck,
   type_parameters: [],
@@ -64,7 +370,7 @@ definition{
   result: (Option Nat),
   body: (match value
     | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [Nat])
-    | LexLeanStd.Json::Json.JInt negative magnitude => (if negative then (ctor Option.none [Nat]) else (ctor Option.some [Nat] magnitude))
+    | LexLeanStd.Json::Json.JInt negative magnitude => (if negative then (ctor Option.none [Nat]) else (if (9223372036854775807 <? magnitude) then (ctor Option.none [Nat]) else (ctor Option.some [Nat] magnitude)))
     | LexLeanStd.Json::Json.JStr text => (ctor Option.none [Nat])
     | LexLeanStd.Json::Json.JArr items => (ctor Option.none [Nat])
     | LexLeanStd.Json::Json.JObj members => (ctor Option.none [Nat])
@@ -3948,7 +4254,7 @@ definition{
   name: decodeSemanticModule,
   parameters: [text : Bytes],
   result: Decoded,
-  body: (match (LexLeanStd.JsonRead::readJson text)
+  body: (match (readLoose text)
     | Option.none => (ctor Decoded.DInvalid)
     | Option.some json => (if (127 <? (depthOf json)) then (ctor Decoded.DInvalid) else (let fuel : Nat := ((nodesOf json) + 2); (match (decModuleValue fuel json)
       | Option.none => (ctor Decoded.DInvalid)

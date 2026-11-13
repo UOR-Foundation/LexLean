@@ -4,7 +4,9 @@
 //!
 //! `decodeSemanticModule` reads a text and returns the module's discriminator
 //! and declarations, or which of the parser's three decoding rejections the
-//! text meets first: invalid semantic-module JSON (serde's typed decoding,
+//! text meets first: invalid semantic-module JSON (serde's reading of the
+//! text, with whitespace, members in any order, and every escape, and its
+//! typed decoding,
 //! with its unknown-member, missing-field, duplicate-field and 128-level
 //! nesting rules), JSON that is not canonical, or a member outside the closed
 //! schema, with its path. The domain is the texts that the canonical JSON
@@ -360,6 +362,9 @@ fn mutations(base: &Json2) -> Vec<String> {
     }
     let text = canonical_text(base);
     out.push(text.replacen(':', ": ", 1));
+    out.push(format!(" {text}\n"));
+    out.push(text.replacen("\"spec\"", "\"\\u0073pec\"", 1));
+    out.push(text.replacen("\"kind\":\"", "\"kind\":\"\\/", 1));
     out.push(format!(
         "{{\"spec\":{},\"declarations\":{}}}",
         canonical_text(&base["spec"]),
@@ -421,6 +426,16 @@ const PLANTS: &[(&str, &str, &str)] = &[
         "an array index is written in parentheses",
         "(lit \"[\")",
         "(lit \"(\")",
+    ),
+    (
+        "whitespace between tokens is refused",
+        "(if (isSpace byte) then",
+        "(if false then",
+    ),
+    (
+        "a `\\u` escape is refused",
+        "(if (letter =? 117) then (match (unicodeEscape text position)",
+        "(if false then (match (unicodeEscape text position)",
     ),
 ];
 
