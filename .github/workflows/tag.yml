@@ -55,7 +55,8 @@ jobs:
     permissions:
       contents: write
       actions: write
-      pull-requests: write
+    outputs:
+      version: ${{ steps.cut.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -123,6 +124,41 @@ jobs:
           git push origin "refs/tags/v$VERSION"
           gh workflow run release.yml --repo "$REPO" --ref "v$VERSION"
           echo "Tagged v$VERSION at $COMMIT and dispatched release.yml" >> "$GITHUB_STEP_SUMMARY"
+
+  # The line carried to `main` at its tag. `main` takes changes only through a
+  # pull request, and GitHub's merge binds the head (the tagged commit) but
+  # not the base, so the step that checks `main` and merges runs one at a time
+  # across every line, and the merge it made is checked after: its first
+  # parent must be the `main` checked and its tree the tagged commit's.
+  main:
+    name: carry the line to main
+    needs: tag
+    if: needs.tag.outputs.version != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    concurrency:
+      group: tag-main
+      cancel-in-progress: false
+    env:
+      COMMIT: ${{ inputs.commit || github.sha }}
+      LINE: ${{ inputs.line || github.ref_name }}
+      VERSION: ${{ needs.tag.outputs.version }}
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.commit || github.sha }}
+          fetch-depth: 0
+      - name: Merge the line into main at its tag
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
           if [ -z "$(gh pr list --repo "$REPO" --base main --head "$LINE" --state open --json number --jq '.[].number')" ]; then
             gh pr create --repo "$REPO" --base main --head "$LINE" \
               --title "Land v$VERSION on main" \
@@ -135,18 +171,27 @@ jobs:
           # equal-tree merges) and runs nothing again.
           gh workflow run ci.yml --repo "$REPO" --ref "$LINE"
           # Only a line that contains `main` lands the verified tree unchanged;
-          # then the merge needs no further gate and is made now. Otherwise
-          # `main` has commits the line lacks, and the pull request waits for a
-          # person to reconcile them.
-          git fetch --quiet origin main
-          if git merge-base --is-ancestor FETCH_HEAD HEAD 2>/dev/null \
-            || { git fetch --quiet --unshallow origin 2>/dev/null; git fetch --quiet origin main \
-                 && git merge-base --is-ancestor FETCH_HEAD HEAD; }; then
-            # Bound to the tagged commit: a line that moved past it is not
-            # what this run verified, and the merge is refused.
-            gh pr merge --repo "$REPO" "$LINE" --merge --match-head-commit "$COMMIT" \
-              || echo "::warning::the pull request into main did not merge at $COMMIT; it waits for a person"
-          else
+          # otherwise `main` has commits the line lacks, and the pull request
+          # waits for a person to reconcile them.
+          git fetch --quiet origin "+refs/heads/main:refs/remotes/origin/main"
+          base=$(git rev-parse refs/remotes/origin/main)
+          if ! git merge-base --is-ancestor "$base" "$COMMIT"; then
             echo "::warning::main has commits $LINE lacks; the pull request into main waits for a person"
             echo "\`main\` has commits \`$LINE\` lacks: the pull request into main is left for a person." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           fi
+          # Bound to the tagged commit: a line that moved past it is not what
+          # this run verified, and the merge is refused.
+          if ! gh pr merge --repo "$REPO" "$LINE" --merge --match-head-commit "$COMMIT"; then
+            echo "::warning::the pull request into main did not merge at $COMMIT; it waits for a person"
+            exit 0
+          fi
+          merge=$(gh pr list --repo "$REPO" --base main --head "$LINE" --state merged --limit 1 \
+            --json mergeCommit --jq '.[0].mergeCommit.oid')
+          git fetch --quiet origin "$merge"
+          if [ "$(git rev-parse "$merge^1")" != "$base" ] \
+            || [ "$(git rev-parse "$merge^{tree}")" != "$(git rev-parse "$COMMIT^{tree}")" ]; then
+            echo "::error::main moved during the merge: $merge is not v$VERSION's tree on the main that was checked ($base); revert it by a pull request"
+            exit 1
+          fi
+          echo "Merged \`$LINE\` into \`main\` as \`$merge\`, the tree of \`v$VERSION\`." >> "$GITHUB_STEP_SUMMARY"
