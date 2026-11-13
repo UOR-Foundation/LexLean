@@ -42,6 +42,7 @@ mod rust_succeed;
 mod rust_terms;
 mod rust_validate;
 mod scan;
+mod semantic_read;
 mod structural_grammar;
 mod surface_doc;
 mod surface_generic;
@@ -2574,6 +2575,7 @@ fn case(id: &str) {
         "BS-32" => content_id::case(),
         "BS-33" => project_text::case(),
         "BS-34" => manifest_text::case(),
+        "BS-37" => semantic_read::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

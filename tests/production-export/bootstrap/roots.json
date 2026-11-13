@@ -495,6 +495,30 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "parse_at",
+      "root": "LexLeanBoot.SemanticRead.parseAt",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parse_semantic_module",
+      "root": "LexLeanBoot.SemanticRead.parseSemanticModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "semantic_spans",
+      "root": "LexLeanBoot.SemanticRead.semanticSpans",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

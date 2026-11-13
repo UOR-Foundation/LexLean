@@ -11695,6 +11695,47 @@ produces the three packages and measures the row of `print_tooling_module` in
 `tests/stack-bounds.json` (`PD-08`). The branch is stacked on `BS-24` and lands
 after it.
 
+### the reader of the semantic notation is source (BS-37)
+
+`BS-37` holds the production roots `LexLeanBoot.SemanticRead.parseAt`,
+`parseSemanticModule`, and `semanticSpans` (`bootstrap/src/SemanticRead.lex.tex`)
+to `surface::semantic::parse_at`, `parse_module`, and `declaration_spans`. The
+semantic-module schema is the host's input, as for `BS-36`. The module lexes the
+text with `lexText` of `SurfaceLex` (`BS-22`), so that a lexical error comes
+first as the oracle's `Reader::new` reports it, and reads the tokens with an
+explicit stack of frames under `iterate_until`, at the depths the oracle uses
+(a value at depth 1, each member one deeper, 256 at most); generic values go
+through the value reader of `SurfaceGeneric` (`BS-24`). None of the roots admits
+`recursion`. The case holds the roots to the oracle on hand-built texts that
+reach each of the 46 error messages of the reader, every readable form, and the
+limit on nesting; on the schema's sample of every alternative printed and read
+back; on the committed semantic modules written in the notation, read and
+spanned whole, and each declaration printed and read back; and on seeded edits
+of printed declarations. Each planted defect names the one vector that catches
+it, and the case asserts that the site of each plant occurs once. The row's
+statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `SemanticRead`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, with the axioms Lean's audit reports declared on 52
+definitions.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace`. Its corpus is 341 named vectors, 408 committed modules with 9,042
+declarations (329 declarations and 112 modules under the evaluator, 760 and 309
+under rustc, sampled because each run carries the schema), and 150 and 400
+seeded edits. The evaluator agrees with the oracle on 812 runs of `parseAt`, 116
+of `parseSemanticModule`, and 116 of `semanticSpans`, and each of the 37 planted
+defects is detected by its own vector. The first runs found no fault of the
+module and three of the case: two schema samples shared a label, no vector
+reached `expected a name after `::``, and the evaluator's helper threads (one per
+processor) each holding a reader's run took the case past the host's memory, so
+it runs on four processors. The rustc differential of that run was ended when the
+host's out-of-memory killer stopped a harness build for another job; it reruns
+with the regeneration. The case then stops at the stack-bound step, as each
+bootstrap member did before its regeneration. The branch is based on
+`release/v0.4` and stacks on nothing.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
