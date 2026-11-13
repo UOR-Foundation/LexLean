@@ -17,6 +17,14 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The tables and predicates of the lexicon entry schema as language-1.2 source,
+  the first slice of the lexicon closure (SPEC.md §17.23, §13.1 to §13.6, `BS-50`,
+  #269; no new diagnostic code, no change to the language-1.2 identity).
+  `tokenIndex`, `shapeFacts`, `surfaceSafety`, `isLeanName`, `tomlCommentAt`,
+  and `entryPath` of `LexiconSchema` return what the schema's token tables,
+  `frame_permitted` with the category and frame facts, `surface_safety`,
+  `is_lean_name`, `toml_comment_at`, and `entry_path` return; `surfaceSafety`
+  reads the atoms of `scanSource`. None admits `recursion`.
 - `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
   command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
   new language-1.2 module `RuntimeHost`, that calls the step and carries out each
