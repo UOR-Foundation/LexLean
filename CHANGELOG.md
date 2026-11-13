@@ -58,6 +58,12 @@ workspace carried at those versions without a tag.
   A landing that moves the language-1.2 ID now also updates the constant;
   `RP-10` names the new value when it is stale.
 
+- The document IR, the linked project, and the semantic ID as language-1.2 source, third
+  slice of the typed IR (SPEC.md §17.23, §17.5, §17.9, §21.4, `BS-67`, #269; no new
+  diagnostic code, no change to the language-1.2 identity). `moduleText`,
+  `linkedText`, and `projectSemanticId` of `IrDocument` return what
+  `DocumentModule::to_json`, `LinkedProject::to_json`, and the linker's semantic ID
+  return, and admit `recursion`. The register is 499 IDs.
 - The proof and declaration IR in their canonical JSON, and the axiom policy check, as
   language-1.2 source, second slice of the typed IR (SPEC.md §17.23, §17.4, §17.5,
   §15.9, `BS-66`, #269; no new diagnostic code, no change to the language-1.2

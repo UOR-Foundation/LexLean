@@ -283,6 +283,9 @@
     ],
     "bootstrap-ir-proof": [
       "BS-66"
+    ],
+    "bootstrap-ir-document": [
+      "BS-67"
     ]
   },
   "targets": {
