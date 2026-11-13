@@ -596,8 +596,8 @@ fn types_leg(legs: &Legs) -> &Run {
 /// of them and of the committed programs, as the statement of the register row
 /// and SPEC.md §17.23 count them.
 const RULE_PROGRAMS: usize = 22;
-const VECTORS: usize = 351;
-const VECTORS_WITHIN: usize = 292;
+const VECTORS: usize = 381;
+const VECTORS_WITHIN: usize = 296;
 const LITERALS: usize = 200;
 const PRIM_ROUNDS: usize = 3;
 /// The programs the evaluator is given in full: those of at most this many nodes.
@@ -912,11 +912,18 @@ pub(super) fn case() {
         .iter()
         .filter(|vector| vector.nodes <= EVALUATOR_NODES)
         .collect();
-    assert_eq!(
-        (rules.len(), all.len(), evaluator.len()),
-        (RULE_PROGRAMS, VECTORS, VECTORS_WITHIN),
-        "the programs of the rules, the vectors, and those the evaluator is given"
+    crate::counts!(
+        "BS-07",
+        "the programs of the rules, the vectors, and those the evaluator is given",
+        {
+            RULE_PROGRAMS: rules.len(),
+            VECTORS: all.len(),
+            VECTORS_WITHIN: evaluator.len(),
+        }
     );
+    if crate::counts::stop_before_runs("BS-07") {
+        return;
+    }
     eprintln!(
         "BS-07: {} vectors ({} within {EVALUATOR_NODES} nodes) ({:?})",
         all.len(),

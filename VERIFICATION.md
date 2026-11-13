@@ -940,6 +940,34 @@ Planted: `mentions_family_group` ignored the arguments again (the comparison
 test ir::semantic::family_order_tests::a_group_instantiated_at_its_own_type_has_two_motives ... FAILED
 ```
 
+### a declaration ID can miss a reference or keep a proof (SM-38)
+
+`SM-38` holds the declaration and statement IDs of §21.9. `conformance_sm_38`
+builds a language-1.2 project whose `twice` references `base`, whose theorem
+`twice_one` states a fact about `twice`, whose `spare` nothing references, and
+whose `Tree` and `Forest` are one mutual group. It recomputes the IDs of `spare`
+and `twice` by hand from the framed inputs, validates the published file
+against its schema and its manifest row, and builds four edits: one literal of
+`base`, which changes exactly `base`, `twice`, and `twice_one`; the theorem's
+proof alone, which changes its declaration ID and keeps its statement ID; a
+field of `Tree`, which changes exactly the group; and an added declaration with
+`spare` moved first, which changes no ID. A language-1.0 build publishes no
+declarations file.
+
+Two planted defects were run and each was refused by the named assertion: a
+group digest that omits the framed references (refused at "a declaration's ID
+covers the IDs of its references"), and a statement ID that keeps the proof
+(refused at "a change of proof keeps the statement ID").
+
+A review found that a generated member, such as the constructor `Shape.empty`,
+names no top-level declaration, so a theorem that mentions only the
+constructor lost its dependency on `Shape`. A generated member `Owner.member`
+is now a reference to its owner. The case adds `Shape` and a theorem
+`shape_refl` over `Shape.empty`; a new constructor of `Shape` changes exactly
+`Shape` and `shape_refl`, statement ID included. The previous exact-name
+resolution, planted back, is refused at "a constructor reference is a
+reference to its type".
+
 ### a nested induction can be refused or mis-ordered (SM-37)
 
 A theorem over a nested inductive type is proved by `nested_induction`
@@ -1677,6 +1705,40 @@ past its literal. `conformance_pf_22` refuses a doubled fold equated to a sum
 and a count, the reverse's sum equated to a count, and a map's entries summed
 as its keys twice. `conformance_pf_23` refuses the pair law applied to a
 swapped statement. Each assertion names exactly the refused theorems.
+
+### decision regions can fail
+
+The decision-regions module and the `region_check` form (PrismPM#605,
+`PF-24`). Each defect was planted in the working tree, the case named was run
+with `cargo test -p repo-conformance --test conformance -- <case>` (Windows
+x86-64, GNU toolchain 1.97.1, pinned Lean 4.32.1 under `ELAN_HOME`, so the
+Lean-backed branch ran), and the plant was reverted. The case passes on the
+reverted tree.
+
+Planted (a): the lowering reads `c < x` with the code of `x < c` (the `Blt`
+arm's codes `(0, 2)` made `(0, 0)`). `conformance_pf_24` refuses the rendered
+proof of `noHeatWhenEmpty`. The same compiler run by `lexlean verify` on a copy
+of `examples/decision-regions` shows that the lowering is not trusted: the
+lowered `breaks` is no longer the module's, and Lean refuses.
+
+```text
+error[LLV7002]: Lean rejected `DecisionRegions.Main` (error): Type mismatch
+  --> src/Main.lex.tex:57:1
+error[LLV7002]: Lean rejected `DecisionRegions.Main` (error): Type mismatch
+  --> src/Main.lex.tex:72:1
+error[LLV7002]: Lean rejected `DecisionRegions.Main` (error): Type mismatch
+  --> src/Main.lex.tex:87:1
+error[LLV7002]: Lean rejected `DecisionRegions.Main` (error): Tactic `decide` proved that the proposition
+```
+
+Planted (b): the check that a rule uses no `!=` removed. `conformance_pf_24`:
+the copy whose `drying` rule tests `humidity != 70` links.
+
+```text
+thread 'conformance_pf_24' panicked at crates\conformance\src\support.rs:874:14:
+check fails
+test result: FAILED. 0 passed; 1 failed; 0 ignored; 0 measured; 482 filtered out
+```
 
 ### a derived row is made by the pinned Lean and never stored (SM-34)
 
@@ -11085,10 +11147,11 @@ PrimitiveScan are linked modules of the project`, on `6283ac8f3`.
 The largest certificate part is 2,879,430 bytes, 91.5% of the row's 3,145,728,
 measured by `lexlean production build` on a copy of the project whose entrypoints
 are `PrimitiveScan` and `StructuralGrammar`, and `lexlean verify` passes on that
-copy, so the declared axioms are exact. The case's own leg cannot run until the
-landing regeneration produces the `bootstrap/parse_module` package:
-`conformance_bs_21` stops at the stack-bound step with `bootstrap/parse_module is
-no package of the committed exports`, after every differential above has agreed.
+copy, so the declared axioms are exact. Before the landing regeneration produced
+the `bootstrap/parse_module` package, `conformance_bs_21` stopped at the
+stack-bound step with `bootstrap/parse_module is no package of the committed
+exports`, after every differential above had agreed; on the regenerated tree it
+passed whole with the stack measured (3,006 s).
 
 `SL-11` holds `LexLeanStd.Json` (#276, member 3) to the compiler's own writer,
 `canonical_json::Json::to_canonical_string` and `to_file_bytes`: the three
@@ -11124,6 +11187,583 @@ check of `stack_bounds::observe` and the Lean export bypassed on this host
 writes them); `cargo clippy -p repo-conformance -p xtask --all-targets
 --all-features -D warnings`, `validate-model` (461 ids), `validate-spec-links`
 (461 rows), `check-test-inventory`, and the five `bdd` meta-gate tests pass.
+
+### the LSE reader and printer are source (BS-25)
+
+`BS-25` holds the two production roots of `LexLeanBoot.LexiconLse`
+(`bootstrap/src/LexiconLse.lex.tex`), `parseLse` and `printLse`, to
+`lexicon::lse::parse` and `Lse::print`. It is the first slice of the lexicon
+(§13) as source, and imports the standard library's `Numeral`, `Order`, and
+`Text` and nothing of the bootstrap project. `parseLse` reads a text in the
+oracle's three phases, each an iteration over an explicit state (the tokenizer,
+the reader with its stack of open lists bounded by the depth argument, and the
+conversion with its work stack, which visits a form's parts in the oracle's
+order and builds the form when they are on the value stack), so that it admits
+no `recursion` and states the oracle's first error with its message to the byte,
+the depth error apart from the syntax errors as `ParseError` keeps them.
+`printLse` writes the canonical text by structural recursion over the
+expression, its chains, and its universes, with the binders renamed in printing
+order when asked, and admits `recursion`. The case has the shape of its
+predecessors: hand-built texts that reach each error of the reader and the limit
+on nesting, hand-built expressions of every form printed as read and renamed,
+every `signature` and `value` of the committed lexicon entries read, printed
+both ways, and read back, and seeded expressions and seeded edits. Each planted
+defect names the one vector that catches it, and the case asserts that the site
+of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `LexiconLse`: `lexlean check`, `lexlean build`, and `lexlean
+verify` pass, and the eligibility report gives `parseLse` exactly `allocation`
+and `overflow` and `printLse` exactly `allocation`, `overflow`, and `recursion`.
+On the project the lock is current and every module checks. The register agrees
+with the §31 table on 479 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `release/v0.4` at
+`4dc5b803c` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_25`). Its corpus is 139 named vectors (105 read, 34 printed),
+the 417 committed expressions (834 reads, of the text and of its canonical
+form, and 834 prints, as read and renamed), and 300 seeded expressions under
+the evaluator (300 prints, 600 reads) and 1,500 under rustc. The evaluator
+agrees with the oracle on 1,539 reads and 1,168 prints, and each of the 30
+planted defects is detected by its own vector. The reader agreed on every run
+of its first run. The printer did not: it closed a constant's universe list and
+not the constant, so `(const pkg::entry (u))` lost its last parenthesis; the
+vector `a const with universes printed` caught it. Before the case, `lexlean
+verify` rejected certificate B of `parseLse`: the scanner of a package or entry
+ID kept its state as nested pairs and tested a component as a condition, which
+the correspondence certificate of the Rust lowering does not type; the state is
+now a structure, as the other scanners of the project keep theirs. The linker
+refused three binders spelled like Lean's `id`, like the declaration
+`modeText`, and like Lean's `syntax`, and Lean's audit corrected the axiom
+policy of 24 definitions. The case then stops at the stack-bound step,
+`bootstrap/parse_lse is no package of the committed exports`, as `BS-21` to
+`BS-24` did before their regeneration, which produces the `bootstrap/parse_lse`
+and `bootstrap/print_lse` packages and measures the row of `print_lse` in
+`tests/stack-bounds.json` (`PD-08`). The branch is based on `release/v0.4`
+after `SL-13` and stacks on nothing.
+
+### the LRE reader and the facts of a render are source (BS-26)
+
+`BS-26` holds the two production roots of `LexLeanBoot.LexiconLre`
+(`bootstrap/src/LexiconLre.lex.tex`), `parseLre` and `renderFacts`, to
+`lexicon::lre::parse` and the walkers of `Render` (`slots`, `tokens`,
+`form_refs`, `self_form_refs`, `operator_names`, `math_only_construct`, and
+`script_operand_error`). It is the second slice of the lexicon as source and
+imports `LexiconLse` (`BS-25`), whose tokenizer and tree reader it reads with,
+and the standard library's `Order`. `parseLre` converts the tree with a work
+stack that visits the operands of a form in the oracle's order and builds the
+form when they are on the value stack; `renderFacts` walks the render once,
+pre-order over an explicit stack the host bounds by the number of nodes, and
+collects every fact the entry validator reads in one pass. Neither root admits
+`recursion`. The case has the shape of its predecessors: hand-built texts that
+reach each error of the reader and the limit on nesting, hand-built renders of
+every shape and every script-operand problem, every `math` render of the
+committed lexicon entries read and walked, and seeded renders and seeded edits.
+Each planted defect names the one vector that catches it, and the case asserts
+that the site of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+entrypoints are `LexiconLse` and `LexiconLre`: `lexlean check`, `lexlean
+build`, and `lexlean verify` pass, and the eligibility report gives each root
+exactly `allocation` and `overflow`. The register agrees with the §31 table on
+480 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `BS-25` over
+`release/v0.4` at `4dc5b803c` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_26`). Its corpus is 88 named vectors (69 read,
+19 walked), the 216 committed renders (216 reads and 216 walks), and 300
+seeded renders under the evaluator (300 walks, 600 reads) and 1,500 under
+rustc. The evaluator agrees with the oracle on 885 reads and 535 walks, the
+rendered packages under the pinned rustc on 5,020 runs, and each of the 20
+planted defects is detected by its own vector. The first run found one plant
+its vector did not reach, and no fault of the module: `the second operand is
+checked first` was tried on a render whose two problems sit in different
+operators, so the order within one operator never decided it (now `a sub whose
+operands fail differently`, a `sub` whose base renders nothing and whose script
+is a bare script). Lean's audit corrected the axiom policy of 12 definitions.
+The case then stops at the stack-bound step, `bootstrap/parse_lre is no package
+of the committed exports`, as `BS-21` to `BS-25` did before their regeneration,
+which produces the `bootstrap/parse_lre` and `bootstrap/render_facts` packages.
+The branch is stacked on `BS-25` and lands after it.
+
+### where the module of a source is, as source (BS-28)
+
+`BS-28` holds the production root `LexLeanBoot.SurfaceModule.locateModule`
+(`bootstrap/src/SurfaceModule.lex.tex`) to `surface::module::locate`: the kind
+of a source's module, the byte range of its body, and the byte range of its data
+when it is written in the data form. The module imports `AxiomOutput`, whose
+scanners of white space (`skipWhite`, `dropWhiteEnd`, and `lastStep`) trim and
+search as Rust's `char::is_whitespace` and `rfind` do, and the standard
+library's `Text`; it admits no `recursion`. The case holds the root to the
+oracle on hand-built texts that reach no module, a module of each kind in each
+form, the order of the search, a kind whose closing marker is missing or found
+only before its opening, and every shape of the data form with white space of
+one, two, and three bytes; on every committed `.lex.tex` source; and on seeded
+texts and seeded edits of the sources. Each planted defect names the one vector
+that catches it, and the case asserts that the site of each plant occurs once.
+The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `SurfaceModule`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and the eligibility report gives the root exactly
+`allocation` and `overflow`. The register agrees with the §31 table on 479 IDs,
+by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `release/v0.4` at
+`4318b17b8` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_28`, 223 s). Its corpus is 38 named vectors, the 1,045 committed
+sources (342 of at most 4,000 bytes under the evaluator, 895 of at most 200,000
+bytes under rustc), and 300 and 1,500 seeded texts. The evaluator agrees with the
+oracle on 680 runs and the rendered package under the pinned rustc on 2,433, and
+each of the 14 planted defects is detected by its own vector. The first run found
+no fault of the module and one plant its vector did not reach: `an end before the
+begin is taken` was tried on a text whose last closing marker follows the
+opening, so the test of the order never decided it (now `the end before the
+begin`). The case then stops at the stack-bound step, `bootstrap/locate_module
+is no package of the committed exports`, as each bootstrap member did before its
+regeneration, which produces the `bootstrap/locate_module` package. The branch is
+based on `release/v0.4` and stacks on nothing.
+
+### the canonical diagnostic is source (BS-29)
+
+`BS-29` holds the three production roots of `LexLeanBoot.Diagnostics`
+(`bootstrap/src/Diagnostics.lex.tex`) to the oracle of the driver's diagnostics:
+`diagnosticText` to `Diagnostic::to_json` written as `to_canonical_string`
+writes it, `sortDiagnostics` to `diagnostic::sort_canonical`, and
+`reportDiagnostics` to `LexLeanError::from_diagnostics` followed by `bounded`,
+which gives the exit code of the failure and the diagnostics it reports under
+`limits.max_diagnostics`. It is the first slice of the driver (#274) as source
+and imports only the standard library's `Json`, `Numeral`, `Order`, and `Text`.
+`diagnosticText` writes the members of the object in the order of their keys;
+`sortDiagnostics` sorts by a byte key whose order is the order of the oracle's
+tuple (the path with each nul byte doubled and ended by two nul bytes, the byte
+start in eight bytes big-endian, the seven bytes of the code, the message) with
+the stable `sortByKey`; `reportDiagnostics` takes the most severe class of the
+codes and, past the cap, keeps the first diagnostics and appends `LLS8002`. None
+of the three admits `recursion`. The case holds the roots to the oracle on
+hand-built diagnostics that reach every class of failure, both sides of the cap,
+equal keys, and paths that are prefixes of each other or hold a nul byte; on the
+306 committed expected diagnostics of the 303 negative fixtures, each first
+checked to be what the oracle writes, written one by one, each fixture's set
+sorted and reported under four caps, and all of them sorted together; and on
+seeded sets. Each planted defect names the one vector that catches it, and the
+case asserts that the site of each plant occurs once. The row's statement
+carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `Diagnostics`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and the eligibility report gives each root exactly
+`allocation` and `overflow`. The register agrees with the §31 table on 479 IDs,
+by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `release/v0.4` at
+`4318b17b8` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_29`, 209 s). Its corpus is 29 named vectors (11 written, 9
+sorted, 9 reported), the 306 committed diagnostics, and 200 and 1,000 seeded
+sets. The evaluator agrees with the oracle on 472 texts, 513 sorts, and 1,422
+reports, the rendered packages under the pinned rustc on 4,641 runs, and each of
+the 23 planted defects is detected by its own vector. The first run found one
+fault of the module: the keyed list was built in reverse before the stable
+sort, so diagnostics with equal keys came out in the reverse of their order (the
+vector `equal keys keep their order` and four sets of the committed corpus); the
+list is now in the input order, and the plant `equal keys are reversed` holds
+it. Lean's audit corrected the axiom policy of 17 definitions. The case then
+stops at the stack-bound step, `bootstrap/diagnostic_text is no package of the
+committed exports`, as each bootstrap member did before its regeneration, which
+produces the three packages. The branch is based on `release/v0.4` and stacks on
+nothing.
+
+### the terminal output of diagnostics and the argument pre-scans are source (BS-30)
+
+`BS-30` holds the three production roots of `LexLeanBoot.CliOutput`
+(`bootstrap/src/CliOutput.lex.tex`) to the code of `cli.rs`:
+`humanDiagnostics` to `cli::human_diagnostics_text`, the text the command line
+writes to stderr for a failure in the human mode, with the four SGR sequences of
+the palette or none; `wantsJson` to `cli::wants_json`, the scan for
+`--diagnostic-format json` in either spelling before the arguments are parsed;
+and `namedCommand` to `cli::named_command`, the first argument after the program
+that names one of the ten commands. The module reads the diagnostic of `BS-29`
+and each root admits exactly `allocation`. The oracle is `cli.rs`'s own code:
+`print_human_diagnostics` behind the doc-hidden public `human_diagnostics_text`,
+and `wants_json` and `named_command` made public and doc-hidden; `cli.rs` is
+outside the compiler-semantics identity, so no identity moves. The case holds
+the roots to the oracle on hand-built diagnostics with every part in both modes
+of color, a span over two lines, and two diagnostics in their order; on argument
+lists that reach both outcomes of the scan, the program named like the flag and
+like a command, and the last command of the table; on the 303 negative fixtures'
+committed diagnostics, in both modes, and their commands' arguments; and on
+seeded diagnostics and arguments. Each planted defect names the one vector that
+catches it, and the case asserts that the site of each plant occurs once. The
+row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `CliOutput`: `lexlean check`, `lexlean build`, and `lexlean
+verify` pass, and the eligibility report gives each root exactly `allocation`.
+The register agrees with the §31 table on 480 IDs, by the same parse
+`validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `BS-29` over
+`release/v0.4` at `4318b17b8` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_30`, 105 s). Its corpus is 32 named vectors (11
+human, 12 scanned, 9 named), the 303 fixtures, and 200 and 1,000 seeded runs of
+each root. The evaluator agrees with the oracle on 817 human texts, 515 scans,
+and 512 named commands, the rendered packages under the pinned rustc on 4,244
+runs, and each of the 15 planted defects is detected by its own vector. The
+first runs found no fault of the module: the roots were first declared with
+`overflow`, which the eligibility report showed none of them realizes (now
+`allocation` alone); the plant of the end line was tried on spans whose lines
+agree (now `a span over two lines`); and two plants were rewritten so that the
+planted source parses and stays within the root's effects. The case then stops at
+the stack-bound step, `bootstrap/human_diagnostics is no package of the
+committed exports`, as each bootstrap member did before its regeneration, which
+produces the three packages. The branch is stacked on `BS-29` and lands after it.
+
+### the canonical text of the lock file is source (BS-31)
+
+`BS-31` holds the two production roots of `LexLeanBoot.LockText`
+(`bootstrap/src/LockText.lex.tex`) to the lock writer: `tomlString` to
+`config::toml_string`, the TOML basic string of a text with the quote, the
+backslash, each control below 0x20, and 0x7F escaped, the controls as `\u` and
+four upper-case hex digits; and `canonicalLock` to `lock::Lock::canonical_bytes`,
+the five header keys with the lock spec of the language and the pinned Lean
+toolchain, then the workspace pins sorted by path, the packages sorted by
+identifier and version, the source packages sorted by identifier, and the PDF
+record with its resources sorted by path, each digest in lower-case hex. The rows
+are sorted with the stable merge sort of the standard library's `Order`; a
+package's key is its identifier and version, each with its NUL bytes escaped and
+a two-byte end, so that the byte order of the key is the order of the pair. Each
+root admits exactly `allocation` and `overflow`, and neither admits
+`recursion`. The oracle is the existing public code of `lock.rs` and
+`config.rs`; no Rust outside the case changes. The case holds the roots to the
+oracle on hand-built locks that reach every table, both lock specs, a path and
+an identifier that are prefixes of others, two versions of one package, an
+identifier with a NUL, and escapes in every table; on texts that reach every
+class of escape and two- and four-byte UTF-8; on every committed `lexlean.lock`
+that parses and every text in them; and on seeded locks and texts. Each planted
+defect names the one vector that catches it, and the case asserts that the site
+of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `LockText`: `lexlean check`, `lexlean build`, and `lexlean
+verify` pass, and the eligibility report gives each root exactly `allocation`
+and `overflow`. The register agrees with the §31 table on 479 IDs, by the same
+parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host over
+`release/v0.4` at `4318b17b8` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_31`, 187 s). Its corpus is 28 named vectors (14
+texts, 14 locks), the 328 of the 330 committed locks that parse, each of which
+is already its own canonical text, the 93 texts in them, and 200 and 1,000
+seeded runs of each root. The evaluator agrees with the oracle on 307 texts and
+542 locks, the rendered packages under the pinned rustc on 2,449 runs, and each
+of the 18 planted defects is detected by its own vector. The first runs found no
+fault of the writer: Lean asked for exactly the axioms the module now declares,
+and the case first listed the roots out of their source order. The case then
+stops at the stack-bound step, `bootstrap/toml_string is no package of the
+committed exports`, as each bootstrap member did before its regeneration, which
+produces the two packages.
+
+### the hash recipes of content identity are source (BS-32)
+
+`BS-32` holds the six production roots of `LexLeanBoot.ContentId`
+(`bootstrap/src/ContentId.lex.tex`) to the recipes of `artifact::content_id`:
+`treeDigest` to `tree_digest`, `sourceId` to `source_id`, `semanticId` to
+`semantic_id_for`, `buildId` to `build_id`, `attestationId` to
+`attestation_id`, and `pdfRecipeId` to `pdf_recipe_id`. Each root writes its
+recipe's domain, a NUL, and its frames, each frame the big-endian four-byte
+length of its label, the label, the big-endian eight-byte length of its payload,
+and the payload, and returns the 32 bytes of the message's SHA-256 under the
+standard library's `Sha256`. The semantic ID frames the pinned Lean toolchain.
+Each root admits exactly `allocation` and `overflow`, and none admits
+`recursion`. The oracle is the existing public code of `content_id.rs`; no Rust
+outside the case changes. The case holds the roots to the oracle on hand-built
+inputs that reach every frame of every recipe, an empty tree, an empty path, a
+path of 300 bytes, and a message across blocks; on the trees and source inputs of
+the committed projects, the manifest, the lock, and the sources under `src/`, up
+to 4,096 bytes under the evaluator and 65,536 under rustc; on the source and
+semantic IDs of every committed build manifest, whose recorded build ID the case
+asserts the oracle reproduces; and on seeded inputs. Each planted defect names
+the one vector that catches it, and the case asserts that the site of each plant
+occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `ContentId`: `lexlean check`, `lexlean build`, and `lexlean
+verify` pass, and the eligibility report gives each root exactly `allocation`
+and `overflow`. The register agrees with the §31 table on 479 IDs, by the same
+parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host over
+`release/v0.4` at `cf76090d4` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_32`, 225 s). Its corpus is 17 named vectors, the
+362 committed projects (180 trees under the evaluator, 345 under rustc), the 26
+committed build manifests, each of whose build ID the oracle reproduces, and 100
+and 500 seeded runs of each root. The evaluator agrees with the oracle on 287
+trees, 283 source IDs, 102 semantic IDs, 128 build IDs, 102 attestation IDs, and
+101 PDF recipe IDs, the rendered packages under the pinned rustc on 3,733 runs,
+and each of the 15 planted defects is detected by its own vector. The first runs
+found no fault of the recipes: Lean asked for exactly the axioms the module now
+declares. The case then stops at the stack-bound step, `bootstrap/tree_digest is
+no package of the committed exports`, as each bootstrap member did before its
+regeneration, which produces the six packages.
+
+### the canonical project manifest and its digest are source (BS-33)
+
+`BS-33` holds the two production roots of `LexLeanBoot.ProjectText`
+(`bootstrap/src/ProjectText.lex.tex`) to `config::ProjectConfig`:
+`canonicalProject` to `canonical_toml`, the ten header keys in their fixed order
+with the pinned Lean toolchain, the lexicon sources sorted by package with the
+stable merge sort of the standard library's `Order` (or `lexicon_source = []`
+when there is none), the artifact sources and the source packages in their
+order, the eleven limits, and the PDF provider; and `configSha256` to the
+lower-case hex of `config_sha256`, the SHA-256 of that text under the standard
+library's `Sha256`. The module writes through the TOML writers of `BS-31`'s
+`LockText`. Each root admits exactly `allocation` and `overflow`, and neither
+admits `recursion`. The oracle is the existing public code of `config.rs`; no
+Rust outside the case changes. The case holds the roots to the oracle on
+hand-built configurations that reach every kind of lexicon source, the empty
+source list, two sources of one package, every optional table, escapes in the
+name, and the largest limit; on every committed `lexlean.toml` that parses; and
+on seeded configurations. Each planted defect names the one vector that catches
+it, and the case asserts that the site of each plant occurs once. The row's
+statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `ProjectText`: `lexlean check`, `lexlean build`, and `lexlean
+verify` pass, and the eligibility report gives each root exactly `allocation`
+and `overflow`. The register agrees with the §31 table on 480 IDs, by the same
+parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `BS-31` over
+`release/v0.4` at `cf76090d4` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_33`, 224 s). Its corpus is 12 named vectors (10
+texts, 2 digests), the 351 of the 362 committed manifests that parse, each of
+which is already its own canonical text, and 200 and 1,000 seeded runs of each
+root. The evaluator agrees with the oracle on 561 texts and 553 digests, the
+rendered packages under the pinned rustc on 2,714 runs, and each of the 12
+planted defects is detected by its own vector. The first runs found no fault of
+the writer: Lean asked for exactly the axioms the module now declares. The case
+then stops at the stack-bound step, `bootstrap/canonical_project is no package
+of the committed exports`, as each bootstrap member did before its
+regeneration, which produces the two packages. The branch is stacked on `BS-31`
+and lands after it.
+
+### the build manifest is source (BS-34)
+
+`BS-34` holds the production root `buildManifest` of `LexLeanBoot.ManifestText`
+(`bootstrap/src/ManifestText.lex.tex`) to the file bytes of
+`artifact::manifest::BuildManifest::to_json`: the specification, the compiler
+version and semantics ID, the language, the project, the source, semantic, and
+build IDs, the pinned Lean toolchain, the selection and the module rows in their
+order, a module's origin only when it has one, and the input and output rows
+sorted by kind, path, length, and digest. The root builds the manifest's JSON
+value and writes it with the standard library's `writeJsonFile`, which orders
+the keys; the rows are sorted with the stable merge sort of `Order` by a key of
+the kind and the path, each with its NUL bytes escaped and a two-byte end, the
+big-endian length, and the digest. The root admits exactly `allocation`,
+`overflow`, and `recursion`, the last through the JSON writer. The oracle is the
+existing public code of `manifest.rs`; no Rust outside the case changes. The
+case holds the root to the oracle on hand-built manifests that reach every key
+of the row order, lengths across a byte, a kind that is a prefix of another, a
+module's origin, and escapes; on every committed `expected/build/manifest.json`,
+each of which the case asserts is the oracle's text of its own fields; and on
+seeded manifests. Each planted defect names the one vector that catches it, and
+the case asserts that the site of each plant occurs once. The row's statement
+carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `ManifestText`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and the eligibility report gives the root exactly
+`allocation`, `overflow`, and `recursion`. The register agrees with the §31
+table on 480 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host over
+`release/v0.4` at `c66f83d05` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_34`, 102 s). Its corpus is 10 named vectors, the
+26 committed build manifests, and 200 and 1,000 seeded runs. The evaluator
+agrees with the oracle on 236 manifests, the rendered package under the pinned
+rustc on 1,036 runs, and each of the 10 planted defects is detected by its own
+vector. The first runs found no fault of the writer: Lean asked for exactly the
+axioms the module now declares. The case then stops at the stack-bound step,
+`bootstrap/build_manifest is no package of the committed exports`, as each
+bootstrap member did before its regeneration, which produces the package and
+measures the root's stack bound.
+
+### the lexer of the authoring notation is source (BS-22)
+
+`BS-22` holds the two production roots of `LexLeanBoot.SurfaceLex`
+(`bootstrap/src/SurfaceLex.lex.tex`), `lexText` and `quoteText`, to
+`surface::lex::lex` and `surface::lex::quote`, on the tokens with their byte
+ranges and on the offset and message of the first lexical error. Neither root
+admits `recursion`: a scan is a loop under `iterate_until`, and a string is a
+loop over its pieces, joined once by `Buffer.joinAll` so that reading one costs
+its length. `AxiomOutput.whiteLength` is the list of white space, which `BS-01`
+holds to `char::is_whitespace`.
+
+The case has the shape of `BS-21`: hand-built vectors that reach each of the
+five lexical errors, windows of the committed sources, and seeded edits, under
+the evaluator on the normative host and under the pinned rustc on every host;
+each planted defect names the one vector that catches it, and the case asserts
+that the site of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceLex`: `lexlean check` and `lexlean build` pass,
+and the eligibility report gives both roots `rust-std` with exactly
+`allocation` and `overflow`. On the project: the lock is current, all 18 modules
+are canonical, and 22 modules check. The register agrees with the §31 table on
+470 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on this member merged
+with `BS-21` and `SL-13` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_22`, 293 s). Its corpus is 234 named vectors (183 lexed, 123 of
+them accepted, and 51 quoted), 1,045 committed sources, and 600 and 2,400 seeded
+runs. The evaluator agrees with the oracle on 1,828 `lexText` and 1,362
+`quoteText` runs, the rendered packages under the pinned rustc (41 harness
+binaries) on 5,738 runs, and each of the 46 planted defects is detected by its
+own vector. The first run found one plant its vector missed, `the space is a
+control character`: a run of plain bytes is read by `rawStep`, which has its own
+bound, so the check the plant changes in `scanStep` meets a space only where a
+piece of the string starts, and `"a b"` never reaches it. Its vector is now
+`a string that starts with a space`, `" a"`, and the lexer is unchanged. The
+case then stopped at the stack-bound step, `bootstrap/lex_text is no package of
+the committed exports`, as `BS-21` did before its regeneration. The landing
+regeneration produced the `bootstrap/lex_text` and `bootstrap/quote_text`
+packages, and on that tree the case passed whole with the stack measured
+(1,847 s).
+
+### the layout algebra of the notation is source (BS-23)
+
+`BS-23` holds the production root `LexLeanBoot.SurfaceDoc.renderDoc`
+(`bootstrap/src/SurfaceDoc.lex.tex`) to `surface::doc::render`: the layout of a
+document of text, concatenation, indentation, lines, soft breaks, and groups at a
+width. The root admits no `recursion`. A concatenation is a chain of `DSeq`
+cells, so that the two stacks of the oracle (the stack of items and the work
+stack of the width test) are lists popped a node at a time, and the host passes
+the number of nodes, which bounds each loop. The case has the shape of `BS-21`
+and `BS-22`: hand-built documents that reach each node, each branch of the width
+test (the text of a scalar beyond ASCII at the exact width, a flat line, a soft
+break, the rest of the stack, a break line that ends the scan, a column past the
+width) and indents of 255 to 700; the documents the printer builds from the
+committed JSON files, at three widths; and seeded documents. Each planted defect
+names the one vector that catches it, and the case asserts that the site of each
+plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceDoc`: `lexlean check` and `lexlean build` pass,
+and the eligibility report gives the root `rust-std` with exactly `allocation`
+and `overflow`. The register agrees with the §31 table on 471 IDs, by the same
+parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on this member merged
+with `BS-22`, `BS-21` and `SL-13` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_23`, 705 s). Its corpus is 65 named vectors, 3,907
+JSON documents (1,242 and 3,990 runs), and 500 and 2,500 seeded runs. The
+evaluator agrees with the oracle on 1,807 runs and the rendered package under the
+pinned rustc (83 harness binaries) on 6,555, and each of the 21 planted defects is
+detected by its own vector. The first run found three plants their vectors did
+not reach, each a vector's fault and none the layout's: `the delete is no
+scalar` was tried at the group's exact width, where one column less still fits
+(now `a group of the delete one column short`, width 2); `a group is tried at no
+column past the width` was tried on a group with visible content, which fails
+to fit past the width either way, so only a group of one soft break tells the
+two apart (now `an empty group past the width`); and `the layout stops one node
+early` was tried on a concatenation, whose parts the node budget counts twice,
+so it had steps to spare (now `a text beyond the width`, one node and one step).
+The case then stopped at the stack-bound step, `bootstrap/render_doc is no
+package of the committed exports`, as `BS-21` and `BS-22` did before their
+regeneration. The landing regeneration produced the `bootstrap/render_doc`
+package, and on that tree the case passed whole with the stack measured
+(2,378 s).
+
+### the generic notation is source and agrees with the oracle (BS-24)
+
+`BS-24` holds the two production roots of `LexLeanBoot.SurfaceGeneric`
+(`bootstrap/src/SurfaceGeneric.lex.tex`), `parseGeneric` and `printGeneric`, to
+`surface::generic::parse` and `surface::generic::print`, over the standard
+library's `Json` (`SL-11`, `SL-13`). It composes the lexer of `BS-22` and the
+layout algebra of `BS-23`. `parseGeneric` reads the tokens with an explicit stack
+of frames and admits no `recursion`; `printGeneric` walks the value by structural
+recursion over the three cases of `Json` and admits `recursion`. The case has the
+shape of its predecessors: hand-built texts that reach each error of the reader
+and the limit on nesting at 256 and 257, hand-built values of every kind and
+every key the printer orders, the committed JSON files printed and their printed
+texts read back, and seeded values and seeded edits. Each planted defect names the
+one vector that catches it, and the case asserts that the site of each plant
+occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of the `BS-21` tree, on a copy of the project
+whose only entrypoint is `SurfaceGeneric`: `lexlean check` and `lexlean build`
+pass, and the eligibility report gives `parseGeneric` exactly `allocation` and
+`overflow` and `printGeneric` exactly `allocation`, `overflow`, and `recursion`.
+On the project the lock is current and every module checks. The register agrees
+with the §31 table on 476 IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on this member merged
+with `BS-23`, `BS-22`, `BS-21` and `SL-13` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_24`, 259 s). Its corpus is 163 named vectors (118
+read, 45 printed), the 3,906 committed JSON files, and 162 and 1,301 printed
+texts for the evaluator and rustc. The evaluator agrees with the oracle on 1,080
+reads and 607 prints, and each of the 32 planted defects is detected by its own
+vector. The first run found two faults. The printer's rank table spelt the key
+`axioms` as `axoims`, so a seeded object printed `axioms` after an unranked key,
+where the oracle prints it before; the member is now spelt as the oracle spells
+it. The plant `a tag need not be a name` was tried on `a b`, two bare words that
+never reach the test of bareness (now `a word of digits and a letter`, `1a`,
+which the oracle refuses and the planted reader admits). The case then stopped
+at the stack-bound step, `bootstrap/parse_generic is no package of the committed
+exports`, as `BS-21`, `BS-22` and `BS-23` did before their regeneration. The
+landing regeneration produced the `bootstrap/parse_generic` and
+`bootstrap/print_generic` packages and measured the row of `print_generic` in
+`tests/stack-bounds.json` (`PD-08`, 1,376,256 bytes of debug stack), and on
+that tree the case passed whole (1,894 s). `BS-22`, `BS-23`, and `BS-24` land
+together, on `BS-21` and the standard library members `SL-11`, `SL-13`, and
+`SL-14`.
+
+### the notation of a tooling module is source (BS-27)
+
+`BS-27` holds the three production roots of `LexLeanBoot.SurfaceTooling`
+(`bootstrap/src/SurfaceTooling.lex.tex`), `printToolingModule`,
+`parseToolingModule`, and `declarationSpans`, to `surface::tooling::print_module`,
+`parse_module`, and `declaration_spans`. It composes the generic notation of
+`BS-24`: the printer, the reader, and the value reader `readFrom` started at a
+depth, which is the oracle's `generic::value` at that depth. `printToolingModule`
+removes the `spec` by structural recursion over the members and admits
+`recursion`; `parseToolingModule` reads one object and adds the implied `spec`
+in order of key; `declarationSpans` walks the members of the module with a
+state machine over the tokens, reading a member at depth 1 and an element of
+`declarations` at depth 2, and admits no `recursion`. The case holds the roots
+to the oracle on hand-built modules, texts, and values that reach every error of
+the three and the limit on nesting at both depths, on the committed JSON files
+printed as modules and read and spanned back, on the committed tooling modules
+written in the notation, and on seeded edits of printed modules. Each planted
+defect names the one vector that catches it, and the case asserts that the site
+of each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `SurfaceTooling`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and the eligibility report gives `printToolingModule`
+exactly `allocation`, `overflow`, and `recursion` and the other two exactly
+`allocation` and `overflow`. The register agrees with the §31 table on 483
+IDs, by the same parse `validate-spec-links` makes.
+
+The case was first compiled and run on the normative host on `BS-24` over
+`BS-23`, `BS-22`, `BS-21`, and `SL-13` (`cargo test -p repo-conformance --test
+conformance -- conformance_bs_27`, 178 s). Its corpus is 55 named vectors (12
+printed, 16 read, 27 spanned), the 3,906 committed JSON files (642 printed
+under the evaluator and 1,885 under rustc, each printed module read and spanned
+back), the 4 committed tooling modules of at most 64,000 bytes, and 200 and
+1,000 seeded edits. The evaluator agrees with the oracle on 654 prints, 218
+reads, and 229 spans, the rendered packages under the pinned rustc on 5,098
+runs, and each of the 20 planted defects is detected by its own vector. The
+first runs found no fault of the module: Lean's preservation pass refused a
+recursive definition that returned its own matched parameter from an arm (each
+arm now rebuilds its value), Lean's audit corrected the axiom policy of six
+definitions, and the vectors of the limit on nesting were one level short of
+it (now 256 levels in a declaration and 257 in a member). The case then stops
+at the stack-bound step, `bootstrap/print_tooling_module is no package of the
+committed exports`, as `BS-21` to `BS-26` did before their regeneration, which
+produces the three packages and measures the row of `print_tooling_module` in
+`tests/stack-bounds.json` (`PD-08`). The branch is stacked on `BS-24` and lands
+after it.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
@@ -11203,6 +11843,13 @@ the comparison's refusals.
 What does not change: `just vv`, which runs `bdd` whole; `release.yml`; the
 suite and every case in it; the host matrix, which runs the whole workspace on
 every host.
+
+At the landing on `release/v0.4` with `BS-21` to `BS-24`, the production export of the
+bootstrap project with this module stopped at `LLS8002`: the programs, crates, and
+certificates of its roots came to 135,273,215 bytes, beyond the 134,217,728 the
+project configured. The project now configures 536,870,912 (the maintainer's
+decision; a semantic input, so the lock and every package move at the landing),
+which leaves room for the further components of the driver.
 
 ### the bdd partition can fail
 
@@ -11893,6 +12540,12 @@ the first panic message, trimmed.
 
 | `SP-32` | `backend/semantic.rs`: the clause is written only for a mutual group | `` `paramsOf` matches a parameter before its argument and states the argument ``, the generated definition with no clause; the issue's project on that binary: `LLV7013` in `__rel_1` |
 | `SP-33` | `calculus/rust/lower.rs`: `fold` does not read `Expr::Clone` | `the arm reads the box and binds nothing`, the arm being `Let { pat: Bind(Local(2)), value: Unbox(Boxed(2)) }` then `Move(Local(2))`; the issue's project on that binary: `LLV7015` at `Corr.mCons` in `fun1` |
+| `RB-24` | `crates/lexlean/src/calculus/rust/package.rs`: the output of the driver is printed as `leave(status, &errors, &output)` | `the fixture command runs to its fixed result` (status `3`, standard output `err`, standard error `out`) |
+| `RB-24` | `compiler/src/RuntimeHost.lex.tex`: `process_wait` records `status.code()` as `None` | `a child's status dropped` (the driver exits `90`, not `3`) |
+| `RB-24` | `compiler/src/RuntimeHost.lex.tex`: `drive` passes `None` as the state of every step | `the state of the previous step passed to the next` (no result within 120 seconds) |
+| `RB-24` | `compiler/src/RuntimeHost.lex.tex`: `files_list` reverses the sorted names | `a listing in the reverse of byte order` (the driver exits `90`, not `3`) |
+| `RB-24` | `compiler/src/RuntimeHost.lex.tex`: `processOn` validated by a root that admits only `files` | `hidden-effect` (`Command` realizes `process`, which the root does not admit) |
+| `RB-24` | `compiler/src/RuntimeHost.lex.tex`: the `not_unix` twin of `end_group` removed | `cfg-pair` |
 | `TC-01` | `calculus/mod.rs`: `canonical` binds parameters but keeps their spelling | `assertion left == right failed: adt-evaluation` (alpha variant bytes differ) |
 | `TC-02` | `calculus/check.rs`: the match exhaustiveness test made `false &&` | `an invalid program loads: expected `the match is not exhaustive: Adt { constructor: 2 } is not covered`` |
 | `MD-01` | `ir/semantic.rs`: the language-1.1 gate `first_language_1_2_construct` made `&& false` | `tests/negative/model-under-1.1: expected "`contract declaration` is a language-1.2 construct"` |
@@ -13718,3 +14371,200 @@ so each of their vector counts grows by one, and within the 400-expression
 bound of `BS-08`. Every count of `BS-11` and `BS-12` is unchanged, as are the
 `printExpr` vectors of `BS-06` and every mutant draw: the stdlib verify records
 did not move.
+
+
+## The front-end packages of `BS-22` to `BS-24` move the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (#269)
+
+The roots of `SurfaceLex` (`BS-22`), `SurfaceDoc` (`BS-23`), and
+`SurfaceGeneric` (`BS-24`) add five committed packages to those of `BS-21`, and
+these cases assert their corpus. The members were merged with `BS-21` and the
+tree of `release/v0.4` after `SL-13`, and the lock, export, build oracles,
+verify records, and the stack bound of `bootstrap/print_generic` were
+regenerated on the normative host (WSL Ubuntu, Rust 1.97.1, Lean 4.32.1) at
+verify width 1; the `BS-22`, `BS-23`, and `BS-24` cases passed whole on that
+tree with the stack measured (1,847 s, 2,378 s, and 1,894 s). Each row below is
+the number its own count check reported on that tree against the one `BS-21`
+commits, under `LEXLEAN_COUNTS=fast`, and the constants, rows, statements,
+scenarios and prose were rewritten by the writer of #442.
+
+| Count | `BS-21` | members |
+| --- | --- | --- |
+| committed manifests and packages | 300 | 305 |
+| distinct programs | 217 | 222 |
+| distinct lowered crates | 276 | 281 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 512, 377 | 517, 382 |
+| `BS-06` `printCrate` vectors, committed distinct, evaluator crates, refused | 721, 552, 604, 67 | 732, 562, 605, 68 |
+| `BS-07` vectors | 351 | 356 |
+| `BS-08` crates | 410 | 415 |
+| `BS-13` vectors | 120 | 125 |
+| `BS-14` vectors | 355 | 360 |
+| `BS-15` manifests, accepted, render mutants | 319, 300, 300 | 324, 305, 305 |
+
+Every new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`
+and the 400-expression bound of `BS-08`, so each of those vector counts grows
+by five. Every count of `BS-11` and `BS-12` is unchanged, as is every mutant
+draw: the stdlib verify records did not move.
+
+
+## The tooling packages of `BS-27` move the counts of `BS-05` to `BS-08` and `BS-13` to `BS-15` (#269)
+
+The roots of `SurfaceTooling` (`BS-27`) add three committed packages
+(`parse_tooling_module`, `print_tooling_module`, `render_tooling_latex`) to
+those of `BS-21` to `BS-24`, and these cases assert their corpus. The branch was
+merged with the tree of `release/v0.4` after `BS-22` to `BS-24` landed, the
+bootstrap project's source limit was raised to 536,870,912 bytes, and the lock,
+export, build oracles, and verify records were regenerated on GitHub-hosted
+runners by `regenerate.yml` (run 43050104167: the export, the records, and the
+other oracles as three jobs from clean checkouts, at verify width 2, which moves
+no byte of what is written, §22.11). Each row below is the number its own count
+check reported on that tree against the one `BS-22` to `BS-24` commit, under
+`LEXLEAN_COUNTS=fast` on WSL Ubuntu (Rust 1.97.1, Lean 4.32.1), and the
+constants, rows, statements, scenarios and prose were rewritten by the writer
+of #442.
+
+| Count | `BS-22` to `BS-24` | `BS-27` |
+| --- | --- | --- |
+| committed manifests and packages | 305 | 308 |
+| distinct programs | 222 | 225 |
+| distinct lowered crates | 281 | 284 |
+| `BS-05` `validateCrate` runs, `correspondCrate` runs | 517, 382 | 520, 385 |
+| `BS-06` `printCrate` vectors, committed distinct, evaluator crates, refused | 732, 562, 605, 68 | 738, 568, 602, 68 |
+| `BS-07` vectors | 356 | 359 |
+| `BS-08` crates | 415 | 418 |
+| `BS-13` vectors | 125 | 128 |
+| `BS-14` vectors | 360 | 363 |
+| `BS-15` manifests, accepted, render mutants | 324, 305, 305 | 327, 308, 308 |
+
+Every new crate is within the 300-node bound of `BS-07`, `BS-13` and `BS-14`
+and the 400-expression bound of `BS-08`, so each of those vector counts grows
+by three. The crates `BS-06` gives the evaluator fall from 605 to 602, as its
+check reported. Every count of `BS-11` and `BS-12` is unchanged, as is every
+mutant draw: the stdlib verify records did not move.
+
+On that tree `conformance_bs_27` passed whole with `LEXLEAN_MEASURE_STACK=all`
+(3,039 s at verify width 1), which recorded the row of
+`bootstrap/print_tooling_module` in `tests/stack-bounds.json` (`PD-08`): 1,179,648
+bytes in the debug profile.
+
+
+## The packages of `BS-25` to `BS-34` move the counts of `BS-05` to `BS-08` and `BS-11` to `BS-15` (#269, #274)
+
+`BS-25`, `BS-26` and `BS-28` to `BS-34` land together with `BS-27`, on one tree:
+`release/v0.4` at `7eb816284` with the count writer of #442, `BS-27`, and the
+nine others' own changes. Their roots add 22 committed packages to the 308 of
+`BS-27`. The lock, the production export, the build oracles, the verify
+records, the counts and the model documents were regenerated by
+`regenerate.yml` on GitHub-hosted runners (run 43112441927, 151 minutes from
+push to patch; verify width 2, which moves no byte of what is written, §22.11).
+The counts were written by the writer of #442 from runs of the nine count
+parts under `LEXLEAN_COUNTS=fast` on that tree. The constants, rows,
+statements, scenarios and prose were rewritten by the writer. It flagged four
+numbers in SPEC.md for a reader, and each stays as written: a 128-byte window
+of `BS-03`, a past measurement of `BS-12`, and the fixed draws of 150 of
+`BS-08` (`EVALUATOR_MUTANTS`) and `BS-10` (`EVALUATOR_SEEDED`).
+
+| Count | before | after |
+| --- | --- | --- |
+| `BS-05` committed crates, manifests, programs; evaluator correspond, crates, validate; vectors correspond, validate | 284, 308, 225; 318, 217, 453; 385, 520 | 306, 330, 247; 322, 221, 457; 407, 542 |
+| `BS-06` committed crates, distinct, manifests, packages, programs; evaluator crates; refused; vectors crate, expr | 284, 568, 308, 308, 225; 602; 68; 738, 2,213 | 306, 612, 330, 330, 247; 612; 71; 785, 2,265 |
+| `BS-07` vectors, within | 359, 292 | 381, 296 |
+| `BS-08` crates, within | 418, 351 | 440, 355 |
+| `BS-11` evaluator mutants | 272 | 283 |
+| `BS-12` evaluator mutants | 150 | 152 |
+| `BS-13` evaluator mutants, vectors, within | 132, 128, 63 | 143, 150, 67 |
+| `BS-14` evaluator mutants, vectors, within | 539, 363, 296 | 548, 385, 300 |
+| `BS-15` accepted, manifests, render mutants | 308, 327, 308 | 330, 349, 330 |
+
+Two of the new packages recurse. Their rows of `tests/stack-bounds.json`
+(`PD-08`) were measured on the same runner by whole runs of the cases that run
+them, with `LEXLEAN_MEASURE_STACK=all`: `bootstrap/print_lse` by `BS-25`
+(1,900,544 bytes in the debug profile) and `bootstrap/build_manifest` by
+`BS-34` (589,824 bytes). Both cases passed whole on that tree (3,402 s
+together), which also checked the counts just written.
+
+
+## Native core reconstruction regression (#465, 2026-11-10)
+
+The existing RT-03 runtime verification owner now also builds a fresh Lake
+native executable from the compiler's generated runtime modules. A test-only
+check rejects duplicate native declaration-order entries before Lean's C emitter
+can repeat assertion failures. The executable checks `sumNat` and both directions
+of fixed-width `lessThan`; ordinary RT-03 kernel replay and exact-policy positive
+and negative checks remain unchanged.
+
+At release/v0.4 base `700196ceadd9695abd47bee29b94a6b8bec6f915`, the
+retained Stitch Laws output fails the added order invariant under pinned Lean
+4.32.1. Substituting only the candidate decoder source into the three retained
+runtime modules makes the invariant pass. A cold Lake build then passed all ten
+jobs, including the three runtime C objects and a linked executable; that
+executable printed `native runtime passed`. A separate cold build of the unchanged
+20 Stitch project modules passed all 25 original Lake jobs with that candidate
+runtime. These source-extracted probes are diagnostic execution evidence, not a
+fresh LexLean writer run, a released SDK, or acceptance of Stitch's pinned gate.
+The legacy, non-module decoder also elaborated under the same pinned Lean.
+An independently executed extracted-decoder C-emission regression passed actual
+partial/unsafe mutual groups, replay idempotence, mixed-state refusal without
+mutation, proof/type-only members, and the requirement that a signature alone
+cannot suppress local compilation. Its six group success observations are retained
+in the RT-03 group regression; the executable's success is recorded separately. Independent source review found no blocker for
+the generated synchronous, default-eager compilation mode; explicitly overridden
+postponed compilation is outside this evidence.
+
+The correction uses completed native declaration-order membership, excludes
+members for which Lean generates no code, and compiles each remaining mutual
+group intact. A partially compiled relevant group is refused rather than split.
+Safety-bearing groups retain their earlier scheduling phase. No declaration,
+proof, axiom policy or native acceptance requirement is removed.
+
+The execution environment has no Rust toolchain. The Rust RT-03 harness itself,
+formatting, Clippy, official identity/product regeneration, and the full final-head
+repository gate have not run here. This branch is source preparation for a draft
+PR, with existing generated records untouched; its source changes are not
+qualified by those preceding records. Coordinate the single identity/writer wave
+with the release owner before readiness, merge or downstream SDK adoption.
+
+### the check-only build's excluded inventory and its constant can fail (RP-19, RP-10)
+
+A build without `production-data` (§8.4) embeds no file of
+`language/preservation-1.2/library/` and reports the language-1.2
+compiler-semantics ID from `LANGUAGE_1_2_SEMANTICS_ID`. Neither holds by
+construction once a binary exists, so `RP-19` reads the built image against the
+complete excluded inventory and `RP-10` reads the constant against the tree.
+
+Planted, the inventory: `build.rs` keeps out every file of the library except
+`src/Values.lex.tex` (70,609 bytes), while the largest, `src/RustLemmas.lex.tex`
+(17,189,578 bytes), stays out --- so an assertion that read the largest file
+alone would have passed. Command: `cargo test -p repo-conformance
+--all-features --test conformance -- conformance_rp_19 --exact`. Observed:
+
+```text
+test conformance_rp_19 ... FAILED
+RP-19: the build without production-data embeds ["language/preservation-1.2/library/src/Values.lex.tex"] of `language/preservation-1.2/library/`
+test result: FAILED. 0 passed; 1 failed
+```
+
+Read directly, that planted binary (77,585,088 bytes, the debug build the case
+makes) holds the witness of `src/Values.lex.tex` and not the witness of
+`src/RustLemmas.lex.tex`.
+
+Planted, the constant: its last digit, `...680b` to `...680c`, in
+`crates/lexlean/src/lib.rs`. A wrong constant changes no verdict, because such
+a build locks and checks consistently with itself, so it is held twice ---
+against the tree by `RP-10`, and against the default build's lock bytes by
+`RP-19`. Command: `cargo test -p repo-conformance --all-features --test
+conformance -- conformance_rp_10 conformance_rp_19 --exact --test-threads=1`.
+Observed:
+
+```text
+test conformance_rp_10 ... FAILED
+test conformance_rp_19 ... FAILED
+RP-10: lexlean::LANGUAGE_1_2_SEMANTICS_ID is stale; the tree's language-1.2 ID is 06639c99a4cb1dbcb7fc9c0c87544ee05c599079d85272d8af66c8045900680b
+  left: "06639c99a4cb1dbcb7fc9c0c87544ee05c599079d85272d8af66c8045900680c"
+ right: "06639c99a4cb1dbcb7fc9c0c87544ee05c599079d85272d8af66c8045900680b"
+RP-19: language-1.2: lexlean.lock bytes
+test result: FAILED. 0 passed; 2 failed
+```
+
+`RP-19` failed at the first language-1.2 lock, whose `compiler_semantics` line
+carried the planted digit while the default build's carried the tree's. With
+each plant removed, `conformance_rp_10` and `conformance_rp_19` pass.

@@ -13,6 +13,7 @@ use lexlean::production::lower::{linked_modules, lower_root, roots, Lowered};
 use serde_json::Value as Json;
 
 mod calculus_check;
+mod content_id;
 pub mod perf;
 
 use crate::production_export as harness;
@@ -21,7 +22,14 @@ use crate::rust_harness::{self, Calls};
 use crate::rust_packages;
 use crate::support::{self, P};
 
+mod cli_output;
+mod diagnostics;
 mod gnaf_validate;
+mod lexicon_lre;
+mod lexicon_lse;
+mod lock_text;
+mod manifest_text;
+mod project_text;
 mod runtime_validate;
 mod rust_assemble;
 mod rust_bodies;
@@ -35,6 +43,11 @@ mod rust_terms;
 mod rust_validate;
 mod scan;
 mod structural_grammar;
+mod surface_doc;
+mod surface_generic;
+mod surface_lex;
+mod surface_module;
+mod surface_tooling;
 mod tooling_latex;
 
 /// The module the first component lives in.
@@ -967,30 +980,119 @@ fn readable(value: &Json) -> String {
 }
 
 /// Every run of `corpus` on which the evaluator and the oracle disagree, up
-/// to `limit`, each as the input and the two outcomes.
+/// to `limit`, each as the input and the two outcomes: the first `limit` in
+/// the corpus's order, whichever thread ran them.
+///
+/// The runs are independent, so they run on the calling thread and on as
+/// many helpers as the shared budget of [`helpers`] allows, each taking the
+/// next run in order. When one has found `limit` disagreements no run is
+/// taken after it; every run before the last one taken still finishes, so
+/// the first `limit` disagreements are among those run and the answer is the
+/// sequential one. When the cases measure the evaluator's stack (`PD-08`)
+/// every run is on the calling thread, whose stack is the one measured.
 fn evaluate(lowered: &Lowered, corpus: &[Run], limit: usize) -> Vec<String> {
-    let mut out = Vec::new();
-    for (run, (arguments, expected)) in corpus.iter().enumerate() {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    let disagreement = |run: usize| -> Option<String> {
+        let (arguments, expected) = &corpus[run];
         let outcome = interp::run(&lowered.program, FUEL, lowered.entry(), arguments);
         let observed = rust::observable(&outcome)
             .unwrap_or_else(|| panic!("run {run} on {arguments:?}: {outcome:?}"));
-        if &observed != expected {
+        (&observed != expected).then(|| {
             let input: Vec<String> = arguments
                 .iter()
                 .map(|argument| readable(&serde_json::to_value(argument).expect("JSON")))
                 .collect();
-            out.push(format!(
+            format!(
                 "run {run} on {}: the program gives {}, the oracle {}",
                 input.join(" "),
                 readable(&observed),
                 readable(expected)
-            ));
-            if out.len() >= limit {
+            )
+        })
+    };
+    let next = AtomicUsize::new(0);
+    let found = AtomicUsize::new(0);
+    let work = || {
+        let mut out = Vec::new();
+        while found.load(Ordering::SeqCst) < limit {
+            let run = next.fetch_add(1, Ordering::SeqCst);
+            if run >= corpus.len() {
                 break;
             }
+            if let Some(text) = disagreement(run) {
+                found.fetch_add(1, Ordering::SeqCst);
+                out.push((run, text));
+            }
+        }
+        out
+    };
+    let wanted = if crate::stack_bounds::measuring().is_some() {
+        0
+    } else {
+        corpus.len().saturating_sub(1)
+    };
+    let permits = helpers::take(wanted);
+    let mut out = std::thread::scope(|scope| {
+        let spawned: Vec<_> = (0..permits.0)
+            .map(|_| {
+                std::thread::Builder::new()
+                    .stack_size(EVALUATOR_STACK)
+                    .spawn_scoped(scope, work)
+                    .expect("an evaluator thread")
+            })
+            .collect();
+        let mut out = work();
+        for helper in spawned {
+            match helper.join() {
+                Ok(more) => out.extend(more),
+                Err(failure) => std::panic::resume_unwind(failure),
+            }
+        }
+        out
+    });
+    drop(permits);
+    out.sort_by_key(|(run, _)| *run);
+    out.truncate(limit);
+    out.into_iter().map(|(_, text)| text).collect()
+}
+
+/// The helper threads every [`evaluate`] of this process shares: one fewer
+/// than the host's processors, because the threads that call it, the test
+/// harness's, already run, and a part of the `bdd` recipe may run several
+/// cases at once. Taking never waits: a call takes what is free, and the
+/// calling thread alone runs every run when nothing is.
+mod helpers {
+    use std::sync::Mutex;
+
+    static FREE: Mutex<Option<usize>> = Mutex::new(None);
+
+    fn budget() -> usize {
+        std::thread::available_parallelism().map_or(1, std::num::NonZeroUsize::get) - 1
+    }
+
+    /// Helpers taken from the budget, returned when dropped, on a panic too.
+    pub(super) struct Taken(pub(super) usize);
+
+    impl Drop for Taken {
+        fn drop(&mut self) {
+            let mut free = FREE
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            *free.get_or_insert_with(budget) += self.0;
         }
     }
-    out
+
+    /// Up to `wanted` helpers, as many as are free.
+    pub(super) fn take(wanted: usize) -> Taken {
+        let mut free = FREE
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let available = free.get_or_insert_with(budget);
+        let taken = wanted.min(*available);
+        *available -= taken;
+        Taken(taken)
+    }
 }
 
 /// What the lowered root returns for `arguments`, as the oracle's values are
@@ -2459,6 +2561,19 @@ fn case(id: &str) {
         // §17.23, §17.20: the canonical LaTeX of a tooling module.
         "BS-20" => tooling_latex::case(),
         "BS-21" => structural_grammar::case(),
+        "BS-22" => surface_lex::case(),
+        "BS-23" => surface_doc::case(),
+        "BS-24" => surface_generic::case(),
+        "BS-27" => surface_tooling::case(),
+        "BS-25" => lexicon_lse::case(),
+        "BS-26" => lexicon_lre::case(),
+        "BS-28" => surface_module::case(),
+        "BS-29" => diagnostics::case(),
+        "BS-30" => cli_output::case(),
+        "BS-31" => lock_text::case(),
+        "BS-32" => content_id::case(),
+        "BS-33" => project_text::case(),
+        "BS-34" => manifest_text::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

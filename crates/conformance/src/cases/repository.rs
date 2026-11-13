@@ -898,7 +898,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 479, "§31 has 479 rows");
+            assert_eq!(table.len(), 496, "§31 has 496 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -1037,6 +1037,15 @@ pub(crate) fn run(id: &str) {
             let (only_1_2, only_1_1) = support::introduced_later();
             let (ten, eleven, twelve) = support::semantics_ids(&borrowed);
             assert_eq!(twelve, recomputed, "RP-10: the 1.2 ID");
+            // §8.4: a build without production-data reports this constant in
+            // place of the ID it cannot compute. Nothing else would notice a
+            // stale one: that build locks and checks with it consistently.
+            assert_eq!(
+                lexlean::LANGUAGE_1_2_SEMANTICS_ID,
+                twelve.to_hex(),
+                "RP-10: lexlean::LANGUAGE_1_2_SEMANTICS_ID is stale; the tree's language-1.2 ID is {}",
+                twelve.to_hex()
+            );
             assert_eq!(
                 eleven,
                 lexlean::compiler_semantics_id_for("1.1"),
@@ -1552,7 +1561,7 @@ pub(crate) fn run(id: &str) {
             for (key, body) in &jobs {
                 if matches!(
                     key.as_str(),
-                    "host-matrix" | "intel-construction" | "intel-part"
+                    "host-matrix" | "intel-construction" | "intel-part" | "windows-part"
                 ) {
                     continue;
                 }
@@ -1562,7 +1571,7 @@ pub(crate) fn run(id: &str) {
                 );
                 // The plan decides what the run is and runs no recipe: it has
                 // ten minutes, not the six hours of the proof jobs.
-                if key == "intel-join" {
+                if key == "intel-join" || key == "windows-join" {
                     let limit = body
                         .lines()
                         .find_map(|line| line.trim().strip_prefix("timeout-minutes: "))
@@ -2074,7 +2083,7 @@ pub(crate) fn run(id: &str) {
             let mut honesty_conditions = 0;
             for (index, line) in jobs
                 .iter()
-                .filter(|(key, _)| !key.starts_with("intel-"))
+                .filter(|(key, _)| !key.starts_with("intel-") && !key.starts_with("windows-"))
                 .flat_map(|(_, body)| body.lines())
                 .enumerate()
             {
@@ -2093,17 +2102,42 @@ pub(crate) fn run(id: &str) {
             }
             assert_eq!(
                 step_conditions,
-                4 + 2 * atlas_jobs.len(),
+                6 + 2 * atlas_jobs.len(),
                 "the summary step and the evidence upload of every gate job carry it"
             );
             assert_eq!(
                 full_conditions,
-                atlas_jobs.len() + 1,
-                "every Atlas job and the host matrix, and no other job, wait for the plan to name the whole gate"
+                atlas_jobs.len() + 2,
+                "every Atlas job, the bootstrap export, and the host matrix, and no other job, wait for the plan to name the whole gate"
             );
             assert_eq!(rows_conditions, 1, "the legs run when the plan names a leg");
             assert_eq!(honesty_conditions, 1, "honesty runs when the plan names it");
             intel_host_workflow(&ci).expect("§8.3: the host inventory and Intel custody graph");
+            windows_host_workflow(&ci).expect("§8.3: the Windows lanes and their join");
+            for (from, to) in [
+                ("lane: [producer, lower, print, validate, moves]", "lane: [producer, lower, print, validate]"),
+                ("    needs: [plan, windows-part]", "    needs: [plan]"),
+                (
+                    "    if: ${{ always() && needs.plan.outputs.full == 'true' }}\n    runs-on: ubuntu-24.04\n    timeout-minutes: 15\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2\n        with:\n          pattern: host-x86_64",
+                    "    if: ${{ needs.plan.outputs.full == 'true' }}\n    runs-on: ubuntu-24.04\n    timeout-minutes: 15\n    steps:\n      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1\n      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2\n        with:\n          pattern: host-x86_64",
+                ),
+                ("host_lanes.py join --target", "host_lanes.py execute --target"),
+                (
+                    "windows-part.result }}\n        run: |\n          set -euo pipefail\n          test \"$PART_RESULT\" = success",
+                    "windows-part.result }}\n        run: |\n          set -euo pipefail\n          test \"$PART_RESULT\" != cancelled",
+                ),
+                ("    runs-on: windows-2022\n", "    runs-on: windows-2025\n"),
+                (
+                    "python3 -m unittest discover -s .github/scripts -p 'test_host_lanes.py'",
+                    "echo lane checks",
+                ),
+            ] {
+                assert!(ci.contains(from), "the plant must change the workflow: {from}");
+                assert!(
+                    windows_host_workflow(&ci.replacen(from, to, 1)).is_err(),
+                    "the Windows lanes must refuse `{from}` replaced by `{to}`"
+                );
+            }
             for (from, to) in [
                 (
                     "name: build and non-Lean tests (x86_64-apple-darwin)",
@@ -2145,13 +2179,92 @@ pub(crate) fn run(id: &str) {
                     "the Intel graph must refuse `{from}` replaced by `{to}`"
                 );
             }
+            let take = root_file(TAKE_EXPORT);
+            bootstrap_export_workflow(&ci, &take)
+                .expect("§9.4: the run's one bootstrap export and its same-run custody");
+            let export_job = workflow_job(&ci, "bootstrap-export").expect("the export job");
+            for (from, to) in [
+                ("    needs: [plan, honesty]", "    needs: [plan]"),
+                (
+                    "cargo xtask export-bootstrap --output \"$RUNNER_TEMP/bootstrap-export\"",
+                    "echo exported",
+                ),
+                (
+                    "      LEXLEAN_VERIFY_WIDTH: \"2\"",
+                    "      LEXLEAN_VERIFY_WIDTH: \"4\"",
+                ),
+                (
+                    "          name: bootstrap-export\n",
+                    "          name: bootstrap-bundle\n",
+                ),
+                ("    name: bootstrap export\n", "    name: export\n"),
+            ] {
+                assert!(
+                    export_job.contains(from),
+                    "the plant must change the export job: {from}"
+                );
+                let planted = ci.replacen(&export_job, &export_job.replacen(from, to, 1), 1);
+                assert!(
+                    bootstrap_export_workflow(&planted, &take).is_err(),
+                    "the bootstrap export's custody must refuse `{from}` replaced by `{to}`"
+                );
+            }
+            for (from, to) in [
+                (
+                    "          FULL_GATE: ${{ needs.plan.outputs.full }}\n",
+                    "          FULL_GATE: true\n",
+                ),
+                (
+                    "    permissions:\n      contents: read\n      actions: read\n    # Complete proof",
+                    "    permissions:\n      contents: read\n    # Complete proof",
+                ),
+                (
+                    "            export LEXLEAN_BOOTSTRAP_EXPORT=\"$RUNNER_TEMP/bootstrap-export\"\n",
+                    "            export LEXLEAN_BOOTSTRAP_EXPORT=\"$RUNNER_TEMP/elsewhere\"\n",
+                ),
+            ] {
+                assert!(ci.contains(from), "the plant must change the workflow: {from}");
+                assert!(
+                    bootstrap_export_workflow(&ci.replacen(from, to, 1), &take).is_err(),
+                    "the bootstrap export's custody must refuse `{from}` replaced by `{to}`"
+                );
+            }
+            for (from, to) in [
+                ("run=${GITHUB_RUN_ID:?}", "run=${OTHER_RUN_ID:?}"),
+                (
+                    "artifacts?name=bootstrap-export",
+                    "artifacts?name=bootstrap-bundle",
+                ),
+                (
+                    "select(.name == \"bootstrap export\")",
+                    "select(.name == \"export\")",
+                ),
+                ("until [ -e \"$dir/wanted\" ]", "until true"),
+            ] {
+                assert!(
+                    take.contains(from),
+                    "the plant must change the fetcher: {from}"
+                );
+                assert!(
+                    bootstrap_export_workflow(&ci, &take.replacen(from, to, 1)).is_err(),
+                    "the fetcher's custody must refuse `{from}` replaced by `{to}`"
+                );
+            }
+            bootstrap_custody_decisions();
             honesty_dependencies(&ci).expect("expensive roots require successful same-run honesty");
             assert!(
                 honesty_dependencies(&ci.replacen("name: ${{ matrix.part }}", "name: honesty", 1))
                     .is_err(),
                 "a static matrix name acquires a suffix instead of the exact honesty context"
             );
-            for root in ["vv", "atlas-prefix", "host-matrix", "intel-construction"] {
+            for root in [
+                "bootstrap-export",
+                "vv",
+                "atlas-prefix",
+                "host-matrix",
+                "intel-construction",
+                "windows-part",
+            ] {
                 let original = format!("  {root}:\n");
                 let pos = ci.find(&original).expect("the root");
                 let end = ci[pos + original.len()..]
@@ -2244,6 +2357,15 @@ pub(crate) fn run(id: &str) {
             );
             // The honesty and reproducibility workflows stay separate.
             let honesty = job("honesty");
+            // §9.4: stale generated files fail in honesty, before the gate
+            // command and every expensive root.
+            let fresh = honesty
+                .find("        run: cargo xtask check-freshness\n")
+                .expect("§9.4: honesty checks that the committed generated files are current");
+            assert!(
+                fresh < honesty.find("just --timestamp").expect("the gate command"),
+                "§9.4: the freshness check runs before the honesty recipes"
+            );
             assert!(
                 honesty.contains("LEXLEAN_BDD_PART: ${{ matrix.bdd_part }}")
                     && honesty.contains("fromJSON(needs.plan.outputs.honesty)")
@@ -2306,8 +2428,277 @@ pub(crate) fn run(id: &str) {
         // §30.3: the crate that goes to crates.io is the crate the release
         // attaches, proved on every run, and uploaded only with a credential.
         "RP-18" => rp_18(),
+        // §8.4: a build without the production data checks and locks as the
+        // default build does, and refuses the work that needs that data.
+        "RP-19" => rp_19(),
         other => panic!("no repository case is wired for {other}"),
     }
+}
+
+/// RP-19: the binary built without `production-data`, held to the default
+/// build this harness links. The language-1.2 ID it reports is a constant,
+/// which RP-10 holds to the tree; here it must also land in the lock bytes,
+/// which is what a wrong constant would change while every verdict agreed.
+/// A file of the normative tree: its repository-relative path and its bytes,
+/// as `support::normative_rows` reads them.
+type NormativeRow = (String, Vec<u8>);
+
+/// How many bytes of a file witness that an image holds it: the whole file
+/// when it is short, else a window from its middle, past the header that
+/// every file of a kind repeats (RP-19).
+const WITNESS_BYTES: usize = 64;
+
+/// The witness of one file: its own bytes, or a window of them.
+fn witness_of(bytes: &[u8]) -> Vec<u8> {
+    if bytes.len() <= WITNESS_BYTES {
+        bytes.to_vec()
+    } else {
+        bytes[bytes.len() / 2 - WITNESS_BYTES / 2..][..WITNESS_BYTES].to_vec()
+    }
+}
+
+/// Which of `witnesses`, each a path and the bytes that witness it, occur in
+/// `image`, in one pass over it: a table of first bytes names the candidates
+/// at each position and only a candidate is compared, so the cost is the
+/// image's length and not its length times the inventory's size. RP-19 reads
+/// a binary of twenty-three megabytes against an inventory of thirty-one.
+fn witnessed(image: &[u8], witnesses: &[NormativeRow]) -> BTreeSet<String> {
+    let mut by_first: Vec<Vec<usize>> = vec![Vec::new(); 256];
+    for (index, (path, bytes)) in witnesses.iter().enumerate() {
+        assert!(!bytes.is_empty(), "{path}: a witness is not empty");
+        by_first[bytes[0] as usize].push(index);
+    }
+    let mut found = BTreeSet::new();
+    for (at, byte) in image.iter().enumerate() {
+        for index in &by_first[*byte as usize] {
+            let (path, witness) = &witnesses[*index];
+            if !found.contains(path) && image[at..].starts_with(witness) {
+                found.insert(path.clone());
+            }
+        }
+    }
+    found
+}
+
+fn rp_19() {
+    use lexlean::api::production::{
+        self, Expectation, PackageName, ProductionRequest, RootRequest, TargetRef, REQUEST_SPEC,
+    };
+    let root = support::repo_root();
+    let binary =
+        support::check_only_binary(&root).expect("the crate builds without its default features");
+
+    // The whole excluded inventory is bound to the built variant, not its
+    // largest file alone: a build that left the largest out and embedded any
+    // other would pass that and still break what RP-19 states. Every file of
+    // the inventory is witnessed by bytes of its own, and the image is read
+    // once for all of them.
+    let image = std::fs::read(binary.as_std_path()).expect("the binary is readable");
+    let rows = support::normative_rows();
+    let (library, retained_rows): (Vec<&NormativeRow>, Vec<&NormativeRow>) = rows
+        .iter()
+        .partition(|(path, _)| path.starts_with("language/preservation-1.2/library/"));
+    assert!(
+        library.len() > 10,
+        "RP-19: the excluded inventory is the library's files on disk"
+    );
+    let witnesses: Vec<NormativeRow> = library
+        .iter()
+        .map(|(path, bytes)| (path.clone(), witness_of(bytes)))
+        .collect();
+    // A file whose witness the retained data carries anyway cannot be told
+    // from that data in an image. Such a file is named here with its reason
+    // rather than passing in silence, and the reason is checked: its own
+    // bytes are embedded outside the library, so an image holding them holds
+    // no library source.
+    let retained: Vec<u8> = retained_rows
+        .iter()
+        .flat_map(|(_, bytes)| bytes.iter().copied().chain(std::iter::once(0)))
+        .collect();
+    let indistinguishable = witnessed(&retained, &witnesses);
+    for path in &indistinguishable {
+        let (_, bytes) = library
+            .iter()
+            .find(|(candidate, _)| candidate == path)
+            .expect("a file of the inventory");
+        let whole = vec![(path.clone(), bytes.clone())];
+        assert!(
+            !witnessed(&retained, &whole).is_empty(),
+            "RP-19: `{path}` cannot be told from the retained data in an image, and its own bytes are not part of that data; the inventory is not bound"
+        );
+    }
+    let found = witnessed(&image, &witnesses);
+    let embedded: Vec<&String> = found.difference(&indistinguishable).collect();
+    assert!(
+        embedded.is_empty(),
+        "RP-19: the build without production-data embeds {embedded:?} of `language/preservation-1.2/library/`"
+    );
+    // The scan finds what is there: the preservation data outside `library/`,
+    // which this build does embed, is found in the same image by the same
+    // method, so an absence above is an absence and not a broken search.
+    let siblings: Vec<NormativeRow> = retained_rows
+        .iter()
+        .filter(|(path, _)| path.starts_with("language/preservation-1.2/"))
+        .map(|(path, bytes)| (path.clone(), witness_of(bytes)))
+        .collect();
+    assert!(
+        siblings.len() > 1,
+        "RP-19: the retained preservation data is more than one file"
+    );
+    assert_eq!(
+        witnessed(&image, &siblings).len(),
+        siblings.len(),
+        "RP-19: the embedded preservation data outside `library/` is in the image"
+    );
+
+    let normalized =
+        |text: &str, project: &camino::Utf8Path| text.replace(project.as_str(), "<project>");
+    let same = |what: &str, linked: &support::P, built: &support::P, arguments: &[&str]| {
+        let (exit_a, out_a, err_a) = linked.cli(arguments);
+        let (exit_b, out_b, err_b) = support::cli_binary_in(&binary, &built.root, arguments);
+        assert_eq!(
+            exit_a,
+            exit_b,
+            "RP-19: {what}: `{}` exit code",
+            arguments.join(" ")
+        );
+        assert_eq!(
+            normalized(&out_a, &linked.root),
+            normalized(&out_b, &built.root),
+            "RP-19: {what}: `{}` stdout",
+            arguments.join(" ")
+        );
+        assert_eq!(
+            normalized(&err_a, &linked.root),
+            normalized(&err_b, &built.root),
+            "RP-19: {what}: `{}` stderr",
+            arguments.join(" ")
+        );
+    };
+
+    let (_, version, _) = support::cli_in(&root, &["--version"]);
+    let (exit, built_version, _) = support::cli_binary_in(&binary, &root, &["--version"]);
+    assert_eq!(exit, 0, "RP-19: --version");
+    // The same four lines, and a fifth that keeps it from passing for a
+    // release binary, which it cannot replace (§30.3).
+    assert_eq!(
+        format!(
+            "{version}variant check-only
+"
+        ),
+        built_version,
+        "RP-19: --version"
+    );
+
+    // A lock records its language's compiler-semantics ID, so equal lock
+    // bytes for a 1.0, 1.1, and 1.2 project are equal IDs.
+    for example in ["nat-add-zero", "semantic-1.1", "language-1.2", "production"] {
+        let linked = support::P::copy_example(example);
+        let built = support::P::copy_example(example);
+        for project in [&linked, &built] {
+            std::fs::remove_file(project.root.join("lexlean.lock").as_std_path())
+                .expect("the example has a lock");
+        }
+        same(example, &linked, &built, &["lock"]);
+        let lock = |project: &support::P| {
+            std::fs::read_to_string(project.root.join("lexlean.lock").as_std_path())
+                .expect("a lock was written")
+        };
+        assert_eq!(
+            lock(&linked),
+            lock(&built),
+            "RP-19: {example}: lexlean.lock bytes"
+        );
+        same(
+            example,
+            &linked,
+            &built,
+            &["--diagnostic-format", "json", "check"],
+        );
+    }
+    for negative in [
+        "type-parameter-capture",
+        "term-cases-scrutinee-not-inductive",
+        "induction-nested-type",
+    ] {
+        let linked = support::P::negative(negative);
+        let built = support::P::negative(negative);
+        same(
+            negative,
+            &linked,
+            &built,
+            &["--diagnostic-format", "json", "check"],
+        );
+    }
+
+    // The two commands that generate certificates are refused with LLC0205
+    // before any work is published: no build, verification, or export.
+    let refused = |project: &support::P, arguments: &[&str]| {
+        let (exit, out, err) = support::cli_binary_in(&binary, &project.root, arguments);
+        assert_eq!(
+            exit,
+            2,
+            "RP-19: `{}` exits 2: {out}{err}",
+            arguments.join(" ")
+        );
+        assert!(
+            out.contains("LLC0205") || err.contains("LLC0205"),
+            "RP-19: `{}` reports LLC0205: {out}{err}",
+            arguments.join(" ")
+        );
+        for area in ["build", "verified", "production"] {
+            assert!(
+                !project
+                    .root
+                    .join(".lexlean")
+                    .join(area)
+                    .as_std_path()
+                    .exists(),
+                "RP-19: `{}` published `.lexlean/{area}`",
+                arguments.join(" ")
+            );
+        }
+    };
+    let project = support::P::copy_example("production");
+    refused(&project, &["--diagnostic-format", "json", "verify"]);
+    let digests: std::collections::BTreeMap<String, lexlean::Sha256Digest> = production::targets()
+        .expect("targets")
+        .into_iter()
+        .map(|descriptor| (descriptor.id, descriptor.digest))
+        .collect();
+    let request = ProductionRequest {
+        spec: REQUEST_SPEC.to_owned(),
+        roots: vec![RootRequest {
+            root: "Production.Main.checkedSum".to_owned(),
+            package: PackageName {
+                name: "pkg".to_owned(),
+                version: "1.0.0".to_owned(),
+            },
+            targets: vec![TargetRef {
+                id: "rust-std".to_owned(),
+                digest: digests["rust-std"],
+            }],
+        }],
+        expect: Expectation::default(),
+        evidence: Vec::new(),
+    };
+    let project = support::P::copy_example("production");
+    std::fs::write(
+        project.root.join("request.json").as_std_path(),
+        serde_json::to_vec(&request).expect("the request serializes"),
+    )
+    .expect("write the request");
+    refused(
+        &project,
+        &[
+            "--diagnostic-format",
+            "json",
+            "production",
+            "build",
+            "--request",
+            "request.json",
+        ],
+    );
 }
 
 /// RP-16: every toolchain the Dockerfile installs is the pinned one. A Rust
@@ -3115,6 +3506,14 @@ fn intel_host_workflow(ci: &str) -> Result<(), String> {
         .find_map(|line| line.strip_prefix("    name: "))
         .ok_or("RP-14: the Intel aggregate has no context")?;
     contexts.push(aggregate_name.to_owned());
+    let windows = workflow_job(ci, "windows-join")?;
+    contexts.push(
+        windows
+            .lines()
+            .find_map(|line| line.strip_prefix("    name: "))
+            .ok_or("RP-14: the Windows aggregate has no context")?
+            .to_owned(),
+    );
     contexts.sort();
     let mut expected = supported_host_contexts();
     expected.sort();
@@ -3256,6 +3655,336 @@ fn intel_host_workflow(ci: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// The fetcher a leg runs beside its gate command to take the run's
+/// bootstrap export (§9.4).
+const TAKE_EXPORT: &str = ".github/scripts/take-bootstrap-export.sh";
+
+/// §9.4: one bootstrap export per run, carried to the legs of the same run.
+/// The export job follows honesty and the plan's whole-gate decision, runs
+/// the export at the profile of the `examples` leg, and uploads it under the
+/// one name the fetcher reads; a leg reads the artifacts of its own run only,
+/// takes the export only in a run that is the whole gate, and only into the
+/// directory its harness waits in; the fetcher names this run and the export
+/// job, and asks nothing before a case wants the export.
+fn bootstrap_export_workflow(ci: &str, take: &str) -> Result<(), String> {
+    let job = workflow_job(ci, "bootstrap-export")?;
+    let legs = workflow_job(ci, "vv")?;
+    let require = |body: &str, text: &str, rule: &str| -> Result<(), String> {
+        if body.contains(text) {
+            Ok(())
+        } else {
+            Err(format!("RP-14: {rule}: missing `{text}`"))
+        }
+    };
+    for (text, rule) in [
+        ("    name: bootstrap export\n", "the job the fetcher watches"),
+        ("    needs: [plan, honesty]\n", "the export follows honesty"),
+        (
+            "    if: ${{ needs.plan.outputs.full == 'true' }}\n",
+            "the export runs in a run that is the whole gate",
+        ),
+        ("      LEXLEAN_VERIFY_WIDTH: \"2\"\n", "the examples leg's width"),
+        (
+            "      LEXLEAN_VERIFY_MEMORY_KIB: \"12582912\"\n",
+            "the examples leg's budget",
+        ),
+        (
+            "      LEXLEAN_VERIFY_HINTS: ${{ github.workspace }}/.github/verify-hints.json\n",
+            "the committed hints",
+        ),
+        (
+            "cargo xtask export-bootstrap --output \"$RUNNER_TEMP/bootstrap-export\" 2>&1 | tee ci-evidence/vv.txt\n",
+            "the export, with the comparison and the custody record",
+        ),
+        ("          name: bootstrap-export\n", "the artifact the fetcher reads"),
+        (
+            "          path: ${{ runner.temp }}/bootstrap-export\n",
+            "the directory the export wrote",
+        ),
+        (
+            "name: acceptance-gate-evidence-bootstrap-export\n",
+            "the job's evidence",
+        ),
+    ] {
+        require(&job, text, rule)?;
+    }
+    for (text, rule) in [
+        ("      actions: read\n", "a leg lists the run's artifacts"),
+        (
+            "          FULL_GATE: ${{ needs.plan.outputs.full }}\n",
+            "a leg takes the export only in a run that is the whole gate",
+        ),
+        (
+            "          if [ \"$FULL_GATE\" = true ]; then\n            export LEXLEAN_BOOTSTRAP_EXPORT=\"$RUNNER_TEMP/bootstrap-export\"\n            .github/scripts/take-bootstrap-export.sh \"$LEXLEAN_BOOTSTRAP_EXPORT\"",
+            "the fetcher fills the directory the harness waits in",
+        ),
+    ] {
+        require(&legs, text, rule)?;
+    }
+    for body in [&job, &legs] {
+        for forbidden in [
+            "run-id:",
+            "github-token:",
+            "actions/cache",
+            "continue-on-error",
+        ] {
+            if body.contains(forbidden) {
+                return Err(format!("RP-14: the export's custody admits `{forbidden}`"));
+            }
+        }
+    }
+    for (text, rule) in [
+        ("run=${GITHUB_RUN_ID:?}", "the fetcher reads this run"),
+        (
+            "repos/$repo/actions/runs/$run/artifacts?name=bootstrap-export",
+            "the fetcher reads the export job's artifact",
+        ),
+        (
+            "select(.name == \"bootstrap export\")",
+            "the fetcher watches the export job",
+        ),
+        (
+            "until [ -e \"$dir/wanted\" ]",
+            "the fetcher asks nothing before a case wants the export",
+        ),
+    ] {
+        require(take, text, rule)?;
+    }
+    if take.matches("actions/runs/").count() != 2 || take.contains("GITHUB_RUN_ID=") {
+        return Err("RP-14: the fetcher reads the run it is in and no other".to_owned());
+    }
+    Ok(())
+}
+
+/// §9.4: a custody record names the run and checkout that take the export,
+/// and every way it can differ is refused.
+fn bootstrap_custody_decisions() {
+    use crate::export_custody::{check, Custody, Identity, SPEC};
+    use std::collections::BTreeMap;
+    let pins: BTreeMap<String, String> = [
+        ("Cargo.lock", "a".repeat(64)),
+        ("lean-toolchain", "b".repeat(64)),
+        ("rust-toolchain.toml", "c".repeat(64)),
+    ]
+    .into_iter()
+    .map(|(name, digest)| (name.to_owned(), digest))
+    .collect();
+    let toolchains: BTreeMap<String, String> =
+        [("lean", "Lean (version 4.32.1)"), ("rustc", "rustc 1.97.1")]
+            .into_iter()
+            .map(|(name, text)| (name.to_owned(), text.to_owned()))
+            .collect();
+    let here = Identity {
+        repository: "UOR-Foundation/LexLean".to_owned(),
+        run_id: "100".to_owned(),
+        run_attempt: "2".to_owned(),
+        commit: "1".repeat(40),
+        tree: "2".repeat(40),
+        pins: pins.clone(),
+        toolchains: toolchains.clone(),
+    };
+    let bundle = ("d".repeat(64), 162);
+    let record = Custody {
+        spec: SPEC.to_owned(),
+        repository: here.repository.clone(),
+        run_id: here.run_id.clone(),
+        run_attempt: "1".to_owned(),
+        commit: here.commit.clone(),
+        tree: here.tree.clone(),
+        pins,
+        toolchains,
+        bundle_path: ".lexlean/production/bundle".to_owned(),
+        bundle_sha256: bundle.0.clone(),
+        bundle_files: bundle.1,
+    };
+    check(&record, &here, &bundle).expect("§9.4: the run's own export, from an earlier attempt");
+    type Plant = Box<dyn Fn(&mut Custody)>;
+    let plants: Vec<(&str, Plant)> = vec![
+        ("spec", Box::new(|record| record.spec.push('2'))),
+        (
+            "repository",
+            Box::new(|record| record.repository = "fork/LexLean".to_owned()),
+        ),
+        ("run", Box::new(|record| record.run_id = "99".to_owned())),
+        (
+            "attempt",
+            Box::new(|record| record.run_attempt = "3".to_owned()),
+        ),
+        ("commit", Box::new(|record| record.commit = "3".repeat(40))),
+        ("tree", Box::new(|record| record.tree = "4".repeat(40))),
+        (
+            "pins",
+            Box::new(|record| {
+                record
+                    .pins
+                    .insert("lean-toolchain".to_owned(), "e".repeat(64));
+            }),
+        ),
+        (
+            "toolchains",
+            Box::new(|record| {
+                record
+                    .toolchains
+                    .insert("rustc".to_owned(), "rustc 1.97.0".to_owned());
+            }),
+        ),
+        (
+            "bundle",
+            Box::new(|record| record.bundle_sha256 = "f".repeat(64)),
+        ),
+        ("bundle", Box::new(|record| record.bundle_files += 1)),
+        (
+            "bundle path",
+            Box::new(|record| record.bundle_path = "../outside".to_owned()),
+        ),
+        (
+            "bundle path",
+            Box::new(|record| record.bundle_path = "/abs/bundle".to_owned()),
+        ),
+    ];
+    for (field, plant) in plants {
+        let mut planted = record.clone();
+        plant(&mut planted);
+        let refusal = check(&planted, &here, &bundle)
+            .expect_err("§9.4: a custody record that names another run, tree, pin, or bundle");
+        assert!(
+            refusal.starts_with(field) && refusal.lines().count() == 1,
+            "the refusal names the field `{field}` alone: {refusal}"
+        );
+    }
+}
+
+/// §8.3: Windows runs as the lanes of one run, the conformance lanes of the
+/// Intel partition and the producer, after honesty and only in a run that is
+/// the whole gate; its aggregate keeps the host's context, runs after any
+/// lane's failure, joins every lane's receipt, and fails on a missing one.
+fn windows_host_workflow(ci: &str) -> Result<(), String> {
+    let part = workflow_job(ci, "windows-part")?;
+    let join = workflow_job(ci, "windows-join")?;
+    let honesty = workflow_job(ci, "honesty")?;
+    let require = |body: &str, text: &str, rule: &str| -> Result<(), String> {
+        if body.contains(text) {
+            Ok(())
+        } else {
+            Err(format!("RP-14: {rule}: missing `{text}`"))
+        }
+    };
+    let plan: serde_json::Value = serde_json::from_str(&root_file(".github/intel-host-lanes.json"))
+        .map_err(|error| format!("RP-14: the lanes file: {error}"))?;
+    let mut lanes = vec!["producer".to_owned()];
+    lanes.extend(
+        plan["lanes"]
+            .as_object()
+            .ok_or("RP-14: the lanes file names its lanes")?
+            .keys()
+            .cloned(),
+    );
+    lanes.sort();
+    let mut matrix: Vec<String> = part
+        .lines()
+        .find_map(|line| line.strip_prefix("        lane: ["))
+        .and_then(|rest| rest.strip_suffix(']'))
+        .ok_or("RP-14: the Windows matrix names its lanes")?
+        .split(',')
+        .map(|lane| lane.trim().to_owned())
+        .collect();
+    matrix.sort();
+    if matrix != lanes {
+        return Err(format!(
+            "RP-14: the Windows matrix runs {matrix:?}, the producer and the lanes of the partition are {lanes:?}"
+        ));
+    }
+    for (body, text, rule) in [
+        (&part, "    needs: [plan, honesty]\n", "the lanes follow honesty"),
+        (
+            &part,
+            "    if: ${{ needs.plan.outputs.full == 'true' }}\n",
+            "the lanes run in a run that is the whole gate",
+        ),
+        (&part, "      fail-fast: false\n", "a failing lane stops no other"),
+        (&part, "    runs-on: windows-2022\n", "the lanes run on the host"),
+        (&part, "        run: rustup toolchain install\n", "the Rust pin"),
+        (
+            &part,
+            "if [ \"$host\" != x86_64-pc-windows-msvc ]; then",
+            "a lane checks its host triple",
+        ),
+        (
+            &part,
+            "python .github/scripts/host_lanes.py execute --target x86_64-pc-windows-msvc --lane ${{ matrix.lane }} --output \"$RUNNER_TEMP/host-lane\"",
+            "a lane executes and records its part",
+        ),
+        (
+            &part,
+            "          name: host-x86_64-pc-windows-msvc-${{ matrix.lane }}\n",
+            "a lane uploads its receipt",
+        ),
+        (
+            &join,
+            "    name: build and non-Lean tests (x86_64-pc-windows-msvc)\n",
+            "the aggregate keeps the host's context",
+        ),
+        (&join, "    needs: [plan, windows-part]\n", "the aggregate follows the lanes"),
+        (
+            &join,
+            "    if: ${{ always() && needs.plan.outputs.full == 'true' }}\n",
+            "the aggregate runs after a failed or cancelled lane",
+        ),
+        (
+            &join,
+            "          pattern: host-x86_64-pc-windows-msvc-*\n",
+            "the aggregate reads every lane's receipt",
+        ),
+        (
+            &join,
+            "python3 .github/scripts/host_lanes.py join --target x86_64-pc-windows-msvc --artifacts \"$RUNNER_TEMP/host-lanes\"",
+            "the aggregate joins the receipts",
+        ),
+        (
+            &join,
+            "PART_RESULT: ${{ needs.windows-part.result }}",
+            "the aggregate reads the lanes' result",
+        ),
+        (
+            &honesty,
+            "python3 -m unittest discover -s .github/scripts -p 'test_host_lanes.py'",
+            "the join's behavioral tests run before expensive roots",
+        ),
+    ] {
+        require(body, text, rule)?;
+    }
+    let result_step = join
+        .split("\n      - ")
+        .find(|step| step.contains("test \"$PART_RESULT\" = success"))
+        .ok_or("RP-14: the Windows aggregate does not check its lanes' result")?;
+    require(
+        result_step,
+        "if: ${{ always() }}",
+        "the aggregate cannot hide a failed or cancelled lane",
+    )?;
+    let timeout = part
+        .lines()
+        .find_map(|line| line.trim().strip_prefix("timeout-minutes: "))
+        .and_then(|value| value.parse::<u32>().ok())
+        .ok_or("RP-14: a Windows lane has no timeout")?;
+    if timeout == 0 || timeout > 240 {
+        return Err("RP-14: a Windows lane cannot raise the 240-minute bound".to_owned());
+    }
+    for body in [&part, &join] {
+        for forbidden in [
+            "run-id:",
+            "github-token:",
+            "continue-on-error",
+            "actions/cache",
+        ] {
+            if body.contains(forbidden) {
+                return Err(format!("RP-14: the Windows lanes admit `{forbidden}`"));
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Claim drift must finish successfully before a costly root can start.
 fn honesty_dependencies(ci: &str) -> Result<(), String> {
     let initial = workflow_job(ci, "honesty")?;
@@ -3267,7 +3996,14 @@ fn honesty_dependencies(ci: &str) -> Result<(), String> {
             "RP-14: honesty must expose its matrix-resolved context and follow the plan".to_owned(),
         );
     }
-    for root in ["vv", "atlas-prefix", "host-matrix", "intel-construction"] {
+    for root in [
+        "bootstrap-export",
+        "vv",
+        "atlas-prefix",
+        "host-matrix",
+        "intel-construction",
+        "windows-part",
+    ] {
         let body = workflow_job(ci, root)?;
         if !body.contains("needs: [plan, honesty]\n")
             || body

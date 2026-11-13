@@ -33,6 +33,9 @@
     "bootstrap/assemble_items": {
       "debug": 3211264
     },
+    "bootstrap/build_manifest": {
+      "debug": 589824
+    },
     "bootstrap/check_arguments": {
       "debug": 4915200
     },
@@ -80,6 +83,15 @@
     },
     "bootstrap/print_expr": {
       "debug": 4259840
+    },
+    "bootstrap/print_generic": {
+      "debug": 1376256
+    },
+    "bootstrap/print_lse": {
+      "debug": 1900544
+    },
+    "bootstrap/print_tooling_module": {
+      "debug": 1179648
     },
     "bootstrap/render_tooling_latex": {
       "debug": 3342336

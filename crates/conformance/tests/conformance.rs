@@ -91,6 +91,11 @@ fn conformance_rp_18() {
 }
 
 #[test]
+fn conformance_rp_19() {
+    repo_conformance::cases::run("RP-19");
+}
+
+#[test]
 fn conformance_cf_01() {
     repo_conformance::cases::run("CF-01");
 }
@@ -601,6 +606,11 @@ fn conformance_sm_37() {
 }
 
 #[test]
+fn conformance_sm_38() {
+    repo_conformance::cases::run("SM-38");
+}
+
+#[test]
 fn conformance_sm_32() {
     repo_conformance::cases::run("SM-32");
 }
@@ -813,6 +823,11 @@ fn conformance_pf_22() {
 #[test]
 fn conformance_pf_23() {
     repo_conformance::cases::run("PF-23");
+}
+
+#[test]
+fn conformance_pf_24() {
+    repo_conformance::cases::run("PF-24");
 }
 
 #[test]
@@ -1553,6 +1568,11 @@ fn conformance_rb_20() {
 #[test]
 fn conformance_rb_21() {
     repo_conformance::cases::run("RB-21");
+}
+
+#[test]
+fn conformance_rb_24() {
+    repo_conformance::cases::run("RB-24");
 }
 
 #[test]
@@ -2323,6 +2343,71 @@ fn conformance_bs_20() {
 #[test]
 fn conformance_bs_21() {
     repo_conformance::cases::run("BS-21");
+}
+
+#[test]
+fn conformance_bs_22() {
+    repo_conformance::cases::run("BS-22");
+}
+
+#[test]
+fn conformance_bs_23() {
+    repo_conformance::cases::run("BS-23");
+}
+
+#[test]
+fn conformance_bs_24() {
+    repo_conformance::cases::run("BS-24");
+}
+
+#[test]
+fn conformance_bs_25() {
+    repo_conformance::cases::run("BS-25");
+}
+
+#[test]
+fn conformance_bs_26() {
+    repo_conformance::cases::run("BS-26");
+}
+
+#[test]
+fn conformance_bs_27() {
+    repo_conformance::cases::run("BS-27");
+}
+
+#[test]
+fn conformance_bs_28() {
+    repo_conformance::cases::run("BS-28");
+}
+
+#[test]
+fn conformance_bs_29() {
+    repo_conformance::cases::run("BS-29");
+}
+
+#[test]
+fn conformance_bs_30() {
+    repo_conformance::cases::run("BS-30");
+}
+
+#[test]
+fn conformance_bs_31() {
+    repo_conformance::cases::run("BS-31");
+}
+
+#[test]
+fn conformance_bs_32() {
+    repo_conformance::cases::run("BS-32");
+}
+
+#[test]
+fn conformance_bs_33() {
+    repo_conformance::cases::run("BS-33");
+}
+
+#[test]
+fn conformance_bs_34() {
+    repo_conformance::cases::run("BS-34");
 }
 
 #[test]

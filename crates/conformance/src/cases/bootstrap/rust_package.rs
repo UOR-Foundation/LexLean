@@ -34,12 +34,12 @@ const CAPACITY: usize = 1 << 24;
 /// bytes. Under rustc every library is rendered.
 const EVALUATOR_LIBRARY: usize = 16_384;
 
-const MANIFESTS: usize = 319;
-const ACCEPTED: usize = 300;
+const MANIFESTS: usize = 349;
+const ACCEPTED: usize = 330;
 const HEADER_RULES: usize = 182;
 const RENDER_RULES: usize = 137;
 const HEADER_MUTANTS: usize = 2_000;
-const RENDER_MUTANTS: usize = 300;
+const RENDER_MUTANTS: usize = 330;
 const EVALUATOR_RENDERS: usize = 241;
 
 fn nat(value: usize) -> Value {
@@ -909,27 +909,22 @@ pub(super) fn case() {
         within.len(),
         started.elapsed()
     );
-    assert_eq!(
-        (
-            manifests.len(),
-            renders.len(),
-            rules.len(),
-            shaped.len(),
-            mutants.len(),
-            render_mutants.len(),
-            within.len()
-        ),
-        (
-            MANIFESTS,
-            ACCEPTED,
-            HEADER_RULES,
-            RENDER_RULES,
-            HEADER_MUTANTS,
-            RENDER_MUTANTS,
-            EVALUATOR_RENDERS
-        ),
-        "the manifests, the accepted ones, the rule inputs, the mutants, and the renders the evaluator is given"
+    crate::counts!(
+        "BS-15",
+        "the manifests, the accepted ones, the rule inputs, the mutants, and the renders the evaluator is given",
+        {
+            MANIFESTS: manifests.len(),
+            ACCEPTED: renders.len(),
+            HEADER_RULES: rules.len(),
+            RENDER_RULES: shaped.len(),
+            HEADER_MUTANTS: mutants.len(),
+            RENDER_MUTANTS: render_mutants.len(),
+            EVALUATOR_RENDERS: within.len(),
+        }
     );
+    if crate::counts::stop_before_runs("BS-15") {
+        return;
+    }
 
     let checked = support::checked_project(&project);
     let check_root = super::lower(&checked, &project, MODULE, "checkManifest");

@@ -21,3 +21,37 @@ writes the rejection of a GNAF request through it.
 
 `src/StructuralGrammar.lex.tex` imports `PrimitiveScan` for the atoms it reads
 and the refusal it returns, and `Buffer` and `Numeral` from the standard library.
+
+`src/SurfaceLex.lex.tex` imports `AxiomOutput`, whose `whiteLength` holds the list of
+white space the oracle's `char::is_whitespace` has, and the standard library's `Buffer` and `Text`.
+
+`src/SurfaceDoc.lex.tex` imports only the standard library's `Buffer` and `Text`.
+
+`src/SurfaceGeneric.lex.tex` imports `SurfaceLex` and `SurfaceDoc`, and the standard library's
+`Json`, `Numeral`, `Order`, and `Text`: its values are the standard library's `Json`.
+
+`src/SurfaceTooling.lex.tex` (SPEC.md §17.23, `BS-27`) imports `SurfaceGeneric` and `SurfaceLex`,
+`AxiomOutput` for the white space of a scalar, and the standard library's `Json`, `Order`, and `Text`.
+`src/LexiconLse.lex.tex` (SPEC.md §17.23, `BS-25`) imports the standard library's `Numeral`,
+`Order`, and `Text`, and nothing of the bootstrap project: its expressions, universes, and
+S-expression trees are sorts of its own, each list of a sort's values a chain in the sort.
+
+`src/LexiconLre.lex.tex` (SPEC.md §17.23, `BS-26`) imports `LexiconLse`, whose tokenizer and
+tree reader it reads with, and the standard library's `Order`.
+`src/SurfaceModule.lex.tex` (SPEC.md §17.23, `BS-28`) imports `AxiomOutput`, whose scanners of
+white space it trims with, and the standard library's `Text`.
+`src/Diagnostics.lex.tex` (SPEC.md §17.23, `BS-29`) imports the standard library's `Json`,
+`Numeral`, `Order`, and `Text`: it writes, sorts, and caps the canonical diagnostic.
+
+`src/CliOutput.lex.tex` (SPEC.md §17.23, `BS-30`) imports `Diagnostics` (`BS-29`), whose
+diagnostic it writes for a terminal, and the standard library's `Numeral` and `Order`.
+`src/LockText.lex.tex` (SPEC.md §17.23, `BS-31`) imports the standard library's `Numeral`,
+`Order`, and `Text`, and writes the canonical lock text of SPEC.md §11.2.
+`src/ContentId.lex.tex` (SPEC.md §17.23, `BS-32`) imports the standard library's `Numeral` and
+`Sha256`, and computes the labeled hash recipes of content identity of SPEC.md §21.
+
+`src/ProjectText.lex.tex` (SPEC.md §17.23, `BS-33`) imports `LockText` (`BS-31`), whose TOML
+writers it uses, and the standard library's `Numeral`, `Order`, and `Sha256`, and writes the
+canonical project manifest of SPEC.md §10.1 and its digest.
+`src/ManifestText.lex.tex` (SPEC.md §17.23, `BS-34`) imports the standard library's `Json`,
+`Numeral`, `Order`, and `Text`, and writes the build manifest of SPEC.md §21.6.

@@ -1,0 +1,257 @@
+\begin{lexlean}{SurfaceTooling}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{AxiomOutput}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\importmodule{SurfaceGeneric}
+\importmodule{SurfaceLex}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Sp,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: phase, type: Nat},
+    {name: spans, type: (List (Nat * Nat))},
+    {name: error, type: (Option SurfaceLex::Failure)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: failure,
+  parameters: [offset : Nat, message : Bytes],
+  result: SurfaceLex::Failure,
+  body: (record SurfaceLex::Failure {offset := offset, message := message}),
+  executable: true
+}
+
+definition{
+  name: hasSpec,
+  parameters: [members : LexLeanStd.Json::Json],
+  result: Bool,
+  body: (match members
+    | LexLeanStd.Json::Json.JMember key inner rest => (if (prim equal key (lit "spec") : Bool) then (match inner
+      | LexLeanStd.Json::Json.JStr text => true
+      | LexLeanStd.Json::Json.JBool flag => false
+      | LexLeanStd.Json::Json.JInt negative magnitude => false
+      | LexLeanStd.Json::Json.JArr items => false
+      | LexLeanStd.Json::Json.JObj fields => false
+      | LexLeanStd.Json::Json.JNil => false
+      | LexLeanStd.Json::Json.JItem element tail => false
+      | LexLeanStd.Json::Json.JMember k v tail => false) else (hasSpec rest))
+    | LexLeanStd.Json::Json.JBool flag => false
+    | LexLeanStd.Json::Json.JInt negative magnitude => false
+    | LexLeanStd.Json::Json.JStr text => false
+    | LexLeanStd.Json::Json.JArr items => false
+    | LexLeanStd.Json::Json.JObj fields => false
+    | LexLeanStd.Json::Json.JNil => false
+    | LexLeanStd.Json::Json.JItem element rest => false),
+  executable: true,
+  recursive_argument: members
+}
+
+definition{
+  name: withoutSpec,
+  parameters: [members : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (match members
+    | LexLeanStd.Json::Json.JMember key inner rest => (if (prim equal key (lit "spec") : Bool) then (withoutSpec rest) else (ctor LexLeanStd.Json::Json.JMember key inner (withoutSpec rest)))
+    | LexLeanStd.Json::Json.JBool flag => (ctor LexLeanStd.Json::Json.JBool flag)
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor LexLeanStd.Json::Json.JInt negative magnitude)
+    | LexLeanStd.Json::Json.JStr text => (ctor LexLeanStd.Json::Json.JStr text)
+    | LexLeanStd.Json::Json.JArr items => (ctor LexLeanStd.Json::Json.JArr items)
+    | LexLeanStd.Json::Json.JObj fields => (ctor LexLeanStd.Json::Json.JObj fields)
+    | LexLeanStd.Json::Json.JNil => (ctor LexLeanStd.Json::Json.JNil)
+    | LexLeanStd.Json::Json.JItem element rest => (ctor LexLeanStd.Json::Json.JItem element rest)),
+  executable: true,
+  recursive_argument: members
+}
+
+definition{
+  name: printToolingModule,
+  parameters: [given : LexLeanStd.Json::Json],
+  result: (Result Bytes SurfaceLex::Failure),
+  body: (match given
+    | LexLeanStd.Json::Json.JObj members => (if (hasSpec members) then (ctor Result.ok [Bytes, SurfaceLex::Failure] (prim append (SurfaceGeneric::printGeneric (ctor LexLeanStd.Json::Json.JObj (withoutSpec members))) 0x0a : Bytes)) else (ctor Result.error [Bytes, SurfaceLex::Failure] (failure 0 (lit "a module has a `spec`"))))
+    | LexLeanStd.Json::Json.JBool flag => (ctor Result.error [Bytes, SurfaceLex::Failure] (failure 0 (lit "a module is an object")))
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Result.error [Bytes, SurfaceLex::Failure] (failure 0 (lit "a module is an object")))
+    | LexLeanStd.Json::Json.JStr text => (ctor Result.error [Bytes, SurfaceLex::Failure] (failure 0 (lit "a module is an object")))
+    | LexLeanStd.Json::Json.JArr items => (ctor Result.error [Bytes, SurfaceLex::Failure] (failure 0 (lit "a module is an object")))
+    | LexLeanStd.Json::Json.JNil => (ctor Result.error [Bytes, SurfaceLex::Failure] (failure 0 (lit "a module is an object")))
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Result.error [Bytes, SurfaceLex::Failure] (failure 0 (lit "a module is an object")))
+    | LexLeanStd.Json::Json.JMember key inner rest => (ctor Result.error [Bytes, SurfaceLex::Failure] (failure 0 (lit "a module is an object")))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: whiteStep,
+  parameters: [text : Bytes, n : Nat, position : Nat],
+  result: (Option Nat),
+  body: (if (position <? n) then (let white : Nat := (AxiomOutput::whiteLength text position); (if (0 <? white) then (ctor Option.some [Nat] (position + white)) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: firstNonWhite,
+  parameters: [text : Bytes],
+  result: Nat,
+  body: (let n : Nat := (prim length text : Nat); (let reached : Nat := (first (prim iterate_until (fun [n, text] (position : Nat) => (whiteStep text n position)) (n + 1) 0 : (Nat * Bool))); (if (reached <? n) then reached else 0))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: memberStep,
+  parameters: [state : (LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))],
+  result: (Option (LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))),
+  body: (match (first state)
+    | LexLeanStd.Json::Json.JMember key inner rest => (ctor Option.some [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))] (rest, (cons (key, inner) (second state))))
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JArr items => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JObj fields => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])),
+  executable: true
+}
+
+definition{
+  name: membersOf,
+  parameters: [chain : LexLeanStd.Json::Json, fuel : Nat],
+  result: (List (Bytes * LexLeanStd.Json::Json)),
+  body: (second (first (prim iterate_until (fun (state : (LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))) => (memberStep state)) (fuel + 1) (chain, (nil (Bytes * LexLeanStd.Json::Json))) : ((LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json))) * Bool)))),
+  executable: true
+}
+
+definition{
+  name: specOffset,
+  parameters: [text : Bytes],
+  result: Nat,
+  body: (match (LexLeanStd.Text::find text (lit "spec"))
+    | Option.some found => found
+    | Option.none => 0),
+  executable: true
+}
+
+definition{
+  name: parseToolingModule,
+  parameters: [text : Bytes, spec : Bytes],
+  result: (Result LexLeanStd.Json::Json SurfaceLex::Failure),
+  body: (match (SurfaceGeneric::parseGeneric text)
+    | Result.error stopped => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] stopped)
+    | Result.ok value => (match value
+      | LexLeanStd.Json::Json.JObj chain => (let members : (List (Bytes * LexLeanStd.Json::Json)) := (membersOf chain (prim length text : Nat)); (if (SurfaceGeneric::hasKey members (lit "spec")) then (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] (failure (specOffset text) (lit "the `spec` of a module is implied by its language and is not written"))) else (ctor Result.ok [LexLeanStd.Json::Json, SurfaceLex::Failure] (ctor LexLeanStd.Json::Json.JObj (SurfaceGeneric::memberChain (LexLeanStd.Order::sortByKey [LexLeanStd.Json::Json] (cons ((lit "spec"), (ctor LexLeanStd.Json::Json.JStr spec)) members)))))))
+      | LexLeanStd.Json::Json.JBool flag => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] (failure (firstNonWhite text) (lit "a module is an object")))
+      | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] (failure (firstNonWhite text) (lit "a module is an object")))
+      | LexLeanStd.Json::Json.JStr word => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] (failure (firstNonWhite text) (lit "a module is an object")))
+      | LexLeanStd.Json::Json.JArr items => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] (failure (firstNonWhite text) (lit "a module is an object")))
+      | LexLeanStd.Json::Json.JNil => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] (failure (firstNonWhite text) (lit "a module is an object")))
+      | LexLeanStd.Json::Json.JItem element rest => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] (failure (firstNonWhite text) (lit "a module is an object")))
+      | LexLeanStd.Json::Json.JMember key inner rest => (ctor Result.error [LexLeanStd.Json::Json, SurfaceLex::Failure] (failure (firstNonWhite text) (lit "a module is an object"))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: lastEnd,
+  parameters: [toks : (List SurfaceLex::Spanned), position : Nat],
+  result: Nat,
+  body: (if (position =? 0) then 0 else (match (prim index toks (prim subtract position 1 : Nat) : (Option SurfaceLex::Spanned))
+    | Option.some found => (project found stop)
+    | Option.none => 0)),
+  executable: true
+}
+
+definition{
+  name: spAt,
+  parameters: [st : Sp, position : Nat, phase : Nat],
+  result: Sp,
+  body: (record Sp {pos := position, phase := phase, spans := (project st spans), error := (ctor Option.none [SurfaceLex::Failure])}),
+  executable: true
+}
+
+definition{
+  name: spFail,
+  parameters: [st : Sp, offset : Nat, message : Bytes],
+  result: Sp,
+  body: (record Sp {pos := (project st pos), phase := 9, spans := (project st spans), error := (ctor Option.some [SurfaceLex::Failure] (failure offset message))}),
+  executable: true
+}
+
+definition{
+  name: spRead,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Sp, depth : Nat, inside : Bool],
+  result: Sp,
+  body: (let start : Nat := (project st pos); (let outcome : SurfaceGeneric::Rd := (SurfaceGeneric::readFrom toks size start depth); (match (project outcome error)
+    | Option.some stopped => (record Sp {pos := (project st pos), phase := 9, spans := (project st spans), error := (ctor Option.some [SurfaceLex::Failure] stopped)})
+    | Option.none => (let after : Nat := (project outcome pos); (if inside then (let spans : (List (Nat * Nat)) := (cons ((SurfaceGeneric::offsetAt toks size start), (lastEnd toks after)) (project st spans)); (if ((SurfaceGeneric::codeAt toks after) =? 6) then (record Sp {pos := (after + 1), phase := 2, spans := spans, error := (ctor Option.none [SurfaceLex::Failure])}) else (record Sp {pos := after, phase := 3, spans := spans, error := (ctor Option.none [SurfaceLex::Failure])}))) else (spAt st after 4)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: spMember,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Sp],
+  result: Sp,
+  body: (let position : Nat := (project st pos); (let code : Nat := (SurfaceGeneric::codeAt toks position); (if (code =? 1) then (spAt st position 5) else (if (if (code =? 11) then true else (code =? 12)) then (if ((SurfaceGeneric::codeAt toks (position + 1)) =? 7) then (if (prim equal (SurfaceGeneric::textAt toks position) (lit "declarations") : Bool) then (if ((SurfaceGeneric::codeAt toks (position + 2)) =? 2) then (spAt st (position + 3) 2) else (spFail st (SurfaceGeneric::offsetAt toks size (position + 2)) (lit "expected `[` after `declarations`"))) else (spRead toks size (spAt st (position + 2) 1) 1 false)) else (spFail st (SurfaceGeneric::offsetAt toks size (position + 1)) (lit "expected `:` after a member name"))) else (spFail st (SurfaceGeneric::offsetAt toks size position) (lit "expected a member name")))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: spEnd,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Sp],
+  result: Sp,
+  body: (let position : Nat := (project st pos); (if ((SurfaceGeneric::codeAt toks position) =? 1) then (if ((position + 1) <? (prim length toks : Nat)) then (spFail st (SurfaceGeneric::offsetAt toks size (position + 1)) (lit "unexpected text after the module")) else (spAt st (position + 1) 8)) else (spFail st (SurfaceGeneric::offsetAt toks size position) (lit "expected `,` or `}`")))),
+  executable: true
+}
+
+definition{
+  name: spPhase,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Sp],
+  result: Sp,
+  body: (let phase : Nat := (project st phase); (let position : Nat := (project st pos); (if (phase =? 0) then (if ((SurfaceGeneric::codeAt toks position) =? 0) then (spAt st (position + 1) 1) else (spFail st (SurfaceGeneric::offsetAt toks size position) (lit "expected `{`"))) else (if (phase =? 1) then (spMember toks size st) else (if (phase =? 2) then (if ((SurfaceGeneric::codeAt toks position) =? 3) then (spAt st position 3) else (spRead toks size st 2 true)) else (if (phase =? 3) then (if ((SurfaceGeneric::codeAt toks position) =? 3) then (spAt st (position + 1) 4) else (spFail st (SurfaceGeneric::offsetAt toks size position) (lit "expected `,` or `]`"))) else (if (phase =? 4) then (if ((SurfaceGeneric::codeAt toks position) =? 6) then (spAt st (position + 1) 1) else (spAt st position 5)) else (spEnd toks size st)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: spStep,
+  parameters: [toks : (List SurfaceLex::Spanned), size : Nat, st : Sp],
+  result: (Option Sp),
+  body: (if ((project st phase) <? 8) then (ctor Option.some [Sp] (spPhase toks size st)) else (ctor Option.none [Sp])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: declarationSpans,
+  parameters: [text : Bytes],
+  result: (Result (List (Nat * Nat)) SurfaceLex::Failure),
+  body: (match (SurfaceLex::lexText text)
+    | Result.error stopped => (ctor Result.error [(List (Nat * Nat)), SurfaceLex::Failure] stopped)
+    | Result.ok toks => (let size : Nat := (prim length text : Nat); (let final : Sp := (first (prim iterate_until (fun [size, toks] (st : Sp) => (spStep toks size st)) ((prim multiply (prim length toks : Nat) 2 : Nat) + 4) (record Sp {pos := 0, phase := 0, spans := (nil (Nat * Nat)), error := (ctor Option.none [SurfaceLex::Failure])}) : (Sp * Bool))); (match (project final error)
+      | Option.some stopped => (ctor Result.error [(List (Nat * Nat)), SurfaceLex::Failure] stopped)
+      | Option.none => (if ((project final phase) =? 8) then (ctor Result.ok [(List (Nat * Nat)), SurfaceLex::Failure] (LexLeanStd.Order::reverseList [(Nat * Nat)] (project final spans))) else (ctor Result.error [(List (Nat * Nat)), SurfaceLex::Failure] (failure size (lit "the reader ran out of steps")))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
