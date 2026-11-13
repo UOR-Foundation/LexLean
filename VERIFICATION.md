@@ -12031,6 +12031,15 @@ typed IR. Which root the oversized part belongs to, and whether it has a
 structural fix as `RB-24`'s validator twin did, is open; the raise unblocks
 the batch and is not the end of the matter.
 
+Once that export ran, the gate caught `LLV7005` on sixteen of the module's
+hand-written helpers (`byteAt` through `readLoose`, the loose JSON reader):
+each declared the axioms `oneByte`'s proof, and every other pure helper's,
+never uses. They were copied from the standard library's reader this one is
+modelled on, and `LLV7005` catches an unused axiom only when a root's own
+proof is examined, so a reader built from an existing one inherits axioms it
+never needs until its own root is checked. Every helper but the root,
+`decodeSemanticModule`, now declares none.
+
 `BS-73` holds the production root `decodeSemanticModule` of
 `LexLeanBoot.SemanticDecode` (`bootstrap/src/SemanticDecode.lex.tex`) to the
 decoding half of `lexlean::ir::semantic::SemanticModule::parse`: serde's typed
