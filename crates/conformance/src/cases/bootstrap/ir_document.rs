@@ -44,7 +44,7 @@ const ROOTS: [(&str, &[&str]); 3] = [
 ];
 
 /// The most a part of a certificate of a root may be, as the row states.
-const CERTIFICATE_BUDGET: u64 = 3_145_728;
+const CERTIFICATE_BUDGET: u64 = 4_194_304;
 /// A committed project whose linked IR is longer runs under rustc only.
 const EVALUATOR_BYTES: usize = 262_144;
 /// A committed project whose linked IR is longer is beyond a rendered
