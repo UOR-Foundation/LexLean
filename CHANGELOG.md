@@ -17,6 +17,11 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The bootstrap project configures `max_file_bytes = 25165824` (SPEC.md
+  §17.23, the maintainer's decision): with `BS-73` a part of its certificate is
+  12,928,150 bytes, beyond the 6,291,456 it configured. A semantic input, so its
+  lock and every package move.
+
 - Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
   new diagnostic code; changes the language-1.2 identity). The runtime gains a
   sixth native module, `LexLeanRuntime.Regions`: a checker of local box

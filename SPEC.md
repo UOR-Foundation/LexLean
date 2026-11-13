@@ -8851,7 +8851,11 @@ took the export past that, to 135,273,215 bytes, so the project now configures
 further components of the driver. With the driver's cases in `RuntimeValidate` (`RB-24`),
 Lean's extraction of the project writes more than the 33,554,432 bytes of output a child
 process may produce, so the project configures `max_child_output_bytes = 268435456`
-(the maintainer's decision), with room for the slices of the typed IR.
+(the maintainer's decision), with room for the slices of the typed IR. With
+the ninth slice, `BS-73`, a part of its certificate is 12,928,150 bytes, beyond
+the 6,291,456 bytes the project configured, so the project configures
+`max_file_bytes = 25165824` (the maintainer's decision), with room for the
+further slices of the typed IR.
 
 `BS-16` holds `validateRequest` of `GnafValidate` to `gnaf::validate` (§17.15). The root takes the projection
 of a request that validation reads, as first-order data: the length of the domain, the machine (its capacity,

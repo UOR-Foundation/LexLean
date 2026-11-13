@@ -12021,6 +12021,16 @@ with exactly its declared effects, and `lexlean fmt --check` passes.
 
 ### decoding a semantic module from JSON is source (BS-73)
 
+The regeneration of the typed-IR stack at this slice's tip (run 43481945154,
+r9) stopped bootstrap's production export at `LLS8002`: a part of its
+certificate is 12,928,150 bytes, beyond the 6,291,456 bytes the project let
+one file hold. The project now configures `max_file_bytes = 25165824` (the
+maintainer's decision, 2026-11-13; a semantic input, so the lock and every
+package move at the landing), which leaves room for the further slices of the
+typed IR. Which root the oversized part belongs to, and whether it has a
+structural fix as `RB-24`'s validator twin did, is open; the raise unblocks
+the batch and is not the end of the matter.
+
 `BS-73` holds the production root `decodeSemanticModule` of
 `LexLeanBoot.SemanticDecode` (`bootstrap/src/SemanticDecode.lex.tex`) to the
 decoding half of `lexlean::ir::semantic::SemanticModule::parse`: serde's typed
