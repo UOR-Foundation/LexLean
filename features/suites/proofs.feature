@@ -165,3 +165,10 @@ Feature: proofs
     When it is rendered and verified, copies name an unregistered law, drop an argument, pass an argument of the wrong type, drop the premise, name a later theorem as the premise, a language-1.1 module uses the form, and a copy applies the pair law to a swapped statement
     Then the generated Lean applies the registered theorem with explicit type arguments, arguments, and premises, and verifies
     And each malformed copy and the language-1.1 use fail with LLT4001 and the swapped statement fails verification with LLV7002
+
+  @PF-24 @build
+  Scenario: The runtime module LexLeanRuntime.Regions states the decision-region checker and its soundness theorem as LexLean source with every row's axioms within propext and Quot.sound, and the language-1.2 region_check proof form lowers a property of a first-match decision fragment to that checker's data, closes it with one kernel-decided obligation, is refused in linking outside the fragment or as a branch, and by Lean for a defective rule.
+    Given the shipped runtime and the committed decision-regions example, whose thermostat properties are proved by region_check
+    When the runtime is built, the example is rendered and verified, copies put != in a rule, leave a field unbounded, compare a sum, use the form as a branch, a language-1.1 module uses the form, and a copy drops the occupancy test from a rule
+    Then the regions module is a native core module importing only Init with every row within propext and Quot.sound, and each property lowers to one application of LexLeanRegions.holds whose obligation the kernel decides
+    And the malformed copies and the language-1.1 use fail with LLT4001 and the defective rule fails verification with LLV7002 at exactly the properties it breaks
