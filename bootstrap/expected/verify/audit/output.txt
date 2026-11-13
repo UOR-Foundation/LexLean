@@ -447,6 +447,25 @@
 'LexLeanBoot.LockText.tomlArray' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.LockText.tomlString' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.LockText.upperHex' does not depend on any axioms
+'LexLeanBoot.LseScopes.Rc' does not depend on any axioms
+'LexLeanBoot.LseScopes.SWork' does not depend on any axioms
+'LexLeanBoot.LseScopes.Sc' does not depend on any axioms
+'LexLeanBoot.LseScopes.cat' does not depend on any axioms
+'LexLeanBoot.LseScopes.checkScopes' does not depend on any axioms
+'LexLeanBoot.LseScopes.dropFront' does not depend on any axioms
+'LexLeanBoot.LseScopes.explicitStep' does not depend on any axioms
+'LexLeanBoot.LseScopes.exprStep' does not depend on any axioms
+'LexLeanBoot.LseScopes.isSort' does not depend on any axioms
+'LexLeanBoot.LseScopes.lit' does not depend on any axioms
+'LexLeanBoot.LseScopes.member' does not depend on any axioms
+'LexLeanBoot.LseScopes.outerShape' does not depend on any axioms
+'LexLeanBoot.LseScopes.rcGo' does not depend on any axioms
+'LexLeanBoot.LseScopes.rcStep' does not depend on any axioms
+'LexLeanBoot.LseScopes.referencedConsts' does not depend on any axioms
+'LexLeanBoot.LseScopes.scFail' does not depend on any axioms
+'LexLeanBoot.LseScopes.scGo' does not depend on any axioms
+'LexLeanBoot.LseScopes.scStep' does not depend on any axioms
+'LexLeanBoot.LseScopes.uniStep' does not depend on any axioms
 'LexLeanBoot.ManifestText.BuildManifest' does not depend on any axioms
 'LexLeanBoot.ManifestText.FileRow' does not depend on any axioms
 'LexLeanBoot.ManifestText.ModuleRow' does not depend on any axioms
