@@ -119,7 +119,7 @@ signature = "not-published-or-not-relied-upon"
 media_type = "application/gzip"
 license = "Apache-2.0"
 redistribution = "redistributable"
-retrieval_date = "2026-10-02"
+retrieval_date = "2026-11-13"
 supersession_policy = "explicit-lock-update-only"
 
 [[authority]]
