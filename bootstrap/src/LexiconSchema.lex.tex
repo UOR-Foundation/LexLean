@@ -358,10 +358,18 @@ definition{
 }
 
 definition{
+  name: segAt,
+  parameters: [st : (Nat * Bool)],
+  result: Bool,
+  body: (second st),
+  executable: true
+}
+
+definition{
   name: leanStep,
   parameters: [text : Bytes, n : Nat, st : (Nat * Bool)],
   result: (Option (Nat * Bool)),
-  body: (let position : Nat := (first st); (if (position <? n) then (let value : Nat := (LexiconLse::byteNum text position); (if (value =? 46) then (if (second st) then (ctor Option.none [(Nat * Bool)]) else (ctor Option.some [(Nat * Bool)] ((position + 1), true))) else (if (second st) then (if (isNameStart value) then (ctor Option.some [(Nat * Bool)] ((position + 1), false)) else (ctor Option.none [(Nat * Bool)])) else (if (isNameRest value) then (ctor Option.some [(Nat * Bool)] ((position + 1), false)) else (ctor Option.none [(Nat * Bool)]))))) else (ctor Option.none [(Nat * Bool)]))),
+  body: (let position : Nat := (first st); (if (position <? n) then (let value : Nat := (LexiconLse::byteNum text position); (if (value =? 46) then (if (segAt st) then (ctor Option.none [(Nat * Bool)]) else (ctor Option.some [(Nat * Bool)] ((position + 1), true))) else (if (segAt st) then (if (isNameStart value) then (ctor Option.some [(Nat * Bool)] ((position + 1), false)) else (ctor Option.none [(Nat * Bool)])) else (if (isNameRest value) then (ctor Option.some [(Nat * Bool)] ((position + 1), false)) else (ctor Option.none [(Nat * Bool)]))))) else (ctor Option.none [(Nat * Bool)]))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -370,7 +378,7 @@ definition{
   name: isLeanName,
   parameters: [text : Bytes],
   result: Bool,
-  body: (let n : Nat := (prim length text : Nat); (let final : (Nat * Bool) := (first (prim iterate_until (fun [n, text] (st : (Nat * Bool)) => (leanStep text n st)) (n + 1) (0, true) : ((Nat * Bool) * Bool))); (if ((first final) =? n) then (if (second final) then false else true) else false))),
+  body: (let n : Nat := (prim length text : Nat); (let final : (Nat * Bool) := (first (prim iterate_until (fun [n, text] (st : (Nat * Bool)) => (leanStep text n st)) (n + 1) (0, true) : ((Nat * Bool) * Bool))); (if ((first final) =? n) then (if (segAt final) then false else true) else false))),
   axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow], targets: [rust-std]}
