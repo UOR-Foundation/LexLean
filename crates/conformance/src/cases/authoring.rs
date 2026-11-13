@@ -1288,7 +1288,11 @@ fn authoring_api() {
     };
 
     let root = repo_root();
-    let (mut semantic, mut tooling, mut core) = (0usize, 0usize, 0usize);
+    // Every committed source, then the API on each. A source is independent
+    // of every other, so they are taken on as many threads as the host has:
+    // one after another, the round trips of the corpus were the longest case
+    // of a supported-host lane (55 minutes on Intel).
+    let mut paths = Vec::new();
     for entry in walkdir::WalkDir::new(root.as_std_path())
         .into_iter()
         .filter_entry(|entry| {
@@ -1300,23 +1304,30 @@ fn authoring_api() {
         })
         .flatten()
     {
-        let path = entry.path();
-        if !path.to_string_lossy().ends_with(".lex.tex") {
-            continue;
+        if entry.path().to_string_lossy().ends_with(".lex.tex") {
+            paths.push(entry.into_path());
         }
+    }
+    let counts = [
+        std::sync::atomic::AtomicUsize::new(0),
+        std::sync::atomic::AtomicUsize::new(0),
+        std::sync::atomic::AtomicUsize::new(0),
+    ];
+    let source = |path: &std::path::PathBuf| -> Option<ModuleKind> {
+        let path = path.as_path();
         let Ok(text) = std::fs::read_to_string(path) else {
-            continue;
+            return None;
         };
         // Reading a module of tens of megabytes as a value takes minutes in a
         // debug build. The functions are the same code that runs on every
         // other module, and AU-09 reads these through the typed notation.
         if text.len() > LARGEST_READ_AS_VALUE {
-            continue;
+            return None;
         }
         let Some(kind) = module_kind(&text) else {
             // Not a module of these kinds: the API says so, and reads nothing.
             assert!(read_module(&text).is_err(), "{}", path.display());
-            continue;
+            return None;
         };
         // A refused fixture may not be a module; the rest are.
         let Ok(data) = read_module(&text) else {
@@ -1327,7 +1338,7 @@ fn authoring_api() {
                 "{}: a committed module the API cannot read",
                 path.display()
             );
-            continue;
+            return None;
         };
         let shown = path.display();
         // A module under a tag the notation does not name (language 1.1) has
@@ -1342,7 +1353,7 @@ fn authoring_api() {
                 data,
                 "{shown}"
             );
-            continue;
+            return None;
         }
         // The module is what the notation module reads to, in either form, and
         // the conversions are the identity on a canonical source.
@@ -1392,11 +1403,6 @@ fn authoring_api() {
             "{shown}"
         );
         assert_eq!(declaration_spans(&as_data).expect("spans"), None, "{shown}");
-        match kind {
-            ModuleKind::Semantic => semantic += 1,
-            ModuleKind::Tooling => tooling += 1,
-            ModuleKind::Core => core += 1,
-        }
         // Assembled from its header and data, a source of the standard shape is
         // the canonical source: the header is what the source already says.
         let lines: Vec<&str> = notation.lines().collect();
@@ -1448,7 +1454,40 @@ fn authoring_api() {
                 );
             }
         }
-    }
+        Some(kind)
+    };
+    // Each thread reads on the stack every authoring case reads on.
+    let next = std::sync::atomic::AtomicUsize::new(0);
+    let work = || {
+        while let Some(path) = paths.get(next.fetch_add(1, std::sync::atomic::Ordering::Relaxed)) {
+            if let Some(kind) = source(path) {
+                let at = match kind {
+                    ModuleKind::Semantic => 0,
+                    ModuleKind::Tooling => 1,
+                    ModuleKind::Core => 2,
+                };
+                counts[at].fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            }
+        }
+    };
+    let width = std::thread::available_parallelism().map_or(1, std::num::NonZeroUsize::get);
+    std::thread::scope(|scope| {
+        let threads: Vec<_> = (0..width)
+            .map(|_| {
+                std::thread::Builder::new()
+                    .stack_size(lexlean::READER_STACK)
+                    .spawn_scoped(scope, work)
+                    .expect("a reader thread")
+            })
+            .collect();
+        for thread in threads {
+            thread
+                .join()
+                .unwrap_or_else(|panic| std::panic::resume_unwind(panic));
+        }
+    });
+    let [semantic, tooling, core] =
+        counts.map(|count| count.load(std::sync::atomic::Ordering::Relaxed));
     assert!(
         semantic >= 250 && tooling >= 4 && core >= 20,
         "{semantic} semantic, {tooling} tooling and {core} core sources: the API was not exercised on the product"

@@ -280,15 +280,230 @@ pub const TABLE: &[(&str, &[&str])] = &[
 ];
 
 /// The serialized `kind` tag of a closed calculus value.
+///
+/// The calculus types are internally tagged, so the tag is the first field
+/// their serialization writes. [`tag::Kind`] reads that field and stops, so
+/// the cost is that of the tag and not of the whole node: serializing the
+/// node to JSON to read one field made a walk that asks for the tag of every
+/// node quadratic in the depth of the term. The answer is the field of the
+/// JSON form, which `kind_is_the_json_tag` checks on every sample.
 pub(crate) fn kind<T: Serialize>(value: &T) -> String {
-    serde_json::to_value(value)
-        .ok()
-        .and_then(|json| {
-            json.get("kind")
-                .and_then(|kind| kind.as_str())
-                .map(str::to_owned)
-        })
-        .unwrap_or_default()
+    match value.serialize(tag::Kind) {
+        Err(tag::Stop::Found(kind)) => kind,
+        Ok(()) | Err(tag::Stop::Absent) => String::new(),
+    }
+}
+
+/// A serializer that reads the `kind` field of a struct or map and nothing
+/// else: it stops with the field's text as soon as it has it, and with
+/// [`Stop::Absent`] at anything that is not such a field.
+mod tag {
+    use serde::ser::{self, Impossible, Serialize};
+
+    #[derive(Debug)]
+    pub(super) enum Stop {
+        Found(String),
+        Absent,
+    }
+
+    impl std::fmt::Display for Stop {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            f.write_str("the tag is read")
+        }
+    }
+
+    impl std::error::Error for Stop {}
+
+    impl ser::Error for Stop {
+        fn custom<T: std::fmt::Display>(_: T) -> Self {
+            Stop::Absent
+        }
+    }
+
+    /// The top level: a struct or a map, whose `kind` field is wanted.
+    pub(super) struct Kind;
+    /// A field's value: wanted only as text.
+    struct Text;
+    /// A map's fields: the key of the entry whose value comes next.
+    pub(super) struct Fields(bool);
+
+    macro_rules! absent {
+        ($($name:ident: $ty:ty),* $(,)?) => {
+            $(fn $name(self, _: $ty) -> Result<Self::Ok, Stop> { Err(Stop::Absent) })*
+        };
+    }
+
+    macro_rules! scalars {
+        () => {
+            absent!(
+                serialize_bool: bool, serialize_i8: i8, serialize_i16: i16, serialize_i32: i32,
+                serialize_i64: i64, serialize_u8: u8, serialize_u16: u16, serialize_u32: u32,
+                serialize_u64: u64, serialize_f32: f32, serialize_f64: f64, serialize_char: char,
+                serialize_bytes: &[u8],
+            );
+            fn serialize_none(self) -> Result<Self::Ok, Stop> {
+                Err(Stop::Absent)
+            }
+            fn serialize_some<T: ?Sized + Serialize>(self, _: &T) -> Result<Self::Ok, Stop> {
+                Err(Stop::Absent)
+            }
+            fn serialize_unit(self) -> Result<Self::Ok, Stop> {
+                Err(Stop::Absent)
+            }
+            fn serialize_unit_struct(self, _: &'static str) -> Result<Self::Ok, Stop> {
+                Err(Stop::Absent)
+            }
+            fn serialize_unit_variant(
+                self,
+                _: &'static str,
+                _: u32,
+                _: &'static str,
+            ) -> Result<Self::Ok, Stop> {
+                Err(Stop::Absent)
+            }
+            fn serialize_newtype_struct<T: ?Sized + Serialize>(
+                self,
+                _: &'static str,
+                _: &T,
+            ) -> Result<Self::Ok, Stop> {
+                Err(Stop::Absent)
+            }
+            fn serialize_newtype_variant<T: ?Sized + Serialize>(
+                self,
+                _: &'static str,
+                _: u32,
+                _: &'static str,
+                _: &T,
+            ) -> Result<Self::Ok, Stop> {
+                Err(Stop::Absent)
+            }
+            fn serialize_seq(self, _: Option<usize>) -> Result<Self::SerializeSeq, Stop> {
+                Err(Stop::Absent)
+            }
+            fn serialize_tuple(self, _: usize) -> Result<Self::SerializeTuple, Stop> {
+                Err(Stop::Absent)
+            }
+            fn serialize_tuple_struct(
+                self,
+                _: &'static str,
+                _: usize,
+            ) -> Result<Self::SerializeTupleStruct, Stop> {
+                Err(Stop::Absent)
+            }
+            fn serialize_tuple_variant(
+                self,
+                _: &'static str,
+                _: u32,
+                _: &'static str,
+                _: usize,
+            ) -> Result<Self::SerializeTupleVariant, Stop> {
+                Err(Stop::Absent)
+            }
+            fn serialize_struct_variant(
+                self,
+                _: &'static str,
+                _: u32,
+                _: &'static str,
+                _: usize,
+            ) -> Result<Self::SerializeStructVariant, Stop> {
+                Err(Stop::Absent)
+            }
+        };
+    }
+
+    impl ser::Serializer for Kind {
+        type Ok = ();
+        type Error = Stop;
+        type SerializeSeq = Impossible<(), Stop>;
+        type SerializeTuple = Impossible<(), Stop>;
+        type SerializeTupleStruct = Impossible<(), Stop>;
+        type SerializeTupleVariant = Impossible<(), Stop>;
+        type SerializeMap = Fields;
+        type SerializeStruct = Fields;
+        type SerializeStructVariant = Impossible<(), Stop>;
+
+        scalars!();
+
+        fn serialize_str(self, _: &str) -> Result<(), Stop> {
+            Err(Stop::Absent)
+        }
+        fn serialize_map(self, _: Option<usize>) -> Result<Fields, Stop> {
+            Ok(Fields(false))
+        }
+        fn serialize_struct(self, _: &'static str, _: usize) -> Result<Fields, Stop> {
+            Ok(Fields(false))
+        }
+    }
+
+    impl ser::Serializer for Text {
+        type Ok = String;
+        type Error = Stop;
+        type SerializeSeq = Impossible<String, Stop>;
+        type SerializeTuple = Impossible<String, Stop>;
+        type SerializeTupleStruct = Impossible<String, Stop>;
+        type SerializeTupleVariant = Impossible<String, Stop>;
+        type SerializeMap = Impossible<String, Stop>;
+        type SerializeStruct = Impossible<String, Stop>;
+        type SerializeStructVariant = Impossible<String, Stop>;
+
+        scalars!();
+
+        fn serialize_str(self, text: &str) -> Result<String, Stop> {
+            Ok(text.to_owned())
+        }
+        fn serialize_map(self, _: Option<usize>) -> Result<Self::SerializeMap, Stop> {
+            Err(Stop::Absent)
+        }
+        fn serialize_struct(
+            self,
+            _: &'static str,
+            _: usize,
+        ) -> Result<Self::SerializeStruct, Stop> {
+            Err(Stop::Absent)
+        }
+    }
+
+    /// The `kind` field is the answer; any other field before it is skipped
+    /// unread (serde writes the tag first, so none is).
+    fn field<T: ?Sized + Serialize>(key: &str, value: &T) -> Result<(), Stop> {
+        if key == "kind" {
+            return Err(value.serialize(Text).map_or(Stop::Absent, Stop::Found));
+        }
+        Ok(())
+    }
+
+    impl ser::SerializeStruct for Fields {
+        type Ok = ();
+        type Error = Stop;
+        fn serialize_field<T: ?Sized + Serialize>(
+            &mut self,
+            key: &'static str,
+            value: &T,
+        ) -> Result<(), Stop> {
+            field(key, value)
+        }
+        fn end(self) -> Result<(), Stop> {
+            Err(Stop::Absent)
+        }
+    }
+
+    impl ser::SerializeMap for Fields {
+        type Ok = ();
+        type Error = Stop;
+        fn serialize_key<T: ?Sized + Serialize>(&mut self, key: &T) -> Result<(), Stop> {
+            self.0 = key.serialize(Text).is_ok_and(|key| key == "kind");
+            Ok(())
+        }
+        fn serialize_value<T: ?Sized + Serialize>(&mut self, value: &T) -> Result<(), Stop> {
+            if self.0 {
+                return field("kind", value);
+            }
+            Ok(())
+        }
+        fn end(self) -> Result<(), Stop> {
+            Err(Stop::Absent)
+        }
+    }
 }
 
 /// One sample of every type kind; [`ty_index`] proves the list complete.
@@ -1463,4 +1678,47 @@ pub fn check_table(runtime: &BTreeSet<String>) -> Result<(), String> {
         ));
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// The tag [`kind`] reads is the `kind` field of the node's JSON form,
+    /// on a sample of every kind of every calculus syntax class.
+    #[test]
+    fn kind_is_the_json_tag() {
+        fn json<T: Serialize>(value: &T) -> String {
+            serde_json::to_value(value).expect("JSON")["kind"]
+                .as_str()
+                .expect("a tag")
+                .to_owned()
+        }
+        let mut checked = 0;
+        for ty in ty_samples() {
+            assert_eq!(kind(&ty), json(&ty));
+            checked += 1;
+        }
+        for value in value_samples() {
+            assert_eq!(kind(&value), json(&value));
+            checked += 1;
+        }
+        for expr in expr_samples() {
+            assert_eq!(kind(&expr), json(&expr));
+            checked += 1;
+        }
+        for shape in shape_samples() {
+            assert_eq!(kind(&shape), json(&shape));
+            checked += 1;
+        }
+        for prim in prim_samples() {
+            assert_eq!(kind(&prim), json(&prim));
+            checked += 1;
+        }
+        assert!(checked > 100, "{checked} samples");
+        // A node that is not a tagged struct has no tag, as before.
+        assert_eq!(kind(&3u8), "");
+        assert_eq!(kind(&"kind"), "");
+        assert_eq!(kind(&vec![Ty::Unit]), "");
+    }
 }
