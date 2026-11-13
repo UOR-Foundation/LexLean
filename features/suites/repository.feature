@@ -72,6 +72,7 @@ Feature: repository
     Given every file under language, schemas, tests/golden/axiom-parser, and tests/golden/canonical-json sorted by path bytes
     When lexlean::artifact::content_id::tree_digest recomputes the tree digest from those files
     Then the recomputed digest equals lexlean::compiler_semantics_id()
+    And the recomputed language-1.2 digest equals lexlean::LANGUAGE_1_2_SEMANTICS_ID, which a build without the production-data feature reports
 
   @RP-11 @build
   Scenario: Every public README capability claim is tied to a registered model ID and honesty level.
@@ -128,3 +129,12 @@ Feature: repository
     Then the crate is packaged twice to the same bytes and dry-run on every run, and the crate cargo would upload is the crate release/lexlean.crate holds and release/checksums.txt lists
     And the only step that uploads to crates.io runs after those checks, and only when a token or trusted publishing is present
     And a commit of a release line is named X.Y.0-dev.N, and a package, checksum, metadata, version, or credential check that is removed or planted is refused
+
+  @RP-19 @build
+  Scenario: A build of the lexlean crate without its default production-data feature embeds no file of language/preservation-1.2/library/, reports the compiler-semantics IDs of a default build and its version report with a fifth line naming the check-only variant, gives check and lock the same exit code, diagnostics, and lock bytes as a default build, and refuses production build and the verify of a project with a production root with LLC0205 before any build, verification, or export is published.
+    Given the lexlean binary built with --no-default-features and the default build this harness links
+    When both lock and check the committed examples nat-add-zero, semantic-1.1, language-1.2, and production, and check three language-1.2 negative fixtures, and the binary runs verify and production build on the production example
+    Then the binary holds no file of language/preservation-1.2/library/ and does hold language/preservation-1.2/library.toml
+    And --version of the binary is the default report followed by the line variant check-only
+    And every exit code, every JSON diagnostic, and every written lexlean.lock are byte-equal between the two
+    And verify and production build exit 2 with LLC0205 and publish no build, verified, or production directory

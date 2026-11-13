@@ -17,6 +17,34 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
+  new diagnostic code; changes the language-1.2 identity). The runtime gains a
+  sixth native module, `LexLeanRuntime.Regions`: a checker of local box
+  obligations for first-match decisions over natural-number fields, and
+  `LexLeanRegions.holds`, its soundness theorem, within `propext` and
+  `Quot.sound` (`tests/runtime-library/REGIONS.md`). The language-1.2 proof
+  form `region_check` proves a property `breaks request = false` of such a
+  decision with one kernel-decided obligation and that theorem; the lowered
+  data is definitionally the module's own definitions, so the lowering is not
+  trusted. Verdant Resonance (35 rules, 15 properties), which
+  `linear_arithmetic` could not prove, verifies. The register is 496 IDs.
+- A check-only build of the crate, #495. The `lexlean` crate's
+  `production-data` feature, on by default, embeds
+  `language/preservation-1.2/library/`, the native preservation library that
+  only certificate generation reads (32.2 of the 36.4 MB of embedded data).
+  Built with `--no-default-features`, the crate leaves it out and reports the
+  language-1.2 compiler-semantics ID from `LANGUAGE_1_2_SEMANTICS_ID`, which
+  `RP-10` now requires to equal the ID recomputed from disk; a project's
+  `check`, `lock`, `fmt`, and `build` behave as in a default build, and
+  `production build` and the `verify` of a project with a production root are
+  refused with the new `LLC0205` before anything is published (`RP-19`).
+  Its version report adds the line `variant check-only`: it shares the
+  compiler-semantics IDs of a full build, not its executable identity.
+  SPEC.md §8.4 names this feature as the one exception to its rule that no
+  feature disables a normative capability. A default build is unchanged.
+  A landing that moves the language-1.2 ID now also updates the constant;
+  `RP-10` names the new value when it is stale.
+
 - The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
   §17.23, the maintainer's decision): with `BS-65` the Lean extraction of its
   production export writes more than the 33,554,432 bytes it configured. A semantic
