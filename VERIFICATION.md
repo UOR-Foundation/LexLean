@@ -12011,7 +12011,7 @@ fails to validate decodes; validation is outside the claim. The runs are every
 distinct semantic module of every committed project that links, modules of the
 `BS-71` and `BS-72` examples, a module nested 127 levels and one nested 128, and
 mutations of ten example modules and twenty short committed modules: a member
-removed, an unknown member with the value `0`, `false`, or `[]`, an omitted
+removed, a member repeated, an unknown member with the value `0`, `false`, or `[]`, an omitted
 default written out, a kind renamed, a string or count of another type, a
 negative count, an array replaced by an object, and texts out of canonical
 form (whitespace, members out of order, an escaped key). The case asserts that every outcome occurs among them. The evaluator takes

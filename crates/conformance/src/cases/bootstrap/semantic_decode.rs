@@ -365,6 +365,11 @@ fn mutations(base: &Json2) -> Vec<String> {
     out.push(format!(" {text}\n"));
     out.push(text.replacen("\"spec\"", "\"\\u0073pec\"", 1));
     out.push(text.replacen("\"kind\":\"", "\"kind\":\"\\/", 1));
+    // Repeated members: serde rejects a repeated field or tag.
+    for key in ["spec", "name", "kind"] {
+        let member = format!("\"{key}\":\"");
+        out.push(text.replacen(&member, &format!("{member}zz\",{member}"), 1));
+    }
     out.push(format!(
         "{{\"spec\":{},\"declarations\":{}}}",
         canonical_text(&base["spec"]),
