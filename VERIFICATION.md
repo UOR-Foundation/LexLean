@@ -11588,6 +11588,128 @@ axioms the module now declares. The case then stops at the stack-bound step,
 bootstrap member did before its regeneration, which produces the package and
 measures the root's stack bound.
 
+### the tables of the lexicon entry schema are source (BS-50)
+
+`BS-50` holds the six production roots of `LexLeanBoot.LexiconSchema`
+(`bootstrap/src/LexiconSchema.lex.tex`) to `lexicon::entry` and
+`lexicon::package`: `tokenIndex` to the category, frame, channel, and
+associativity parsers and the feature list, as a position in the schema's
+order; `shapeFacts` to `frame_permitted`, `Frame::fixed_arity`, and the
+category's `core_only`, `has_signature`, `required_channels`, and
+`needs_some_canonical`; `surfaceSafety` to `surface_safety` over the atoms the
+primitive scanner returns, which reads each scalar of a Unicode atom from its
+UTF-8 bytes against the allow-list of `is_math_safe_scalar`; `isLeanName` to
+`is_lean_name`; `tomlCommentAt` to `toml_comment_at`; and `entryPath` to
+`entry_path`. No root admits `recursion`: each scan is a loop under
+`iterate_until` or a fold. The oracle is the existing public code of
+`entry.rs` and `package.rs`; no Rust outside the case changes.
+
+The case holds the roots to the oracle on hand-built vectors that reach every
+token of every table and near misses, every category with every frame at
+arities 0 to 3 and at the largest, every class of atom in every channel and
+the edges of every range of the allow-list, Lean names with empty, leading,
+and trailing segments, comments inside and after every TOML string form with
+escapes, and entry IDs of empty segments; on every form surface in its own
+channel and the two others, every Lean name of a denotation or an eliminator,
+and every entry ID of the committed lexicon entries, and on every committed
+TOML file; and on seeded inputs. Each of the 24 planted defects names the one
+vector that catches it, and the case asserts that the site of each plant
+occurs once. The row's statement carries no counts.
+
+The case was first compiled and run on the normative host over `release/v0.4`
+at `26e5e0ace` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_50`). Its corpus is 838 named vectors, 1,064 committed forms,
+725 Lean names, 1,007 entry IDs, 1,055 lexicon files, and 1,683 other TOML
+files, and 300 and 2,000 seeded runs per root. The evaluator agrees with the
+oracle on 8,317 runs, the rendered packages under the pinned rustc on 18,500
+runs, and each of the 24 planted defects is detected by its own vector. The
+case then stops at the stack-bound step, `bootstrap/token_index is no package
+of the committed exports`, as each bootstrap member does before its
+regeneration, which produces the six packages.
+
+### the scopes and references of a semantic expression are source (BS-51)
+
+`BS-51` holds the three production roots of `LexLeanBoot.LseScopes`
+(`bootstrap/src/LseScopes.lex.tex`) to `lexicon::lse`: `checkScopes` to
+`Lse::check_scopes`, `referencedConsts` to `Lse::referenced_consts`, and
+`outerShape` to `outer_explicit_binders` with whether `result` is a sort. Each
+walks an expression of `BS-25` with an explicit work stack in the oracle's
+order of visit, so that the first error is the oracle's first; a universe is
+walked on the same stack, and a scope is a list truncated when its binder
+ends. The host passes the length of the expression's text, which bounds the
+walk. No root admits `recursion`. The oracle is the existing public code of
+`lse.rs`; the case reads the encoder and the seeded expressions of `BS-25`'s
+case, made visible to its sibling, and no other Rust changes.
+
+The case holds the roots to the oracle on hand-built expressions that reach
+both errors, a binder's type before its name, a `let`'s value before its name,
+shadowing, the end of the scope of every binder form, and every universe form;
+on every signature and defined value of the committed lexicon entries under
+the universes its entry declares, each of which the case asserts is in scope;
+and on seeded expressions under seeded declarations. Each of the 14 planted
+defects names the one vector that catches it, and the case asserts that the
+site of each plant occurs once. The row's statement carries no counts.
+
+The case was first compiled and run on the normative host over `release/v0.4`
+at `26e5e0ace` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_51`). Its corpus is 43 named vectors, the 417 committed
+signatures and defined values, and 300 and 2,000 seeded expressions. The
+evaluator agrees with the oracle on 2,194 runs, the rendered packages under
+the pinned rustc on 7,294 runs, and each of the 14 planted defects is detected
+by its own vector. The case then stops at the stack-bound step, as each
+bootstrap member does before its regeneration, which produces the three
+packages.
+
+### the checker of semantic expressions is source (BS-52)
+
+`BS-52` holds the two production roots of `LexLeanBoot.LseTypes`
+(`bootstrap/src/LseTypes.lex.tex`) to `lexicon::lse::check_signature` and
+`check_value`: the zonked type and the type of every natural literal in
+occurrence order, or the message of the first error. The module threads the
+oracle's state through inference, unification, zonking, and capture-avoiding
+substitution: solved metavariables are named `?n` in the order the oracle
+makes them, a renamed binder is `x#n` with the oracle's counter, and every
+message prints its expressions with `printLse` of `BS-25`. Each recursive
+definition is structural over a chain the host's bound on nesting builds, so
+the roots admit `recursion`; a root whose bound runs out returns an error of
+its own, which no run of the case reaches. What the oracle's lookup closure
+answers is handed over as rows and a fallback. The oracle is the existing
+public code of `lse.rs`; the case reads the encoder and the seeded
+expressions of `BS-25`'s case, and no other Rust changes.
+
+The case holds the roots to the oracle on hand-built expressions over a
+hand-built glossary that reach every error of the checker, an opaque head, a
+defined result type, partial application, literals of an inferred and an
+undetermined type, a binder and a `let` renamed to avoid capture, and binders
+named apart; on every signature and defined value of the committed lexicon
+packages, checked against its own package with every other constant opaque
+as a package loads and against the builtin packages with every other
+constant missing as a closure does; and on seeded expressions. Each of the 20
+planted defects names the one vector that catches it, and the case asserts
+that the site of each plant occurs once. The row's statement carries no
+counts.
+
+The case passes a bound of 192: the evaluator copies the chain the bound
+builds at each call, so a bound of 4,096 made each run cost seconds, and no
+committed or seeded expression nests near 192. Two rules of the Rust rendering
+shaped the source. A call that can overflow is bound with `let` or is the
+value the function returns, never an operand, so each message prints its
+expressions into names first. And a definition that calls itself as its last
+step is rendered as a loop whose exit does not propagate the overflow of a
+call to another definition, so `inferBinding`, `inferRest`, and `unifyPiLoop`
+bind their own recursive call and rebuild its record.
+
+The case was first compiled and run on the normative host over `release/v0.4`
+at `26e5e0ace` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_52`). Its corpus is 39 named vectors, the signatures and
+defined values of the 43 committed packages that load (224 signature and 236
+value runs), and 200 and 1,500 seeded expressions. The evaluator agrees with
+the oracle on 899 runs, the rendered packages under the pinned rustc on 3,499
+runs, and each of the 20 planted defects is detected by its own vector. The
+case then stops at the stack-bound step, `bootstrap/check_signature is no
+package of the committed exports`, as each bootstrap member does before its
+regeneration, which produces the two packages and measures their stack bounds.
+
 ### the lexer of the authoring notation is source (BS-22)
 
 `BS-22` holds the two production roots of `LexLeanBoot.SurfaceLex`
@@ -11764,6 +11886,326 @@ committed exports`, as `BS-21` to `BS-26` did before their regeneration, which
 produces the three packages and measures the row of `print_tooling_module` in
 `tests/stack-bounds.json` (`PD-08`). The branch is stacked on `BS-24` and lands
 after it.
+### the text channel and the simple proof sentences are source (BS-35)
+
+`BS-35` holds the production roots `LexLeanBoot.GrammarProof.textTokens` and
+`parseProofSentence` (`bootstrap/src/GrammarProof.lex.tex`) to
+`grammar::chart::text_tokens` and `grammar::proof::parse_proof_sentence`: the
+tokens of an atom range with each mathematical island folded, and one of the
+seven registered simple proof sentences with the keywords that cover it, or the
+refusal. The module imports `PrimitiveScan`, whose atoms, places, and
+`Rejection` it reads and returns, and the standard library's `Text`; neither
+root admits `recursion`. The case holds the roots to the oracle on hand-built
+sentences and ranges that reach every refusal of the two (the dollar delimiter,
+a nested, unclosed, or stray island, a forbidden word, and an unregistered
+sentence), every registered sentence, and each of the 31 forbidden words; on
+ranges that start inside the atoms and on atoms without their white space, which
+hold the composition of a tactic word to bytes; on seeded atom ranges of every
+committed `.lex.tex` source, each scanned once and dropped; and on seeded
+sentences and seeded edits of the registered ones. Each planted defect names the
+one vector that catches it, and the case asserts that the site of each plant
+occurs once. The oracle's tests for the `<;>` combinator and the focusing dot
+`·` are kept in the module as written but no plant can reach them: a semicolon
+ends a composed word, and `·` is a Unicode symbol, so no scanned sentence
+decides them. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `GrammarProof`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and Lean's audit reports no axiom.
+
+The case was first compiled and run on the normative host on `release/v0.4` at
+`aaf845507` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_35`, 278 s), and again after merging `release/v0.4` at `26e5e0ace`
+(302 s), with the same counts. Its corpus is 110 named vectors (99 of them read as
+sentences), 1,002 committed sources, 600 and 4,000 seeded ranges, and 400 and
+3,000 seeded sentences. The evaluator agrees with the oracle on 1,110 runs of
+`textTokens` and 1,008 of `parseProofSentence`, the rendered packages under the
+pinned rustc on 13,518, and each of the 25 planted defects is detected by its
+own vector. The first run found no fault of the module; it found the case's own:
+holding the scanned atoms of every committed source at once took 9.4 GB, so the
+ranges are drawn one source at a time. The case then stops at the stack-bound
+step, `bootstrap/text_tokens is no package of the committed exports`, as each
+bootstrap member did before its regeneration, which produces the
+`bootstrap/text_tokens` and `bootstrap/parse_proof_sentence` packages. The
+branch is based on `release/v0.4` and stacks on nothing.
+### the printer of the semantic notation is source (BS-36)
+
+`BS-36` holds the production roots `LexLeanBoot.SemanticPrint.printAt` and
+`printSemanticModule` (`bootstrap/src/SemanticPrint.lex.tex`) to
+`surface::semantic::print_at` and `print_module`. The semantic-module schema is
+the host's input, the bytes the oracle reads from the embedded tree, which the
+case asserts are the committed `schemas/semantic-module-v2.schema.json`. The
+module imports `SurfaceGeneric` (`BS-24`), `SurfaceDoc` (`BS-23`), `SurfaceLex`
+(`BS-22`), and the standard library's `Json`, `Order`, and `Text`; both roots
+admit `recursion`, as the printer of `BS-24` does. The case holds the roots to
+the oracle on hand-built values that reach every readable form of a term and a
+type and each condition that writes a value generically (a member more, a name
+the form cannot write, a non-canonical literal, empty type arguments, a member
+spelled like a type), every error of a module, and the schema's sample of every
+alternative of the declaration, term, type, and proof unions; on the committed
+semantic modules written in the notation, read by the oracle and printed whole
+and one declaration at a time; and on seeded edits of their declarations. Each
+planted defect names the one vector that catches it, and the case asserts that
+the site of each plant occurs once. One test of the oracle cannot be planted:
+`plain` refuses a variable named `false`, which `is_bare` already refuses, so
+dropping it changes no output. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `SemanticPrint`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass once the axioms Lean's audit reports are declared
+(`Quot.sound` and `propext` on the definitions that match on the schema's
+values). The first verify refused `docAt` for returning its own matched
+parameter in a leaf arm (`LLI9001`); the arm rebuilds the constructor.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace`. Its corpus is 314 named vectors (306 values at a position and 8
+modules), 408 committed modules with 9,022 declarations (328 declarations and
+176 modules under the evaluator, 1,508 and 340 under rustc, sampled because
+each run carries the schema), and 200 and 800 seeded edits. The evaluator
+agrees with the oracle on 834 runs of `printAt` and 184 of
+`printSemanticModule`, and each of the 29 planted defects is detected by its own
+vector. The first runs found no fault of the module and three of the case: two
+schema samples shared a label, the whole corpus with a copy of the schema in
+each run took 9 GB, and one plant's vector used a parameter name that is still
+bare. The rustc differential of that run was ended by the host's out-of-memory
+killer, which stopped the shared VM's largest processes for another job; it
+reruns with the regeneration. The case then stops at the stack-bound step, as
+each bootstrap member did before its regeneration, which produces the
+`bootstrap/print_at` and `bootstrap/print_semantic_module` packages. The branch
+is based on `release/v0.4` and stacks on nothing.
+### the reader of the semantic notation is source (BS-37)
+
+`BS-37` holds the production roots `LexLeanBoot.SemanticRead.parseAt`,
+`parseSemanticModule`, and `semanticSpans` (`bootstrap/src/SemanticRead.lex.tex`)
+to `surface::semantic::parse_at`, `parse_module`, and `declaration_spans`. The
+semantic-module schema is the host's input, as for `BS-36`. The module lexes the
+text with `lexText` of `SurfaceLex` (`BS-22`), so that a lexical error comes
+first as the oracle's `Reader::new` reports it, and reads the tokens with an
+explicit stack of frames under `iterate_until`, at the depths the oracle uses
+(a value at depth 1, each member one deeper, 256 at most); generic values go
+through the value reader of `SurfaceGeneric` (`BS-24`). None of the roots admits
+`recursion`. The case holds the roots to the oracle on hand-built texts that
+reach each of the 46 error messages of the reader, every readable form, and the
+limit on nesting; on the schema's sample of every alternative printed and read
+back; on the committed semantic modules written in the notation, read and
+spanned whole, and each declaration printed and read back; and on seeded edits
+of printed declarations. Each planted defect names the one vector that catches
+it, and the case asserts that the site of each plant occurs once. The row's
+statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `SemanticRead`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, with the axioms Lean's audit reports declared on 52
+definitions.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace`. Its corpus is 341 named vectors, 408 committed modules with 9,042
+declarations (329 declarations and 112 modules under the evaluator, 760 and 309
+under rustc, sampled because each run carries the schema), and 150 and 400
+seeded edits. The evaluator agrees with the oracle on 812 runs of `parseAt`, 116
+of `parseSemanticModule`, and 116 of `semanticSpans`, and each of the 37 planted
+defects is detected by its own vector. The first runs found no fault of the
+module and three of the case: two schema samples shared a label, no vector
+reached `expected a name after `::``, and the evaluator's helper threads (one per
+processor) each holding a reader's run took the case past the host's memory, so
+it runs on four processors. The rustc differential of that run was ended when the
+host's out-of-memory killer stopped a harness build for another job; it reruns
+with the regeneration. The case then stops at the stack-bound step, as each
+bootstrap member did before its regeneration. The branch is based on
+`release/v0.4` and stacks on nothing.
+### the canonical JSON of a core module is source (BS-38)
+
+`BS-38` holds the production root `LexLeanBoot.CoreJson.coreJson`
+(`bootstrap/src/CoreJson.lex.tex`) to `surface::core::canonical_json`: a native
+core module as its canonical JSON text. The root takes the module as
+first-order data (its schema tag, imports, node table, proof nodes, and
+declarations, each declaration as the standard library's `Json` of the value
+the host serializes it to) and writes the rest in the oracle's order; it admits
+`recursion` over a level and through the writer of a declaration. The case holds
+the root to the oracle on hand-built modules that reach every kind of node,
+level, binder, and annotation value, on every committed core module of
+language 1.2, and on seeded edits of them. Each planted defect names the one
+vector that catches it, and the case asserts that the site of each plant occurs
+once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `CoreJson`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, with the axioms Lean's audit reports declared.
+
+The case was first compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace` (`cargo test -p repo-conformance --test conformance --
+conformance_bs_38`, 1,209 s). Its corpus is 12 named vectors, the 407 committed
+core modules (19 under the evaluator, all 407 under rustc), and 60 and 600
+seeded edits. The evaluator agrees with the oracle on 91 runs and the rendered
+package under the pinned rustc on 1,019, and each of the 20 planted defects is
+detected by its own vector. The first run found no fault of the module. The case
+then stops at the stack-bound step, `bootstrap/core_json is no package of the
+committed exports`, as each bootstrap member did before its regeneration. The
+branch is based on `release/v0.4`; `BS-39` and `BS-40` stack on it.
+### the printer of the core notation is source (BS-39)
+
+`BS-39` holds the production root `LexLeanBoot.CorePrint.printCoreModule`
+(`bootstrap/src/CorePrint.lex.tex`) to `surface::core::print_module`: the notation
+of a native core module of `lexlean/core-module/2` (§17.21.8). The root takes the
+module as the first-order data of `CoreJson` (`BS-38`), checks it as the oracle
+does, decides which nodes are written inside the node that uses them, builds the
+terms in one pass over the nodes with a stack, resolves each variable to the
+name of its binder or to its index and each constant to a bare word or
+`const "…"` per statement, and lays the statements out at 100 columns with
+`SurfaceDoc` (`BS-23`). It admits `recursion` in its printers of levels and
+documents. The case holds the root to the oracle on hand-built modules that reach
+every node, level, binder, annotation, and declaration form, a shadowed binder, a
+constant named like a binder, and every error of the check; on every committed
+core module of language 1.2; and on seeded edits of them. Each planted defect
+names the one vector that catches it, and the case asserts that the site of each
+plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `CorePrint`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, with the axioms Lean's audit reports declared. Lean's
+certificate check first refused a helper that tested a field of a pair inside a
+condition; it reads a record of its own.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace` with `BS-38` (1,382 s). Its corpus is 39 named vectors, the 407
+committed core modules (2 under the evaluator, all 407 under rustc), and 25 and
+500 seeded edits. The evaluator agrees with the oracle on 66 runs and the
+rendered package under the pinned rustc on 946, and each of the 29 planted
+defects is detected by its own vector. The first runs found no fault of the
+module and two of the case: the evaluator's runs on modules of 14 KB took the
+case past the host's memory, so it evaluates those of at most 9 KB on three
+processors; and the vector of the shadowed binder put the inner lambda in a
+statement of its own, where the variable is free either way, so it was rebuilt
+to write both lambdas inside one statement. The case then stops at the
+stack-bound step, `bootstrap/print_core_module is no package of the committed
+exports`, as each bootstrap member did before its regeneration. The branch is
+stacked on `BS-38`.
+### the reader of the core notation is source (BS-40)
+
+`BS-40` holds the production root `LexLeanBoot.CoreRead.readCoreModule`
+(`bootstrap/src/CoreRead.lex.tex`) to the reader of `surface::core::parse_module`
+up to the decoding of each declaration: the imports, the node table numbered in
+the order its nodes finish, the proof nodes, each declaration's members with its
+roots resolved, and the byte range of each declaration, or the offset and
+message of the first error. The decoding of a declaration's members (serde's
+messages) stays in the host and outside the claim; to hold the module to the
+reader alone, `core.rs` splits `parse_module_with_spans` into a doc-hidden
+`read_module` and the decoding over it, which keeps what the function returns
+and the order of its errors. The module reads the text with explicit stacks of
+jobs under `iterate_until` and admits no `recursion`; it imports `CoreJson`
+(`BS-38`), whose node and level types it builds, `SurfaceGeneric`, whose reader
+reads a declaration's members, `SurfaceLex`, and `AxiomOutput`. The case holds the
+root to the oracle on hand-built texts that reach the reader's errors, every
+term, level, binder, annotation, and declaration form, named statements, a
+shadowed and an unnamed binder, and the limits on depth, on `+` beyond 1,024, and
+on numbers beyond 64 bits; on the committed core modules of language 1.2 written
+in the notation; and on seeded edits of them. Two of the oracle's refusals are
+kept in the module but no text reaches them (`the members of a declaration are
+an object`: the members are the text between matching braces, which the generic
+reader reads as an object or refuses; and `a statement defines the node its term
+ends with`: a term's own node is the last one reading it numbers), and one test
+cannot be planted (a binder's empty name never matches a word, which is never
+empty). Each planted defect names the one vector that catches it, and the case
+asserts that the site of each plant occurs once. The row's statement carries no
+counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoints are `CoreJson` and `CoreRead`: `lexlean check`, `lexlean build`,
+and `lexlean verify` pass, with the axioms Lean's audit reports declared.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace` with `BS-38` and `BS-39`. Its corpus is 97 named vectors, the 376
+committed core modules in the notation (1 under the evaluator, all under rustc),
+and 80 and 800 seeded edits. The evaluator agrees with the oracle on 178 runs,
+and each of the 29 planted defects is detected by its own vector. The first runs
+found three faults of the module: it returned a declaration's members as a bare
+chain where the oracle has an object; two messages named the node type where the
+oracle writes `@N`; and a number beyond 64 bits overflowed before it was refused,
+so the module now decides `the number is too large` on the digits. They found
+four of the case: a vector's line feed made the oracle refuse a control character
+before the end of an unterminated string, two plants named a pair type the module
+had since replaced by a record, a vector's statement label was not its node's
+number, and a plant needed a reference to the node being written. The rendered package under the pinned rustc agrees with the oracle on 1,273 runs
+(520 s).
+The case then stops at the stack-bound step, as each bootstrap member did before
+its regeneration. The branch is stacked on `BS-39`.
+### the grammar of a mathematical island is source (BS-42)
+
+`BS-42` holds the production root `LexLeanBoot.GrammarMath.parseMath`
+(`bootstrap/src/GrammarMath.lex.tex`) to `grammar::math::parse_math`: the covers
+of an island's atom range, or the refusal's code, message, and span. The glossary
+closure belongs to the lexicon, so the root takes its projection as the host's
+input (the math-channel edges at each atom position with their forms' frame,
+precedence, and associativity, the limits, and the budget spent before); it keeps
+the lattice's edge counter and memo itself, so every `LLS8002` falls where the
+oracle's does. The Pratt parser is a stack of frames under `iterate_until` and
+the segmentations are the oracle's worklist, so the root admits no `recursion`.
+The case builds the projection from a real closure, the built-in packages and a
+lexicon package of the case's own whose entries (`lean` denotations of `Not`,
+`Eq`, and `rfl`) reach what the committed lexicons never write: a postfix form,
+prefix and operator candidates that disagree on their profile, a surface that is
+both a prefix operator and a leaf, and leaves of two atoms that branch the token
+lattice. It holds the root to the oracle on those vectors, on the committed
+islands, and on seeded islands. Each planted defect names the one vector that
+catches it, and the case asserts that the site of each plant occurs once. One
+test of the oracle cannot be planted: a comma after the expression is bindable by
+the comma form of `lexlean.core`, which every closure holds, whatever the
+module's own test says. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoint is `GrammarMath`: `lexlean check`, `lexlean build`, and
+`lexlean verify` pass, and Lean's audit reports no axiom.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace` (209 s). Its corpus is 74 named vectors, 509 committed islands (169
+under the evaluator, all under rustc), and 300 and 3,000 seeded islands. The
+evaluator agrees with the oracle on 543 runs and the rendered package under the
+pinned rustc on 3,583, and each of the 26 planted defects is detected by its own
+vector. The first runs found no fault of the module and two of the case: its
+lexicon package used core denotations, which only `lexlean.core` may use, and
+two of its surfaces were not renderer-safe in the math channel. The case then
+stops at the stack-bound step, `bootstrap/parse_math is no package of the
+committed exports`, as each bootstrap member did before its regeneration. The
+branch is based on `release/v0.4` and stacks on nothing.
+### the proposition grammar's keywords, binders, and term phrases are source (BS-43)
+
+`BS-43` holds four production roots of `LexLeanBoot.PropositionTerms`
+(`bootstrap/src/PropositionTerms.lex.tex`) to the term half of
+`grammar/proposition.rs`: `keywordEntry` to `keyword_entry`, `unknownAtom` to
+`TextParser::unknown_atom_diagnostic`, `binderAlternatives` to
+`TextParser::binder`, and `termPhrase` to `TextParser::term_phrase`. The module
+reads the text tokens and keyword occurrences of `GrammarProof` (`BS-35`) and the
+atoms of `PrimitiveScan` (`BS-03`); the glossary closure belongs to the lexicon,
+so the roots take its projection as the host's input, as `BS-42` does, with the
+text-channel edges carrying each form's category and whether it is plural or
+sentence-case. `termPhrase` gathers every alternative in the oracle's order with
+an explicit stack, so no root admits `recursion`. The case builds the projection
+from the built-in closure and the committed `peano.arith` glossary and holds the
+roots to the oracle on hand-built sentences that reach every refusal and every
+shape of a binder and a term phrase, on the 40 keyword spellings, on committed
+sentences asked at every token, and on seeded sentences. Each planted defect
+names the one vector that catches it, and the case asserts that the site of each
+plant occurs once. Two tests of the oracle cannot be planted: an atom that is a
+grammar or proof keyword is never reported unknown, but every such keyword,
+sentence-case spellings included, is the surface of a text form of
+`lexlean.core`, which every closure holds, so the glossary covers it either way.
+The row's statement carries no counts.
+
+Measured with the compiler binary of this tree, on a copy of the project whose
+only entrypoints are `GrammarProof` and `PropositionTerms`: `lexlean check`,
+`lexlean build`, and `lexlean verify` pass, and Lean's audit reports no axiom.
+
+The case was compiled and run on the normative host on `release/v0.4` at
+`26e5e0ace` with `BS-35` (409 s). Its corpus is 47 named vectors, 40 keywords,
+1,500 committed sentences (150 under the evaluator, 20,550 runs under rustc), and
+200 and 2,000 seeded runs. The evaluator agrees with the oracle on 40 runs of
+`keywordEntry`, 84 of `unknownAtom`, 155 of `binderAlternatives`, and 158 of
+`termPhrase`, the rendered packages under the pinned rustc on 22,637, and each of
+the 23 planted defects is detected by its own vector. The first runs found no
+fault of the module and one of the case: it read acceptance from the run's JSON
+by a tag the calculus does not write. The case then stops at the stack-bound
+step, `bootstrap/keyword_entry is no package of the committed exports`, as each
+bootstrap member did before its regeneration. The branch is stacked on `BS-35`.
 
 ## The `bdd` recipe as the parts of one run (Issue #131)
 

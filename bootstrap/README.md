@@ -55,3 +55,34 @@ writers it uses, and the standard library's `Numeral`, `Order`, and `Sha256`, an
 canonical project manifest of SPEC.md §10.1 and its digest.
 `src/ManifestText.lex.tex` (SPEC.md §17.23, `BS-34`) imports the standard library's `Json`,
 `Numeral`, `Order`, and `Text`, and writes the build manifest of SPEC.md §21.6.
+`src/GrammarProof.lex.tex` (SPEC.md §17.23, `BS-35`) imports `PrimitiveScan`, whose atoms, places,
+and refusals it reads and returns, and the standard library's `Text`.
+`src/SemanticPrint.lex.tex` (SPEC.md §17.23, `BS-36`) imports `SurfaceGeneric`, whose generic
+notation it writes every value without a readable form in, `SurfaceDoc`, `SurfaceLex`, and the
+standard library's `Json`, `Order`, and `Text`.
+`src/SemanticRead.lex.tex` (SPEC.md §17.23, `BS-37`) imports `SurfaceLex`, whose lexer it reads
+the text with, `SurfaceGeneric`, whose generic reader it reads every value without a readable form
+with, and the standard library's `Json`, `Order`, and `Text`.
+`src/CoreJson.lex.tex` (SPEC.md §17.23, `BS-38`) defines the kernel terms of a core module as
+inductives and imports the standard library's `Json`, whose writer it writes each declaration
+with, `Numeral`, `Order`, and `Text`, and `SurfaceLex`, whose `quoteText` escapes its strings.
+`src/CorePrint.lex.tex` (SPEC.md §17.23, `BS-39`) imports `CoreJson`, whose module types it
+prints, `AxiomOutput`, `SurfaceDoc`, `SurfaceGeneric`, `SurfaceLex`, and the standard library's
+`Json`, `Numeral`, `Order`, and `Text`.
+`src/CoreRead.lex.tex` (SPEC.md §17.23, `BS-40`) imports `CoreJson`, whose module types it
+reads to, `SurfaceLex`, whose string reader it reads strings with, `SurfaceGeneric`, whose
+`parseGeneric` reads a declaration's members, `AxiomOutput`, and the standard library's `Json`,
+`Numeral`, `Order`, and `Text`.
+`src/GrammarMath.lex.tex` (SPEC.md §17.23, `BS-42`) imports `PrimitiveScan`, whose atoms, places,
+and refusals it reads and returns, and the standard library's `Numeral` and `Text`.
+`src/PropositionTerms.lex.tex` (SPEC.md §17.23, `BS-43`) imports `GrammarProof`, whose text tokens
+and keyword occurrences it reads and returns, `PrimitiveScan`, and the standard library's `Numeral`.
+`src/LexiconSchema.lex.tex` (SPEC.md §17.23, `BS-50`) imports `PrimitiveScan` (`BS-03`), whose
+atoms it reads, `LexiconLse` (`BS-25`), whose byte classes it uses, and the standard library's
+`Text`: the tables and predicates of the lexicon entry schema of SPEC.md §13.
+`src/LseScopes.lex.tex` (SPEC.md §17.23, `BS-51`) imports `LexiconLse` (`BS-25`), whose
+expressions it walks, and the standard library's `Order`: the scopes, references, and outer
+shape of a semantic expression of SPEC.md §13.8.
+`src/LseTypes.lex.tex` (SPEC.md §17.23, `BS-52`) imports `LexiconLse` (`BS-25`), whose
+expressions it checks and prints, and the standard library's `Numeral` and `Order`: the
+conservative checker of semantic expressions of SPEC.md §13.7.

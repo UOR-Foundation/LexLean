@@ -23,13 +23,22 @@ use crate::rust_packages;
 use crate::support::{self, P};
 
 mod cli_output;
+mod core_json;
+mod core_print;
+mod core_read;
 mod diagnostics;
 mod gnaf_validate;
+mod grammar_math;
+mod grammar_proof;
 mod lexicon_lre;
 mod lexicon_lse;
+mod lexicon_schema;
 mod lock_text;
+mod lse_scopes;
+mod lse_types;
 mod manifest_text;
 mod project_text;
+mod proposition_terms;
 mod runtime_validate;
 mod rust_assemble;
 mod rust_bodies;
@@ -42,6 +51,8 @@ mod rust_succeed;
 mod rust_terms;
 mod rust_validate;
 mod scan;
+mod semantic_print;
+mod semantic_read;
 mod structural_grammar;
 mod surface_doc;
 mod surface_generic;
@@ -2574,6 +2585,17 @@ fn case(id: &str) {
         "BS-32" => content_id::case(),
         "BS-33" => project_text::case(),
         "BS-34" => manifest_text::case(),
+        "BS-35" => grammar_proof::case(),
+        "BS-36" => semantic_print::case(),
+        "BS-37" => semantic_read::case(),
+        "BS-38" => core_json::case(),
+        "BS-39" => core_print::case(),
+        "BS-40" => core_read::case(),
+        "BS-42" => grammar_math::case(),
+        "BS-43" => proposition_terms::case(),
+        "BS-50" => lexicon_schema::case(),
+        "BS-51" => lse_scopes::case(),
+        "BS-52" => lse_types::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

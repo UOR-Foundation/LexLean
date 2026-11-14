@@ -1,0 +1,246 @@
+\begin{lexlean}{CoreJson}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\importmodule{SurfaceLex}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Level,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: LZero, fields: []},
+    {name: LSucc, fields: [Level]},
+    {name: LMax, fields: [Level, Level]},
+    {name: LIMax, fields: [Level, Level]},
+    {name: LParam, fields: [Bytes]}
+  ]
+}
+
+inductive{
+  name: Binder,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: BExplicit, fields: []},
+    {name: BImplicit, fields: []},
+    {name: BStrict, fields: []},
+    {name: BInstance, fields: []}
+  ]
+}
+
+inductive{
+  name: Meta,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: MBool, fields: [Bool]},
+    {name: MNat, fields: [Bytes]},
+    {name: MInt, fields: [Bytes]},
+    {name: MStr, fields: [Bytes]},
+    {name: MName, fields: [Bytes]}
+  ]
+}
+
+structure{
+  name: Entry,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: key, type: Bytes}, {name: value, type: Meta}]
+}
+
+inductive{
+  name: Node,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: NBVar, fields: [Nat]},
+    {name: NSort, fields: [Level]},
+    {name: NConst, fields: [Bytes, (List Level)]},
+    {name: NApp, fields: [Nat, Nat]},
+    {name: NLambda, fields: [Bytes, Binder, Nat, Nat]},
+    {name: NForall, fields: [Bytes, Binder, Nat, Nat]},
+    {name: NLet, fields: [Bytes, Nat, Nat, Nat, Bool]},
+    {name: NNat, fields: [Bytes]},
+    {name: NString, fields: [(List Nat)]},
+    {name: NMdata, fields: [(List Entry), Nat]},
+    {name: NProj, fields: [Bytes, Bytes, Nat, Nat]}
+  ]
+}
+
+structure{
+  name: Module,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: spec, type: Bytes},
+    {name: imports, type: (List Bytes)},
+    {name: nodes, type: (List Node)},
+    {name: proofNodes, type: (List Nat)},
+    {name: declarations, type: (List LexLeanStd.Json::Json)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: jStep,
+  parameters: [text : Bytes, state : (Nat * Bytes)],
+  result: (Option (Nat * Bytes)),
+  body: (match (LexLeanStd.Text::byteAt text (first state))
+    | Option.some byte => (ctor Option.some [(Nat * Bytes)] (((first state) + 1), (cat (second state) (if ((prim to_nat byte : Nat) =? 39) then 0x22 else (LexLeanStd.Text::sliceOr text (first state) 1)))))
+    | Option.none => (ctor Option.none [(Nat * Bytes)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: j,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (let text : Bytes := (lit literal); (second (first (prim iterate_until (fun [text] (state : (Nat * Bytes)) => (jStep text state)) ((prim length text : Nat) + 1) (0, 0x) : ((Nat * Bytes) * Bool))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: num,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Numeral::decimal number),
+  executable: true
+}
+
+definition{
+  name: quoted,
+  parameters: [text : Bytes],
+  result: Bytes,
+  body: (SurfaceLex::quoteText text),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: joined,
+  parameters: [pieces : (List Bytes), separator : Bytes],
+  result: Bytes,
+  body: (second (prim list_fold (fun [separator] (state : (Bool * Bytes)) (piece : Bytes) => (false, (if (first state) then piece else (cat (cat (second state) separator) piece)))) (true, (lit "")) pieces : (Bool * Bytes))),
+  executable: true
+}
+
+definition{
+  name: binderLetter,
+  parameters: [info : Binder],
+  result: Bytes,
+  body: (match info
+    | Binder.BExplicit => (lit "e")
+    | Binder.BImplicit => (lit "i")
+    | Binder.BStrict => (lit "s")
+    | Binder.BInstance => (lit "c")),
+  executable: true
+}
+
+definition{
+  name: levelJson,
+  parameters: [level : Level],
+  result: Bytes,
+  body: (match level
+    | Level.LZero => (j "{'k':'z'}")
+    | Level.LSucc inner => (cat (cat (j "{'a':") (levelJson inner)) (j ",'k':'s'}"))
+    | Level.LMax low high => (cat (cat (cat (cat (j "{'a':[") (levelJson low)) (lit ",")) (levelJson high)) (j "],'k':'m'}"))
+    | Level.LIMax low high => (cat (cat (cat (cat (j "{'a':[") (levelJson low)) (lit ",")) (levelJson high)) (j "],'k':'i'}"))
+    | Level.LParam label => (cat (cat (j "{'a':") (quoted label)) (j ",'k':'p'}"))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: level
+}
+
+definition{
+  name: metaJson,
+  parameters: [entry : Entry],
+  result: Bytes,
+  body: (cat (cat (cat (cat (j "{'n':") (quoted (project entry key))) (j ",'v':")) (match (project entry value)
+    | Meta.MBool flag => (cat (cat (j "{'t':'b','v':") (if flag then (lit "true") else (lit "false"))) (lit "}"))
+    | Meta.MNat text => (cat (cat (j "{'t':'n','v':") (quoted text)) (lit "}"))
+    | Meta.MInt text => (cat (cat (j "{'t':'i','v':") (quoted text)) (lit "}"))
+    | Meta.MStr text => (cat (cat (j "{'t':'s','v':") (quoted text)) (lit "}"))
+    | Meta.MName text => (cat (cat (j "{'t':'m','v':") (quoted text)) (lit "}")))) (lit "}")),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: levelsJson,
+  parameters: [levels : (List Level)],
+  result: Bytes,
+  body: (joined (LexLeanStd.Order::reverseList [Bytes] (prim list_fold (fun (out : (List Bytes)) (level : Level) => (cons (levelJson level) out)) (nil Bytes) levels : (List Bytes))) (lit ",")),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: binderJson,
+  parameters: [letter : Bytes, label : Bytes, info : Binder, domain : Nat, body : Nat],
+  result: Bytes,
+  body: (cat (cat (cat (cat (cat (cat (cat (cat (j "{'b':'") (binderLetter info)) (j "','k':'")) letter) (j "','n':")) (quoted label)) (cat (j ",'t':") (num domain))) (cat (j ",'v':") (num body))) (lit "}")),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nodeJson,
+  parameters: [node : Node],
+  result: Bytes,
+  body: (match node
+    | Node.NBVar position => (cat (cat (j "{'i':") (num position)) (j ",'k':'b'}"))
+    | Node.NSort level => (cat (cat (j "{'k':'s','l':") (levelJson level)) (lit "}"))
+    | Node.NConst label levels => (cat (cat (cat (cat (j "{'k':'c','n':") (quoted label)) (j ",'u':[")) (levelsJson levels)) (lit "]}"))
+    | Node.NApp function argument => (cat (cat (cat (cat (j "{'f':") (num function)) (j ",'k':'a','x':")) (num argument)) (lit "}"))
+    | Node.NLambda label info domain body => (binderJson (lit "l") label info domain body)
+    | Node.NForall label info domain body => (binderJson (lit "p") label info domain body)
+    | Node.NLet label domain bound rest dependent => (cat (cat (cat (cat (cat (cat (cat (cat (j "{'body':") (num rest)) (j ",'d':")) (if dependent then (lit "true") else (lit "false"))) (j ",'k':'e','n':")) (quoted label)) (cat (j ",'t':") (num domain))) (cat (j ",'v':") (num bound))) (lit "}"))
+    | Node.NNat text => (cat (cat (j "{'k':'n','v':") (quoted text)) (lit "}"))
+    | Node.NString scalars => (cat (cat (j "{'k':'t','v':[") (joined (LexLeanStd.Order::reverseList [Bytes] (prim list_fold (fun (out : (List Bytes)) (scalar : Nat) => (cons (num scalar) out)) (nil Bytes) scalars : (List Bytes))) (lit ","))) (lit "]}"))
+    | Node.NMdata entries inner => (cat (cat (cat (cat (j "{'k':'d','m':[") (joined (LexLeanStd.Order::reverseList [Bytes] (prim list_fold (fun (out : (List Bytes)) (entry : Entry) => (cons (metaJson entry) out)) (nil Bytes) entries : (List Bytes))) (lit ","))) (j "],'x':")) (num inner)) (lit "}"))
+    | Node.NProj label structure position inner => (cat (cat (cat (cat (cat (cat (cat (cat (j "{'i':") (num position)) (j ",'k':'j','n':")) (quoted label)) (j ",'s':")) (quoted structure)) (j ",'x':")) (num inner)) (lit "}"))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: mapped,
+  type_parameters: [Item],
+  parameters: [items : (List 'Item), render : (Fn ('Item) Bytes)],
+  result: (List Bytes),
+  body: (LexLeanStd.Order::reverseList [Bytes] (prim list_fold (fun [render] (out : (List Bytes)) (item : 'Item) => (cons (apply render item) out)) (nil Bytes) items : (List Bytes))),
+  executable: true
+}
+
+definition{
+  name: coreJson,
+  parameters: [module : Module],
+  result: Bytes,
+  body: (joined (cons (j "{'declarations':[") (cons (joined (mapped [LexLeanStd.Json::Json] (project module declarations) (fun (declaration : LexLeanStd.Json::Json) => (LexLeanStd.Json::writeJson declaration))) (lit ",")) (cons (j "],'imports':[") (cons (joined (mapped [Bytes] (project module imports) (fun (name : Bytes) => (quoted name))) (lit ",")) (cons (j "],'nodes':[") (cons (joined (mapped [Node] (project module nodes) (fun (node : Node) => (nodeJson node))) (lit ",")) (cons (j "],'proof_nodes':[") (cons (joined (mapped [Nat] (project module proofNodes) (fun (index : Nat) => (num index))) (lit ",")) (cons (j "],'spec':") (cons (quoted (project module spec)) (cons (lit "}") (nil Bytes)))))))))))) (lit "")),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

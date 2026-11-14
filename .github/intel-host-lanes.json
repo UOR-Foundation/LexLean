@@ -1,9 +1,9 @@
 {
   "producer": ["honesty"],
   "lanes": {
-    "lower": ["bootstrap-lower", "bootstrap-lexicon-lse", "bootstrap-lexicon-lre", "bootstrap-surface-module", "bootstrap-diagnostics", "bootstrap-cli-output"],
+    "lower": ["bootstrap-lower", "bootstrap-lexicon-lse", "bootstrap-lexicon-lre", "bootstrap-surface-module", "bootstrap-diagnostics", "bootstrap-cli-output", "bootstrap-semantic-print", "bootstrap-core-print", "bootstrap-proposition-terms", "bootstrap-lexicon-schema", "bootstrap-lse-scopes", "bootstrap-lse-types"],
     "print": ["bootstrap-print", "bootstrap-bodies", "bootstrap-succeed", "bootstrap-loops", "bootstrap-assemble", "bootstrap-package", "bootstrap-check", "bootstrap-gnaf", "bootstrap-runtime", "bootstrap-terms", "bootstrap-tooling-latex", "bootstrap-structural-grammar", "bootstrap-surface-lex", "bootstrap-surface-doc", "bootstrap-surface-generic", "bootstrap-surface-tooling", "bootstrap-lock-text", "bootstrap-content-id", "bootstrap-project-text", "bootstrap-manifest-text"],
-    "validate": ["bootstrap-validate", "compiler", "preservation", "preservation-lists", "preservation-runtime", "preservation-support", "preservation-prims", "preservation-std", "production"],
-    "moves": ["bootstrap-moves", "verification", "rest"]
+    "validate": ["bootstrap-validate", "compiler", "preservation", "preservation-lists", "preservation-runtime", "preservation-support", "preservation-prims", "preservation-std", "production", "bootstrap-semantic-read", "bootstrap-core-read"],
+    "moves": ["bootstrap-moves", "verification", "rest", "bootstrap-grammar-proof", "bootstrap-core-json", "bootstrap-grammar-math"]
   }
 }

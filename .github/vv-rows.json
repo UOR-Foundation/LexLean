@@ -358,5 +358,104 @@
     "width": "",
     "memory_kib": "",
     "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-grammar-proof",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-grammar-proof",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-semantic-print",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-semantic-print",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-semantic-read",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-semantic-read",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-core-json",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-core-json",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-core-print",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-core-print",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-core-read",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-core-read",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-grammar-math",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-grammar-math",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-proposition-terms",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-proposition-terms",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-lexicon-schema",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lexicon-schema",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-lse-scopes",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lse-scopes",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-lse-types",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lse-types",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
   }
 ]
