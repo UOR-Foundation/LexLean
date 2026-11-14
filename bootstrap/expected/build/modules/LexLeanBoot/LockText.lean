@@ -53,7 +53,7 @@ public structure Lock where
 
 @[expose] public def cat (left : ByteArray) (right : ByteArray) : ByteArray := (LexLeanRuntime.append (left) (right) : ByteArray)
 
-@[expose] public def leanToolchain : ByteArray := lit ("leanprover/lean4:v4.32.1")
+@[expose] public def leanToolchain : ByteArray := lit ("leanprover/lean4:v4.32.2")
 
 @[expose] public def upperHex (value : Nat) : ByteArray := LexLeanStd.Numeral.pick (_root_.ByteArray.mk #[(_root_.UInt8.ofNat (nat_lit 48)), (_root_.UInt8.ofNat (nat_lit 49)), (_root_.UInt8.ofNat (nat_lit 50)), (_root_.UInt8.ofNat (nat_lit 51)), (_root_.UInt8.ofNat (nat_lit 52)), (_root_.UInt8.ofNat (nat_lit 53)), (_root_.UInt8.ofNat (nat_lit 54)), (_root_.UInt8.ofNat (nat_lit 55)), (_root_.UInt8.ofNat (nat_lit 56)), (_root_.UInt8.ofNat (nat_lit 57)), (_root_.UInt8.ofNat (nat_lit 65)), (_root_.UInt8.ofNat (nat_lit 66)), (_root_.UInt8.ofNat (nat_lit 67)), (_root_.UInt8.ofNat (nat_lit 68)), (_root_.UInt8.ofNat (nat_lit 69)), (_root_.UInt8.ofNat (nat_lit 70))]) (value)
 
