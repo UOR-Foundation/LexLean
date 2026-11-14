@@ -31,7 +31,10 @@ nothing else of that line is here, and no language identity moves.
   for it: a list of 1000 elements checks, builds, verifies, and has a
   snapshot. Past the bound the notation is `LLP2001` and the data `LLT4001`,
   each naming `max_scope_depth`. The readable type and term forms of the
-  notation gain the depth check the generic form had. A module within the old
+  notation gain the depth check the generic form had. The authoring API
+  (`lexlean::sdk`) reads, converts, and writes a semantic module to 1024
+  levels, the default `max_scope_depth`, on a stack of its own, where it read
+  the notation to 256 and the JSON to 128 on its caller's. A module within the old
   limits reads, renders, and hashes to the same bytes as in `0.4.0`.
 
 ## 0.4.0

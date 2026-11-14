@@ -11411,6 +11411,12 @@ bounded `Json::parse` (panic); `canonical_bytes` on its caller's stack
 (`STATUS_STACK_OVERFLOW`). `SP-02`'s 130-level let-chain refusal becomes the
 assertion that the chain checks.
 
+The authoring API had the same limits on its caller's stack (notation 256,
+JSON 128). It now reads a semantic module to 1024 levels on a stack of its
+own; `conformance_sm_12` reads, converts both ways, and writes the 1000-cell
+fixture through it on a 2 MiB thread and refuses the 1100-cell one, and fails
+when the API reads the notation to 256 levels or runs on its caller's stack.
+
 Against `v0.4.0` itself: the diff touches no identity input (`language/`,
 `schemas/`, the embedded goldens); every one of the 17 examples' committed
 locks (languages 1.0, 1.1, and 1.2) passes `lexlean lock --check` under the
