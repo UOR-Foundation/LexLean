@@ -95,7 +95,7 @@ fn named() -> Vec<(String, String)> {
     add("an empty body", format!("{B}{E}"));
     add("the end before the begin", format!("{E}{B}"));
     add("the end before and after the begin", format!("{E}{B}x{E}"));
-    add("the last end marker", format!("{B}a{E}b{E}"));
+    add("the first end marker", format!("{B}a{E}b{E}"));
     add("the first begin marker", format!("x{B}a{B}b{E}"));
     add(
         "a core module",
@@ -110,21 +110,21 @@ fn named() -> Vec<(String, String)> {
         "\\begin{toolingmodule}\\toolingdata{x}\\end{toolingmodule}".to_owned(),
     );
     add(
-        "semantic is searched before tooling",
+        "the first environment is the module, tooling before semantic",
         "\\begin{toolingmodule}a\\end{toolingmodule}\\begin{semanticmodule}b\\end{semanticmodule}"
             .to_owned(),
     );
     add(
-        "tooling is searched before core",
+        "the first environment is the module, core before tooling",
         "\\begin{coremodule}a\\end{coremodule}\\begin{toolingmodule}b\\end{toolingmodule}"
             .to_owned(),
     );
     add(
-        "a semantic module without its end stops the search",
+        "an end of another kind after the opening is no module",
         "\\begin{semanticmodule}a\\begin{toolingmodule}b\\end{toolingmodule}".to_owned(),
     );
     add(
-        "a semantic module ended before it begins stops the search",
+        "an end before the opening does not close it",
         "\\end{semanticmodule}\\begin{semanticmodule}\\begin{toolingmodule}b\\end{toolingmodule}"
             .to_owned(),
     );
@@ -132,6 +132,31 @@ fn named() -> Vec<(String, String)> {
         "the end of another kind is no end",
         "\\begin{semanticmodule}a\\end{toolingmodule}".to_owned(),
     );
+    add(
+        "an escaped marker is not a marker",
+        format!("\\\\begin{{toolingmodule}}{B}a{E}"),
+    );
+    add(
+        "an environment of no kind is no module",
+        format!("\\begin{{document}}{B}a{E}"),
+    );
+    add(
+        "a begin without its name is no module",
+        format!("\\begin x{B}a{E}"),
+    );
+    add(
+        "a begin with no open brace before its name",
+        format!("\\begin?semanticmodule}}a{E}"),
+    );
+    add(
+        "a control with more letters than begin",
+        format!("\\beginx{{semanticmodule}}a{E}"),
+    );
+    add(
+        "a backslash before a scalar beyond ASCII is no control",
+        format!("\\\u{e9}{B}a{E}"),
+    );
+    add("an end inside the body", format!("{B}a\\end{{x}}b{E}"));
     add(
         "the data form without white space",
         format!("{B}\\semanticdata{{x}}{E}"),
@@ -303,40 +328,58 @@ struct Plant {
 
 const PLANTS: &[Plant] = &[
     Plant {
-        label: "the first end marker is taken",
-        site: "(match (lastAt text (endMarker kind))",
-        replacement: "(match (LexLeanStd.Text::find text (endMarker kind))",
-        vector: "the last end marker",
+        label: "an end does not stop the search",
+        site: "(if (isControl text atom (lit \"\\\\end\")) then (ctor Option.none [Nat]) else",
+        replacement: "(if false then (ctor Option.none [Nat]) else",
+        vector: "an empty body",
     },
     Plant {
-        label: "an end before the begin is taken",
-        site: "(if (stop <? start) then (1, (ctor Option.none [Located]))",
-        replacement: "(if false then (1, (ctor Option.none [Located]))",
-        vector: "the end before the begin",
+        label: "the lexlean environment is not passed over",
+        site: "(if (prim equal (nameBytes text name) (lit \"lexlean\") : Bool) then",
+        replacement: "(if false then",
+        vector: "the oracle's data form",
     },
     Plant {
-        label: "a kind without its end lets the search go on",
-        site: "      | Option.none => (1, (ctor Option.none [Located]))",
-        replacement: "      | Option.none => (0, (ctor Option.none [Located]))",
-        vector: "a semantic module without its end stops the search",
+        label: "an end of another kind closes the module",
+        site: "(if (prim equal (nameBytes text name) (environment kind) : Bool) then",
+        replacement: "(if true then",
+        vector: "the end of another kind is no end",
     },
     Plant {
-        label: "tooling is searched before semantic",
-        site: "(let semantic : (Nat * (Option Located)) := (tryKind text 0);",
-        replacement: "(let semantic : (Nat * (Option Located)) := (tryKind text 1);",
-        vector: "semantic is searched before tooling",
+        label: "an escaped backslash is no atom of its own",
+        site: "(ctor Option.some [(Nat * Nat)] (start, (start + 2)))",
+        replacement: "(ctor Option.some [(Nat * Nat)] (start, (start + 1)))",
+        vector: "an escaped marker is not a marker",
     },
     Plant {
-        label: "core is not searched",
-        site: "(locateFrom text 2)",
-        replacement: "(ctor Option.none [Located])",
+        label: "the body ends after the end control",
+        site: "(ctor Option.some [Nat] (first atom))",
+        replacement: "(ctor Option.some [Nat] (second atom))",
+        vector: "an empty body",
+    },
+    Plant {
+        label: "the body begins at the close brace of the name",
+        site: "(kind, (((second name) + 1), (second atom)))",
+        replacement: "(kind, ((second name), (second atom)))",
+        vector: "an empty body",
+    },
+    Plant {
+        label: "a name needs no open brace",
+        site: "(if (AxiomOutput::byteIs text at (123 : UInt8)) then",
+        replacement: "(if true then",
+        vector: "a begin with no open brace before its name",
+    },
+    Plant {
+        label: "core is no kind",
+        site: "(prim equal name (environment 2) : Bool)",
+        replacement: "(prim equal name (environment 0) : Bool)",
         vector: "a core module",
     },
     Plant {
-        label: "the body begins at the begin marker",
-        site: "(let start : Nat := (found + (prim length marker : Nat));",
-        replacement: "(let start : Nat := found;",
-        vector: "an empty body",
+        label: "a control is read by its prefix",
+        site: "(prim slice text (first atom) (prim subtract (second atom) (first atom) : Nat) : (Option Bytes))",
+        replacement: "(prim slice text (first atom) (prim length word : Nat) : (Option Bytes))",
+        vector: "a control with more letters than begin",
     },
     Plant {
         label: "the core control is the semantic one",

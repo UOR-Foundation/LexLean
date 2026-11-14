@@ -41,30 +41,6 @@ definition{
 }
 
 definition{
-  name: beginMarker,
-  parameters: [kind : Nat],
-  result: Bytes,
-  body: (prim append (prim append (lit "\\begin{") (environment kind) : Bytes) (lit "}") : Bytes),
-  executable: true
-}
-
-definition{
-  name: endMarker,
-  parameters: [kind : Nat],
-  result: Bytes,
-  body: (prim append (prim append (lit "\\end{") (environment kind) : Bytes) (lit "}") : Bytes),
-  executable: true
-}
-
-definition{
-  name: lastAt,
-  parameters: [subject : Bytes, needle : Bytes],
-  result: (Option Nat),
-  body: (let total : Nat := (prim length subject : Nat); (let size : Nat := (prim length needle : Nat); (if (total <? size) then (ctor Option.none [Nat]) else (let position : Nat := (first (prim iterate_until (fun [needle, subject] (position : Nat) => (AxiomOutput::lastStep subject needle position)) (total + 1) (prim subtract total size : Nat) : (Nat * Bool))); (if (LexLeanStd.Text::matchAt subject needle position) then (ctor Option.some [Nat] position) else (ctor Option.none [Nat])))))),
-  executable: true
-}
-
-definition{
   name: tail,
   parameters: [subject : Bytes, offset : Nat],
   result: Bytes,
@@ -82,23 +58,134 @@ definition{
 }
 
 definition{
-  name: tryKind,
-  parameters: [text : Bytes, kind : Nat],
-  result: (Nat * (Option Located)),
-  body: (let marker : Bytes := (beginMarker kind); (match (LexLeanStd.Text::find text marker)
-    | Option.none => (0, (ctor Option.none [Located]))
-    | Option.some found => (let start : Nat := (found + (prim length marker : Nat)); (match (lastAt text (endMarker kind))
-      | Option.none => (1, (ctor Option.none [Located]))
-      | Option.some stop => (if (stop <? start) then (1, (ctor Option.none [Located])) else (2, (ctor Option.some [Located] (record Located {kind := kind, bodyStart := start, bodyStop := stop, data := (dataRange text kind start stop)})))))))),
+  name: isLetter,
+  parameters: [text : Bytes, position : Nat],
+  result: Bool,
+  body: (if (AxiomOutput::byteIn text position (65 : UInt8) (90 : UInt8)) then true else (AxiomOutput::byteIn text position (97 : UInt8) (122 : UInt8))),
   axioms: [Quot.sound, propext],
   executable: true
 }
 
 definition{
-  name: locateFrom,
-  parameters: [text : Bytes, kind : Nat],
-  result: (Option Located),
-  body: (let tried : (Nat * (Option Located)) := (tryKind text kind); (if ((first tried) =? 0) then (ctor Option.none [Located]) else (second tried))),
+  name: opensAtom,
+  parameters: [text : Bytes, position : Nat],
+  result: Bool,
+  body: (if (AxiomOutput::byteIs text position (92 : UInt8)) then (AxiomOutput::byteIn text (position + 1) (0 : UInt8) (127 : UInt8)) else false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: atomFrom,
+  parameters: [text : Bytes, at : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [text] (position : Nat) => (if (opensAtom text position) then (ctor Option.none [Nat]) else (if (position <? (prim length text : Nat)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])))) ((prim length text : Nat) + 1) at : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: lettersEnd,
+  parameters: [text : Bytes, at : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [text] (position : Nat) => (if (isLetter text position) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))) ((prim length text : Nat) + 1) at : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nextAtom,
+  parameters: [text : Bytes, at : Nat],
+  result: (Option (Nat * Nat)),
+  body: (let start : Nat := (atomFrom text at); (if (opensAtom text start) then (if (isLetter text (start + 1)) then (ctor Option.some [(Nat * Nat)] (start, (lettersEnd text (start + 1)))) else (ctor Option.some [(Nat * Nat)] (start, (start + 2)))) else (ctor Option.none [(Nat * Nat)]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isControl,
+  parameters: [text : Bytes, atom : (Nat * Nat), word : Bytes],
+  result: Bool,
+  body: (match (prim slice text (first atom) (prim subtract (second atom) (first atom) : Nat) : (Option Bytes))
+    | Option.some window => (prim equal window word : Bool)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: nameAt,
+  parameters: [text : Bytes, at : Nat],
+  result: (Option (Nat * Nat)),
+  body: (if (AxiomOutput::byteIs text at (123 : UInt8)) then (match (LexLeanStd.Text::find (tail text (at + 1)) (lit "}"))
+    | Option.some offset => (ctor Option.some [(Nat * Nat)] ((at + 1), ((at + 1) + offset)))
+    | Option.none => (ctor Option.none [(Nat * Nat)])) else (ctor Option.none [(Nat * Nat)])),
+  executable: true
+}
+
+definition{
+  name: nameBytes,
+  parameters: [text : Bytes, name : (Nat * Nat)],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr text (first name) (prim subtract (second name) (first name) : Nat)),
+  executable: true
+}
+
+definition{
+  name: kindOf,
+  parameters: [name : Bytes],
+  result: (Option Nat),
+  body: (if (prim equal name (environment 0) : Bool) then (ctor Option.some [Nat] 0) else (if (prim equal name (environment 1) : Bool) then (ctor Option.some [Nat] 1) else (if (prim equal name (environment 2) : Bool) then (ctor Option.some [Nat] 2) else (ctor Option.none [Nat])))),
+  executable: true
+}
+
+definition{
+  name: openStep,
+  parameters: [text : Bytes, at : Nat],
+  result: (Option Nat),
+  body: (match (nextAtom text at)
+    | Option.none => (ctor Option.none [Nat])
+    | Option.some atom => (if (isControl text atom (lit "\\begin")) then (match (nameAt text (second atom))
+      | Option.none => (ctor Option.none [Nat])
+      | Option.some name => (if (prim equal (nameBytes text name) (lit "lexlean") : Bool) then (ctor Option.some [Nat] (second atom)) else (ctor Option.none [Nat]))) else (ctor Option.some [Nat] (second atom)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: opening,
+  parameters: [text : Bytes],
+  result: (Option (Nat * (Nat * Nat))),
+  body: (let at : Nat := (first (prim iterate_until (fun [text] (at : Nat) => (openStep text at)) ((prim length text : Nat) + 1) 0 : (Nat * Bool))); (match (nextAtom text at)
+    | Option.none => (ctor Option.none [(Nat * (Nat * Nat))])
+    | Option.some atom => (if (isControl text atom (lit "\\begin")) then (match (nameAt text (second atom))
+      | Option.none => (ctor Option.none [(Nat * (Nat * Nat))])
+      | Option.some name => (match (kindOf (nameBytes text name))
+        | Option.none => (ctor Option.none [(Nat * (Nat * Nat))])
+        | Option.some kind => (ctor Option.some [(Nat * (Nat * Nat))] (kind, (((second name) + 1), (second atom)))))) else (ctor Option.none [(Nat * (Nat * Nat))])))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: closeStep,
+  parameters: [text : Bytes, at : Nat],
+  result: (Option Nat),
+  body: (match (nextAtom text at)
+    | Option.none => (ctor Option.none [Nat])
+    | Option.some atom => (if (isControl text atom (lit "\\end")) then (ctor Option.none [Nat]) else (ctor Option.some [Nat] (second atom)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: closing,
+  parameters: [text : Bytes, kind : Nat, from : Nat],
+  result: (Option Nat),
+  body: (let at : Nat := (first (prim iterate_until (fun [text] (at : Nat) => (closeStep text at)) ((prim length text : Nat) + 1) from : (Nat * Bool))); (match (nextAtom text at)
+    | Option.none => (ctor Option.none [Nat])
+    | Option.some atom => (if (isControl text atom (lit "\\end")) then (match (nameAt text (second atom))
+      | Option.none => (ctor Option.none [Nat])
+      | Option.some name => (if (prim equal (nameBytes text name) (environment kind) : Bool) then (ctor Option.some [Nat] (first atom)) else (ctor Option.none [Nat]))) else (ctor Option.none [Nat])))),
   axioms: [Quot.sound, propext],
   executable: true
 }
@@ -107,7 +194,11 @@ definition{
   name: locateModule,
   parameters: [text : Bytes],
   result: (Option Located),
-  body: (let semantic : (Nat * (Option Located)) := (tryKind text 0); (if ((first semantic) =? 0) then (let tooling : (Nat * (Option Located)) := (tryKind text 1); (if ((first tooling) =? 0) then (locateFrom text 2) else (second tooling))) else (second semantic))),
+  body: (match (opening text)
+    | Option.none => (ctor Option.none [Located])
+    | Option.some found => (let kind : Nat := (first found); (let start : Nat := (first (second found)); (match (closing text kind (second (second found)))
+      | Option.none => (ctor Option.none [Located])
+      | Option.some stop => (if (stop <? start) then (ctor Option.none [Located]) else (ctor Option.some [Located] (record Located {kind := kind, bodyStart := start, bodyStop := stop, data := (dataRange text kind start stop)}))))))),
   axioms: [Quot.sound, propext],
   executable: true,
   production: {effects: [allocation, overflow], targets: [rust-std]}

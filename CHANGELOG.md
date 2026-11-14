@@ -28,7 +28,12 @@ and Unreleased holds what has landed since.
   counts --write` writes moved counts into those modules and projects them again. The
   same-run honesty job keeps the SIMD probe of #109 and every toolchain fetch of `ci.yml`
   goes through `.github/retry.sh`. The language-1.2 compiler-semantics ID, the renderer
-  record and every lock that names the ID are the merged tree's.
+  record and every lock that names the ID are the merged tree's. v0.4's `BS-28` twin
+  `locateModule` followed the oracle as v0.4 had it, which searched each kind in turn to its last
+  closing marker. v0.5's `AU-14` changed that oracle to the environment the structural parser
+  opens, ended at the first `\end` control atom. The twin is rewritten to the new oracle, reading
+  control atoms as the scanner does, and BS-28's statement, hand-built texts and planted defects
+  follow it. RP-14 now names the retried toolchain installs.
 
 - The standard library gains `LexLeanStd.Target` (#119, `GN-09`), the machine contracts of the production
   targets decided in #109: for `x86_64-unknown-linux-gnu` with `avx2`, `aarch64-unknown-linux-gnu` with
