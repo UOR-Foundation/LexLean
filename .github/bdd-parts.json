@@ -277,6 +277,15 @@
     ],
     "bootstrap-manifest-text": [
       "BS-34"
+    ],
+    "bootstrap-lexicon-schema": [
+      "BS-50"
+    ],
+    "bootstrap-lse-scopes": [
+      "BS-51"
+    ],
+    "bootstrap-lse-types": [
+      "BS-52"
     ]
   },
   "targets": {
