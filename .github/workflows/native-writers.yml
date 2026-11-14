@@ -1,0 +1,22 @@
+name: Native fixed-kernel products (review only)
+on:
+  push:
+    branches: [codex/native-fixed-kernel-writers-9fd01c31-v2]
+permissions:
+  contents: read
+concurrency:
+  group: native-fixed-kernel-products
+  cancel-in-progress: false
+jobs:
+  export:
+    if: github.event.created && !github.event.deleted
+    uses: ./.github/workflows/native-writer-stage.yml
+    with:
+      stage: export
+  verify:
+    needs: export
+    uses: ./.github/workflows/native-writer-stage.yml
+    with:
+      stage: verify
+      export-sha256: ${{ needs.export.outputs.patch-sha256 }}
+      export-tree: ${{ needs.export.outputs.product-tree }}

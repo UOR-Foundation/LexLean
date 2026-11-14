@@ -1,0 +1,277 @@
+name: Isolated native writer stage
+on:
+  workflow_call:
+    inputs:
+      stage: {type: string, required: true}
+      export-sha256: {type: string, default: ''}
+      export-tree: {type: string, default: ''}
+    outputs:
+      patch-sha256:
+        value: ${{ jobs.writer.outputs.patch-sha256 }}
+      product-tree:
+        value: ${{ jobs.writer.outputs.product-tree }}
+permissions:
+  contents: read
+jobs:
+  writer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    outputs:
+      patch-sha256: ${{ steps.run.outputs.patch-sha256 }}
+      product-tree: ${{ steps.run.outputs.product-tree }}
+    env:
+      INPUT: 9fd01c31e40bb29577833825f902fafcceedb49a
+      TREE: ec744df3893e9648e6599c59fd27435bcc2f4877
+      STAGE: ${{ inputs.stage }}
+      EXPORT_SHA256: ${{ inputs.export-sha256 }}
+      EXPORT_TREE: ${{ inputs.export-tree }}
+      CARRIER: ${{ github.workflow_sha }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '1'
+      RUST_TEST_THREADS: '1'
+      LEXLEAN_VERIFY_WIDTH: '1'
+      LEXLEAN_CI_TELEMETRY: ${{ github.workspace }}/evidence/telemetry
+    steps:
+      - name: Reserve execution and capture deadlines
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'CARGO_TARGET_DIR=%s/target\nTMPDIR=%s/scratch\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          mkdir -p evidence
+          deadline=$(( $(date +%s) + 330 * 60 ))
+          echo "PRODUCER_DEADLINE=$deadline" >> "$GITHUB_ENV"
+          printf '{"job_minutes":360,"producer_minutes_from_first_step":330,"kill_grace_seconds":30,"capture_step_minutes":10,"deadline_epoch":%s}\n' "$deadline" > evidence/deadlines.json
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 9fd01c31e40bb29577833825f902fafcceedb49a
+          persist-credentials: false
+          fetch-depth: 1
+          path: source
+      - name: Bind isolated producer input
+        run: |
+          set -euo pipefail
+          mkdir -p evidence "$TMPDIR"
+          test "$(git -C source rev-parse HEAD)" = "$INPUT"
+          test "$(git -C source rev-parse HEAD^{tree})" = "$TREE"
+          test -z "$(git -C source status --porcelain)"
+          git -C source worktree add --detach "$RUNNER_TEMP/work" "$INPUT"
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        if: inputs.stage == 'verify'
+        with:
+          name: native-export-products
+          path: incoming
+      - name: Install native pinned tools (one attempt)
+        working-directory: ${{ runner.temp }}/work
+        run: |
+          set -euo pipefail
+          rustup toolchain install
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - uses: taiki-e/install-action@b6b84cf49ebfe0176417bdce007c624f0db37f20
+        with:
+          tool: just
+      - name: Native CI overflow provision (not a capacity guarantee)
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 4G "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo chmod 600 "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo mkswap "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo swapon "$RUNNER_TEMP/lexlean-atlas.swap"
+          sudo sysctl vm.swappiness=10
+          swapon --show
+      - name: Guard and run exactly one owning recipe
+        id: run
+        timeout-minutes: 335
+        shell: bash
+        run: |
+          set -euo pipefail
+          exec > >(tee -a evidence/stage-console.log) 2>&1
+          remaining=$(( PRODUCER_DEADLINE - $(date +%s) ))
+          if (( remaining <= 0 )); then
+            printf '{"status":"interrupted","reason":"deadline exhausted before producer"}\n' > evidence/supervisor.json
+            exit 124
+          fi
+          set +e
+          timeout --signal=TERM --kill-after=30s "${remaining}s" python3 - <<'PY'
+          import os, pathlib as P, subprocess as S, hashlib as H, json, time, threading, tarfile, stat
+          w=P.Path(os.environ['RUNNER_TEMP'])/'work'; e=P.Path('evidence').resolve()
+          e.mkdir(exist_ok=True); stage=os.environ['STAGE']; assert stage in ('export','verify')
+          def call(*a): return S.check_output(a,cwd=w).decode().strip()
+          def digest(p): return H.sha256(P.Path(p).read_bytes()).hexdigest()
+          def snap():
+              names=call('git','ls-files','--cached','--others','--exclude-standard','-z').split('\0')
+              return {n:H.sha256(os.readlink(w/n).encode() if (w/n).is_symlink() else (w/n).read_bytes()).hexdigest() for n in names if n and (w/n).exists()}
+          def save(n,v): (e/n).write_text(json.dumps(v,indent=2,sort_keys=True)+'\n')
+          def resources():
+              cg=P.Path('/sys/fs/cgroup'); membership=P.Path('/proc/self/cgroup').read_text()
+              rel=next((x.split(':',2)[2] for x in membership.splitlines() if x.startswith('0::')), '/')
+              nested=cg/rel.lstrip('/'); cg=nested if (nested/'memory.max').exists() else cg
+              return {'time':time.time(),'cgroup_path':str(cg),'membership':membership,'meminfo':P.Path('/proc/meminfo').read_text(),
+                'cgroup':{n:(cg/n).read_text() for n in ['memory.max','memory.high','memory.current','memory.peak','memory.events','memory.swap.max','memory.swap.current'] if (cg/n).exists()},
+                'disk':call('df','-B1',str(w)),'swap':call('swapon','--show','--bytes'),
+                'processes':call('ps','-eo','pid,ppid,stat,etimes,rss,vsz,comm')}
+          projects=[str(p.relative_to(w)) for p in sorted((w/'examples').iterdir()) if p.is_dir()]+['compiler','stdlib','std-models','std-reasoning','kappa','bootstrap']
+          assert len(projects)==24
+          def allowed(p,kind):
+              if kind=='export': return any(p.startswith('tests/production-export/'+n+'/packages/') for n in ['production','production-coverage','stdlib','bootstrap','helpdesk'])
+              return any(p.startswith(n+'/expected/verify/') for n in projects if n!='examples/production')
+          base=snap(); save('base-inputs.json',base)
+          def semantic_inventory():
+              result={}
+              def visit(path):
+                  info=path.lstat(); mode=stat.S_IMODE(info.st_mode)
+                  name=str(path.relative_to(w))
+                  if stat.S_ISLNK(info.st_mode): row={'type':'symlink','mode':mode,'target':os.readlink(path)}
+                  elif stat.S_ISREG(info.st_mode): row={'type':'file','mode':mode,'sha256':digest(path)}
+                  elif stat.S_ISDIR(info.st_mode): row={'type':'directory','mode':mode}
+                  else: raise RuntimeError('unsupported semantic file type: '+name)
+                  result[name]=row
+                  if row['type']=='directory':
+                      for child in sorted(path.iterdir()): visit(child)
+              for root in ['language','schemas','tests/golden/axiom-parser','tests/golden/canonical-json']: visit(w/root)
+              return result
+          semantic=semantic_inventory()
+          assert sum(v['type']=='file' for v in semantic.values())==906
+          assert all(v['type']!='symlink' for v in semantic.values())
+          save('semantic-inputs.json',semantic)
+          linked=w/'crates/lexlean/sha256_package.rs'; linked_hash=digest(linked)
+          production={str(p.relative_to(w)):digest(p) for p in (w/'examples/production/expected/verify').rglob('*') if p.is_file()}
+          def protected():
+              assert semantic_inventory()==semantic
+              assert digest(linked)==linked_hash
+              assert production=={str(p.relative_to(w)):digest(p) for p in (w/'examples/production/expected/verify').rglob('*') if p.is_file()}
+          if stage=='verify':
+              patch=P.Path('incoming/products.patch').resolve()
+              assert digest(patch)==os.environ['EXPORT_SHA256']
+              S.run(['git','apply','--index',str(patch)],cwd=w,check=True)
+              assert call('git','write-tree')==os.environ['EXPORT_TREE']
+              inherited=snap(); assert all(allowed(p,'export') for p in base.keys()|inherited.keys() if base.get(p)!=inherited.get(p))
+              protected()
+          stage_tree=call('git','write-tree')
+          start=snap(); save('stage-inputs.json',start); save('resources-before.json',resources())
+          receipt={'input':os.environ['INPUT'],'tree':os.environ['TREE'],'carrier':os.environ['CARRIER'],
+            'run':os.environ['GITHUB_RUN_ID'],'attempt':os.environ['GITHUB_RUN_ATTEMPT'],
+            'stage':stage,'stage_input_tree':stage_tree,'deadline_epoch':os.environ['PRODUCER_DEADLINE'],'export_sha256':os.environ['EXPORT_SHA256'],'export_tree':os.environ['EXPORT_TREE'],
+            'cargo_lock':digest(w/'Cargo.lock'),'status':'setup'}
+          save('receipt.json',receipt)
+          stop=threading.Event()
+          def sample():
+              with (e/'resources.jsonl').open('a') as f:
+                  while not stop.is_set(): f.write(json.dumps(resources())+'\n'); f.flush(); stop.wait(5)
+          monitor=threading.Thread(target=sample); monitor.start()
+          try:
+              S.run(['cargo','fetch','--locked'],cwd=w,check=True)
+              os.environ['CARGO_NET_OFFLINE']='true'
+              S.run(['cargo','build','--locked','-p','lexlean','--bin','lexlean'],cwd=w,check=True)
+              binary=P.Path(os.environ['CARGO_TARGET_DIR'])/'debug/lexlean'
+              identity=call(str(binary),'--version'); save('compiler.json',{'sha256':digest(binary),'version':identity})
+              for h in ['2c86ef849ec7b6e7cbae927ddf49126d781ce5003c7ecad5c379946c8169ee4c','e5f20a7b75f37d979fade759a4873fb5a029be5128dd5689bb9754a4d0b203a5','59f64efe727898bcf6a337630c38eb4ea7ffc08cd83a49a0ea669c61c3b23587']: assert h in identity
+              tool=P.Path.home()/'.elan/toolchains/leanprover--lean4---v4.32.2'
+              save('tools.json',{'lean_root':str(tool.resolve(strict=True)),'lean_hashes':{n:digest(tool/'bin'/n) for n in ['lean','lake','leanchecker']},'rust':call('rustc','-vV'),'cargo':call('cargo','-V'),'rust_hashes':{n:digest(call('rustup','which',n)) for n in ['rustc','cargo','rustfmt','clippy-driver']}})
+              assert [digest(tool/'bin'/n) for n in ['lean','lake','leanchecker']]==['e8baaa71855a616dc351028f3ad2200051b0671f423a1696a100e809302d5550','60330ab6f07dce20f3fa9ebb08e8b984ea9549eac172afeb15d9d2227060e2b3','c7c51e296d28dd443ed60f9414feef41253ede89dea76dbb2adde29768c3ed5f']
+              assert 'rustc 1.97.1 ' in call('rustc','-V'); assert '4.32.2' in call(str(tool/'bin/lean'),'--version')
+              protected(); assert snap()==start
+              if stage=='verify': os.environ['LEXLEAN_EXAMPLES_PART']='without:production'
+              recipe='production-export-write' if stage=='export' else 'verify-write'
+              receipt.update(status='running',command=['just',recipe],started=time.time()); save('receipt.json',receipt)
+              with (e/'writer.log').open('wb') as log:
+                  p=S.Popen(['/usr/bin/time','-v','-o',str(e/'writer-time.txt'),'just',recipe],cwd=w,stdout=log,stderr=S.STDOUT)
+                  receipt['pid']=p.pid; save('receipt.json',receipt); rc=p.wait()
+              receipt.update(exit=rc,seconds=time.time()-receipt['started']); assert rc==0
+              protected(); end=snap(); save('stage-outputs.json',end)
+              changed=[p for p in start.keys()|end.keys() if start.get(p)!=end.get(p)]
+              assert all(allowed(p,stage) for p in changed); save('changed-paths.json',sorted(changed))
+              S.run(['git','add','-A'],cwd=w,check=True)
+              def staged_scope(boundary,kinds,label):
+                  raw=S.check_output(['git','diff','--cached','--raw','-z','--no-renames',boundary],cwd=w)
+                  fields=raw.split(b'\0'); rows=[]; i=0
+                  while i<len(fields) and fields[i]:
+                      header=fields[i].decode().split(); path=fields[i+1].decode(); i+=2
+                      old_mode=header[0][1:]; new_mode=header[1]
+                      rows.append({'path':path,'old_mode':old_mode,'new_mode':new_mode,'status':header[4]})
+                  save(label,rows)
+                  assert all(any(allowed(row['path'],kind) for kind in kinds) for row in rows), label
+                  assert all(row['new_mode'] in ('000000','100644','100755') for row in rows), label
+              staged_scope(stage_tree,[stage],'staged-stage-diff.json')
+              staged_scope(os.environ['INPUT'],['export'] if stage=='export' else ['export','verify'],'staged-total-diff.json')
+              protected()
+              patch=S.check_output(['git','diff','--cached','--binary',os.environ['INPUT']],cwd=w)
+              (e/'products.patch').write_bytes(patch); tree=call('git','write-tree')
+              receipt.update(status='passed',product_tree=tree,patch_sha256=digest(e/'products.patch'))
+              with open(os.environ['GITHUB_OUTPUT'],'a') as f: f.write('patch-sha256='+receipt['patch_sha256']+'\nproduct-tree='+tree+'\n')
+          except BaseException as err:
+              receipt.update(status='failed',error=repr(err)); raise
+          finally:
+              stop.set(); monitor.join(); save('resources-after.json',resources()); save('receipt.json',receipt)
+              final=snap(); save('final-inputs.json',final)
+              with tarfile.open(e/'partial-files.tar.gz','w:gz') as archive:
+                  for name in sorted(start.keys()|final.keys()):
+                      if start.get(name)!=final.get(name) and (w/name).exists(): archive.add(w/name,arcname=name,recursive=False)
+              (e/'partial.patch').write_bytes(S.check_output(['git','diff','--binary','HEAD'],cwd=w))
+          PY
+          rc=$?
+          printf '{"supervisor_exit":%s,"finished_epoch":%s}\n' "$rc" "$(date +%s)" > evidence/supervisor.json
+          exit "$rc"
+      - name: Capture terminal or interrupted state independently
+        if: always()
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          mkdir -p evidence
+          python3 - <<'PY'
+          import os, pathlib as P, subprocess as S, json, time, tarfile
+          e=P.Path('evidence'); w=P.Path(os.environ['RUNNER_TEMP'])/'work'
+          receipt=e/'receipt.json'
+          try: r=json.loads(receipt.read_text())
+          except (OSError,ValueError): r={'status':'interrupted','reason':'no valid producer receipt'}
+          if r.get('status') not in ('passed','failed','interrupted'):
+              r.update(status='interrupted',reason='producer has no terminal outcome')
+          try: supervisor=json.loads((e/'supervisor.json').read_text())
+          except (OSError,ValueError): supervisor={}
+          accepted=r.get('status')=='passed' and supervisor.get('supervisor_exit')==0
+          if r.get('status')=='passed' and not accepted:
+              r.update(status='interrupted',reason='success not confirmed by supervisor')
+          (e/'capture-status.json').write_text(json.dumps({'observed_epoch':time.time(),'producer_receipt':r,'supervisor':supervisor,'accepted':accepted})+'\n')
+          def capture(name,argv):
+              with (e/name).open('wb') as f:
+                  try:
+                      p=S.run(argv,cwd=w if w.exists() else None,stdout=f,stderr=S.STDOUT,timeout=60)
+                      return p.returncode
+                  except Exception as err: f.write(repr(err).encode()); return -1
+          capture('capture-processes.txt',['ps','-eo','pid,ppid,stat,etimes,rss,vsz,comm'])
+          capture('capture-memory.txt',['free','-b'])
+          capture('capture-swap.txt',['swapon','--show','--bytes'])
+          capture('capture-disk.txt',['df','-B1'])
+          cg=P.Path('/sys/fs/cgroup'); membership=P.Path('/proc/self/cgroup').read_text()
+          rel=next((x.split(':',2)[2] for x in membership.splitlines() if x.startswith('0::')), '/')
+          nested=cg/rel.lstrip('/'); cg=nested if (nested/'memory.max').exists() else cg
+          (e/'capture-cgroup.json').write_text(json.dumps({'path':str(cg),'membership':membership,
+            'values':{n:(cg/n).read_text() for n in ['memory.max','memory.high','memory.current','memory.peak','memory.events','memory.swap.max','memory.swap.current'] if (cg/n).exists()}}))
+          if w.exists():
+              capture('capture-git-status.txt',['git','status','--porcelain=v1'])
+              capture('capture-partial.patch',['git','diff','--binary','HEAD'])
+              try:
+                  tracked=S.check_output(['git','diff','--name-only','-z','HEAD'],cwd=w).split(b'\0')
+                  untracked=S.check_output(['git','ls-files','--others','--exclude-standard','-z'],cwd=w).split(b'\0')
+                  with tarfile.open(e/'capture-partial-files.tar.gz','w:gz') as archive:
+                      for raw in sorted(set(tracked+untracked)-{b''}):
+                          name=os.fsdecode(raw); path=w/name
+                          if path.exists() or path.is_symlink(): archive.add(path,arcname=name,recursive=False)
+              except Exception as err: (e/'capture-error.txt').write_text(repr(err))
+          raise SystemExit(0 if accepted else 1)
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: success()
+        with:
+          name: native-${{ inputs.stage }}-products
+          path: evidence/products.patch
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: native-${{ inputs.stage }}-evidence
+          path: evidence
+          if-no-files-found: warn
+          retention-days: 14
