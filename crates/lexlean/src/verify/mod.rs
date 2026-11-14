@@ -2351,32 +2351,65 @@ pub fn run_part(
                 ),
             )
         };
-        let certificates: Vec<crate::production::certificate::Certificate> = certified
+        // What the verify records of the certificates, and the programs and
+        // crates they are about, are made and written here, while their bytes
+        // are held. From then on each certificate is held once, as the file
+        // Lean reads: the process keeps of it only what the audit and the
+        // diagnostics read (its names, its rows' pinned axioms, its record's
+        // identity), so that the certificates' bytes are not resident in this
+        // process beside the Lean process that checks them.
+        let record_bytes = preserve::record(&certified).to_file_bytes();
+        for (index, root) in certified.iter_mut().enumerate() {
+            write_staged(
+                staging.path(),
+                &format!("preserve/program/R{index}.json"),
+                &root.program,
+            )?;
+            root.program = Vec::new();
+            for rendering in &mut root.renderings {
+                write_staged(
+                    staging.path(),
+                    &format!("preserve/crate/R{index}.{}.rs", rendering.target),
+                    rendering.crate_text.as_bytes(),
+                )?;
+                rendering.crate_text = String::new();
+            }
+        }
+        let mut owners: Vec<(String, String)> = Vec::new();
+        let mut certificates: Vec<crate::production::certificate::Certificate> = Vec::new();
+        let mut rendered_certificates: Vec<crate::production::certificate::Certificate> =
+            Vec::new();
+        let mut composed_certificates: Vec<crate::production::certificate::Certificate> =
+            Vec::new();
+        for root in certified {
+            owners.push((root.certificate.module.clone(), root.root.clone()));
+            certificates.push(root.certificate);
+            for rendering in root.renderings {
+                rendered_certificates.push(rendering.certificate);
+                composed_certificates.push(rendering.composed);
+            }
+        }
+        let (count_a, count_b) = (certificates.len(), rendered_certificates.len());
+        let mut staged_certificates: Vec<crate::production::certificate::Certificate> =
+            certificates
+                .into_iter()
+                .chain(rendered_certificates)
+                .chain(composed_certificates)
+                .collect();
+        let generated_modules: Vec<String> = build
+            .modules
             .iter()
-            .map(|root| root.certificate.clone())
+            .map(|module| module.lean_module.clone())
             .collect();
-        let rendered_certificates: Vec<crate::production::certificate::Certificate> = certified
-            .iter()
-            .flat_map(|root| {
-                root.renderings
-                    .iter()
-                    .map(|rendering| rendering.certificate.clone())
-            })
+        let mut stage =
+            preserve::stage(&generated_modules, &staged_certificates).map_err(fail)?;
+        staged_certificates = staged_certificates
+            .into_iter()
+            .map(crate::production::certificate::Certificate::released)
             .collect();
-        let composed_certificates: Vec<crate::production::certificate::Certificate> = certified
-            .iter()
-            .flat_map(|root| {
-                root.renderings
-                    .iter()
-                    .map(|rendering| rendering.composed.clone())
-            })
-            .collect();
-        let staged_certificates: Vec<crate::production::certificate::Certificate> = certificates
-            .iter()
-            .chain(&rendered_certificates)
-            .chain(&composed_certificates)
-            .cloned()
-            .collect();
+        let composed_certificates = staged_certificates.split_off(count_a + count_b);
+        let rendered_certificates = staged_certificates.split_off(count_a);
+        let certificates = staged_certificates;
         let is_b = |module: &str| {
             rendered_certificates
                 .iter()
@@ -2393,10 +2426,10 @@ pub fn run_part(
             let declaration = preserve::failing_declaration(text, output)
                 .map(|declaration| format!(" in `{declaration}`"))
                 .unwrap_or_default();
-            let root = certified
+            let root = owners
                 .iter()
-                .find(|root| module.starts_with(&root.certificate.module))
-                .map(|root| format!(" of root `{}`", root.root))
+                .find(|(certificate, _)| module.starts_with(certificate.as_str()))
+                .map(|(_, root)| format!(" of root `{root}`"))
                 .unwrap_or_default();
             format!("{declaration}{root}")
         };
@@ -2426,12 +2459,6 @@ pub fn run_part(
                 rejected(module, output, &place)
             }
         };
-        let generated_modules: Vec<String> = build
-            .modules
-            .iter()
-            .map(|module| module.lean_module.clone())
-            .collect();
-        let stage = preserve::stage(&generated_modules, &staged_certificates).map_err(fail)?;
         let preserve_src = staging_utf8.join("preserve-src");
         let preserve_oleans = staging_utf8.join("preserve-oleans");
         let preserve_path =
@@ -2451,6 +2478,28 @@ pub fn run_part(
                 file.text.as_bytes(),
             )?;
         }
+        // A certificate held as data is recorded in the authoring notation;
+        // the Lean the decoder compiles is rendered from it. Both are written
+        // now and released: Lean reads the one, the verify record is the
+        // other, and a rejection reads its text back from the stage.
+        for file in &mut stage.certificates {
+            match file.source.take() {
+                Some(source) => write_staged(
+                    staging.path(),
+                    &format!("preserve/{}", preserve::notation_path(&file.module)),
+                    source.as_bytes(),
+                )?,
+                None => write_staged(
+                    staging.path(),
+                    &format!("preserve/{}", file.path),
+                    file.text.as_bytes(),
+                )?,
+            }
+            file.text = String::new();
+        }
+        let staged_text = |file: &preserve::StagedFile| {
+            std::fs::read_to_string(preserve_src.join(&file.path).as_std_path()).unwrap_or_default()
+        };
         let compile = |file: &preserve::StagedFile, output: bool| {
             let source = preserve_src.join(&file.path);
             let mut argv = vec![
@@ -2539,7 +2588,7 @@ pub fn run_part(
                     &file.module,
                     &combined,
                     record.exit_code,
-                    &file.text,
+                    &staged_text(file),
                 )));
             }
             write_staged(
@@ -2563,7 +2612,7 @@ pub fn run_part(
                     &file.module,
                     &combined,
                     replay.exit_code,
-                    &file.text,
+                    &staged_text(file),
                 )));
             }
             write_staged(
@@ -2600,47 +2649,12 @@ pub fn run_part(
             &audit_record.to_json().to_file_bytes(),
         )?;
         tail_records.push(audit_record);
-        for file in &stage.certificates {
-            // A certificate held as data is recorded in the authoring
-            // notation; the Lean the decoder compiles is rendered from it.
-            match &file.source {
-                Some(source) => write_staged(
-                    staging.path(),
-                    &format!("preserve/{}", preserve::notation_path(&file.module)),
-                    source.as_bytes(),
-                )?,
-                None => write_staged(
-                    staging.path(),
-                    &format!("preserve/{}", file.path),
-                    file.text.as_bytes(),
-                )?,
-            }
-        }
-        // The program each root's certificates are about and the crate each
-        // target's certificates B and E are about, published beside them and
-        // bound by `preservation.json`: what a user compiles is rendered from
-        // the first by the second's printer, and certificate E states nothing
-        // of the export wrappers or the package around it (§17.17).
-        for (index, root) in certified.iter().enumerate() {
-            write_staged(
-                staging.path(),
-                &format!("preserve/program/R{index}.json"),
-                &root.program,
-            )?;
-            for rendering in &root.renderings {
-                write_staged(
-                    staging.path(),
-                    &format!("preserve/crate/R{index}.{}.rs", rendering.target),
-                    rendering.crate_text.as_bytes(),
-                )?;
-            }
-        }
         write_staged(
             staging.path(),
             "preserve/audit.txt",
             audit_output.as_bytes(),
         )?;
-        let bytes = preserve::record(&certified).to_file_bytes();
+        let bytes = record_bytes;
         write_staged(staging.path(), "preserve/preservation.json", &bytes)?;
         preservation_row = Some(Json::object(vec![
             ("byte_length", Json::from_usize(bytes.len())),
