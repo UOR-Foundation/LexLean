@@ -13450,6 +13450,64 @@ The nesting diagnostic retains the existing `recursion limit exceeded` category,
 which the `SP-02` 130-level let-chain refusal also asserts. Only its generated
 JSON coordinates are replaced by the bound and workaround advice.
 
+## A semantic module nests to `max_scope_depth` (`SM-12`)
+
+This supersedes the record above: the 128-level limit is gone. A consumer
+application whose acceptance vectors are one closed list could not carry more
+than about 115 of them, and its design does not admit splitting the list.
+
+Before the change, on a Windows host with the debug compiler, a language-1.2
+project whose one definition is a list of n `Nat` cells: n = 100 and 120
+checked and their `build` overflowed the main thread's stack (the renderer ran
+on the caller's thread); n = 130 was `LLT4001` from the 128-level JSON reader;
+and past the snapshot's own bounded re-read (`SemanticSnapshot::to_json`) a
+snapshot panicked writing its bytes, which is where the consumer stopped at
+about 115. The notation had a fixed 256-level bound of its own behind that.
+
+The change bounds the notation and the JSON of a project's module by its
+`max_scope_depth` as the compile thread's stack hosts it, read on that thread;
+every later reading of what the linker admitted reads to the same depth on a
+stack sized for it: `render_build` on a thread of the compile stack's size,
+and the snapshot (`from_checked`, `to_json`, `canonical_bytes`) on one of the
+largest compile stack's size, so a caller on any stack gets its bytes. The
+re-reads of the linker's own data (document JSON, declaration IDs, definition
+digests, the snapshot's values) read without the 128-level limit. Readers with
+no project keep their bounds: `SemanticModule::parse` 127 levels, the
+authoring library's notation 256, tooling modules 128 (`LLT4013`).
+
+After it, with the same compiler: n = 130, 256, and 1000 check and build, and
+n = 1100 is `LLP2001` naming `max_scope_depth` 1024. `lexlean verify` with the
+pinned Lean 4.32.1 verified n = 256 (45 s) and n = 1000 (29 s), so the
+ceiling is the project's bound, not Lean's. `cargo xtask check-golden` passed
+for every project (no published artifact moved), and the diff touches no
+identity input (`language/`, `schemas/`, the embedded goldens).
+
+`conformance_sm_12` passes (4 s). It checks and builds the 1000-cell fixture,
+writes its snapshot on a 2 MiB thread and requires the snapshot ID to be the
+digest of the bytes and the bytes to nest past 1000 levels; refuses the
+1100-cell fixtures with `LLP2001`; and under `max_scope_depth = 150` checks 145
+cells and refuses 146 and 147 with `LLT4001` and 148 with `LLP2001`, so both
+bounds are the project's. Three planted defects, each restored:
+
+| Planted defect | `conformance_sm_12` |
+| --- | --- |
+| the linker reads the data with `parse` (127 levels) | fails: the 1000-cell list is refused |
+| `to_json` re-reads with the bounded `Json::parse` | fails: `recursion limit exceeded` panic in the snapshot |
+| `canonical_bytes` runs on its caller's stack | fails: `STATUS_STACK_OVERFLOW` on the 2 MiB thread |
+| the authoring API reads the notation to 256 levels | fails: the 1000-cell list is not read |
+| the authoring API runs on its caller's stack | fails: `STATUS_STACK_OVERFLOW` on the 2 MiB thread |
+
+The authoring API had the same limits on its caller's stack (notation 256,
+JSON 128), so `conformance_au_08`, which reads every committed module through
+it, failed on the 1000-cell fixture in the gate. It now reads a semantic
+module to 1024 levels on a stack of its own; `conformance_sm_12` reads,
+converts both ways, and writes the fixture on a 2 MiB thread and refuses the
+1100-cell one, and `conformance_au_08` passes.
+
+`SP-02` asserted the 130-level let-chain refusal; it now asserts that the
+chain checks. `conformance_au_01`, `conformance_au_03` (a 50,000-level
+notation is still `LLP2001`), and `conformance_au_06` pass.
+
 ## Release evidence consumes the whole jobs listing (RP-18, #408)
 
 The release gate piped the jobs listing into quiet `grep` with `pipefail`

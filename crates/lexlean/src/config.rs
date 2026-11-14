@@ -56,7 +56,7 @@ const COMPILE_STACK_BYTES_PER_SCOPE: usize = 64 * 1024;
 /// a resource reservation, not a language limit: nesting beyond what it
 /// hosts is refused as `LLS8002` naming both the configured and the
 /// effective bound, never by exhausting the stack.
-const MAX_COMPILE_STACK_BYTES: usize = 1024 * 1024 * 1024;
+pub(crate) const MAX_COMPILE_STACK_BYTES: usize = 1024 * 1024 * 1024;
 
 impl Limits {
     /// Size the compile thread's stack from `max_scope_depth` with checked

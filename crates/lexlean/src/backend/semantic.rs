@@ -1843,7 +1843,9 @@ pub(crate) fn notation_declaration_spans(
     let spans = if tooling {
         crate::surface::tooling::declaration_spans(body)
     } else {
-        crate::surface::semantic::declaration_spans(body)
+        // The linker has read this text to the project's `max_scope_depth`,
+        // and the renderer runs on a stack sized for it (§25.5).
+        crate::surface::semantic::declaration_spans_bounded(body, usize::MAX)
     }
     .ok()?;
     Some(

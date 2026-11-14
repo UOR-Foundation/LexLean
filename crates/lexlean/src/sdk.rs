@@ -13,6 +13,50 @@ use serde_json::Value;
 
 use crate::artifact::canonical_json::Json;
 use crate::surface::module::{locate, Kind, Located, CORE, SEMANTIC, TOOLING};
+use crate::surface::SurfaceError;
+
+/// How deeply the authoring API reads a semantic module's notation: the
+/// `max_scope_depth` a project is created with, so the API reads whatever a
+/// project with the default limits checks (SPEC.md §17.17). A list of n
+/// elements nests about n levels.
+pub const AUTHORING_DEPTH: usize = 1024;
+
+/// The levels a module's JSON nests beyond its deepest term: the module, its
+/// declarations, a declaration, and the members around the term.
+const AUTHORING_JSON_MARGIN: usize = 16;
+
+/// The stack the authoring API reads and writes on, a compile thread's for
+/// [`AUTHORING_DEPTH`] levels (§25.5): reading and printing recurse once per
+/// level, and the API's caller may be on a stack of any size.
+const AUTHORING_STACK: usize = 16 * 1024 * 1024 + AUTHORING_DEPTH * 64 * 1024;
+
+fn deep<T: Send>(work: impl FnOnce() -> T + Send) -> T {
+    crate::on_stack(AUTHORING_STACK, work)
+}
+
+/// The canonical JSON text of the notation of a module of `kind`: a semantic
+/// module read to [`AUTHORING_DEPTH`], the other kinds by their own bounds.
+fn notation_data(kind: &Kind, notation: &str, spec: &str) -> Result<String, SurfaceError> {
+    if kind.is(&SEMANTIC) {
+        crate::surface::semantic::parse_module_bounded(notation, spec, AUTHORING_DEPTH)
+            .map(|module| module.to_canonical_string())
+    } else {
+        kind.data_text(notation, spec)
+    }
+}
+
+/// JSON text as a value, nested no deeper than the API reads, measured
+/// without recursing before anything recurses on it.
+fn read_json<T: serde::de::DeserializeOwned>(text: &str) -> Result<T, String> {
+    let depth = crate::production::lower::json_depth(text);
+    let bound = AUTHORING_DEPTH + AUTHORING_JSON_MARGIN;
+    if depth > bound {
+        return Err(format!(
+            "the module data nests {depth} levels, more than the {bound} the authoring API reads"
+        ));
+    }
+    crate::artifact::canonical_json::from_str_unbounded(text).map_err(|failure| failure.to_string())
+}
 
 /// The kinds of module that have an authoring notation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -73,12 +117,16 @@ fn found(text: &str) -> Result<Located, AuthoringError> {
 
 /// The canonical JSON of `data`.
 fn canonical(data: &Value) -> Result<Json, AuthoringError> {
-    Json::parse(
-        serde_json::to_string(data)
-            .map_err(|failure| error(failure.to_string(), None))?
-            .as_bytes(),
-    )
-    .map_err(|failure| {
+    let text = serde_json::to_string(data).map_err(|failure| error(failure.to_string(), None))?;
+    let bound = AUTHORING_DEPTH + AUTHORING_JSON_MARGIN;
+    let depth = crate::production::lower::json_depth(&text);
+    if depth > bound {
+        return Err(error(
+            format!("the module data nests {depth} levels, more than the {bound} the authoring API reads"),
+            None,
+        ));
+    }
+    Json::parse_unbounded(text.as_bytes()).map_err(|failure| {
         error(
             format!("the module data is not canonical JSON: {failure}"),
             None,
@@ -118,13 +166,14 @@ pub fn module_kind(text: &str) -> Option<ModuleKind> {
 /// reads (it is not the `\semanticdata` form, and it is well formed).
 #[must_use]
 pub fn is_notation(text: &str) -> bool {
+    deep(|| is_notation_inline(text))
+}
+
+fn is_notation_inline(text: &str) -> bool {
     locate(text).is_some_and(|located| {
         located.data.is_none()
             && (located.kind.spec)().is_some_and(|spec| {
-                located
-                    .kind
-                    .data_text(&text[located.body.0..located.body.1], spec)
-                    .is_ok()
+                notation_data(located.kind, &text[located.body.0..located.body.1], spec).is_ok()
             })
     })
 }
@@ -138,9 +187,13 @@ pub fn is_notation(text: &str) -> bool {
 /// A source with no module, a module whose data is not JSON, or notation that
 /// is not well formed (the error carries the offset in `text`).
 pub fn read_module(text: &str) -> Result<Value, AuthoringError> {
+    deep(|| read_module_inline(text))
+}
+
+fn read_module_inline(text: &str) -> Result<Value, AuthoringError> {
     let located = found(text)?;
     if let Some((start, end)) = located.data {
-        return serde_json::from_str(&text[start..end]).map_err(|failure| {
+        return read_json(&text[start..end]).map_err(|failure| {
             error(
                 format!("the module data is not JSON: {failure}"),
                 Some(start),
@@ -149,16 +202,15 @@ pub fn read_module(text: &str) -> Result<Value, AuthoringError> {
     }
     let spec =
         (located.kind.spec)().ok_or_else(|| error("the notation is a language-1.2 form", None))?;
-    let module = located
-        .kind
-        .data_text(&text[located.body.0..located.body.1], spec)
-        .map_err(|failure| {
+    let module = notation_data(located.kind, &text[located.body.0..located.body.1], spec).map_err(
+        |failure| {
             error(
                 format!("the notation is not well formed: {}", failure.message),
                 Some(located.body.0 + failure.offset),
             )
-        })?;
-    serde_json::from_str(&module).map_err(|failure| error(failure.to_string(), None))
+        },
+    )?;
+    read_json(&module).map_err(|failure| error(failure, None))
 }
 
 /// Whether the data form of `text` is its own canonical JSON as language 1.1
@@ -198,6 +250,10 @@ pub(crate) fn data_is_canonical(text: &str) -> Option<bool> {
 ///
 /// A source with no module, or `data` that is not a module of its kind.
 pub fn write_module(text: &str, data: &Value) -> Result<String, AuthoringError> {
+    deep(|| write_module_inline(text, data))
+}
+
+fn write_module_inline(text: &str, data: &Value) -> Result<String, AuthoringError> {
     let located = found(text)?;
     let json = canonical(data)?;
     if let Some((start, end)) = located.data {
@@ -229,6 +285,10 @@ pub fn write_module(text: &str, data: &Value) -> Result<String, AuthoringError> 
 ///
 /// A source with no well-formed module.
 pub fn to_data_form(text: &str) -> Result<String, AuthoringError> {
+    deep(|| to_data_form_inline(text))
+}
+
+fn to_data_form_inline(text: &str) -> Result<String, AuthoringError> {
     let located = found(text)?;
     // A module in the notation is read to its canonical JSON text directly: a
     // library of kernel terms is tens of megabytes, which a value of the whole
@@ -236,17 +296,16 @@ pub fn to_data_form(text: &str) -> Result<String, AuthoringError> {
     let data = if located.data.is_none() {
         let spec = (located.kind.spec)()
             .ok_or_else(|| error("the notation is a language-1.2 form", None))?;
-        located
-            .kind
-            .data_text(&text[located.body.0..located.body.1], spec)
-            .map_err(|failure| {
+        notation_data(located.kind, &text[located.body.0..located.body.1], spec).map_err(
+            |failure| {
                 error(
                     format!("the notation is not well formed: {}", failure.message),
                     Some(located.body.0 + failure.offset),
                 )
-            })?
+            },
+        )?
     } else {
-        canonical(&read_module(text)?)?.to_canonical_string()
+        canonical(&read_module_inline(text)?)?.to_canonical_string()
     };
     Ok(format!(
         "{}\n{}{{{data}}}\n{}",
@@ -264,8 +323,12 @@ pub fn to_data_form(text: &str) -> Result<String, AuthoringError> {
 /// A source with no well-formed module, or a module that is not of the schema
 /// the notation names (a language-1.1 module has no notation).
 pub fn to_notation(text: &str) -> Result<String, AuthoringError> {
+    deep(|| to_notation_inline(text))
+}
+
+fn to_notation_inline(text: &str) -> Result<String, AuthoringError> {
     let located = found(text)?;
-    let json = canonical(&read_module(text)?)?;
+    let json = canonical(&read_module_inline(text)?)?;
     require_spec(located.kind, &json)?;
     let printed = (located.kind.print)(&json)
         .map_err(|failure| error(format!("the module has no notation: {failure}"), None))?;
@@ -284,6 +347,10 @@ pub fn to_notation(text: &str) -> Result<String, AuthoringError> {
 ///
 /// A source with no module, or notation that is not well formed.
 pub fn declaration_spans(text: &str) -> Result<Option<Vec<(usize, usize)>>, AuthoringError> {
+    deep(|| declaration_spans_inline(text))
+}
+
+fn declaration_spans_inline(text: &str) -> Result<Option<Vec<(usize, usize)>>, AuthoringError> {
     let located = found(text)?;
     if located.data.is_some() {
         return Ok(None);
@@ -294,7 +361,7 @@ pub fn declaration_spans(text: &str) -> Result<Option<Vec<(usize, usize)>>, Auth
     } else if located.kind.is(&CORE) {
         crate::surface::core::declaration_spans(body)
     } else {
-        crate::surface::semantic::declaration_spans(body)
+        crate::surface::semantic::declaration_spans_bounded(body, AUTHORING_DEPTH)
     }
     .map_err(|failure| {
         error(
