@@ -22,9 +22,13 @@ use std::collections::{BTreeMap, BTreeSet};
 use camino::{Utf8Path, Utf8PathBuf};
 
 use crate::artifact::canonical_json::Json;
-use crate::artifact::content_id::Sha256Digest;
 use crate::diagnostic::Diagnostic;
 use crate::verify::child::ChildRecord;
+use crate::verify::toolchain::Addresses;
+
+/// The file of a part's output that names the addresses of the executables
+/// the part ran and was built by (§22.11).
+pub const TOOLCHAIN_FILE: &str = "toolchain.json";
 
 /// Which modules one part elaborates, and which it replays and audits.
 ///
@@ -116,6 +120,8 @@ pub struct Imported {
     pub leanchecker: BTreeMap<String, ChildRecord>,
     /// Audit records by audit member name.
     pub audit: BTreeMap<String, ChildRecord>,
+    /// The toolchain addresses each part named, by its output directory.
+    pub toolchains: Vec<(Utf8PathBuf, Addresses)>,
 }
 
 fn io(what: &str, error: &std::io::Error) -> Diagnostic {
@@ -137,12 +143,15 @@ fn malformed(what: &str, reason: impl std::fmt::Display) -> Diagnostic {
 ///
 /// A module's `.olean` may come from one part only, and a record of one
 /// process from one part only: two parts that both wrote one is a plan that
-/// ran a process twice, which is refused rather than resolved.
+/// ran a process twice, which is refused rather than resolved. Every part
+/// names the addresses of its toolchain ([`TOOLCHAIN_FILE`]), which
+/// [`check_toolchain`] compares with the reader's own.
 ///
 /// # Errors
 ///
-/// A part that cannot be read, a duplicate `.olean` or record, or a record
-/// that does not parse as the verifier wrote it.
+/// A part that cannot be read, a duplicate `.olean` or record, a record
+/// that does not parse as the verifier wrote it, or a part without its
+/// toolchain addresses.
 pub fn import(
     parts: &[Utf8PathBuf],
     olean_root: &Utf8Path,
@@ -156,6 +165,22 @@ pub fn import(
                 "the output directory of a part is required and is not a directory",
             ));
         }
+        let addresses_path = part.join(TOOLCHAIN_FILE);
+        let addresses = std::fs::read(addresses_path.as_std_path())
+            .map_err(|error| {
+                malformed(
+                    addresses_path.as_str(),
+                    format!("a part must name the addresses of its toolchain: {error}"),
+                )
+            })
+            .and_then(|bytes| {
+                Json::parse(&bytes).map_err(|reason| malformed(addresses_path.as_str(), reason))
+            })
+            .and_then(|json| {
+                Addresses::from_json(&json)
+                    .map_err(|reason| malformed(addresses_path.as_str(), reason))
+            })?;
+        imported.toolchains.push((part.clone(), addresses));
         let oleans = part.join("oleans");
         if oleans.as_std_path().is_dir() {
             for entry in walkdir::WalkDir::new(oleans.as_std_path())
@@ -222,31 +247,49 @@ pub fn import(
     Ok(imported)
 }
 
-/// Require every imported record to name the executable the join itself
-/// runs: `lean` for an elaboration or an audit member, `leanchecker` for a
-/// replay (§9.4, §22.9).
+/// Require every part to name the toolchain this run's preflight hashed, and
+/// every imported record to name the executable the join itself runs:
+/// `lean` for an elaboration or an audit member, `leanchecker` for a replay
+/// (§9.4, §22.9, §22.11).
 ///
 /// In a whole verification every record carries the digest of the toolchain
 /// the run's preflight hashed, by construction. Across the parts of a run it
 /// holds only because every job installs the same pinned toolchain, which is
-/// a practice and not a check: a part whose `lean` or `leanchecker` differed
-/// from the join's would otherwise contribute records the attestation then
-/// lists under the join's toolchain digests.
+/// a practice and not a check: a part whose `lean`, `lake`, `leanchecker`,
+/// `lexlean`, or the `rustc` that built it differed from the reader's would
+/// otherwise contribute records the attestation then lists under the
+/// reader's toolchain. A record names only the executable it ran, so the
+/// part's own addresses ([`TOOLCHAIN_FILE`]) are compared first, whole.
 ///
 /// # Errors
 ///
-/// The first record, in the order elaborations, replays, audit members, and
-/// by name within each, whose `executable_sha256` is not the join's digest of
-/// the tool that produced it, naming the record and both digests.
-pub fn check_toolchain(
-    imported: &Imported,
-    lean: Sha256Digest,
-    leanchecker: Sha256Digest,
-) -> Result<(), Diagnostic> {
+/// The first part, in the order given, whose addresses differ from `own`,
+/// naming the part, the tool, and both addresses; then the first record, in
+/// the order elaborations, replays, audit members, and by name within each,
+/// whose `executable_sha256` is not the reader's digest of the tool that
+/// produced it, naming the record and both digests.
+pub fn check_toolchain(imported: &Imported, own: &Addresses) -> Result<(), Diagnostic> {
+    for (part, addresses) in &imported.toolchains {
+        if let Some((tool, theirs, mine)) = addresses.first_difference(own) {
+            return Err(malformed(
+                &format!("the part `{part}`"),
+                format!(
+                    "it ran `{tool}` {}, but this run's `{tool}` is {}; every part of a run must run one toolchain",
+                    theirs.to_hex(),
+                    mine.to_hex()
+                ),
+            ));
+        }
+    }
     for (what, tool, expected, records) in [
-        ("elaboration", "lean", lean, &imported.lean),
-        ("replay", "leanchecker", leanchecker, &imported.leanchecker),
-        ("audit", "lean", lean, &imported.audit),
+        ("elaboration", "lean", own.lean, &imported.lean),
+        (
+            "replay",
+            "leanchecker",
+            own.leanchecker,
+            &imported.leanchecker,
+        ),
+        ("audit", "lean", own.lean, &imported.audit),
     ] {
         for (name, record) in records {
             if record.executable_sha256 != expected {
@@ -314,7 +357,9 @@ fn read_records(
 /// intermediates (a later part's elaboration reads them), the elaboration
 /// and replay records, and the audit records. The `.olean` files the shard
 /// imported stay behind: they are the part that produced them's to export,
-/// once. Nothing else leaves the staging tree, which is removed with it.
+/// once. Beside them the part names the addresses of its toolchain
+/// ([`TOOLCHAIN_FILE`]). Nothing else leaves the staging tree, which is
+/// removed with it.
 ///
 /// # Errors
 ///
@@ -323,6 +368,7 @@ pub fn export(
     staging: &std::path::Path,
     output: &Utf8Path,
     own: &BTreeSet<String>,
+    addresses: &Addresses,
 ) -> Result<(), Diagnostic> {
     if output.as_std_path().exists() {
         let mut entries = std::fs::read_dir(output.as_std_path())
@@ -336,6 +382,11 @@ pub fn export(
     }
     std::fs::create_dir_all(output.as_std_path())
         .map_err(|error| io("creating the part's output directory", &error))?;
+    std::fs::write(
+        output.join(TOOLCHAIN_FILE).as_std_path(),
+        addresses.to_json().to_file_bytes(),
+    )
+    .map_err(|error| io("writing the part's toolchain addresses", &error))?;
     let oleans = staging.join("oleans");
     if oleans.is_dir() {
         for entry in walkdir::WalkDir::new(&oleans).sort_by_file_name() {
@@ -545,7 +596,15 @@ mod tests {
         let out = tempfile::tempdir().expect("tempdir");
         let output = Utf8PathBuf::from_path_buf(out.path().join("part")).expect("utf8");
         let own: BTreeSet<String> = ["X.M".to_owned()].into_iter().collect();
-        export(staging.path(), &output, &own).expect("exports");
+        let digest = crate::artifact::content_id::Sha256Digest::of;
+        let addresses = Addresses {
+            lean: digest(b"lean"),
+            lake: digest(b"lake"),
+            leanchecker: digest(b"leanchecker"),
+            lexlean: digest(b"lexlean"),
+            rustc: digest(b"rustc"),
+        };
+        export(staging.path(), &output, &own, &addresses).expect("exports");
         assert!(
             staging.path().join("oleans/X/N.olean").exists()
                 && !staging.path().join("oleans/X/M.olean").exists(),
@@ -566,11 +625,58 @@ mod tests {
         assert!(imported.audit.contains_key("LexLeanAudit.X.M"));
         // The records name the join's `lean`; a join whose `lean` is another
         // executable refuses them, naming the record and both digests.
-        let lean = crate::artifact::content_id::Sha256Digest::of(b"lean");
-        let other = crate::artifact::content_id::Sha256Digest::of(b"another lean");
-        check_toolchain(&imported, lean, other).expect("the records name the join's lean");
-        let refused = check_toolchain(&imported, other, other)
-            .expect_err("a record of another lean is refused");
+        let lean = addresses.lean;
+        let other = digest(b"another lean");
+        assert_eq!(imported.toolchains, vec![(output.clone(), addresses)]);
+        check_toolchain(&imported, &addresses).expect("the part and its records name the join's");
+        // A part that ran another executable of any of the five is refused,
+        // naming the part, the tool, and both addresses, before any record.
+        for (tool, plant) in [
+            (
+                "lake",
+                Addresses {
+                    lake: other,
+                    ..addresses
+                },
+            ),
+            (
+                "lexlean",
+                Addresses {
+                    lexlean: other,
+                    ..addresses
+                },
+            ),
+            (
+                "rustc",
+                Addresses {
+                    rustc: other,
+                    ..addresses
+                },
+            ),
+        ] {
+            let refused = check_toolchain(&imported, &plant)
+                .expect_err("a part of another toolchain is refused");
+            let message = format!("{refused:?}");
+            assert!(
+                message.contains("LLI9001")
+                    && message.contains(&format!("ran `{tool}`"))
+                    && message.contains(&other.to_hex()),
+                "{message}"
+            );
+        }
+        // Records are compared against the reader's own `lean` once the part
+        // agrees: here the part's addresses are taken as the reader's, and
+        // the reader's `lean` differs from the one the record names.
+        let mut reader = imported;
+        reader.toolchains.clear();
+        let refused = check_toolchain(
+            &reader,
+            &Addresses {
+                lean: other,
+                ..addresses
+            },
+        )
+        .expect_err("a record of another lean is refused");
         let message = format!("{refused:?}");
         assert!(
             message.contains("LLI9001")
@@ -586,9 +692,21 @@ mod tests {
         let wrong = out.path().join("wrong/process/lean/X.N.json");
         std::fs::create_dir_all(wrong.parent().expect("parent")).expect("mkdir");
         std::fs::write(&wrong, record.to_json().to_file_bytes()).expect("write");
+        std::fs::write(
+            out.path().join("wrong").join(TOOLCHAIN_FILE),
+            addresses.to_json().to_file_bytes(),
+        )
+        .expect("write");
         let wrong_part = Utf8PathBuf::from_path_buf(out.path().join("wrong")).expect("utf8");
         let fresh = tempfile::tempdir().expect("tempdir");
         let fresh_root = Utf8PathBuf::from_path_buf(fresh.path().join("oleans")).expect("utf8");
         assert!(import(std::slice::from_ref(&wrong_part), &fresh_root, true).is_err());
+        // A part that names no toolchain addresses is refused.
+        std::fs::remove_file(output.join(TOOLCHAIN_FILE)).expect("remove");
+        let bare = tempfile::tempdir().expect("tempdir");
+        let bare_root = Utf8PathBuf::from_path_buf(bare.path().join("oleans")).expect("utf8");
+        let refused = import(std::slice::from_ref(&output), &bare_root, true)
+            .expect_err("a part without toolchain addresses");
+        assert!(format!("{refused:?}").contains("addresses of its toolchain"));
     }
 }
