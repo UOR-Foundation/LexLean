@@ -15,7 +15,7 @@ versions. `v0.1.0` is tagged, and `v0.4.0` is tagged at the commit that carries
 this changelog; the sections for `0.1.1`, `0.2.0`, and `0.3.0` record what the
 workspace carried at those versions without a tag.
 
-## Unreleased
+## 0.4.1
 
 A patch on `v0.4.0` carrying one fix, also landed on `release/v0.4` as #529;
 nothing else of that line is here, and no language identity moves.
