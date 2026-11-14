@@ -1333,16 +1333,23 @@ pub fn run_part(
     // What the parts before this one wrote (§9.4): their `.olean` files into
     // the staged tree, and, for the part that publishes, their records.
     stages.enter("part-import");
+    // The addresses of everything this run executes or was built by
+    // (§22.11): a part writes them beside its output and a reader requires
+    // its own. The running executable must be readable to be named.
+    let own_addresses = toolchain::Addresses::of(
+        &toolchain,
+        running_executable_sha256().map_err(|io_error| {
+            fail(internal(format!(
+                "reading the running executable: {io_error}"
+            )))
+        })?,
+    );
     let mut imported =
         partition::import(part.inputs(), &olean_root, part.publishes()).map_err(fail)?;
-    // Every record another part wrote was run by the toolchain this run's
-    // preflight hashed: the attestation lists them under its digests.
-    partition::check_toolchain(
-        &imported,
-        toolchain.lean.sha256,
-        toolchain.leanchecker.sha256,
-    )
-    .map_err(fail)?;
+    // Every part before this one ran the toolchain this run's preflight
+    // hashed, and every record it wrote names it: the attestation lists them
+    // under its digests.
+    partition::check_toolchain(&imported, &own_addresses).map_err(fail)?;
 
     // The leanchecker identity (module documentation), before any replay:
     // the preflight's toolchain-relative path and digest line, then the
@@ -1932,7 +1939,7 @@ pub fn run_part(
             .plan()
             .map(|plan| plan.elaborate.clone())
             .unwrap_or_default();
-        partition::export(staging.path(), output, &own).map_err(fail)?;
+        partition::export(staging.path(), output, &own, &own_addresses).map_err(fail)?;
         telemetry_run.succeeded();
         return Ok(PartOutcome::Shard {
             output: (*output).to_owned(),

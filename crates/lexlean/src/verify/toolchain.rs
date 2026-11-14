@@ -34,6 +34,117 @@ pub struct Toolchain {
     pub leanchecker: Tool,
 }
 
+/// The format of [`Addresses`] as a part of a verification writes it.
+pub const ADDRESSES_SPEC: &str = "lexlean/verify-toolchain/1";
+
+/// The addresses of every executable a verification ran or was built by
+/// (SPEC.md §22.11): `lean`, `lake`, and `leanchecker` as the preflight
+/// hashed them, the running `lexlean`, and the `rustc` that compiled it.
+/// Two parts of one verification agree on all five or neither trusts the
+/// other's records.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Addresses {
+    /// `lean`.
+    pub lean: Sha256Digest,
+    /// `lake`.
+    pub lake: Sha256Digest,
+    /// `leanchecker`.
+    pub leanchecker: Sha256Digest,
+    /// The running `lexlean` executable.
+    pub lexlean: Sha256Digest,
+    /// The `rustc` that compiled this `lexlean` (its executable and driver
+    /// library, [`crate::build_identity::RUSTC_SHA256`]).
+    pub rustc: Sha256Digest,
+}
+
+impl Addresses {
+    /// The addresses of this preflighted toolchain, the running executable
+    /// whose digest is `lexlean`, and the compiler that built it.
+    #[must_use]
+    pub fn of(toolchain: &Toolchain, lexlean: Sha256Digest) -> Self {
+        Self {
+            lean: toolchain.lean.sha256,
+            lake: toolchain.lake.sha256,
+            leanchecker: toolchain.leanchecker.sha256,
+            lexlean,
+            rustc: Sha256Digest::from_hex(crate::build_identity::RUSTC_SHA256)
+                .expect("the build script writes a SHA-256"),
+        }
+    }
+
+    /// Every tool with its address, in name order.
+    #[must_use]
+    pub fn tools(&self) -> [(&'static str, Sha256Digest); 5] {
+        [
+            ("lake", self.lake),
+            ("lean", self.lean),
+            ("leanchecker", self.leanchecker),
+            ("lexlean", self.lexlean),
+            ("rustc", self.rustc),
+        ]
+    }
+
+    /// The canonical JSON form.
+    #[must_use]
+    pub fn to_json(&self) -> crate::artifact::canonical_json::Json {
+        use crate::artifact::canonical_json::Json;
+        let mut pairs = vec![("spec", Json::Str(ADDRESSES_SPEC.to_owned()))];
+        for (tool, address) in self.tools() {
+            pairs.push((tool, Json::Str(address.to_hex())));
+        }
+        Json::object(pairs)
+    }
+
+    /// Read the canonical JSON form, refusing anything else: another
+    /// format, a missing or malformed address, or an unknown field.
+    ///
+    /// # Errors
+    ///
+    /// What is wrong with `json`.
+    pub fn from_json(json: &crate::artifact::canonical_json::Json) -> Result<Self, String> {
+        use crate::artifact::canonical_json::Json;
+        let Json::Obj(fields) = json else {
+            return Err("the toolchain addresses are an object".to_owned());
+        };
+        if fields.get("spec") != Some(&Json::Str(ADDRESSES_SPEC.to_owned())) {
+            return Err(format!("`spec` must be `{ADDRESSES_SPEC}`"));
+        }
+        let address = |tool: &str| match fields.get(tool) {
+            Some(Json::Str(hex)) => Sha256Digest::from_hex(hex)
+                .map_err(|reason| format!("the address of `{tool}`: {reason}")),
+            _ => Err(format!("the address of `{tool}` is required")),
+        };
+        let addresses = Self {
+            lean: address("lean")?,
+            lake: address("lake")?,
+            leanchecker: address("leanchecker")?,
+            lexlean: address("lexlean")?,
+            rustc: address("rustc")?,
+        };
+        if let Some(unknown) = fields
+            .keys()
+            .find(|key| *key != "spec" && !addresses.tools().iter().any(|(tool, _)| tool == key))
+        {
+            return Err(format!("unknown field `{unknown}`"));
+        }
+        Ok(addresses)
+    }
+
+    /// The first tool whose address differs between `self` and `other`, with
+    /// both addresses, in name order.
+    #[must_use]
+    pub fn first_difference(
+        &self,
+        other: &Self,
+    ) -> Option<(&'static str, Sha256Digest, Sha256Digest)> {
+        self.tools()
+            .into_iter()
+            .zip(other.tools())
+            .find(|((_, mine), (_, theirs))| mine != theirs)
+            .map(|((tool, mine), (_, theirs))| (tool, mine, theirs))
+    }
+}
+
 fn environment(message: impl Into<String>) -> Diagnostic {
     Diagnostic::new(code!("LLV7001"), message)
 }
