@@ -1,0 +1,1561 @@
+\begin{lexlean}{CoreRead}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{AxiomOutput}
+\importmodule{CoreJson}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\importmodule{SurfaceGeneric}
+\importmodule{SurfaceLex}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Mem,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: key, type: Bytes}, {name: value, type: LexLeanStd.Json::Json}]
+}
+
+structure{
+  name: Lbl,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: label, type: Bytes}, {name: node, type: Nat}]
+}
+
+structure{
+  name: Tok,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: kind, type: Nat},
+    {name: start, type: Nat},
+    {name: stop, type: Nat},
+    {name: col0, type: Bool}
+  ]
+}
+
+structure{
+  name: Cur,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: at, type: Nat}, {name: lastEnd, type: Nat}]
+}
+
+structure{
+  name: Step,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: tok, type: Tok}, {name: cur, type: Cur}]
+}
+
+structure{
+  name: Got,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: text, type: Bytes}, {name: cur, type: Cur}]
+}
+
+structure{
+  name: GotNat,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: value, type: Nat}, {name: cur, type: Cur}]
+}
+
+inductive{
+  name: LJob,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: LLevel, fields: [Nat]},
+    {name: LAtom, fields: [Nat]},
+    {name: LPlus, fields: []},
+    {name: LParenClose, fields: []},
+    {name: LMaxComma, fields: [Nat, Bool]},
+    {name: LMaxClose, fields: [Bool]}
+  ]
+}
+
+structure{
+  name: LM,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: cur, type: Cur},
+    {name: jobs, type: (List LJob)},
+    {name: vals, type: (List CoreJson::Level)},
+    {name: error, type: (Option SurfaceLex::Failure)}
+  ]
+}
+
+structure{
+  name: GotLevel,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: level, type: CoreJson::Level}, {name: cur, type: Cur}]
+}
+
+structure{
+  name: GotLevels,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: levels, type: (List CoreJson::Level)}, {name: cur, type: Cur}]
+}
+
+inductive{
+  name: Job,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: JTerm, fields: [Nat]},
+    {name: JBinder, fields: [Nat]},
+    {name: JBinderClose, fields: []},
+    {name: JFunArrow, fields: [Nat]},
+    {name: JFunDone, fields: []},
+    {name: JForallArrow, fields: [Nat]},
+    {name: JForallDone, fields: []},
+    {name: JLetColonEq, fields: [Nat]},
+    {name: JLetSemi, fields: [Nat]},
+    {name: JLetDone, fields: []},
+    {name: JHeadArrow, fields: [Nat]},
+    {name: JArrowDone, fields: []},
+    {name: JPrefix, fields: [Nat]},
+    {name: JAppLoop, fields: [Nat]},
+    {name: JAppStep, fields: [Nat]},
+    {name: JAtom, fields: [Nat]},
+    {name: JClose, fields: []},
+    {name: JProofDone, fields: []},
+    {name: JProjDone, fields: []},
+    {name: JMdataDone, fields: []}
+  ]
+}
+
+inductive{
+  name: Held,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: HBinder, fields: [Nat, Bytes]},
+    {name: HLet, fields: [Bytes, Bool]},
+    {name: HProj, fields: [Bytes, Bytes, Nat]},
+    {name: HMdata, fields: [(List CoreJson::Entry)]},
+    {name: HProof, fields: [Nat]}
+  ]
+}
+
+structure{
+  name: M,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: cur, type: Cur},
+    {name: jobs, type: (List Job)},
+    {name: vals, type: (List Nat)},
+    {name: held, type: (List Held)},
+    {name: nodes, type: (List CoreJson::Node)},
+    {name: count, type: Nat},
+    {name: proof, type: (List Nat)},
+    {name: scope, type: (List Bytes)},
+    {name: labels, type: (List Lbl)},
+    {name: error, type: (Option SurfaceLex::Failure)}
+  ]
+}
+
+inductive{
+  name: Root,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: RId, fields: [Nat]}, {name: RLabel, fields: [Bytes, Nat]}]
+}
+
+structure{
+  name: Pending,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: members, type: LexLeanStd.Json::Json},
+    {name: rootType, type: (Option Root)},
+    {name: rootValue, type: (Option Root)},
+    {name: start, type: Nat}
+  ]
+}
+
+structure{
+  name: Span,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: start, type: Nat}, {name: stop, type: Nat}]
+}
+
+structure{
+  name: Read,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: imports, type: (List Bytes)},
+    {name: nodes, type: (List CoreJson::Node)},
+    {name: proofNodes, type: (List Nat)},
+    {name: declarations, type: (List LexLeanStd.Json::Json)},
+    {name: spans, type: (List Span)}
+  ]
+}
+
+structure{
+  name: Top,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: machine, type: M},
+    {name: pending, type: (List Pending)},
+    {name: spans, type: (List Span)},
+    {name: statements, type: Bool},
+    {name: finished, type: Bool}
+  ]
+}
+
+structure{
+  name: Walk,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: rest, type: LexLeanStd.Json::Json}, {name: items, type: (List Mem)}]
+}
+
+structure{
+  name: Place,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: placed, type: Bool}, {name: out, type: (List Mem)}]
+}
+
+structure{
+  name: Find,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: seen, type: Nat}, {name: found, type: (Option Nat)}]
+}
+
+structure{
+  name: Digits,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: value, type: Nat}, {name: cursor, type: Nat}]
+}
+
+structure{
+  name: Scalars,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: cursor, type: Nat}, {name: items, type: (List Nat)}]
+}
+
+structure{
+  name: Braces,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: cursor, type: Nat},
+    {name: depth, type: Nat},
+    {name: result, type: (Option (Result Nat SurfaceLex::Failure))}
+  ]
+}
+
+structure{
+  name: Names,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: names, type: (List Bytes)},
+    {name: cur, type: Cur},
+    {name: done, type: Bool},
+    {name: error, type: (Option SurfaceLex::Failure)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: both,
+  parameters: [left : Bool, right : Bool],
+  result: Bool,
+  body: (if left then right else false),
+  executable: true
+}
+
+definition{
+  name: same,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal left right : Bool),
+  executable: true
+}
+
+definition{
+  name: listed,
+  parameters: [needle : Bytes, items : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun [needle] (found : Bool) (item : Bytes) => (if found then true else (prim equal item needle : Bool))) false items : Bool),
+  executable: true
+}
+
+definition{
+  name: failure,
+  parameters: [offset : Nat, message : Bytes],
+  result: SurfaceLex::Failure,
+  body: (record SurfaceLex::Failure {offset := offset, message := message}),
+  executable: true
+}
+
+definition{
+  name: codeAt,
+  parameters: [text : Bytes, position : Nat],
+  result: Nat,
+  body: (match (LexLeanStd.Text::byteAt text position)
+    | Option.some byte => (prim to_nat byte : Nat)
+    | Option.none => 256),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isDigit,
+  parameters: [code : Nat],
+  result: Bool,
+  body: (both (48 <=? code) (code <=? 57)),
+  executable: true
+}
+
+definition{
+  name: isAlpha,
+  parameters: [code : Nat],
+  result: Bool,
+  body: (if (both (65 <=? code) (code <=? 90)) then true else (both (97 <=? code) (code <=? 122))),
+  executable: true
+}
+
+definition{
+  name: width,
+  parameters: [code : Nat],
+  result: Nat,
+  body: (if (code <? 128) then 1 else (if (code <? 224) then 2 else (if (code <? 240) then 3 else 4))),
+  executable: true
+}
+
+definition{
+  name: nameCharAt,
+  parameters: [text : Bytes, position : Nat],
+  result: Bool,
+  body: (let code : Nat := (codeAt text position); (if (256 <=? code) then false else (if (if (isAlpha code) then true else (isDigit code)) then true else (if (listed (LexLeanStd.Text::sliceOr text position 1) (cons (lit "_") (cons (lit "'") (cons (lit "!") (cons (lit "?") (cons (lit ".") (cons (lit "@") (cons (lit "#") (nil Bytes))))))))) then true else (if (code <? 128) then false else ((AxiomOutput::whiteLength text position) =? 0)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nameStartAt,
+  parameters: [text : Bytes, position : Nat],
+  result: Bool,
+  body: (let code : Nat := (codeAt text position); (if (256 <=? code) then false else (if (isAlpha code) then true else (if (code =? 95) then true else (both (128 <=? code) ((AxiomOutput::whiteLength text position) =? 0)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nameEnd,
+  parameters: [text : Bytes, from : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [text] (position : Nat) => (if (nameCharAt text position) then (ctor Option.some [Nat] (position + (width (codeAt text position)))) else (ctor Option.none [Nat]))) ((prim length text : Nat) + 1) from : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: digitEnd,
+  parameters: [text : Bytes, from : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [text] (position : Nat) => (if (isDigit (codeAt text position)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))) ((prim length text : Nat) + 1) from : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: blankEnd,
+  parameters: [text : Bytes, from : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [text] (position : Nat) => (let code : Nat := (codeAt text position); (if (if (code =? 32) then true else (code =? 10)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])))) ((prim length text : Nat) + 1) from : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tokOf,
+  parameters: [kind : Nat, start : Nat, stop : Nat, col0 : Bool],
+  result: (Result Tok SurfaceLex::Failure),
+  body: (ctor Result.ok [Tok, SurfaceLex::Failure] (record Tok {kind := kind, start := start, stop := stop, col0 := col0})),
+  executable: true
+}
+
+definition{
+  name: refuse,
+  parameters: [offset : Nat, message : Bytes],
+  result: (Result Tok SurfaceLex::Failure),
+  body: (ctor Result.error [Tok, SurfaceLex::Failure] (failure offset message)),
+  executable: true
+}
+
+definition{
+  name: stringEnd,
+  parameters: [text : Bytes, at : Nat],
+  result: (Result Nat SurfaceLex::Failure),
+  body: (let scanned : SurfaceLex::Scanned := (SurfaceLex::readString text (prim length text : Nat) at); (match (project scanned error)
+    | Option.some problem => (ctor Result.error [Nat, SurfaceLex::Failure] problem)
+    | Option.none => (if (project scanned finished) then (ctor Result.ok [Nat, SurfaceLex::Failure] (project scanned pos)) else (ctor Result.error [Nat, SurfaceLex::Failure] (failure at (lit "unterminated string")))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: stringValue,
+  parameters: [text : Bytes, at : Nat],
+  result: Bytes,
+  body: (let scanned : SurfaceLex::Scanned := (SurfaceLex::readString text (prim length text : Nat) at); (prim list_fold (fun (out : Bytes) (piece : Bytes) => (cat piece out)) (lit "") (project scanned pieces) : Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scanAt,
+  parameters: [text : Bytes, from : Nat],
+  result: (Result Tok SurfaceLex::Failure),
+  body: (let at : Nat := (blankEnd text from); (let code : Nat := (codeAt text at); (let col0 : Bool := (if (at =? 0) then true else ((codeAt text (prim subtract at 1 : Nat)) =? 10)); (let next : Nat := (codeAt text (at + 1)); (if (if (code =? 9) then true else (code =? 13)) then (refuse at (lit "a tab or a carriage return is not part of the notation")) else (if (code =? 256) then (tokOf 21 at at col0) else (if (code =? 40) then (tokOf 0 at (at + 1) col0) else (if (code =? 41) then (tokOf 1 at (at + 1) col0) else (if (code =? 123) then (tokOf 2 at (at + 1) col0) else (if (code =? 125) then (tokOf 3 at (at + 1) col0) else (if (code =? 91) then (tokOf 4 at (at + 1) col0) else (if (code =? 93) then (tokOf 5 at (at + 1) col0) else (if (code =? 44) then (tokOf 6 at (at + 1) col0) else (if (code =? 59) then (tokOf 9 at (at + 1) col0) else (if (code =? 43) then (tokOf 12 at (at + 1) col0) else (if (code =? 58) then (if (next =? 61) then (tokOf 8 at (at + 2) col0) else (tokOf 7 at (at + 1) col0)) else (if (code =? 45) then (if (next =? 62) then (tokOf 10 at (at + 2) col0) else (tokOf 13 at (at + 1) col0)) else (if (both (code =? 61) (next =? 62)) then (tokOf 11 at (at + 2) col0) else (if (both (code =? 46) (next =? 123)) then (tokOf 14 at (at + 2) col0) else (if (code =? 34) then (match (stringEnd text at)
+    | Result.ok stop => (tokOf 19 at stop col0)
+    | Result.error problem => (ctor Result.error [Tok, SurfaceLex::Failure] problem)) else (if (both (code =? 64) (nameStartAt text (at + 1))) then (tokOf 16 at (nameEnd text (at + 1)) col0) else (if (if (code =? 64) then true else (code =? 35)) then (let stop : Nat := (digitEnd text (at + 1)); (if (stop =? (at + 1)) then (refuse at (lit "`@` and `#` are followed by a number or, after `@`, a name")) else (if (nameCharAt text stop) then (refuse stop (lit "a number ends where its text does")) else (tokOf (if (code =? 64) then 15 else 17) at stop col0)))) else (if (isDigit code) then (let stop : Nat := (digitEnd text at); (if (nameCharAt text stop) then (refuse at (lit "a name does not begin with a digit; quote it")) else (tokOf 18 at stop col0))) else (if (nameStartAt text at) then (let stop : Nat := (nameEnd text at); (tokOf 20 at (if (both ((codeAt text (prim subtract stop 1 : Nat)) =? 46) ((codeAt text stop) =? 123)) then (prim subtract stop 1 : Nat) else stop) col0)) else (refuse at (cat (cat (lit "unexpected `") (LexLeanStd.Text::sliceOr text at (width code))) (lit "`"))))))))))))))))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: slice,
+  parameters: [text : Bytes, tok : Tok],
+  result: Bytes,
+  body: (LexLeanStd.Text::sliceOr text (project tok start) (prim subtract (project tok stop) (project tok start) : Nat)),
+  executable: true
+}
+
+definition{
+  name: moved,
+  parameters: [tok : Tok],
+  result: Cur,
+  body: (record Cur {at := (project tok stop), lastEnd := (project tok stop)}),
+  executable: true
+}
+
+definition{
+  name: keywords,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "fun") (cons (lit "let") (cons (lit "have") (cons (lit "proof") (cons (lit "Sort") (cons (lit "proj") (cons (lit "annot") (cons (lit "const") (cons (lit "max") (cons (lit "imax") (cons (lit "true") (cons (lit "false") (cons (lit "bool") (cons (lit "nat") (cons (lit "int") (cons (lit "str") (cons (lit "name") (nil Bytes)))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: expectTok,
+  parameters: [text : Bytes, cur : Cur, kind : Nat, what : Bytes],
+  result: (Result Step SurfaceLex::Failure),
+  body: (match (scanAt text (project cur at))
+    | Result.ok tok => (if ((project tok kind) =? kind) then (ctor Result.ok [Step, SurfaceLex::Failure] (record Step {tok := tok, cur := (moved tok)})) else (ctor Result.error [Step, SurfaceLex::Failure] (failure (project tok start) (cat (lit "expected ") what))))
+    | Result.error problem => (ctor Result.error [Step, SurfaceLex::Failure] problem)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readName,
+  parameters: [text : Bytes, cur : Cur, what : Bytes],
+  result: (Result Got SurfaceLex::Failure),
+  body: (match (scanAt text (project cur at))
+    | Result.ok tok => (let spelled : Bytes := (slice text tok); (if ((project tok kind) =? 20) then (if (listed spelled (keywords)) then (ctor Result.error [Got, SurfaceLex::Failure] (failure (project tok start) (cat (cat (lit "`") spelled) (lit "` is a keyword; quote it to write a name")))) else (ctor Result.ok [Got, SurfaceLex::Failure] (record Got {text := spelled, cur := (moved tok)}))) else (if ((project tok kind) =? 19) then (ctor Result.ok [Got, SurfaceLex::Failure] (record Got {text := (stringValue text (project tok start)), cur := (moved tok)})) else (ctor Result.error [Got, SurfaceLex::Failure] (failure (project tok start) (cat (lit "expected ") what))))))
+    | Result.error problem => (ctor Result.error [Got, SurfaceLex::Failure] problem)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: binderName,
+  parameters: [text : Bytes, cur : Cur],
+  result: (Result Got SurfaceLex::Failure),
+  body: (match (scanAt text (project cur at))
+    | Result.ok tok => (if (both ((project tok kind) =? 20) (same (slice text tok) (lit "_"))) then (ctor Result.ok [Got, SurfaceLex::Failure] (record Got {text := (lit ""), cur := (moved tok)})) else (readName text cur (lit "a binder's name")))
+    | Result.error problem => (ctor Result.error [Got, SurfaceLex::Failure] problem)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: decimalOf,
+  parameters: [digits : Bytes],
+  result: Nat,
+  body: (project (first (prim iterate_until (fun [digits] (state : Digits) => (match (LexLeanStd.Text::byteAt digits (project state cursor))
+    | Option.some byte => (ctor Option.some [Digits] (record Digits {value := ((prim multiply (project state value) 10 : Nat) + (prim subtract (prim to_nat byte : Nat) 48 : Nat)), cursor := ((project state cursor) + 1)}))
+    | Option.none => (ctor Option.none [Digits]))) ((prim length digits : Nat) + 1) (record Digits {value := 0, cursor := 0}) : (Digits * Bool))) value),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tooLargeDigits,
+  parameters: [digits : Bytes],
+  result: Bool,
+  body: (let lead : Nat := (first (prim iterate_until (fun [digits] (position : Nat) => (match (LexLeanStd.Text::byteAt digits position)
+    | Option.some byte => (if ((prim to_nat byte : Nat) =? 48) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat]))) ((prim length digits : Nat) + 1) 0 : (Nat * Bool))); (let rest : Bytes := (LexLeanStd.Text::sliceOr digits lead (prim subtract (prim length digits : Nat) lead : Nat)); (let size : Nat := (prim length rest : Nat); (if (20 <? size) then true else (if (size =? 20) then (LexLeanStd.Order::lessBytes 0x3138343436373434303733373039353531363135 rest) else false))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: numberTooLarge,
+  parameters: [text : Bytes, tok : Tok],
+  result: Bool,
+  body: (tooLargeDigits (LexLeanStd.Text::sliceOr text ((project tok start) + 1) (prim subtract (prim subtract (project tok stop) (project tok start) : Nat) 1 : Nat))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tooLarge,
+  parameters: [value : Nat],
+  result: Bool,
+  body: (18446744073709551615 <? value),
+  executable: true
+}
+
+definition{
+  name: readNumber,
+  parameters: [text : Bytes, cur : Cur, what : Bytes],
+  result: (Result GotNat SurfaceLex::Failure),
+  body: (match (expectTok text cur 18 what)
+    | Result.ok step => (let tok : Tok := (project step tok); (let digits : Bytes := (slice text tok); (if (both (1 <? (prim length digits : Nat)) (LexLeanStd.Text::startsWith digits (lit "0"))) then (ctor Result.error [GotNat, SurfaceLex::Failure] (failure (project tok start) (lit "a numeral has no redundant leading zero"))) else (let value : Nat := (if (tooLargeDigits digits) then 0 else (decimalOf digits)); (if (tooLargeDigits digits) then (ctor Result.error [GotNat, SurfaceLex::Failure] (failure (project tok start) (lit "the number is too large"))) else (ctor Result.ok [GotNat, SurfaceLex::Failure] (record GotNat {value := value, cur := (project step cur)})))))))
+    | Result.error problem => (ctor Result.error [GotNat, SurfaceLex::Failure] problem)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: succeeded,
+  parameters: [count : Nat, base : CoreJson::Level],
+  result: CoreJson::Level,
+  body: (prim iterate (fun (level : CoreJson::Level) => (ctor CoreJson::Level.LSucc level)) count base : CoreJson::Level),
+  executable: true
+}
+
+definition{
+  name: lfail,
+  parameters: [machine : LM, problem : SurfaceLex::Failure],
+  result: LM,
+  body: (record LM {cur := (project machine cur), jobs := (project machine jobs), vals := (project machine vals), error := (ctor Option.some [SurfaceLex::Failure] problem)}),
+  executable: true
+}
+
+definition{
+  name: lnext,
+  parameters: [machine : LM, cur : Cur, jobs : (List LJob), vals : (List CoreJson::Level)],
+  result: LM,
+  body: (record LM {cur := cur, jobs := jobs, vals := vals, error := (project machine error)}),
+  executable: true
+}
+
+definition{
+  name: lpop2,
+  parameters: [vals : (List CoreJson::Level), isMax : Bool],
+  result: (List CoreJson::Level),
+  body: (match vals
+    | List.cons right rest => (match rest
+      | List.cons left below => (cons (if isMax then (ctor CoreJson::Level.LMax left right) else (ctor CoreJson::Level.LIMax left right)) below)
+      | List.nil => vals)
+    | List.nil => vals),
+  executable: true
+}
+
+definition{
+  name: lraise,
+  parameters: [vals : (List CoreJson::Level), count : Nat],
+  result: (List CoreJson::Level),
+  body: (match vals | List.cons top rest => (cons (succeeded count top) rest) | List.nil => vals),
+  executable: true
+}
+
+definition{
+  name: deep,
+  parameters: [depth : Nat, at : Nat],
+  result: (Option SurfaceLex::Failure),
+  body: (if (256 <? depth) then (ctor Option.some [SurfaceLex::Failure] (failure at (lit "nested more deeply than the notation reads"))) else (ctor Option.none [SurfaceLex::Failure])),
+  executable: true
+}
+
+definition{
+  name: levelAtom,
+  parameters: [text : Bytes, machine : LM, rest : (List LJob), depth : Nat],
+  result: LM,
+  body: (let cur : Cur := (project machine cur); (match (scanAt text (project cur at))
+    | Result.error problem => (lfail machine problem)
+    | Result.ok tok => (match (deep depth (project tok start))
+      | Option.some problem => (lfail machine problem)
+      | Option.none => (let kind : Nat := (project tok kind); (let spelled : Bytes := (slice text tok); (if (kind =? 18) then (match (readNumber text cur (lit "a level"))
+        | Result.ok got => (if (1024 <? (project got value)) then (lfail machine (failure (project tok start) (lit "a level is at most 1024"))) else (lnext machine (project got cur) rest (cons (succeeded (project got value) (ctor CoreJson::Level.LZero)) (project machine vals))))
+        | Result.error problem => (lfail machine problem)) else (if (kind =? 0) then (lnext machine (moved tok) (cons (ctor LJob.LLevel (depth + 1)) (cons (ctor LJob.LParenClose) rest)) (project machine vals)) else (if (both (kind =? 20) (if (same spelled (lit "max")) then true else (same spelled (lit "imax")))) then (match (expectTok text (moved tok) 0 (lit "`(` after `max`"))
+        | Result.ok step => (lnext machine (project step cur) (cons (ctor LJob.LLevel (depth + 1)) (cons (ctor LJob.LMaxComma depth (same spelled (lit "max"))) rest)) (project machine vals))
+        | Result.error problem => (lfail machine problem)) else (if (if (kind =? 20) then true else (kind =? 19)) then (match (readName text cur (lit "a level"))
+        | Result.ok got => (lnext machine (project got cur) rest (cons (ctor CoreJson::Level.LParam (project got text)) (project machine vals)))
+        | Result.error problem => (lfail machine problem)) else (lfail machine (failure (project tok start) (lit "expected a universe level")))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: levelStep,
+  parameters: [text : Bytes, machine : LM],
+  result: (Option LM),
+  body: (match (project machine error)
+    | Option.some problem => (ctor Option.none [LM])
+    | Option.none => (match (project machine jobs)
+      | List.nil => (ctor Option.none [LM])
+      | List.cons job rest => (let cur : Cur := (project machine cur); (ctor Option.some [LM] (match job
+        | LJob.LLevel depth => (lnext machine cur (cons (ctor LJob.LAtom depth) (cons (ctor LJob.LPlus) rest)) (project machine vals))
+        | LJob.LAtom depth => (levelAtom text machine rest depth)
+        | LJob.LParenClose => (match (expectTok text cur 1 (lit "`)`"))
+          | Result.ok step => (lnext machine (project step cur) rest (project machine vals))
+          | Result.error problem => (lfail machine problem))
+        | LJob.LMaxComma depth isMax => (match (expectTok text cur 6 (lit "`,`"))
+          | Result.ok step => (lnext machine (project step cur) (cons (ctor LJob.LLevel (depth + 1)) (cons (ctor LJob.LMaxClose isMax) rest)) (project machine vals))
+          | Result.error problem => (lfail machine problem))
+        | LJob.LMaxClose isMax => (match (expectTok text cur 1 (lit "`)`"))
+          | Result.ok step => (lnext machine (project step cur) rest (lpop2 (project machine vals) isMax))
+          | Result.error problem => (lfail machine problem))
+        | LJob.LPlus => (match (scanAt text (project cur at))
+          | Result.error problem => (lfail machine problem)
+          | Result.ok plus => (if ((project plus kind) =? 12) then (let after : Cur := (moved plus); (match (scanAt text (project after at))
+            | Result.error problem => (lfail machine problem)
+            | Result.ok next => (match (readNumber text after (lit "a number after `+`"))
+              | Result.ok got => (if (1024 <? (project got value)) then (lfail machine (failure (project next start) (lit "a level is raised by at most 1024 at once"))) else (lnext machine (project got cur) (cons (ctor LJob.LPlus) rest) (lraise (project machine vals) (project got value))))
+              | Result.error problem => (lfail machine problem)))) else (lnext machine cur rest (project machine vals))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readLevel,
+  parameters: [text : Bytes, cur : Cur, depth : Nat],
+  result: (Result GotLevel SurfaceLex::Failure),
+  body: (let final : LM := (first (prim iterate_until (fun [text] (machine : LM) => (levelStep text machine)) ((prim multiply (prim length text : Nat) 4 : Nat) + 16) (record LM {cur := cur, jobs := (cons (ctor LJob.LLevel depth) (nil LJob)), vals := (nil CoreJson::Level), error := (ctor Option.none [SurfaceLex::Failure])}) : (LM * Bool))); (match (project final error)
+    | Option.some problem => (ctor Result.error [GotLevel, SurfaceLex::Failure] problem)
+    | Option.none => (match (project final vals)
+      | List.cons level rest => (ctor Result.ok [GotLevel, SurfaceLex::Failure] (record GotLevel {level := level, cur := (project final cur)}))
+      | List.nil => (ctor Result.error [GotLevel, SurfaceLex::Failure] (failure (project cur at) (lit "expected a universe level")))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+structure{
+  name: LS,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: levels, type: (List CoreJson::Level)},
+    {name: cur, type: Cur},
+    {name: done, type: Bool},
+    {name: error, type: (Option SurfaceLex::Failure)}
+  ]
+}
+
+definition{
+  name: lsFail,
+  parameters: [state : LS, problem : SurfaceLex::Failure],
+  result: LS,
+  body: (record LS {levels := (project state levels), cur := (project state cur), done := true, error := (ctor Option.some [SurfaceLex::Failure] problem)}),
+  executable: true
+}
+
+definition{
+  name: levelsStep,
+  parameters: [text : Bytes, depth : Nat, state : LS],
+  result: (Option LS),
+  body: (if (project state done) then (ctor Option.none [LS]) else (ctor Option.some [LS] (match (readLevel text (project state cur) (depth + 1))
+    | Result.error problem => (lsFail state problem)
+    | Result.ok got => (let levels : (List CoreJson::Level) := (cons (project got level) (project state levels)); (match (scanAt text (project (project got cur) at))
+      | Result.error problem => (lsFail state problem)
+      | Result.ok comma => (if ((project comma kind) =? 6) then (record LS {levels := levels, cur := (moved comma), done := false, error := (ctor Option.none [SurfaceLex::Failure])}) else (record LS {levels := levels, cur := (project got cur), done := true, error := (ctor Option.none [SurfaceLex::Failure])}))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readLevels,
+  parameters: [text : Bytes, cur : Cur, depth : Nat],
+  result: (Result GotLevels SurfaceLex::Failure),
+  body: (match (scanAt text (project cur at))
+    | Result.error problem => (ctor Result.error [GotLevels, SurfaceLex::Failure] problem)
+    | Result.ok tok => (if ((project tok kind) =? 14) then (let final : LS := (first (prim iterate_until (fun [depth, text] (state : LS) => (levelsStep text depth state)) ((prim length text : Nat) + 2) (record LS {levels := (nil CoreJson::Level), cur := (moved tok), done := false, error := (ctor Option.none [SurfaceLex::Failure])}) : (LS * Bool))); (match (project final error)
+      | Option.some problem => (ctor Result.error [GotLevels, SurfaceLex::Failure] problem)
+      | Option.none => (match (expectTok text (project final cur) 3 (lit "`}` after the levels"))
+        | Result.ok step => (ctor Result.ok [GotLevels, SurfaceLex::Failure] (record GotLevels {levels := (LexLeanStd.Order::reverseList [CoreJson::Level] (project final levels)), cur := (project step cur)}))
+        | Result.error problem => (ctor Result.error [GotLevels, SurfaceLex::Failure] problem)))) else (ctor Result.ok [GotLevels, SurfaceLex::Failure] (record GotLevels {levels := (nil CoreJson::Level), cur := cur})))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: mfail,
+  parameters: [machine : M, problem : SurfaceLex::Failure],
+  result: M,
+  body: (record M {cur := (project machine cur), jobs := (project machine jobs), vals := (project machine vals), held := (project machine held), nodes := (project machine nodes), count := (project machine count), proof := (project machine proof), scope := (project machine scope), labels := (project machine labels), error := (ctor Option.some [SurfaceLex::Failure] problem)}),
+  executable: true
+}
+
+definition{
+  name: remake,
+  parameters: [
+    machine : M,
+    cur : Cur,
+    jobs : (List Job),
+    vals : (List Nat),
+    held : (List Held),
+    scope : (List Bytes)
+  ],
+  result: M,
+  body: (record M {cur := cur, jobs := jobs, vals := vals, held := held, nodes := (project machine nodes), count := (project machine count), proof := (project machine proof), scope := scope, labels := (project machine labels), error := (project machine error)}),
+  executable: true
+}
+
+definition{
+  name: advance,
+  parameters: [machine : M, cur : Cur, jobs : (List Job)],
+  result: M,
+  body: (remake machine cur jobs (project machine vals) (project machine held) (project machine scope)),
+  executable: true
+}
+
+definition{
+  name: pushNode,
+  parameters: [
+    machine : M,
+    cur : Cur,
+    jobs : (List Job),
+    vals : (List Nat),
+    held : (List Held),
+    scope : (List Bytes),
+    node : CoreJson::Node
+  ],
+  result: M,
+  body: (record M {cur := cur, jobs := jobs, vals := (cons (project machine count) vals), held := held, nodes := (cons node (project machine nodes)), count := ((project machine count) + 1), proof := (project machine proof), scope := scope, labels := (project machine labels), error := (project machine error)}),
+  executable: true
+}
+
+definition{
+  name: pushVal,
+  parameters: [machine : M, cur : Cur, jobs : (List Job), value : Nat],
+  result: M,
+  body: (remake machine cur jobs (cons value (project machine vals)) (project machine held) (project machine scope)),
+  executable: true
+}
+
+definition{
+  name: binderOf,
+  parameters: [info : Nat],
+  result: CoreJson::Binder,
+  body: (if (info =? 0) then (ctor CoreJson::Binder.BExplicit) else (if (info =? 1) then (ctor CoreJson::Binder.BImplicit) else (if (info =? 2) then (ctor CoreJson::Binder.BStrict) else (ctor CoreJson::Binder.BInstance)))),
+  executable: true
+}
+
+definition{
+  name: closerOf,
+  parameters: [info : Nat],
+  result: Nat,
+  body: (if (info =? 0) then 1 else (if (info =? 3) then 5 else 3)),
+  executable: true
+}
+
+definition{
+  name: heldName,
+  parameters: [held : (List Held)],
+  result: Bytes,
+  body: (match held
+    | List.cons top rest => (match top
+      | Held.HBinder info label => label
+      | Held.HLet label dependent => label
+      | Held.HProj label structure position => (lit "")
+      | Held.HMdata entries => (lit "")
+      | Held.HProof before => (lit ""))
+    | List.nil => (lit "")),
+  executable: true
+}
+
+definition{
+  name: heldInfo,
+  parameters: [held : (List Held)],
+  result: Nat,
+  body: (match held
+    | List.cons top rest => (match top
+      | Held.HBinder info label => info
+      | Held.HLet label dependent => 0
+      | Held.HProj label structure position => 0
+      | Held.HMdata entries => 0
+      | Held.HProof before => 0)
+    | List.nil => 0),
+  executable: true
+}
+
+definition{
+  name: heldRest,
+  parameters: [held : (List Held)],
+  result: (List Held),
+  body: (match held | List.cons top rest => rest | List.nil => held),
+  executable: true
+}
+
+definition{
+  name: popped,
+  parameters: [vals : (List Nat)],
+  result: (List Nat),
+  body: (match vals | List.cons top rest => rest | List.nil => vals),
+  executable: true
+}
+
+definition{
+  name: topOr,
+  parameters: [vals : (List Nat)],
+  result: Nat,
+  body: (match vals | List.cons top rest => top | List.nil => 0),
+  executable: true
+}
+
+definition{
+  name: scopeRest,
+  parameters: [scope : (List Bytes)],
+  result: (List Bytes),
+  body: (match scope | List.cons top rest => rest | List.nil => scope),
+  executable: true
+}
+
+definition{
+  name: resolveName,
+  parameters: [scope : (List Bytes), word : Bytes],
+  result: (Option Nat),
+  body: (project (prim list_fold (fun [word] (state : Find) (label : Bytes) => (record Find {seen := ((project state seen) + 1), found := (match (project state found)
+    | Option.some index => (project state found)
+    | Option.none => (if (both (0 <? (prim length label : Nat)) (same label word)) then (ctor Option.some [Nat] (project state seen)) else (ctor Option.none [Nat])))})) (record Find {seen := 0, found := (ctor Option.none [Nat])}) scope : Find) found),
+  executable: true
+}
+
+definition{
+  name: labelOf,
+  parameters: [labels : (List Lbl), word : Bytes],
+  result: (Option Nat),
+  body: (prim list_fold (fun [word] (found : (Option Nat)) (entry : Lbl) => (match found
+    | Option.some index => found
+    | Option.none => (if (same (project entry label) word) then (ctor Option.some [Nat] (project entry node)) else (ctor Option.none [Nat])))) (ctor Option.none [Nat]) labels : (Option Nat)),
+  executable: true
+}
+
+definition{
+  name: scalarStep,
+  parameters: [text : Bytes, state : Scalars],
+  result: (Option Scalars),
+  body: (let position : Nat := (project state cursor); (let lead : Nat := (codeAt text position); (if (256 <=? lead) then (ctor Option.none [Scalars]) else (let size : Nat := (width lead); (let tail : Nat := (if (size =? 1) then lead else (if (size =? 2) then (prim subtract lead 192 : Nat) else (if (size =? 3) then (prim subtract lead 224 : Nat) else (prim subtract lead 240 : Nat)))); (ctor Option.some [Scalars] (record Scalars {cursor := (position + size), items := (cons (project (prim iterate (fun [position, text] (inner : Digits) => (record Digits {value := ((prim multiply (project inner value) 64 : Nat) + (prim subtract (codeAt text (position + (project inner cursor))) 128 : Nat)), cursor := ((project inner cursor) + 1)})) (prim subtract size 1 : Nat) (record Digits {value := tail, cursor := 1}) : Digits) value) (project state items))}))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: scalarsOf,
+  parameters: [text : Bytes],
+  result: (List Nat),
+  body: (LexLeanStd.Order::reverseList [Nat] (project (first (prim iterate_until (fun [text] (state : Scalars) => (scalarStep text state)) ((prim length text : Nat) + 1) (record Scalars {cursor := 0, items := (nil Nat)}) : (Scalars * Bool))) items)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: atBinder,
+  parameters: [text : Bytes, cur : Cur],
+  result: (Result Bool SurfaceLex::Failure),
+  body: (match (scanAt text (project cur at))
+    | Result.error problem => (ctor Result.error [Bool, SurfaceLex::Failure] problem)
+    | Result.ok tok => (if (if ((project tok kind) =? 2) then true else ((project tok kind) =? 4)) then (ctor Result.ok [Bool, SurfaceLex::Failure] true) else (if ((project tok kind) =? 0) then (match (scanAt text (project tok stop))
+      | Result.error problem => (ctor Result.error [Bool, SurfaceLex::Failure] problem)
+      | Result.ok following => (if (if ((project following kind) =? 20) then true else ((project following kind) =? 19)) then (match (scanAt text (project following stop))
+        | Result.error problem => (ctor Result.error [Bool, SurfaceLex::Failure] problem)
+        | Result.ok third => (ctor Result.ok [Bool, SurfaceLex::Failure] ((project third kind) =? 7))) else (ctor Result.ok [Bool, SurfaceLex::Failure] false))) else (ctor Result.ok [Bool, SurfaceLex::Failure] false)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: atAtom,
+  parameters: [text : Bytes, cur : Cur],
+  result: (Result Bool SurfaceLex::Failure),
+  body: (match (scanAt text (project cur at))
+    | Result.error problem => (ctor Result.error [Bool, SurfaceLex::Failure] problem)
+    | Result.ok tok => (let kind : Nat := (project tok kind); (ctor Result.ok [Bool, SurfaceLex::Failure] (if (project tok col0) then false else (if (if (kind =? 0) then true else (both (15 <=? kind) (kind <=? 19))) then true else (if (kind =? 20) then (if (listed (slice text tok) (cons (lit "fun") (cons (lit "let") (cons (lit "have") (cons (lit "Sort") (cons (lit "proj") (cons (lit "annot") (nil Bytes)))))))) then false else true) else false)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readDigits,
+  parameters: [text : Bytes, cur : Cur, signed : Bool],
+  result: (Result Got SurfaceLex::Failure),
+  body: (match (scanAt text (project cur at))
+    | Result.error problem => (ctor Result.error [Got, SurfaceLex::Failure] problem)
+    | Result.ok tok => (let kind : Nat := (project tok kind); (if (kind =? 19) then (ctor Result.ok [Got, SurfaceLex::Failure] (record Got {text := (stringValue text (project tok start)), cur := (moved tok)})) else (if (both (kind =? 13) signed) then (match (expectTok text (moved tok) 18 (lit "a number after `-`"))
+      | Result.error problem => (ctor Result.error [Got, SurfaceLex::Failure] problem)
+      | Result.ok step => (let digits : Bytes := (slice text (project step tok)); (if (if (both (1 <? (prim length digits : Nat)) (LexLeanStd.Text::startsWith digits (lit "0"))) then true else (same digits (lit "0"))) then (ctor Result.error [Got, SurfaceLex::Failure] (failure (project (project step tok) start) (lit "a numeral has no redundant leading zero"))) else (ctor Result.ok [Got, SurfaceLex::Failure] (record Got {text := (cat (lit "-") digits), cur := (project step cur)}))))) else (if (kind =? 18) then (let digits : Bytes := (slice text tok); (if (both (1 <? (prim length digits : Nat)) (LexLeanStd.Text::startsWith digits (lit "0"))) then (ctor Result.error [Got, SurfaceLex::Failure] (failure (project tok start) (lit "a numeral has no redundant leading zero"))) else (ctor Result.ok [Got, SurfaceLex::Failure] (record Got {text := digits, cur := (moved tok)})))) else (ctor Result.error [Got, SurfaceLex::Failure] (failure (project tok start) (lit "expected a number")))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+structure{
+  name: Ann,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: entries, type: (List CoreJson::Entry)},
+    {name: cur, type: Cur},
+    {name: done, type: Bool},
+    {name: error, type: (Option SurfaceLex::Failure)}
+  ]
+}
+
+definition{
+  name: annFail,
+  parameters: [state : Ann, problem : SurfaceLex::Failure],
+  result: Ann,
+  body: (record Ann {entries := (project state entries), cur := (project state cur), done := true, error := (ctor Option.some [SurfaceLex::Failure] problem)}),
+  executable: true
+}
+
+definition{
+  name: annValue,
+  parameters: [text : Bytes, cur : Cur, tag : Tok],
+  result: (Result (CoreJson::Meta * Cur) SurfaceLex::Failure),
+  body: (let word : Bytes := (slice text tag); (let after : Cur := (moved tag); (if (same word (lit "bool")) then (match (scanAt text (project after at))
+    | Result.error problem => (ctor Result.error [(CoreJson::Meta * Cur), SurfaceLex::Failure] problem)
+    | Result.ok flag => (if (both ((project flag kind) =? 20) (same (slice text flag) (lit "true"))) then (ctor Result.ok [(CoreJson::Meta * Cur), SurfaceLex::Failure] ((ctor CoreJson::Meta.MBool true), (moved flag))) else (if (both ((project flag kind) =? 20) (same (slice text flag) (lit "false"))) then (ctor Result.ok [(CoreJson::Meta * Cur), SurfaceLex::Failure] ((ctor CoreJson::Meta.MBool false), (moved flag))) else (ctor Result.error [(CoreJson::Meta * Cur), SurfaceLex::Failure] (failure (project flag start) (lit "expected `true` or `false`")))))) else (if (if (same word (lit "nat")) then true else (same word (lit "int"))) then (match (readDigits text after (same word (lit "int")))
+    | Result.error problem => (ctor Result.error [(CoreJson::Meta * Cur), SurfaceLex::Failure] problem)
+    | Result.ok got => (ctor Result.ok [(CoreJson::Meta * Cur), SurfaceLex::Failure] ((if (same word (lit "int")) then (ctor CoreJson::Meta.MInt (project got text)) else (ctor CoreJson::Meta.MNat (project got text))), (project got cur)))) else (if (same word (lit "str")) then (match (expectTok text after 19 (lit "a string"))
+    | Result.error problem => (ctor Result.error [(CoreJson::Meta * Cur), SurfaceLex::Failure] problem)
+    | Result.ok step => (ctor Result.ok [(CoreJson::Meta * Cur), SurfaceLex::Failure] ((ctor CoreJson::Meta.MStr (stringValue text (project (project step tok) start))), (project step cur)))) else (if (same word (lit "name")) then (match (readName text after (lit "a name"))
+    | Result.error problem => (ctor Result.error [(CoreJson::Meta * Cur), SurfaceLex::Failure] problem)
+    | Result.ok got => (ctor Result.ok [(CoreJson::Meta * Cur), SurfaceLex::Failure] ((ctor CoreJson::Meta.MName (project got text)), (project got cur)))) else (ctor Result.error [(CoreJson::Meta * Cur), SurfaceLex::Failure] (failure (project tag start) (cat (cat (lit "`") word) (lit "` is not the type of an annotation value")))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: annStep,
+  parameters: [text : Bytes, state : Ann],
+  result: (Option Ann),
+  body: (if (project state done) then (ctor Option.none [Ann]) else (ctor Option.some [Ann] (match (scanAt text (project (project state cur) at))
+    | Result.error problem => (annFail state problem)
+    | Result.ok peeked => (if ((project peeked kind) =? 5) then (record Ann {entries := (project state entries), cur := (project state cur), done := true, error := (ctor Option.none [SurfaceLex::Failure])}) else (match (readName text (project state cur) (lit "an entry's key"))
+      | Result.error problem => (annFail state problem)
+      | Result.ok key => (match (expectTok text (project key cur) 8 (lit "`:=` after the key"))
+        | Result.error problem => (annFail state problem)
+        | Result.ok step => (match (scanAt text (project (project step cur) at))
+          | Result.error problem => (annFail state problem)
+          | Result.ok tag => (if ((project tag kind) =? 20) then (match (annValue text (project step cur) tag)
+            | Result.error problem => (annFail state problem)
+            | Result.ok valued => (let entries : (List CoreJson::Entry) := (cons (record CoreJson::Entry {key := (project key text), value := (first valued)}) (project state entries)); (match (scanAt text (project (second valued) at))
+              | Result.error problem => (annFail state problem)
+              | Result.ok comma => (if ((project comma kind) =? 6) then (record Ann {entries := entries, cur := (moved comma), done := false, error := (ctor Option.none [SurfaceLex::Failure])}) else (record Ann {entries := entries, cur := (second valued), done := true, error := (ctor Option.none [SurfaceLex::Failure])}))))) else (annFail state (failure (project tag start) (lit "expected the type of the value"))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readAnnotation,
+  parameters: [text : Bytes, cur : Cur],
+  result: (Result ((List CoreJson::Entry) * Cur) SurfaceLex::Failure),
+  body: (match (expectTok text cur 4 (lit "`[` after `annot`"))
+    | Result.error problem => (ctor Result.error [((List CoreJson::Entry) * Cur), SurfaceLex::Failure] problem)
+    | Result.ok opened => (let final : Ann := (first (prim iterate_until (fun [text] (state : Ann) => (annStep text state)) ((prim length text : Nat) + 2) (record Ann {entries := (nil CoreJson::Entry), cur := (project opened cur), done := false, error := (ctor Option.none [SurfaceLex::Failure])}) : (Ann * Bool))); (match (project final error)
+      | Option.some problem => (ctor Result.error [((List CoreJson::Entry) * Cur), SurfaceLex::Failure] problem)
+      | Option.none => (match (expectTok text (project final cur) 5 (lit "`,` or `]`"))
+        | Result.error problem => (ctor Result.error [((List CoreJson::Entry) * Cur), SurfaceLex::Failure] problem)
+        | Result.ok closed => (ctor Result.ok [((List CoreJson::Entry) * Cur), SurfaceLex::Failure] ((LexLeanStd.Order::reverseList [CoreJson::Entry] (project final entries)), (project closed cur))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: termJob,
+  parameters: [text : Bytes, machine : M, rest : (List Job), depth : Nat],
+  result: M,
+  body: (let cur : Cur := (project machine cur); (match (scanAt text (project cur at))
+    | Result.error problem => (mfail machine problem)
+    | Result.ok tok => (match (deep depth (project tok start))
+      | Option.some problem => (mfail machine problem)
+      | Option.none => (let word : Bytes := (if ((project tok kind) =? 20) then (slice text tok) else (lit "")); (if (same word (lit "fun")) then (advance machine (moved tok) (cons (ctor Job.JBinder depth) (cons (ctor Job.JFunArrow depth) rest))) else (if (if (same word (lit "let")) then true else (same word (lit "have"))) then (match (binderName text (moved tok))
+        | Result.error problem => (mfail machine problem)
+        | Result.ok named => (match (expectTok text (project named cur) 7 (lit "`:` after the name"))
+          | Result.error problem => (mfail machine problem)
+          | Result.ok step => (remake machine (project step cur) (cons (ctor Job.JTerm (depth + 1)) (cons (ctor Job.JLetColonEq depth) rest)) (project machine vals) (cons (ctor Held.HLet (project named text) (same word (lit "have"))) (project machine held)) (project machine scope)))) else (match (atBinder text cur)
+        | Result.error problem => (mfail machine problem)
+        | Result.ok binder => (if binder then (advance machine cur (cons (ctor Job.JBinder depth) (cons (ctor Job.JForallArrow depth) rest))) else (advance machine cur (cons (ctor Job.JPrefix depth) (cons (ctor Job.JHeadArrow depth) rest))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: binderJob,
+  parameters: [text : Bytes, machine : M, rest : (List Job), depth : Nat],
+  result: M,
+  body: (let cur : Cur := (project machine cur); (match (scanAt text (project cur at))
+    | Result.error problem => (mfail machine problem)
+    | Result.ok opened => (let kind : Nat := (project opened kind); (let after : Cur := (moved opened); (let chosen : (Result (Nat * Cur) SurfaceLex::Failure) := (if (kind =? 0) then (ctor Result.ok [(Nat * Cur), SurfaceLex::Failure] (0, after)) else (if (kind =? 4) then (ctor Result.ok [(Nat * Cur), SurfaceLex::Failure] (3, after)) else (if (kind =? 2) then (match (scanAt text (project after at))
+      | Result.error problem => (ctor Result.error [(Nat * Cur), SurfaceLex::Failure] problem)
+      | Result.ok following => (if ((project following kind) =? 2) then (ctor Result.ok [(Nat * Cur), SurfaceLex::Failure] (2, (moved following))) else (ctor Result.ok [(Nat * Cur), SurfaceLex::Failure] (1, after)))) else (ctor Result.error [(Nat * Cur), SurfaceLex::Failure] (failure (project opened start) (lit "expected a binder")))))); (match chosen
+      | Result.error problem => (mfail machine problem)
+      | Result.ok picked => (match (binderName text (second picked))
+        | Result.error problem => (mfail machine problem)
+        | Result.ok named => (match (expectTok text (project named cur) 7 (lit "`:` after the binder's name"))
+          | Result.error problem => (mfail machine problem)
+          | Result.ok step => (remake machine (project step cur) (cons (ctor Job.JTerm (depth + 1)) (cons (ctor Job.JBinderClose) rest)) (project machine vals) (cons (ctor Held.HBinder (first picked) (project named text)) (project machine held)) (project machine scope)))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: binderCloseJob,
+  parameters: [text : Bytes, machine : M, rest : (List Job)],
+  result: M,
+  body: (let info : Nat := (heldInfo (project machine held)); (match (expectTok text (project machine cur) (closerOf info) (lit "the binder's closing bracket"))
+    | Result.error problem => (mfail machine problem)
+    | Result.ok step => (if (info =? 2) then (match (expectTok text (project step cur) 3 (lit "`}}`"))
+      | Result.error problem => (mfail machine problem)
+      | Result.ok again => (advance machine (project again cur) rest)) else (advance machine (project step cur) rest)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: arrowJob,
+  parameters: [
+    text : Bytes,
+    machine : M,
+    rest : (List Job),
+    depth : Nat,
+    kind : Nat,
+    what : Bytes,
+    done : Job
+  ],
+  result: M,
+  body: (match (expectTok text (project machine cur) kind what)
+    | Result.error problem => (mfail machine problem)
+    | Result.ok step => (remake machine (project step cur) (cons (ctor Job.JTerm (depth + 1)) (cons done rest)) (project machine vals) (project machine held) (cons (heldName (project machine held)) (project machine scope)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: binderDone,
+  parameters: [machine : M, rest : (List Job), lambda : Bool],
+  result: M,
+  body: (let held : (List Held) := (project machine held); (let body : Nat := (topOr (project machine vals)); (let bound : Nat := (topOr (popped (project machine vals))); (let label : Bytes := (heldName held); (let info : CoreJson::Binder := (binderOf (heldInfo held)); (pushNode machine (project machine cur) rest (popped (popped (project machine vals))) (heldRest held) (scopeRest (project machine scope)) (if lambda then (ctor CoreJson::Node.NLambda label info bound body) else (ctor CoreJson::Node.NForall label info bound body)))))))),
+  executable: true
+}
+
+definition{
+  name: letDone,
+  parameters: [machine : M, rest : (List Job)],
+  result: M,
+  body: (let vals : (List Nat) := (project machine vals); (let body : Nat := (topOr vals); (let bound : Nat := (topOr (popped vals)); (let typed : Nat := (topOr (popped (popped vals))); (match (project machine held)
+    | List.cons top below => (match top
+      | Held.HLet label dependent => (pushNode machine (project machine cur) rest (popped (popped (popped vals))) below (scopeRest (project machine scope)) (ctor CoreJson::Node.NLet label typed bound body dependent))
+      | Held.HBinder info label => machine
+      | Held.HProj label structure position => machine
+      | Held.HMdata entries => machine
+      | Held.HProof before => machine)
+    | List.nil => machine))))),
+  executable: true
+}
+
+definition{
+  name: prefixJob,
+  parameters: [text : Bytes, machine : M, rest : (List Job), depth : Nat],
+  result: M,
+  body: (let cur : Cur := (project machine cur); (match (scanAt text (project cur at))
+    | Result.error problem => (mfail machine problem)
+    | Result.ok tok => (let word : Bytes := (if ((project tok kind) =? 20) then (slice text tok) else (lit "")); (if (same word (lit "Sort")) then (match (readLevel text (moved tok) (depth + 1))
+      | Result.error problem => (mfail machine problem)
+      | Result.ok got => (pushNode machine (project got cur) rest (project machine vals) (project machine held) (project machine scope) (ctor CoreJson::Node.NSort (project got level)))) else (if (same word (lit "proj")) then (match (readName text (moved tok) (lit "a structure name"))
+      | Result.error problem => (mfail machine problem)
+      | Result.ok structure => (match (readName text (project structure cur) (lit "a projection name"))
+        | Result.error problem => (mfail machine problem)
+        | Result.ok projection => (match (readNumber text (project projection cur) (lit "a field index"))
+          | Result.error problem => (mfail machine problem)
+          | Result.ok field => (remake machine (project field cur) (cons (ctor Job.JAtom (depth + 1)) (cons (ctor Job.JProjDone) rest)) (project machine vals) (cons (ctor Held.HProj (project projection text) (project structure text) (project field value)) (project machine held)) (project machine scope))))) else (if (same word (lit "annot")) then (match (readAnnotation text (moved tok))
+      | Result.error problem => (mfail machine problem)
+      | Result.ok annotated => (remake machine (second annotated) (cons (ctor Job.JAtom (depth + 1)) (cons (ctor Job.JMdataDone) rest)) (project machine vals) (cons (ctor Held.HMdata (first annotated)) (project machine held)) (project machine scope))) else (advance machine cur (cons (ctor Job.JAtom depth) (cons (ctor Job.JAppLoop depth) rest))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: heldDone,
+  parameters: [machine : M, rest : (List Job)],
+  result: M,
+  body: (let inner : Nat := (topOr (project machine vals)); (let below : (List Nat) := (popped (project machine vals)); (match (project machine held)
+    | List.cons top under => (match top
+      | Held.HProj label structure position => (pushNode machine (project machine cur) rest below under (project machine scope) (ctor CoreJson::Node.NProj label structure position inner))
+      | Held.HMdata entries => (pushNode machine (project machine cur) rest below under (project machine scope) (ctor CoreJson::Node.NMdata entries inner))
+      | Held.HBinder info label => machine
+      | Held.HLet label dependent => machine
+      | Held.HProof before => machine)
+    | List.nil => machine))),
+  executable: true
+}
+
+definition{
+  name: numberIn,
+  parameters: [text : Bytes, tok : Tok],
+  result: Nat,
+  body: (decimalOf (LexLeanStd.Text::sliceOr text ((project tok start) + 1) (prim subtract (prim subtract (project tok stop) (project tok start) : Nat) 1 : Nat))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: wordAtom,
+  parameters: [text : Bytes, machine : M, rest : (List Job), depth : Nat, tok : Tok, word : Bytes],
+  result: M,
+  body: (let after : Cur := (moved tok); (match (resolveName (project machine scope) word)
+    | Option.some index => (match (scanAt text (project after at))
+      | Result.error problem => (mfail machine problem)
+      | Result.ok next => (if ((project next kind) =? 14) then (mfail machine (failure (project tok stop) (cat (cat (lit "`") word) (lit "` is a bound variable and has no universe levels")))) else (pushNode machine after rest (project machine vals) (project machine held) (project machine scope) (ctor CoreJson::Node.NBVar index))))
+    | Option.none => (match (readLevels text after depth)
+      | Result.error problem => (mfail machine problem)
+      | Result.ok got => (pushNode machine (project got cur) rest (project machine vals) (project machine held) (project machine scope) (ctor CoreJson::Node.NConst word (project got levels)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nameAtom,
+  parameters: [text : Bytes, machine : M, rest : (List Job), depth : Nat, tok : Tok],
+  result: M,
+  body: (let word : Bytes := (slice text tok); (let after : Cur := (moved tok); (if (same word (lit "proof")) then (match (expectTok text after 0 (lit "`(` after `proof`"))
+    | Result.error problem => (mfail machine problem)
+    | Result.ok step => (remake machine (project step cur) (cons (ctor Job.JTerm (depth + 1)) (cons (ctor Job.JProofDone) rest)) (project machine vals) (cons (ctor Held.HProof (project machine count)) (project machine held)) (project machine scope))) else (if (same word (lit "nat")) then (match (expectTok text after 19 (lit "a quoted number after `nat`"))
+    | Result.error problem => (mfail machine problem)
+    | Result.ok step => (pushNode machine (project step cur) rest (project machine vals) (project machine held) (project machine scope) (ctor CoreJson::Node.NNat (stringValue text (project (project step tok) start))))) else (if (same word (lit "const")) then (match (expectTok text after 19 (lit "a quoted name after `const`"))
+    | Result.error problem => (mfail machine problem)
+    | Result.ok step => (match (readLevels text (project step cur) depth)
+      | Result.error problem => (mfail machine problem)
+      | Result.ok got => (pushNode machine (project got cur) rest (project machine vals) (project machine held) (project machine scope) (ctor CoreJson::Node.NConst (stringValue text (project (project step tok) start)) (project got levels))))) else (if (listed word (keywords)) then (mfail machine (failure (project tok start) (cat (cat (lit "`") word) (lit "` is a keyword; a term that begins with it is written in parentheses")))) else (if (same word (lit "_")) then (mfail machine (failure (project tok start) (lit "`_` is the name of a binder, not a constant"))) else (wordAtom text machine rest depth tok word)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: atomJob,
+  parameters: [text : Bytes, machine : M, rest : (List Job), depth : Nat],
+  result: M,
+  body: (match (scanAt text (project (project machine cur) at))
+    | Result.error problem => (mfail machine problem)
+    | Result.ok tok => (match (deep depth (project tok start))
+      | Option.some problem => (mfail machine problem)
+      | Option.none => (let kind : Nat := (project tok kind); (let after : Cur := (moved tok); (if (kind =? 15) then (let target : Nat := (if (numberTooLarge text tok) then 0 else (numberIn text tok)); (if (numberTooLarge text tok) then (mfail machine (failure (project tok start) (lit "the number is too large"))) else (if ((project machine count) <=? target) then (mfail machine (failure (project tok start) (cat (cat (lit "`@") (LexLeanStd.Numeral::decimal target)) (lit "` is not a node that has been written")))) else (pushVal machine after rest target)))) else (if (kind =? 16) then (let label : Bytes := (LexLeanStd.Text::sliceOr text ((project tok start) + 1) (prim subtract (prim subtract (project tok stop) (project tok start) : Nat) 1 : Nat)); (match (labelOf (project machine labels) label)
+        | Option.some target => (pushVal machine after rest target)
+        | Option.none => (mfail machine (failure (project tok start) (cat (cat (lit "no statement written before this is named `@") label) (lit "`")))))) else (if (kind =? 17) then (let index : Nat := (if (numberTooLarge text tok) then 0 else (numberIn text tok)); (if (numberTooLarge text tok) then (mfail machine (failure (project tok start) (lit "the number is too large"))) else (pushNode machine after rest (project machine vals) (project machine held) (project machine scope) (ctor CoreJson::Node.NBVar index)))) else (if (kind =? 18) then (let digits : Bytes := (slice text tok); (if (both (1 <? (prim length digits : Nat)) (LexLeanStd.Text::startsWith digits (lit "0"))) then (mfail machine (failure (project tok start) (lit "a numeral has no redundant leading zero"))) else (pushNode machine after rest (project machine vals) (project machine held) (project machine scope) (ctor CoreJson::Node.NNat digits)))) else (if (kind =? 19) then (pushNode machine after rest (project machine vals) (project machine held) (project machine scope) (ctor CoreJson::Node.NString (scalarsOf (stringValue text (project tok start))))) else (if (kind =? 0) then (advance machine after (cons (ctor Job.JTerm (depth + 1)) (cons (ctor Job.JClose) rest))) else (if (kind =? 20) then (nameAtom text machine rest depth tok) else (mfail machine (failure (project tok start) (lit "expected a term")))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: proofDone,
+  parameters: [text : Bytes, machine : M, rest : (List Job)],
+  result: M,
+  body: (match (expectTok text (project machine cur) 1 (lit "`)`"))
+    | Result.error problem => (mfail machine problem)
+    | Result.ok step => (let inner : Nat := (topOr (project machine vals)); (match (project machine held)
+      | List.cons top under => (match top
+        | Held.HProof before => (if (if (both ((inner + 1) =? (project machine count)) (before <=? inner)) then false else true) then (mfail machine (failure (project (project step tok) start) (lit "`proof` marks a node written inside it, not a reference"))) else (record M {cur := (project step cur), jobs := rest, vals := (project machine vals), held := under, nodes := (project machine nodes), count := (project machine count), proof := (cons inner (project machine proof)), scope := (project machine scope), labels := (project machine labels), error := (project machine error)}))
+        | Held.HBinder info label => machine
+        | Held.HLet label dependent => machine
+        | Held.HProj label structure position => machine
+        | Held.HMdata entries => machine)
+      | List.nil => machine))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: termStep,
+  parameters: [text : Bytes, machine : M],
+  result: (Option M),
+  body: (match (project machine error)
+    | Option.some problem => (ctor Option.none [M])
+    | Option.none => (match (project machine jobs)
+      | List.nil => (ctor Option.none [M])
+      | List.cons job rest => (let cur : Cur := (project machine cur); (ctor Option.some [M] (match job
+        | Job.JTerm depth => (termJob text machine rest depth)
+        | Job.JBinder depth => (binderJob text machine rest depth)
+        | Job.JBinderClose => (binderCloseJob text machine rest)
+        | Job.JFunArrow depth => (arrowJob text machine rest depth 11 (lit "`=>` after the binder") (ctor Job.JFunDone))
+        | Job.JFunDone => (binderDone machine rest true)
+        | Job.JForallArrow depth => (arrowJob text machine rest depth 10 (lit "`->` after the binder") (ctor Job.JForallDone))
+        | Job.JForallDone => (binderDone machine rest false)
+        | Job.JLetColonEq depth => (match (expectTok text cur 8 (lit "`:=`"))
+          | Result.error problem => (mfail machine problem)
+          | Result.ok step => (advance machine (project step cur) (cons (ctor Job.JTerm (depth + 1)) (cons (ctor Job.JLetSemi depth) rest))))
+        | Job.JLetSemi depth => (arrowJob text machine rest depth 9 (lit "`;` after the value") (ctor Job.JLetDone))
+        | Job.JLetDone => (letDone machine rest)
+        | Job.JHeadArrow depth => (match (scanAt text (project cur at))
+          | Result.error problem => (mfail machine problem)
+          | Result.ok tok => (if ((project tok kind) =? 10) then (remake machine (moved tok) (cons (ctor Job.JTerm (depth + 1)) (cons (ctor Job.JArrowDone) rest)) (project machine vals) (project machine held) (cons (lit "") (project machine scope))) else (advance machine cur rest)))
+        | Job.JArrowDone => (let body : Nat := (topOr (project machine vals)); (let head : Nat := (topOr (popped (project machine vals))); (pushNode machine cur rest (popped (popped (project machine vals))) (project machine held) (scopeRest (project machine scope)) (ctor CoreJson::Node.NForall (lit "") (ctor CoreJson::Binder.BExplicit) head body))))
+        | Job.JPrefix depth => (prefixJob text machine rest depth)
+        | Job.JAppLoop depth => (match (atAtom text cur)
+          | Result.error problem => (mfail machine problem)
+          | Result.ok more => (if more then (advance machine cur (cons (ctor Job.JAtom (depth + 1)) (cons (ctor Job.JAppStep depth) rest))) else (advance machine cur rest)))
+        | Job.JAppStep depth => (let argument : Nat := (topOr (project machine vals)); (let function : Nat := (topOr (popped (project machine vals))); (pushNode machine cur (cons (ctor Job.JAppLoop depth) rest) (popped (popped (project machine vals))) (project machine held) (project machine scope) (ctor CoreJson::Node.NApp function argument))))
+        | Job.JAtom depth => (atomJob text machine rest depth)
+        | Job.JClose => (match (expectTok text cur 1 (lit "`)`"))
+          | Result.error problem => (mfail machine problem)
+          | Result.ok step => (advance machine (project step cur) rest))
+        | Job.JProofDone => (proofDone text machine rest)
+        | Job.JProjDone => (heldDone machine rest)
+        | Job.JMdataDone => (heldDone machine rest)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: runTerm,
+  parameters: [text : Bytes, machine : M],
+  result: M,
+  body: (first (prim iterate_until (fun [text] (state : M) => (termStep text state)) ((prim multiply (prim length text : Nat) 8 : Nat) + 16) (advance machine (project machine cur) (cons (ctor Job.JTerm 0) (nil Job))) : (M * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: statement,
+  parameters: [text : Bytes, machine : M],
+  result: M,
+  body: (match (scanAt text (project (project machine cur) at))
+    | Result.error problem => (mfail machine problem)
+    | Result.ok label => (let isRef : Bool := ((project label kind) =? 15); (let target : Nat := (if (numberTooLarge text label) then 0 else (numberIn text label)); (let named : Bytes := (LexLeanStd.Text::sliceOr text ((project label start) + 1) (prim subtract (prim subtract (project label stop) (project label start) : Nat) 1 : Nat)); (if (both isRef (numberTooLarge text label)) then (mfail machine (failure (project label start) (lit "the number is too large"))) else (match (expectTok text (moved label) 8 (lit "`:=` after the label"))
+      | Result.error problem => (mfail machine problem)
+      | Result.ok step => (let before : Nat := (project machine count); (let ran : M := (runTerm text (advance machine (project step cur) (nil Job))); (match (project ran error)
+        | Option.some problem => ran
+        | Option.none => (let defined : Nat := (topOr (project ran vals)); (let cleared : M := (remake ran (project ran cur) (nil Job) (popped (project ran vals)) (project ran held) (project ran scope)); (if (defined <? before) then (mfail cleared (failure (project label start) (lit "a statement defines a node, not another name for one"))) else (if (if ((defined + 1) =? (project ran count)) then false else true) then (mfail cleared (failure (project label start) (lit "a statement defines the node its term ends with"))) else (if (both isRef (if (target =? defined) then false else true)) then (mfail cleared (failure (project label start) (cat (cat (cat (cat (lit "this statement defines node ") (LexLeanStd.Numeral::decimal defined)) (lit ", not node ")) (LexLeanStd.Numeral::decimal target)) (lit ": the label is the number of the node")))) else (if (if isRef then false else (match (labelOf (project ran labels) named)
+          | Option.some prior => true
+          | Option.none => false)) then (mfail cleared (failure (project label start) (cat (cat (lit "`@") named) (lit "` names two statements")))) else (let labelled : M := (if isRef then cleared else (record M {cur := (project cleared cur), jobs := (project cleared jobs), vals := (project cleared vals), held := (project cleared held), nodes := (project cleared nodes), count := (project cleared count), proof := (project cleared proof), scope := (project cleared scope), labels := (cons (record Lbl {label := named, node := defined}) (project cleared labels)), error := (project cleared error)})); (match (scanAt text (project (project labelled cur) at))
+          | Result.error problem => (mfail labelled problem)
+          | Result.ok after => (if (both (if ((project after kind) =? 21) then false else true) (if (project after col0) then false else true)) then (mfail labelled (failure (project after start) (lit "a statement ends at the end of its line"))) else labelled)))))))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: braced,
+  parameters: [cursor : Nat, depth : Nat, result : (Option (Result Nat SurfaceLex::Failure))],
+  result: (Option Braces),
+  body: (ctor Option.some [Braces] (record Braces {cursor := cursor, depth := depth, result := result})),
+  executable: true
+}
+
+definition{
+  name: braceStep,
+  parameters: [text : Bytes, start : Nat, state : Braces],
+  result: (Option Braces),
+  body: (match (project state result)
+    | Option.some done => (ctor Option.none [Braces])
+    | Option.none => (let position : Nat := (project state cursor); (let depth : Nat := (project state depth); (let code : Nat := (codeAt text position); (if (code =? 256) then (braced position depth (ctor Option.some [(Result Nat SurfaceLex::Failure)] (ctor Result.error [Nat, SurfaceLex::Failure] (failure start (lit "the braces of the declaration are not closed"))))) else (if (code =? 34) then (match (stringEnd text position)
+      | Result.error problem => (braced position depth (ctor Option.some [(Result Nat SurfaceLex::Failure)] (ctor Result.error [Nat, SurfaceLex::Failure] problem)))
+      | Result.ok stop => (braced stop depth (ctor Option.none [(Result Nat SurfaceLex::Failure)]))) else (if (code =? 123) then (braced (position + 1) (depth + 1) (ctor Option.none [(Result Nat SurfaceLex::Failure)])) else (if (code =? 125) then (if (depth =? 1) then (braced (position + 1) 0 (ctor Option.some [(Result Nat SurfaceLex::Failure)] (ctor Result.ok [Nat, SurfaceLex::Failure] (position + 1)))) else (braced (position + 1) (prim subtract depth 1 : Nat) (ctor Option.none [(Result Nat SurfaceLex::Failure)]))) else (braced (position + 1) depth (ctor Option.none [(Result Nat SurfaceLex::Failure)])))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: membersEnd,
+  parameters: [text : Bytes, start : Nat],
+  result: (Result Nat SurfaceLex::Failure),
+  body: (match (project (first (prim iterate_until (fun [start, text] (state : Braces) => (braceStep text start state)) ((prim length text : Nat) + 2) (record Braces {cursor := start, depth := 0, result := (ctor Option.none [(Result Nat SurfaceLex::Failure)])}) : (Braces * Bool))) result)
+    | Option.some result => result
+    | Option.none => (ctor Result.error [Nat, SurfaceLex::Failure] (failure start (lit "the braces of the declaration are not closed")))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: entriesOf,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: (List Mem),
+  body: (LexLeanStd.Order::reverseList [Mem] (project (first (prim iterate_until (fun (state : Walk) => (match (project state rest)
+    | LexLeanStd.Json::Json.JMember key value rest => (ctor Option.some [Walk] (record Walk {rest := rest, items := (cons (record Mem {key := key, value := value}) (project state items))}))
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [Walk])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [Walk])
+    | LexLeanStd.Json::Json.JStr written => (ctor Option.none [Walk])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [Walk])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [Walk])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [Walk])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [Walk]))) 1000000 (record Walk {rest := chain, items := (nil Mem)}) : (Walk * Bool))) items)),
+  executable: true
+}
+
+definition{
+  name: placeStep,
+  parameters: [state : Place, entry : Mem, key : Bytes, value : LexLeanStd.Json::Json],
+  result: Place,
+  body: (if (same (project entry key) key) then state else (if (both (if (project state placed) then false else true) (LexLeanStd.Order::lessBytes key (project entry key))) then (record Place {placed := true, out := (cons entry (cons (record Mem {key := key, value := value}) (project state out)))}) else (record Place {placed := (project state placed), out := (cons entry (project state out))}))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: withMember,
+  parameters: [chain : LexLeanStd.Json::Json, key : Bytes, value : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (let placed : Place := (prim list_fold (fun [key, value] (state : Place) (entry : Mem) => (placeStep state entry key value)) (record Place {placed := false, out := (nil Mem)}) (entriesOf chain) : Place); (let reversed : (List Mem) := (if (project placed placed) then (project placed out) else (cons (record Mem {key := key, value := value}) (project placed out))); (prim list_fold (fun (rest : LexLeanStd.Json::Json) (entry : Mem) => (ctor LexLeanStd.Json::Json.JMember (project entry key) (project entry value) rest)) (ctor LexLeanStd.Json::Json.JNil) reversed : LexLeanStd.Json::Json))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: rootOf,
+  parameters: [text : Bytes, cur : Cur, what : Bytes],
+  result: (Result (Root * Cur) SurfaceLex::Failure),
+  body: (match (scanAt text (project cur at))
+    | Result.error problem => (ctor Result.error [(Root * Cur), SurfaceLex::Failure] problem)
+    | Result.ok tok => (if ((project tok kind) =? 15) then (let value : Nat := (if (numberTooLarge text tok) then 0 else (numberIn text tok)); (if (numberTooLarge text tok) then (ctor Result.error [(Root * Cur), SurfaceLex::Failure] (failure (project tok start) (lit "the number is too large"))) else (ctor Result.ok [(Root * Cur), SurfaceLex::Failure] ((ctor Root.RId value), (moved tok))))) else (if ((project tok kind) =? 16) then (ctor Result.ok [(Root * Cur), SurfaceLex::Failure] ((ctor Root.RLabel (LexLeanStd.Text::sliceOr text ((project tok start) + 1) (prim subtract (prim subtract (project tok stop) (project tok start) : Nat) 1 : Nat)) (project tok start)), (moved tok))) else (ctor Result.error [(Root * Cur), SurfaceLex::Failure] (failure (project tok start) (cat (lit "expected `@N`, ") what)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: namesFail,
+  parameters: [state : Names, problem : SurfaceLex::Failure],
+  result: Names,
+  body: (record Names {names := (project state names), cur := (project state cur), done := true, error := (ctor Option.some [SurfaceLex::Failure] problem)}),
+  executable: true
+}
+
+definition{
+  name: namesStep,
+  parameters: [text : Bytes, state : Names, what : Bytes, closable : Bool],
+  result: (Option Names),
+  body: (if (project state done) then (ctor Option.none [Names]) else (ctor Option.some [Names] (match (scanAt text (project (project state cur) at))
+    | Result.error problem => (namesFail state problem)
+    | Result.ok peeked => (if (both closable ((project peeked kind) =? 5)) then (record Names {names := (project state names), cur := (project state cur), done := true, error := (ctor Option.none [SurfaceLex::Failure])}) else (match (readName text (project state cur) what)
+      | Result.error problem => (namesFail state problem)
+      | Result.ok named => (match (scanAt text (project (project named cur) at))
+        | Result.error problem => (namesFail state problem)
+        | Result.ok comma => (if ((project comma kind) =? 6) then (record Names {names := (cons (project named text) (project state names)), cur := (moved comma), done := false, error := (ctor Option.none [SurfaceLex::Failure])}) else (record Names {names := (cons (project named text) (project state names)), cur := (project named cur), done := true, error := (ctor Option.none [SurfaceLex::Failure])})))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: paramsStep,
+  parameters: [text : Bytes, state : Names],
+  result: (Option Names),
+  body: (namesStep text state (lit "a universe parameter") false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: chainOf,
+  parameters: [items : (List LexLeanStd.Json::Json)],
+  result: LexLeanStd.Json::Json,
+  body: (prim list_fold (fun (rest : LexLeanStd.Json::Json) (item : LexLeanStd.Json::Json) => (ctor LexLeanStd.Json::Json.JItem item rest)) (ctor LexLeanStd.Json::Json.JNil) (LexLeanStd.Order::reverseList [LexLeanStd.Json::Json] items) : LexLeanStd.Json::Json),
+  executable: true
+}
+
+definition{
+  name: declarationRoots,
+  parameters: [
+    text : Bytes,
+    word : Bytes,
+    label : Bytes,
+    levels : (List LexLeanStd.Json::Json),
+    cur : Cur,
+    start : Nat
+  ],
+  result: (Result (Pending * Cur) SurfaceLex::Failure),
+  body: (match (scanAt text (project cur at))
+    | Result.error problem => (ctor Result.error [(Pending * Cur), SurfaceLex::Failure] problem)
+    | Result.ok colon => (let typed : (Result ((Option Root) * ((Option Root) * Cur)) SurfaceLex::Failure) := (if ((project colon kind) =? 7) then (match (rootOf text (moved colon) (lit "the type"))
+      | Result.error problem => (ctor Result.error [((Option Root) * ((Option Root) * Cur)), SurfaceLex::Failure] problem)
+      | Result.ok rooted => (match (scanAt text (project (second rooted) at))
+        | Result.error problem => (ctor Result.error [((Option Root) * ((Option Root) * Cur)), SurfaceLex::Failure] problem)
+        | Result.ok assign => (if ((project assign kind) =? 8) then (match (rootOf text (moved assign) (lit "the value"))
+          | Result.error problem => (ctor Result.error [((Option Root) * ((Option Root) * Cur)), SurfaceLex::Failure] problem)
+          | Result.ok valued => (ctor Result.ok [((Option Root) * ((Option Root) * Cur)), SurfaceLex::Failure] ((ctor Option.some [Root] (first rooted)), ((ctor Option.some [Root] (first valued)), (second valued))))) else (ctor Result.ok [((Option Root) * ((Option Root) * Cur)), SurfaceLex::Failure] ((ctor Option.some [Root] (first rooted)), ((ctor Option.none [Root]), (second rooted))))))) else (ctor Result.ok [((Option Root) * ((Option Root) * Cur)), SurfaceLex::Failure] ((ctor Option.none [Root]), ((ctor Option.none [Root]), cur)))); (match typed
+      | Result.error problem => (ctor Result.error [(Pending * Cur), SurfaceLex::Failure] problem)
+      | Result.ok roots => (let after : Cur := (second (second roots)); (let stated : Bool := (match (first roots)
+        | Option.some root => true
+        | Option.none => false); (match (scanAt text (project after at))
+        | Result.error problem => (ctor Result.error [(Pending * Cur), SurfaceLex::Failure] problem)
+        | Result.ok brace => (let membered : (Result (LexLeanStd.Json::Json * Cur) SurfaceLex::Failure) := (if (both ((project brace kind) =? 2) (if (project brace col0) then false else true)) then (match (membersEnd text (project brace start))
+          | Result.error problem => (ctor Result.error [(LexLeanStd.Json::Json * Cur), SurfaceLex::Failure] problem)
+          | Result.ok stop => (let from : Nat := (project brace start); (match (SurfaceGeneric::parseGeneric (LexLeanStd.Text::sliceOr text from (prim subtract stop from : Nat)))
+            | Result.error problem => (ctor Result.error [(LexLeanStd.Json::Json * Cur), SurfaceLex::Failure] (failure (from + (project problem offset)) (project problem message)))
+            | Result.ok value => (match value
+              | LexLeanStd.Json::Json.JObj chain => (ctor Result.ok [(LexLeanStd.Json::Json * Cur), SurfaceLex::Failure] (chain, (record Cur {at := stop, lastEnd := stop})))
+              | LexLeanStd.Json::Json.JBool flag => (ctor Result.error [(LexLeanStd.Json::Json * Cur), SurfaceLex::Failure] (failure from (lit "the members of a declaration are an object")))
+              | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Result.error [(LexLeanStd.Json::Json * Cur), SurfaceLex::Failure] (failure from (lit "the members of a declaration are an object")))
+              | LexLeanStd.Json::Json.JStr written => (ctor Result.error [(LexLeanStd.Json::Json * Cur), SurfaceLex::Failure] (failure from (lit "the members of a declaration are an object")))
+              | LexLeanStd.Json::Json.JArr inner => (ctor Result.error [(LexLeanStd.Json::Json * Cur), SurfaceLex::Failure] (failure from (lit "the members of a declaration are an object")))
+              | LexLeanStd.Json::Json.JNil => (ctor Result.error [(LexLeanStd.Json::Json * Cur), SurfaceLex::Failure] (failure from (lit "the members of a declaration are an object")))
+              | LexLeanStd.Json::Json.JItem element rest => (ctor Result.error [(LexLeanStd.Json::Json * Cur), SurfaceLex::Failure] (failure from (lit "the members of a declaration are an object")))
+              | LexLeanStd.Json::Json.JMember key inner rest => (ctor Result.error [(LexLeanStd.Json::Json * Cur), SurfaceLex::Failure] (failure from (lit "the members of a declaration are an object"))))))) else (ctor Result.ok [(LexLeanStd.Json::Json * Cur), SurfaceLex::Failure] ((ctor LexLeanStd.Json::Json.JNil), after))); (match membered
+          | Result.error problem => (ctor Result.error [(Pending * Cur), SurfaceLex::Failure] problem)
+          | Result.ok members => (let named : LexLeanStd.Json::Json := (withMember (withMember (first members) (lit "kind") (ctor LexLeanStd.Json::Json.JStr word)) (lit "name") (ctor LexLeanStd.Json::Json.JStr label)); (if stated then (ctor Result.ok [(Pending * Cur), SurfaceLex::Failure] ((record Pending {members := (withMember named (lit "levels") (ctor LexLeanStd.Json::Json.JArr (chainOf levels))), rootType := (first roots), rootValue := (first (second roots)), start := start}), (second members))) else (if (0 <? (prim length levels : Nat)) then (ctor Result.error [(Pending * Cur), SurfaceLex::Failure] (failure start (lit "a row without a type states no universe parameters"))) else (ctor Result.ok [(Pending * Cur), SurfaceLex::Failure] ((record Pending {members := named, rootType := (first roots), rootValue := (first (second roots)), start := start}), (second members)))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: declarationAt,
+  parameters: [text : Bytes, cur : Cur],
+  result: (Result (Pending * Cur) SurfaceLex::Failure),
+  body: (match (scanAt text (project cur at))
+    | Result.error problem => (ctor Result.error [(Pending * Cur), SurfaceLex::Failure] problem)
+    | Result.ok kindTok => (let word : Bytes := (slice text kindTok); (if (listed word (cons (lit "abbrev") (cons (lit "definition") (cons (lit "theorem") (cons (lit "inductive") (cons (lit "constructor") (cons (lit "recursor") (nil Bytes)))))))) then (match (readName text (moved kindTok) (lit "the declaration's name"))
+      | Result.error problem => (ctor Result.error [(Pending * Cur), SurfaceLex::Failure] problem)
+      | Result.ok named => (match (scanAt text (project (project named cur) at))
+        | Result.error problem => (ctor Result.error [(Pending * Cur), SurfaceLex::Failure] problem)
+        | Result.ok opener => (if ((project opener kind) =? 14) then (let final : Names := (first (prim iterate_until (fun [text] (state : Names) => (paramsStep text state)) ((prim length text : Nat) + 2) (record Names {names := (nil Bytes), cur := (moved opener), done := false, error := (ctor Option.none [SurfaceLex::Failure])}) : (Names * Bool))); (match (project final error)
+          | Option.some problem => (ctor Result.error [(Pending * Cur), SurfaceLex::Failure] problem)
+          | Option.none => (match (expectTok text (project final cur) 3 (lit "`}` after the universe parameters"))
+            | Result.error problem => (ctor Result.error [(Pending * Cur), SurfaceLex::Failure] problem)
+            | Result.ok step => (declarationRoots text word (project named text) (prim list_fold (fun (out : (List LexLeanStd.Json::Json)) (name : Bytes) => (cons (ctor LexLeanStd.Json::Json.JStr name) out)) (nil LexLeanStd.Json::Json) (project final names) : (List LexLeanStd.Json::Json)) (project step cur) (project kindTok start))))) else (declarationRoots text word (project named text) (nil LexLeanStd.Json::Json) (project named cur) (project kindTok start))))) else (ctor Result.error [(Pending * Cur), SurfaceLex::Failure] (failure (project kindTok start) (cat (cat (lit "`") word) (lit "` does not begin a declaration or a node"))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: topFail,
+  parameters: [top : Top, problem : SurfaceLex::Failure],
+  result: Top,
+  body: (record Top {machine := (mfail (project top machine) problem), pending := (project top pending), spans := (project top spans), statements := (project top statements), finished := true}),
+  executable: true
+}
+
+definition{
+  name: topStep,
+  parameters: [text : Bytes, top : Top],
+  result: (Option Top),
+  body: (let machine : M := (project top machine); (if (if (project top finished) then true else (match (project machine error)
+    | Option.some problem => true
+    | Option.none => false)) then (ctor Option.none [Top]) else (ctor Option.some [Top] (match (scanAt text (project (project machine cur) at))
+    | Result.error problem => (topFail top problem)
+    | Result.ok tok => (if ((project tok kind) =? 21) then (record Top {machine := machine, pending := (project top pending), spans := (project top spans), statements := (project top statements), finished := true}) else (if (if (project tok col0) then false else true) then (topFail top (failure (project tok start) (lit "a declaration or a node begins its line"))) else (if (if ((project tok kind) =? 15) then true else ((project tok kind) =? 16)) then (record Top {machine := (statement text machine), pending := (project top pending), spans := (project top spans), statements := true, finished := false}) else (if (project top statements) then (topFail top (failure (project tok start) (lit "the declarations come before the nodes"))) else (match (declarationAt text (project machine cur))
+      | Result.error problem => (topFail top problem)
+      | Result.ok declared => (record Top {machine := (advance machine (second declared) (project machine jobs)), pending := (cons (first declared) (project top pending)), spans := (cons (record Span {start := (project tok start), stop := (project (second declared) lastEnd)}) (project top spans)), statements := false, finished := false})))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: resolveRoot,
+  parameters: [labels : (List Lbl), root : (Option Root)],
+  result: (Result (Option Nat) SurfaceLex::Failure),
+  body: (match root
+    | Option.none => (ctor Result.ok [(Option Nat), SurfaceLex::Failure] (ctor Option.none [Nat]))
+    | Option.some written => (match written
+      | Root.RId value => (ctor Result.ok [(Option Nat), SurfaceLex::Failure] (ctor Option.some [Nat] value))
+      | Root.RLabel label at => (match (labelOf labels label)
+        | Option.some value => (ctor Result.ok [(Option Nat), SurfaceLex::Failure] (ctor Option.some [Nat] value))
+        | Option.none => (ctor Result.error [(Option Nat), SurfaceLex::Failure] (failure at (cat (cat (lit "no statement is named `@") label) (lit "`"))))))),
+  executable: true
+}
+
+definition{
+  name: withRoot,
+  parameters: [members : LexLeanStd.Json::Json, key : Bytes, root : (Option Nat)],
+  result: LexLeanStd.Json::Json,
+  body: (match root
+    | Option.some value => (withMember members key (ctor LexLeanStd.Json::Json.JInt false value))
+    | Option.none => members),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: resolvedAll,
+  parameters: [labels : (List Lbl), pending : (List Pending)],
+  result: (Result (List LexLeanStd.Json::Json) SurfaceLex::Failure),
+  body: (prim list_fold (fun [labels] (state : (Result (List LexLeanStd.Json::Json) SurfaceLex::Failure)) (declaration : Pending) => (match state
+    | Result.error problem => state
+    | Result.ok done => (match (resolveRoot labels (project declaration rootType))
+      | Result.error problem => (ctor Result.error [(List LexLeanStd.Json::Json), SurfaceLex::Failure] problem)
+      | Result.ok typed => (match (resolveRoot labels (project declaration rootValue))
+        | Result.error problem => (ctor Result.error [(List LexLeanStd.Json::Json), SurfaceLex::Failure] problem)
+        | Result.ok valued => (ctor Result.ok [(List LexLeanStd.Json::Json), SurfaceLex::Failure] (cons (withRoot (withRoot (project declaration members) (lit "type") typed) (lit "value") valued) done)))))) (ctor Result.ok [(List LexLeanStd.Json::Json), SurfaceLex::Failure] (nil LexLeanStd.Json::Json)) pending : (Result (List LexLeanStd.Json::Json) SurfaceLex::Failure)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: importsStep,
+  parameters: [text : Bytes, state : Names],
+  result: (Option Names),
+  body: (namesStep text state (lit "a module name") true),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readImports,
+  parameters: [text : Bytes],
+  result: (Result ((List Bytes) * Cur) SurfaceLex::Failure),
+  body: (match (scanAt text 0)
+    | Result.error problem => (ctor Result.error [((List Bytes) * Cur), SurfaceLex::Failure] problem)
+    | Result.ok tok => (if (both ((project tok kind) =? 20) (same (slice text tok) (lit "imports"))) then (match (expectTok text (moved tok) 4 (lit "`[` after `imports`"))
+      | Result.error problem => (ctor Result.error [((List Bytes) * Cur), SurfaceLex::Failure] problem)
+      | Result.ok opened => (let final : Names := (first (prim iterate_until (fun [text] (state : Names) => (importsStep text state)) ((prim length text : Nat) + 2) (record Names {names := (nil Bytes), cur := (project opened cur), done := false, error := (ctor Option.none [SurfaceLex::Failure])}) : (Names * Bool))); (match (project final error)
+        | Option.some problem => (ctor Result.error [((List Bytes) * Cur), SurfaceLex::Failure] problem)
+        | Option.none => (match (expectTok text (project final cur) 5 (lit "`,` or `]`"))
+          | Result.error problem => (ctor Result.error [((List Bytes) * Cur), SurfaceLex::Failure] problem)
+          | Result.ok closed => (ctor Result.ok [((List Bytes) * Cur), SurfaceLex::Failure] ((LexLeanStd.Order::reverseList [Bytes] (project final names)), (project closed cur))))))) else (ctor Result.error [((List Bytes) * Cur), SurfaceLex::Failure] (failure (project tok start) (lit "a core module begins with its `imports`"))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: readCoreModule,
+  parameters: [text : Bytes],
+  result: (Result Read SurfaceLex::Failure),
+  body: (match (readImports text)
+    | Result.error problem => (ctor Result.error [Read, SurfaceLex::Failure] problem)
+    | Result.ok imported => (let start : M := (record M {cur := (second imported), jobs := (nil Job), vals := (nil Nat), held := (nil Held), nodes := (nil CoreJson::Node), count := 0, proof := (nil Nat), scope := (nil Bytes), labels := (nil Lbl), error := (ctor Option.none [SurfaceLex::Failure])}); (let final : Top := (first (prim iterate_until (fun [text] (top : Top) => (topStep text top)) ((prim length text : Nat) + 2) (record Top {machine := start, pending := (nil Pending), spans := (nil Span), statements := false, finished := false}) : (Top * Bool))); (let machine : M := (project final machine); (match (project machine error)
+      | Option.some problem => (ctor Result.error [Read, SurfaceLex::Failure] problem)
+      | Option.none => (match (resolvedAll (project machine labels) (LexLeanStd.Order::reverseList [Pending] (project final pending)))
+        | Result.error problem => (ctor Result.error [Read, SurfaceLex::Failure] problem)
+        | Result.ok declarations => (ctor Result.ok [Read, SurfaceLex::Failure] (record Read {imports := (first imported), nodes := (LexLeanStd.Order::reverseList [CoreJson::Node] (project machine nodes)), proofNodes := (LexLeanStd.Order::reverseList [Nat] (project machine proof)), declarations := (prim list_fold (fun (out : (List LexLeanStd.Json::Json)) (members : LexLeanStd.Json::Json) => (cons (ctor LexLeanStd.Json::Json.JObj members) out)) (nil LexLeanStd.Json::Json) declarations : (List LexLeanStd.Json::Json)), spans := (LexLeanStd.Order::reverseList [Span] (project final spans))})))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

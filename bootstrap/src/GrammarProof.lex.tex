@@ -1,0 +1,445 @@
+\begin{lexlean}{GrammarProof}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{PrimitiveScan}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: TextToken,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TokenAtom, fields: [Nat]},
+    {name: TokenIsland, fields: [Nat, Nat, Nat, Nat, Bool]}
+  ]
+}
+
+structure{
+  name: Keyword,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: atom, type: Nat}, {name: entry, type: Bytes}]
+}
+
+inductive{
+  name: SentenceKind,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: Assume, fields: [(List TextToken)]},
+    {name: Apply, fields: [TextToken]},
+    {name: CloseWith, fields: [TextToken]},
+    {name: CloseByReflexivity, fields: []},
+    {name: Witness, fields: [TextToken]},
+    {name: SelectLeft, fields: []},
+    {name: SelectRight, fields: []}
+  ]
+}
+
+structure{
+  name: Sentence,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: kind, type: SentenceKind}, {name: keywords, type: (List Keyword)}]
+}
+
+structure{
+  name: Scan,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: cursor, type: Nat},
+    {name: tokens, type: (List TextToken)},
+    {name: error, type: (Option PrimitiveScan::Rejection)}
+  ]
+}
+
+structure{
+  name: Commas,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: cursor, type: Nat}, {name: islands, type: (List TextToken)}]
+}
+
+structure{
+  name: Found,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: word, type: Bytes}, {name: atom, type: Nat}]
+}
+
+structure{
+  name: Forbid,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: cursor, type: Nat}, {name: found, type: (Option Found)}]
+}
+
+structure{
+  name: Compose,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: spelled, type: Bytes}, {name: reach, type: Nat}, {name: next, type: Nat}]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: both,
+  parameters: [left : Bool, right : Bool],
+  result: Bool,
+  body: (if left then right else false),
+  executable: true
+}
+
+definition{
+  name: reverseTokens,
+  parameters: [items : (List TextToken)],
+  result: (List TextToken),
+  body: (prim list_fold (fun (turned : (List TextToken)) (item : TextToken) => (cons item turned)) (nil TextToken) items : (List TextToken)),
+  executable: true
+}
+
+definition{
+  name: isControl,
+  parameters: [atom : PrimitiveScan::Atom, spelled : Bytes],
+  result: Bool,
+  body: (both ((PrimitiveScan::classCode atom) =? 0) (prim equal (project atom text) spelled : Bool)),
+  executable: true
+}
+
+definition{
+  name: opens,
+  parameters: [atom : PrimitiveScan::Atom],
+  result: Bool,
+  body: (if (isControl atom (lit "\\(")) then true else (isControl atom (lit "\\["))),
+  executable: true
+}
+
+definition{
+  name: refusal,
+  parameters: [path : Bytes, code : Bytes, message : Bytes, atom : PrimitiveScan::Atom],
+  result: PrimitiveScan::Rejection,
+  body: (record PrimitiveScan::Rejection {code := code, message := message, place := (ctor Option.some [PrimitiveScan::Place] (PrimitiveScan::placeOfAtom path atom)), help := (ctor Option.none [Bytes])}),
+  executable: true
+}
+
+definition{
+  name: failed,
+  parameters: [scan : Scan, problem : PrimitiveScan::Rejection],
+  result: Scan,
+  body: (record Scan {cursor := (project scan cursor), tokens := (project scan tokens), error := (ctor Option.some [PrimitiveScan::Rejection] problem)}),
+  executable: true
+}
+
+definition{
+  name: pushed,
+  parameters: [scan : Scan, next : Nat, token : TextToken],
+  result: Scan,
+  body: (record Scan {cursor := next, tokens := (cons token (project scan tokens)), error := (project scan error)}),
+  executable: true
+}
+
+definition{
+  name: closerStep,
+  parameters: [atoms : (List PrimitiveScan::Atom), closer : Bytes, stop : Nat, position : Nat],
+  result: (Option Nat),
+  body: (if (position <? stop) then (match (prim index atoms position : (Option PrimitiveScan::Atom))
+    | Option.some atom => (if (isControl atom closer) then (ctor Option.none [Nat]) else (if (opens atom) then (ctor Option.none [Nat]) else (ctor Option.some [Nat] (position + 1))))
+    | Option.none => (ctor Option.none [Nat])) else (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: islandAt,
+  parameters: [
+    path : Bytes,
+    atoms : (List PrimitiveScan::Atom),
+    stop : Nat,
+    scan : Scan,
+    position : Nat,
+    atom : PrimitiveScan::Atom
+  ],
+  result: Scan,
+  body: (let shown : Bool := (isControl atom (lit "\\[")); (let closer : Bytes := (if shown then (lit "\\]") else (lit "\\)")); (let unclosed : Scan := (failed scan (refusal path (lit "LLL1006") (cat (cat (lit "unclosed mathematical island; expected `") closer) (lit "`")) atom)); (let reached : Nat := (first (prim iterate_until (fun [atoms, closer, stop] (scanned : Nat) => (closerStep atoms closer stop scanned)) ((prim subtract stop position : Nat) + 1) (position + 1) : (Nat * Bool))); (if (reached <? stop) then (match (prim index atoms reached : (Option PrimitiveScan::Atom))
+    | Option.some candidate => (if (isControl candidate closer) then (pushed scan (reached + 1) (ctor TextToken.TokenIsland position (position + 1) reached reached shown)) else (failed scan (refusal path (lit "LLL1006") (lit "mathematical islands do not nest") candidate)))
+    | Option.none => unclosed) else unclosed))))),
+  executable: true
+}
+
+definition{
+  name: tokenAt,
+  parameters: [
+    path : Bytes,
+    atoms : (List PrimitiveScan::Atom),
+    stop : Nat,
+    scan : Scan,
+    position : Nat,
+    atom : PrimitiveScan::Atom
+  ],
+  result: Scan,
+  body: (let code : Nat := (PrimitiveScan::classCode atom); (if (code =? 6) then (record Scan {cursor := (position + 1), tokens := (project scan tokens), error := (project scan error)}) else (if (both (code =? 4) (prim equal (project atom text) (lit "$") : Bool)) then (failed scan (refusal path (lit "LLP2001") (lit "dollar math delimiters are forbidden; use \\( ... \\) or \\[ ... \\]") atom)) else (if (opens atom) then (islandAt path atoms stop scan position atom) else (if (if (isControl atom (lit "\\)")) then true else (isControl atom (lit "\\]"))) then (failed scan (refusal path (lit "LLL1006") (cat (cat (lit "`") (project atom text)) (lit "` closes no mathematical island")) atom)) else (pushed scan (position + 1) (ctor TextToken.TokenAtom position))))))),
+  executable: true
+}
+
+definition{
+  name: tokenStep,
+  parameters: [path : Bytes, atoms : (List PrimitiveScan::Atom), stop : Nat, scan : Scan],
+  result: (Option Scan),
+  body: (match (project scan error)
+    | Option.some problem => (ctor Option.none [Scan])
+    | Option.none => (let position : Nat := (project scan cursor); (if (position <? stop) then (match (prim index atoms position : (Option PrimitiveScan::Atom))
+      | Option.some atom => (ctor Option.some [Scan] (tokenAt path atoms stop scan position atom))
+      | Option.none => (ctor Option.none [Scan])) else (ctor Option.none [Scan])))),
+  executable: true
+}
+
+definition{
+  name: textTokens,
+  parameters: [path : Bytes, atoms : (List PrimitiveScan::Atom), start : Nat, stop : Nat],
+  result: (Result (List TextToken) PrimitiveScan::Rejection),
+  body: (let final : Scan := (first (prim iterate_until (fun [atoms, path, stop] (scan : Scan) => (tokenStep path atoms stop scan)) ((prim subtract stop start : Nat) + 1) (record Scan {cursor := start, tokens := (nil TextToken), error := (ctor Option.none [PrimitiveScan::Rejection])}) : (Scan * Bool))); (match (project final error)
+    | Option.some problem => (ctor Result.error [(List TextToken), PrimitiveScan::Rejection] problem)
+    | Option.none => (ctor Result.ok [(List TextToken), PrimitiveScan::Rejection] (reverseTokens (project final tokens))))),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: firstAtom,
+  parameters: [token : TextToken],
+  result: Nat,
+  body: (match token
+    | TextToken.TokenAtom which => which
+    | TextToken.TokenIsland opening innerStart innerEnd closing shown => opening),
+  executable: true
+}
+
+definition{
+  name: atomOr,
+  parameters: [atoms : (List PrimitiveScan::Atom), which : Nat],
+  result: PrimitiveScan::Atom,
+  body: (match (prim index atoms which : (Option PrimitiveScan::Atom))
+    | Option.some atom => atom
+    | Option.none => (record PrimitiveScan::Atom {kind := (ctor PrimitiveScan::AtomClass.Whitespace), byteStart := 0, byteEnd := 0, lineStart := 1, columnStart := 1, lineEnd := 1, columnEnd := 1, text := (lit "")})),
+  executable: true
+}
+
+definition{
+  name: tokenOr,
+  parameters: [tokens : (List TextToken), position : Nat],
+  result: TextToken,
+  body: (match (prim index tokens position : (Option TextToken))
+    | Option.some token => token
+    | Option.none => (ctor TextToken.TokenAtom 0)),
+  executable: true
+}
+
+definition{
+  name: wordIs,
+  parameters: [
+    atoms : (List PrimitiveScan::Atom),
+    tokens : (List TextToken),
+    position : Nat,
+    expected : Bytes
+  ],
+  result: Bool,
+  body: (match (prim index tokens position : (Option TextToken))
+    | Option.some token => (match token
+      | TextToken.TokenAtom which => (match (prim index atoms which : (Option PrimitiveScan::Atom))
+        | Option.some atom => (both ((PrimitiveScan::classCode atom) =? 1) (prim equal (project atom text) expected : Bool))
+        | Option.none => false)
+      | TextToken.TokenIsland opening innerStart innerEnd closing shown => false)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: islandIs,
+  parameters: [tokens : (List TextToken), position : Nat],
+  result: Bool,
+  body: (match (prim index tokens position : (Option TextToken))
+    | Option.some token => (match token
+      | TextToken.TokenAtom which => false
+      | TextToken.TokenIsland opening innerStart innerEnd closing shown => true)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: commaIs,
+  parameters: [atoms : (List PrimitiveScan::Atom), tokens : (List TextToken), position : Nat],
+  result: Bool,
+  body: (match (prim index tokens position : (Option TextToken))
+    | Option.some token => (match token
+      | TextToken.TokenAtom which => (match (prim index atoms which : (Option PrimitiveScan::Atom))
+        | Option.some atom => (both ((PrimitiveScan::classCode atom) =? 4) (prim equal (project atom text) (lit ",") : Bool))
+        | Option.none => false)
+      | TextToken.TokenIsland opening innerStart innerEnd closing shown => false)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: keywordAt,
+  parameters: [tokens : (List TextToken), position : Nat, entry : Bytes],
+  result: Keyword,
+  body: (record Keyword {atom := (firstAtom (tokenOr tokens position)), entry := entry}),
+  executable: true
+}
+
+definition{
+  name: forbiddenWords,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "aesop") (cons (lit "admit") (cons (lit "cases") (cons (lit "constructor") (cons (lit "induction") (cons (lit "all_goals") (cons (lit "any_goals") (cons (lit "apply?") (cons (lit "assumption") (cons (lit "case") (cons (lit "decide") (cons (lit "exact") (cons (lit "exact?") (cons (lit "first") (cons (lit "intro") (cons (lit "linarith") (cons (lit "native_decide") (cons (lit "next") (cons (lit "omega") (cons (lit "refine") (cons (lit "repeat") (cons (lit "rfl") (cons (lit "rw") (cons (lit "rwa") (cons (lit "simp") (cons (lit "simp_all") (cons (lit "simpa") (cons (lit "sorry") (cons (lit "tauto") (cons (lit "trivial") (cons (lit "try") (nil Bytes)))))))))))))))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: separator,
+  parameters: [spelled : Bytes],
+  result: Bool,
+  body: (PrimitiveScan::bytesInList spelled (cons (lit ",") (cons (lit ".") (cons (lit ";") (cons (lit ":") (cons (lit "(") (cons (lit ")") (nil Bytes)))))))),
+  executable: true
+}
+
+definition{
+  name: composeStep,
+  parameters: [atoms : (List PrimitiveScan::Atom), state : Compose],
+  result: (Option Compose),
+  body: (match (prim index atoms (project state next) : (Option PrimitiveScan::Atom))
+    | Option.some atom => (let code : Nat := (PrimitiveScan::classCode atom); (if (both ((project atom byteStart) =? (project state reach)) (both (if (code =? 1) then true else (if (code =? 2) then true else (code =? 4))) (if (separator (project atom text)) then false else true))) then (ctor Option.some [Compose] (record Compose {spelled := (cat (project state spelled) (project atom text)), reach := (project atom byteEnd), next := ((project state next) + 1)})) else (ctor Option.none [Compose])))
+    | Option.none => (ctor Option.none [Compose])),
+  executable: true
+}
+
+definition{
+  name: composedAt,
+  parameters: [atoms : (List PrimitiveScan::Atom), atom : PrimitiveScan::Atom, which : Nat],
+  result: Bytes,
+  body: (project (first (prim iterate_until (fun [atoms] (state : Compose) => (composeStep atoms state)) ((prim length atoms : Nat) + 1) (record Compose {spelled := (project atom text), reach := (project atom byteEnd), next := (which + 1)}) : (Compose * Bool))) spelled),
+  executable: true
+}
+
+definition{
+  name: forbiddenAt,
+  parameters: [atoms : (List PrimitiveScan::Atom), position : Nat, which : Nat],
+  result: (Option Found),
+  body: (let atom : PrimitiveScan::Atom := (atomOr atoms which); (let composed : Bytes := (composedAt atoms atom which); (let hit : Found := (record Found {word := composed, atom := which}); (if (PrimitiveScan::bytesInList composed (forbiddenWords)) then (ctor Option.some [Found] hit) else (if (both (position =? 0) (match (LexLeanStd.Text::find composed (lit "_"))
+    | Option.some offset => true
+    | Option.none => false)) then (ctor Option.some [Found] hit) else (if (both ((PrimitiveScan::classCode atom) =? 4) (if (LexLeanStd.Text::startsWith composed (lit "<;>")) then true else (prim equal (project atom text) (lit "·") : Bool))) then (ctor Option.some [Found] hit) else (ctor Option.none [Found]))))))),
+  executable: true
+}
+
+definition{
+  name: forbidStep,
+  parameters: [atoms : (List PrimitiveScan::Atom), state : Forbid, token : TextToken],
+  result: Forbid,
+  body: (let position : Nat := (project state cursor); (match (project state found)
+    | Option.some hit => (record Forbid {cursor := (position + 1), found := (project state found)})
+    | Option.none => (match token
+      | TextToken.TokenAtom which => (record Forbid {cursor := (position + 1), found := (forbiddenAt atoms position which)})
+      | TextToken.TokenIsland opening innerStart innerEnd closing shown => (record Forbid {cursor := (position + 1), found := (ctor Option.none [Found])})))),
+  executable: true
+}
+
+definition{
+  name: forbiddenForm,
+  parameters: [atoms : (List PrimitiveScan::Atom), tokens : (List TextToken)],
+  result: (Option Found),
+  body: (project (prim list_fold (fun [atoms] (state : Forbid) (token : TextToken) => (forbidStep atoms state token)) (record Forbid {cursor := 0, found := (ctor Option.none [Found])}) tokens : Forbid) found),
+  executable: true
+}
+
+definition{
+  name: failure,
+  parameters: [path : Bytes, atoms : (List PrimitiveScan::Atom), tokens : (List TextToken)],
+  result: PrimitiveScan::Rejection,
+  body: (match (forbiddenForm atoms tokens)
+    | Option.some hit => (refusal path (lit "LLF5005") (cat (cat (lit "`") (project hit word)) (lit "` is a forbidden proof form (§16.12): raw tactics, automation, tactic combinators, and proof holes are never accepted")) (atomOr atoms (project hit atom)))
+    | Option.none => (let message : Bytes := (lit "not a registered proof sentence; the exact simple sentences are fixed (§16.2)"); (match (prim index tokens 0 : (Option TextToken))
+      | Option.some token => (refusal path (lit "LLF5005") message (atomOr atoms (firstAtom token)))
+      | Option.none => (record PrimitiveScan::Rejection {code := (lit "LLF5005"), message := message, place := (ctor Option.some [PrimitiveScan::Place] (record PrimitiveScan::Place {path := path, byteStart := 0, byteEnd := 0, lineStart := 1, columnStart := 1, lineEnd := 1, columnEnd := 1})), help := (ctor Option.none [Bytes])})))),
+  executable: true
+}
+
+definition{
+  name: accepted,
+  parameters: [kind : SentenceKind, keywords : (List Keyword)],
+  result: (Result Sentence PrimitiveScan::Rejection),
+  body: (ctor Result.ok [Sentence, PrimitiveScan::Rejection] (record Sentence {kind := kind, keywords := keywords})),
+  executable: true
+}
+
+definition{
+  name: commaStep,
+  parameters: [atoms : (List PrimitiveScan::Atom), tokens : (List TextToken), state : Commas],
+  result: (Option Commas),
+  body: (let position : Nat := (project state cursor); (if (both (commaIs atoms tokens position) (islandIs tokens (position + 1))) then (ctor Option.some [Commas] (record Commas {cursor := (position + 2), islands := (cons (tokenOr tokens (position + 1)) (project state islands))})) else (ctor Option.none [Commas]))),
+  executable: true
+}
+
+definition{
+  name: assumed,
+  parameters: [
+    atoms : (List PrimitiveScan::Atom),
+    tokens : (List TextToken),
+    count : Nat,
+    refused : (Result Sentence PrimitiveScan::Rejection)
+  ],
+  result: (Result Sentence PrimitiveScan::Rejection),
+  body: (if (islandIs tokens 1) then (let final : Commas := (first (prim iterate_until (fun [atoms, tokens] (state : Commas) => (commaStep atoms tokens state)) (count + 1) (record Commas {cursor := 2, islands := (cons (tokenOr tokens 1) (nil TextToken))}) : (Commas * Bool))); (if ((project final cursor) =? count) then (accepted (ctor SentenceKind.Assume (reverseTokens (project final islands))) (cons (keywordAt tokens 0 (lit "assume")) (nil Keyword))) else refused)) else refused),
+  executable: true
+}
+
+definition{
+  name: closed,
+  parameters: [
+    atoms : (List PrimitiveScan::Atom),
+    tokens : (List TextToken),
+    count : Nat,
+    refused : (Result Sentence PrimitiveScan::Rejection)
+  ],
+  result: (Result Sentence PrimitiveScan::Rejection),
+  body: (if (both (wordIs atoms tokens 1 (lit "the")) (wordIs atoms tokens 2 (lit "goal"))) then (let opening : (List Keyword) := (cons (keywordAt tokens 0 (lit "close")) (cons (keywordAt tokens 1 (lit "the")) (cons (keywordAt tokens 2 (lit "goal")) (nil Keyword)))); (if (wordIs atoms tokens 3 (lit "with")) then (if (both (islandIs tokens 4) (count =? 5)) then (accepted (ctor SentenceKind.CloseWith (tokenOr tokens 4)) (prim append opening (cons (keywordAt tokens 3 (lit "with")) (nil Keyword)) : (List Keyword))) else refused) else (if (both (wordIs atoms tokens 3 (lit "by")) (both (wordIs atoms tokens 4 (lit "reflexivity")) (count =? 5))) then (accepted (ctor SentenceKind.CloseByReflexivity) (prim append opening (cons (keywordAt tokens 3 (lit "by")) (cons (keywordAt tokens 4 (lit "reflexivity")) (nil Keyword))) : (List Keyword))) else refused))) else refused),
+  executable: true
+}
+
+definition{
+  name: selected,
+  parameters: [
+    atoms : (List PrimitiveScan::Atom),
+    tokens : (List TextToken),
+    count : Nat,
+    refused : (Result Sentence PrimitiveScan::Rejection)
+  ],
+  result: (Result Sentence PrimitiveScan::Rejection),
+  body: (if (wordIs atoms tokens 1 (lit "the")) then (let left : Bool := (wordIs atoms tokens 2 (lit "left")); (let right : Bool := (if left then false else (wordIs atoms tokens 2 (lit "right"))); (if (both (if left then true else right) (both (wordIs atoms tokens 3 (lit "alternative")) (count =? 4))) then (accepted (if left then (ctor SentenceKind.SelectLeft) else (ctor SentenceKind.SelectRight)) (cons (keywordAt tokens 0 (lit "select")) (cons (keywordAt tokens 1 (lit "the")) (cons (keywordAt tokens 2 (if left then (lit "left") else (lit "right"))) (cons (keywordAt tokens 3 (lit "alternative")) (nil Keyword)))))) else refused))) else refused),
+  executable: true
+}
+
+definition{
+  name: parseProofSentence,
+  parameters: [path : Bytes, atoms : (List PrimitiveScan::Atom), tokens : (List TextToken)],
+  result: (Result Sentence PrimitiveScan::Rejection),
+  body: (let count : Nat := (prim length tokens : Nat); (let refused : (Result Sentence PrimitiveScan::Rejection) := (ctor Result.error [Sentence, PrimitiveScan::Rejection] (failure path atoms tokens)); (if (wordIs atoms tokens 0 (lit "Assume")) then (assumed atoms tokens count refused) else (if (wordIs atoms tokens 0 (lit "Apply")) then (if (both (islandIs tokens 1) (count =? 2)) then (accepted (ctor SentenceKind.Apply (tokenOr tokens 1)) (cons (keywordAt tokens 0 (lit "apply-verb")) (nil Keyword))) else refused) else (if (wordIs atoms tokens 0 (lit "Close")) then (closed atoms tokens count refused) else (if (wordIs atoms tokens 0 (lit "Use")) then (if (both (islandIs tokens 1) (both (wordIs atoms tokens 2 (lit "as")) (both (wordIs atoms tokens 3 (lit "the")) (both (wordIs atoms tokens 4 (lit "witness")) (count =? 5))))) then (accepted (ctor SentenceKind.Witness (tokenOr tokens 1)) (cons (keywordAt tokens 0 (lit "use")) (cons (keywordAt tokens 2 (lit "as")) (cons (keywordAt tokens 3 (lit "the")) (cons (keywordAt tokens 4 (lit "witness")) (nil Keyword)))))) else refused) else (if (wordIs atoms tokens 0 (lit "Select")) then (selected atoms tokens count refused) else refused))))))),
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

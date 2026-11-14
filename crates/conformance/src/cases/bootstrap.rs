@@ -49,6 +49,14 @@ mod surface_lex;
 mod surface_module;
 mod surface_tooling;
 mod tooling_latex;
+mod grammar_proof;
+mod semantic_print;
+mod semantic_read;
+mod core_json;
+mod core_print;
+mod core_read;
+mod grammar_math;
+mod proposition_terms;
 
 /// The module the first component lives in.
 const MODULE: &str = "LexLeanBoot.AxiomOutput";
@@ -2574,6 +2582,14 @@ fn case(id: &str) {
         "BS-32" => content_id::case(),
         "BS-33" => project_text::case(),
         "BS-34" => manifest_text::case(),
+        "BS-35" => grammar_proof::case(),
+        "BS-36" => semantic_print::case(),
+        "BS-37" => semantic_read::case(),
+        "BS-38" => core_json::case(),
+        "BS-39" => core_print::case(),
+        "BS-40" => core_read::case(),
+        "BS-42" => grammar_math::case(),
+        "BS-43" => proposition_terms::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

@@ -1,0 +1,301 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{TextToken}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{TokenAtom}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{TokenIsland}: \texttt{(Nat, Nat, Nat, Nat, Bool)}.\par
+\subsection*{\texttt{Keyword}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{atom}: \texttt{Nat}.\par
+\noindent Field \texttt{entry}: \texttt{ByteArray}.\par
+\subsection*{\texttt{SentenceKind}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{Assume}: \texttt{(List (TextToken))}.\par
+\noindent Constructor \texttt{Apply}: \texttt{(TextToken)}.\par
+\noindent Constructor \texttt{CloseWith}: \texttt{(TextToken)}.\par
+\noindent Constructor \texttt{CloseByReflexivity}: \texttt{()}.\par
+\noindent Constructor \texttt{Witness}: \texttt{(TextToken)}.\par
+\noindent Constructor \texttt{SelectLeft}: \texttt{()}.\par
+\noindent Constructor \texttt{SelectRight}: \texttt{()}.\par
+\subsection*{\texttt{Sentence}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{kind}: \texttt{SentenceKind}.\par
+\noindent Field \texttt{keywords}: \texttt{List (Keyword)}.\par
+\subsection*{\texttt{Scan}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{cursor}: \texttt{Nat}.\par
+\noindent Field \texttt{tokens}: \texttt{List (TextToken)}.\par
+\noindent Field \texttt{error}: \texttt{Option (LexLeanBoot.PrimitiveScan.Rejection)}.\par
+\subsection*{\texttt{Commas}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{cursor}: \texttt{Nat}.\par
+\noindent Field \texttt{islands}: \texttt{List (TextToken)}.\par
+\subsection*{\texttt{Found}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{word}: \texttt{ByteArray}.\par
+\noindent Field \texttt{atom}: \texttt{Nat}.\par
+\subsection*{\texttt{Forbid}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{cursor}: \texttt{Nat}.\par
+\noindent Field \texttt{found}: \texttt{Option (Found)}.\par
+\subsection*{\texttt{Compose}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{spelled}: \texttt{ByteArray}.\par
+\noindent Field \texttt{reach}: \texttt{Nat}.\par
+\noindent Field \texttt{next}: \texttt{Nat}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (left) (right) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{both}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Bool) (right : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if left then right else false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reverseTokens}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (TextToken))}.\par
+\noindent Closure 1: binds \texttt{(turned, item)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (TextToken)}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (turned : List (TextToken)) (item : TextToken) => (item :: turned))) (([] : List (TextToken))) (items) : List (TextToken))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isControl}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atom : LexLeanBoot.PrimitiveScan.Atom) (spelled : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{both ((Nat.beq (LexLeanBoot.PrimitiveScan.classCode (atom)) (0))) ((LexLeanRuntime.equal ((atom).text) (spelled) : Bool))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{opens}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atom : LexLeanBoot.PrimitiveScan.Atom)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if isControl (atom) (lit ("\textbackslash{}\textbackslash{}(")) then true else isControl (atom) (lit ("\textbackslash{}\textbackslash{}[")))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{refusal}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray) (code : ByteArray) (message : ByteArray) (atom : LexLeanBoot.PrimitiveScan.Atom)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.PrimitiveScan.Rejection}.\par
+\noindent Definition: \texttt{(\{ code := code, message := message, place := Option.some (LexLeanBoot.PrimitiveScan.placeOfAtom (path) (atom)), help := Option.none \} : LexLeanBoot.PrimitiveScan.Rejection)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{failed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(scan : Scan) (problem : LexLeanBoot.PrimitiveScan.Rejection)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Scan}.\par
+\noindent Definition: \texttt{(\{ cursor := (scan).cursor, tokens := (scan).tokens, error := Option.some (problem) \} : Scan)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{pushed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(scan : Scan) (next : Nat) (token : TextToken)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Scan}.\par
+\noindent Definition: \texttt{(\{ cursor := next, tokens := (token :: (scan).tokens), error := (scan).error \} : Scan)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{closerStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (closer : ByteArray) (stop : Nat) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Nat)}.\par
+\noindent Definition: \texttt{(if (Nat.blt (position) (stop)) then (match (LexLeanRuntime.index (atoms) (position) : Option (LexLeanBoot.PrimitiveScan.Atom)) with | Option.some atom => (if isControl (atom) (closer) then Option.none else (if opens (atom) then Option.none else Option.some ((position + 1)))) | Option.none => Option.none) else Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{islandAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray) (atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (stop : Nat) (scan : Scan) (position : Nat) (atom : LexLeanBoot.PrimitiveScan.Atom)}.\par
+\noindent Closure 1: binds \texttt{(scanned)}, captures \texttt{(atoms, closer, stop)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Scan}.\par
+\noindent Definition: \texttt{(let shown : Bool := isControl (atom) (lit ("\textbackslash{}\textbackslash{}[")); (let closer : ByteArray := (if shown then lit ("\textbackslash{}\textbackslash{}]") else lit ("\textbackslash{}\textbackslash{})")); (let unclosed : Scan := failed (scan) (refusal (path) (lit ("LLL1006")) (cat (cat (lit ("unclosed mathematical island; expected `")) (closer)) (lit ("`"))) (atom)); (let reached : Nat := ((LexLeanCollections.iterateUntil ((fun (scanned : Nat) => closerStep (atoms) (closer) (stop) (scanned))) (((LexLeanRuntime.subtract (stop) (position) : Nat) + 1)) ((position + 1)) : (Prod (Nat) (Bool)))).1; (if (Nat.blt (reached) (stop)) then (match (LexLeanRuntime.index (atoms) (reached) : Option (LexLeanBoot.PrimitiveScan.Atom)) with | Option.some candidate => (if isControl (candidate) (closer) then pushed (scan) ((reached + 1)) (TextToken.TokenIsland (position) ((position + 1)) (reached) (reached) (shown)) else failed (scan) (refusal (path) (lit ("LLL1006")) (lit ("mathematical islands do not nest")) (candidate))) | Option.none => unclosed) else unclosed)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tokenAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray) (atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (stop : Nat) (scan : Scan) (position : Nat) (atom : LexLeanBoot.PrimitiveScan.Atom)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Scan}.\par
+\noindent Definition: \texttt{(let code : Nat := LexLeanBoot.PrimitiveScan.classCode (atom); (if (Nat.beq (code) (6)) then (\{ cursor := (position + 1), tokens := (scan).tokens, error := (scan).error \} : Scan) else (if both ((Nat.beq (code) (4))) ((LexLeanRuntime.equal ((atom).text) (lit ("\$")) : Bool)) then failed (scan) (refusal (path) (lit ("LLP2001")) (lit ("dollar math delimiters are forbidden; use \textbackslash{}\textbackslash{}( ... \textbackslash{}\textbackslash{}) or \textbackslash{}\textbackslash{}[ ... \textbackslash{}\textbackslash{}]")) (atom)) else (if opens (atom) then islandAt (path) (atoms) (stop) (scan) (position) (atom) else (if (if isControl (atom) (lit ("\textbackslash{}\textbackslash{})")) then true else isControl (atom) (lit ("\textbackslash{}\textbackslash{}]"))) then failed (scan) (refusal (path) (lit ("LLL1006")) (cat (cat (lit ("`")) ((atom).text)) (lit ("` closes no mathematical island"))) (atom)) else pushed (scan) ((position + 1)) (TextToken.TokenAtom (position)))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tokenStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray) (atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (stop : Nat) (scan : Scan)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Scan)}.\par
+\noindent Definition: \texttt{(match (scan).error with | Option.some \_ => Option.none | Option.none => (let position : Nat := (scan).cursor; (if (Nat.blt (position) (stop)) then (match (LexLeanRuntime.index (atoms) (position) : Option (LexLeanBoot.PrimitiveScan.Atom)) with | Option.some atom => Option.some (tokenAt (path) (atoms) (stop) (scan) (position) (atom)) | Option.none => Option.none) else Option.none)))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{textTokens}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray) (atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (start : Nat) (stop : Nat)}.\par
+\noindent Closure 1: binds \texttt{(scan)}, captures \texttt{(atoms, path, stop)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Except (LexLeanBoot.PrimitiveScan.Rejection) (List (TextToken))}.\par
+\noindent Definition: \texttt{(let final : Scan := ((LexLeanCollections.iterateUntil ((fun (scan : Scan) => tokenStep (path) (atoms) (stop) (scan))) (((LexLeanRuntime.subtract (stop) (start) : Nat) + 1)) ((\{ cursor := start, tokens := ([] : List (TextToken)), error := Option.none \} : Scan)) : (Prod (Scan) (Bool)))).1; (match (final).error with | Option.some problem => Except.error (problem) | Option.none => Except.ok (reverseTokens ((final).tokens))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{firstAtom}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(token : TextToken)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(match token with | TextToken.TokenAtom which => which | TextToken.TokenIsland opening \_ \_ \_ \_ => opening)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{atomOr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (which : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.PrimitiveScan.Atom}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (atoms) (which) : Option (LexLeanBoot.PrimitiveScan.Atom)) with | Option.some atom => atom | Option.none => (\{ kind := LexLeanBoot.PrimitiveScan.AtomClass.Whitespace, byteStart := 0, byteEnd := 0, lineStart := 1, columnStart := 1, lineEnd := 1, columnEnd := 1, text := lit ("") \} : LexLeanBoot.PrimitiveScan.Atom))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{tokenOr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(tokens : List (TextToken)) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{TextToken}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (tokens) (position) : Option (TextToken)) with | Option.some token => token | Option.none => TextToken.TokenAtom (0))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wordIs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (tokens : List (TextToken)) (position : Nat) (expected : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (tokens) (position) : Option (TextToken)) with | Option.some token => (match token with | TextToken.TokenAtom which => (match (LexLeanRuntime.index (atoms) (which) : Option (LexLeanBoot.PrimitiveScan.Atom)) with | Option.some atom => both ((Nat.beq (LexLeanBoot.PrimitiveScan.classCode (atom)) (1))) ((LexLeanRuntime.equal ((atom).text) (expected) : Bool)) | Option.none => false) | TextToken.TokenIsland \_ \_ \_ \_ \_ => false) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{islandIs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(tokens : List (TextToken)) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (tokens) (position) : Option (TextToken)) with | Option.some token => (match token with | TextToken.TokenAtom \_ => false | TextToken.TokenIsland \_ \_ \_ \_ \_ => true) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{commaIs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (tokens : List (TextToken)) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (tokens) (position) : Option (TextToken)) with | Option.some token => (match token with | TextToken.TokenAtom which => (match (LexLeanRuntime.index (atoms) (which) : Option (LexLeanBoot.PrimitiveScan.Atom)) with | Option.some atom => both ((Nat.beq (LexLeanBoot.PrimitiveScan.classCode (atom)) (4))) ((LexLeanRuntime.equal ((atom).text) (lit (",")) : Bool)) | Option.none => false) | TextToken.TokenIsland \_ \_ \_ \_ \_ => false) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{keywordAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(tokens : List (TextToken)) (position : Nat) (entry : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Keyword}.\par
+\noindent Definition: \texttt{(\{ atom := firstAtom (tokenOr (tokens) (position)), entry := entry \} : Keyword)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{forbiddenWords}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(lit ("aesop") :: (lit ("admit") :: (lit ("cases") :: (lit ("constructor") :: (lit ("induction") :: (lit ("all\_goals") :: (lit ("any\_goals") :: (lit ("apply?") :: (lit ("assumption") :: (lit ("case") :: (lit ("decide") :: (lit ("exact") :: (lit ("exact?") :: (lit ("first") :: (lit ("intro") :: (lit ("linarith") :: (lit ("native\_decide") :: (lit ("next") :: (lit ("omega") :: (lit ("refine") :: (lit ("repeat") :: (lit ("rfl") :: (lit ("rw") :: (lit ("rwa") :: (lit ("simp") :: (lit ("simp\_all") :: (lit ("simpa") :: (lit ("sorry") :: (lit ("tauto") :: (lit ("trivial") :: (lit ("try") :: ([] : List (ByteArray)))))))))))))))))))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{separator}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(spelled : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{LexLeanBoot.PrimitiveScan.bytesInList (spelled) ((lit (",") :: (lit (".") :: (lit (";") :: (lit (":") :: (lit ("(") :: (lit (")") :: ([] : List (ByteArray)))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{composeStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (state : Compose)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Compose)}.\par
+\noindent Definition: \texttt{(match (LexLeanRuntime.index (atoms) ((state).next) : Option (LexLeanBoot.PrimitiveScan.Atom)) with | Option.some atom => (let code : Nat := LexLeanBoot.PrimitiveScan.classCode (atom); (if both ((Nat.beq ((atom).byteStart) ((state).reach))) (both ((if (Nat.beq (code) (1)) then true else (if (Nat.beq (code) (2)) then true else (Nat.beq (code) (4))))) ((if separator ((atom).text) then false else true))) then Option.some ((\{ spelled := cat ((state).spelled) ((atom).text), reach := (atom).byteEnd, next := ((state).next + 1) \} : Compose)) else Option.none)) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{composedAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (atom : LexLeanBoot.PrimitiveScan.Atom) (which : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(atoms)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(((LexLeanCollections.iterateUntil ((fun (state : Compose) => composeStep (atoms) (state))) (((LexLeanRuntime.length (atoms) : Nat) + 1)) ((\{ spelled := (atom).text, reach := (atom).byteEnd, next := (which + 1) \} : Compose)) : (Prod (Compose) (Bool)))).1).spelled}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{forbiddenAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (position : Nat) (which : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Found)}.\par
+\noindent Definition: \texttt{(let atom : LexLeanBoot.PrimitiveScan.Atom := atomOr (atoms) (which); (let composed : ByteArray := composedAt (atoms) (atom) (which); (let hit : Found := (\{ word := composed, atom := which \} : Found); (if LexLeanBoot.PrimitiveScan.bytesInList (composed) (forbiddenWords) then Option.some (hit) else (if both ((Nat.beq (position) (0))) ((match LexLeanStd.Text.find (composed) (lit ("\_")) with | Option.some \_ => true | Option.none => false)) then Option.some (hit) else (if both ((Nat.beq (LexLeanBoot.PrimitiveScan.classCode (atom)) (4))) ((if LexLeanStd.Text.startsWith (composed) (lit ("<;>")) then true else (LexLeanRuntime.equal ((atom).text) (lit ("<U+00B7>")) : Bool))) then Option.some (hit) else Option.none))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{forbidStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (state : Forbid) (token : TextToken)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Forbid}.\par
+\noindent Definition: \texttt{(let position : Nat := (state).cursor; (match (state).found with | Option.some \_ => (\{ cursor := (position + 1), found := (state).found \} : Forbid) | Option.none => (match token with | TextToken.TokenAtom which => (\{ cursor := (position + 1), found := forbiddenAt (atoms) (position) (which) \} : Forbid) | TextToken.TokenIsland \_ \_ \_ \_ \_ => (\{ cursor := (position + 1), found := Option.none \} : Forbid))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{forbiddenForm}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (tokens : List (TextToken))}.\par
+\noindent Closure 1: binds \texttt{(state, token)}, captures \texttt{(atoms)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Found)}.\par
+\noindent Definition: \texttt{((LexLeanCollections.listFold ((fun (state : Forbid) (token : TextToken) => forbidStep (atoms) (state) (token))) ((\{ cursor := 0, found := Option.none \} : Forbid)) (tokens) : Forbid)).found}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{failure}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray) (atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (tokens : List (TextToken))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanBoot.PrimitiveScan.Rejection}.\par
+\noindent Definition: \texttt{(match forbiddenForm (atoms) (tokens) with | Option.some hit => refusal (path) (lit ("LLF5005")) (cat (cat (lit ("`")) ((hit).word)) (lit ("` is a forbidden proof form (<U+00A7>16.12): raw tactics, automation, tactic combinators, and proof holes are never accepted"))) (atomOr (atoms) ((hit).atom)) | Option.none => (let message : ByteArray := lit ("not a registered proof sentence; the exact simple sentences are fixed (<U+00A7>16.2)"); (match (LexLeanRuntime.index (tokens) (0) : Option (TextToken)) with | Option.some token => refusal (path) (lit ("LLF5005")) (message) (atomOr (atoms) (firstAtom (token))) | Option.none => (\{ code := lit ("LLF5005"), message := message, place := Option.some ((\{ path := path, byteStart := 0, byteEnd := 0, lineStart := 1, columnStart := 1, lineEnd := 1, columnEnd := 1 \} : LexLeanBoot.PrimitiveScan.Place)), help := Option.none \} : LexLeanBoot.PrimitiveScan.Rejection))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{accepted}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : SentenceKind) (keywords : List (Keyword))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (LexLeanBoot.PrimitiveScan.Rejection) (Sentence)}.\par
+\noindent Definition: \texttt{Except.ok ((\{ kind := kind, keywords := keywords \} : Sentence))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{commaStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (tokens : List (TextToken)) (state : Commas)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Commas)}.\par
+\noindent Definition: \texttt{(let position : Nat := (state).cursor; (if both (commaIs (atoms) (tokens) (position)) (islandIs (tokens) ((position + 1))) then Option.some ((\{ cursor := (position + 2), islands := (tokenOr (tokens) ((position + 1)) :: (state).islands) \} : Commas)) else Option.none))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{assumed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (tokens : List (TextToken)) (count : Nat) (refused : Except (LexLeanBoot.PrimitiveScan.Rejection) (Sentence))}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(atoms, tokens)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (LexLeanBoot.PrimitiveScan.Rejection) (Sentence)}.\par
+\noindent Definition: \texttt{(if islandIs (tokens) (1) then (let final : Commas := ((LexLeanCollections.iterateUntil ((fun (state : Commas) => commaStep (atoms) (tokens) (state))) ((count + 1)) ((\{ cursor := 2, islands := (tokenOr (tokens) (1) :: ([] : List (TextToken))) \} : Commas)) : (Prod (Commas) (Bool)))).1; (if (Nat.beq ((final).cursor) (count)) then accepted (SentenceKind.Assume (reverseTokens ((final).islands))) ((keywordAt (tokens) (0) (lit ("assume")) :: ([] : List (Keyword)))) else refused)) else refused)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{closed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (tokens : List (TextToken)) (count : Nat) (refused : Except (LexLeanBoot.PrimitiveScan.Rejection) (Sentence))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (LexLeanBoot.PrimitiveScan.Rejection) (Sentence)}.\par
+\noindent Definition: \texttt{(if both (wordIs (atoms) (tokens) (1) (lit ("the"))) (wordIs (atoms) (tokens) (2) (lit ("goal"))) then (let opening : List (Keyword) := (keywordAt (tokens) (0) (lit ("close")) :: (keywordAt (tokens) (1) (lit ("the")) :: (keywordAt (tokens) (2) (lit ("goal")) :: ([] : List (Keyword))))); (if wordIs (atoms) (tokens) (3) (lit ("with")) then (if both (islandIs (tokens) (4)) ((Nat.beq (count) (5))) then accepted (SentenceKind.CloseWith (tokenOr (tokens) (4))) ((LexLeanRuntime.append (opening) ((keywordAt (tokens) (3) (lit ("with")) :: ([] : List (Keyword)))) : List (Keyword))) else refused) else (if both (wordIs (atoms) (tokens) (3) (lit ("by"))) (both (wordIs (atoms) (tokens) (4) (lit ("reflexivity"))) ((Nat.beq (count) (5)))) then accepted (SentenceKind.CloseByReflexivity) ((LexLeanRuntime.append (opening) ((keywordAt (tokens) (3) (lit ("by")) :: (keywordAt (tokens) (4) (lit ("reflexivity")) :: ([] : List (Keyword))))) : List (Keyword))) else refused))) else refused)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{selected}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (tokens : List (TextToken)) (count : Nat) (refused : Except (LexLeanBoot.PrimitiveScan.Rejection) (Sentence))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (LexLeanBoot.PrimitiveScan.Rejection) (Sentence)}.\par
+\noindent Definition: \texttt{(if wordIs (atoms) (tokens) (1) (lit ("the")) then (let left : Bool := wordIs (atoms) (tokens) (2) (lit ("left")); (let right : Bool := (if left then false else wordIs (atoms) (tokens) (2) (lit ("right"))); (if both ((if left then true else right)) (both (wordIs (atoms) (tokens) (3) (lit ("alternative"))) ((Nat.beq (count) (4)))) then accepted ((if left then SentenceKind.SelectLeft else SentenceKind.SelectRight)) ((keywordAt (tokens) (0) (lit ("select")) :: (keywordAt (tokens) (1) (lit ("the")) :: (keywordAt (tokens) (2) ((if left then lit ("left") else lit ("right"))) :: (keywordAt (tokens) (3) (lit ("alternative")) :: ([] : List (Keyword))))))) else refused))) else refused)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{parseProofSentence}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(path : ByteArray) (atoms : List (LexLeanBoot.PrimitiveScan.Atom)) (tokens : List (TextToken))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Except (LexLeanBoot.PrimitiveScan.Rejection) (Sentence)}.\par
+\noindent Definition: \texttt{(let count : Nat := (LexLeanRuntime.length (tokens) : Nat); (let refused : Except (LexLeanBoot.PrimitiveScan.Rejection) (Sentence) := Except.error (failure (path) (atoms) (tokens)); (if wordIs (atoms) (tokens) (0) (lit ("Assume")) then assumed (atoms) (tokens) (count) (refused) else (if wordIs (atoms) (tokens) (0) (lit ("Apply")) then (if both (islandIs (tokens) (1)) ((Nat.beq (count) (2))) then accepted (SentenceKind.Apply (tokenOr (tokens) (1))) ((keywordAt (tokens) (0) (lit ("apply-verb")) :: ([] : List (Keyword)))) else refused) else (if wordIs (atoms) (tokens) (0) (lit ("Close")) then closed (atoms) (tokens) (count) (refused) else (if wordIs (atoms) (tokens) (0) (lit ("Use")) then (if both (islandIs (tokens) (1)) (both (wordIs (atoms) (tokens) (2) (lit ("as"))) (both (wordIs (atoms) (tokens) (3) (lit ("the"))) (both (wordIs (atoms) (tokens) (4) (lit ("witness"))) ((Nat.beq (count) (5)))))) then accepted (SentenceKind.Witness (tokenOr (tokens) (1))) ((keywordAt (tokens) (0) (lit ("use")) :: (keywordAt (tokens) (2) (lit ("as")) :: (keywordAt (tokens) (3) (lit ("the")) :: (keywordAt (tokens) (4) (lit ("witness")) :: ([] : List (Keyword))))))) else refused) else (if wordIs (atoms) (tokens) (0) (lit ("Select")) then selected (atoms) (tokens) (count) (refused) else refused)))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}
