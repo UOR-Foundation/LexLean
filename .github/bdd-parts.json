@@ -278,6 +278,39 @@
     "bootstrap-manifest-text": [
       "BS-34"
     ],
+    "bootstrap-grammar-proof": [
+      "BS-35"
+    ],
+    "bootstrap-semantic-print": [
+      "BS-36"
+    ],
+    "bootstrap-semantic-read": [
+      "BS-37"
+    ],
+    "bootstrap-core-json": [
+      "BS-38"
+    ],
+    "bootstrap-core-print": [
+      "BS-39"
+    ],
+    "bootstrap-core-read": [
+      "BS-40"
+    ],
+    "bootstrap-grammar-math": [
+      "BS-42"
+    ],
+    "bootstrap-proposition-terms": [
+      "BS-43"
+    ],
+    "bootstrap-lexicon-schema": [
+      "BS-50"
+    ],
+    "bootstrap-lse-scopes": [
+      "BS-51"
+    ],
+    "bootstrap-lse-types": [
+      "BS-52"
+    ],
     "bootstrap-ir-term": [
       "BS-65"
     ],

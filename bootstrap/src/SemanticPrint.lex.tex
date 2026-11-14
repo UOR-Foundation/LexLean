@@ -1,0 +1,1300 @@
+\begin{lexlean}{SemanticPrint}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\importmodule{SurfaceDoc}
+\importmodule{SurfaceGeneric}
+\importmodule{SurfaceLex}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Pos,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: PTerm, fields: []},
+    {name: PType, fields: []},
+    {name: PMember, fields: []},
+    {name: PParam, fields: []},
+    {name: PNode, fields: [LexLeanStd.Json::Json]},
+    {name: PAny, fields: []},
+    {name: PArgs, fields: []},
+    {name: PTypeArgs, fields: []},
+    {name: PFunParams, fields: []},
+    {name: PFnTypes, fields: []},
+    {name: PNamedArgs, fields: []},
+    {name: PAssigns, fields: []},
+    {name: PAssign, fields: []},
+    {name: PBranches, fields: []},
+    {name: PBranch, fields: []}
+  ]
+}
+
+inductive{
+  name: Kids,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: KSchema, fields: [(Option LexLeanStd.Json::Json)]},
+    {name: KTerm, fields: [Bytes]},
+    {name: KType, fields: []},
+    {name: KParam, fields: []},
+    {name: KAssign, fields: []},
+    {name: KBranch, fields: []},
+    {name: KNone, fields: []}
+  ]
+}
+
+structure{
+  name: Cell,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: key, type: Bytes},
+    {name: value, type: LexLeanStd.Json::Json},
+    {name: rest, type: LexLeanStd.Json::Json}
+  ]
+}
+
+structure{
+  name: Elem,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: value, type: LexLeanStd.Json::Json}, {name: rest, type: LexLeanStd.Json::Json}]
+}
+
+structure{
+  name: Look,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: rest, type: LexLeanStd.Json::Json},
+    {name: found, type: (Option LexLeanStd.Json::Json)}
+  ]
+}
+
+structure{
+  name: Tally,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: rest, type: LexLeanStd.Json::Json}, {name: count, type: Nat}]
+}
+
+structure{
+  name: Gather,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: rest, type: LexLeanStd.Json::Json},
+    {name: items, type: (List LexLeanStd.Json::Json)}
+  ]
+}
+
+structure{
+  name: Slash,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: cursor, type: Nat}, {name: after, type: Nat}]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: both,
+  parameters: [left : Bool, right : Bool],
+  result: Bool,
+  body: (if left then right else false),
+  executable: true
+}
+
+definition{
+  name: same,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal left right : Bool),
+  executable: true
+}
+
+definition{
+  name: listed,
+  parameters: [needle : Bytes, items : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun [needle] (found : Bool) (item : Bytes) => (if found then true else (prim equal item needle : Bool))) false items : Bool),
+  executable: true
+}
+
+definition{
+  name: nextMember,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: (Option Cell),
+  body: (match chain
+    | LexLeanStd.Json::Json.JMember key value rest => (ctor Option.some [Cell] (record Cell {key := key, value := value, rest := rest}))
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [Cell])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [Cell])),
+  executable: true
+}
+
+definition{
+  name: nextItem,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: (Option Elem),
+  body: (match chain
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.some [Elem] (record Elem {value := element, rest := rest}))
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [Elem])
+    | LexLeanStd.Json::Json.JMember key value rest => (ctor Option.none [Elem])),
+  executable: true
+}
+
+definition{
+  name: asObj,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match value
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.some [LexLeanStd.Json::Json] inner)
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JMember key member rest => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: asArr,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match value
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.some [LexLeanStd.Json::Json] inner)
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JMember key member rest => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: asStr,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: (Option Bytes),
+  body: (match value
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.some [Bytes] text)
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [Bytes])
+    | LexLeanStd.Json::Json.JMember key member rest => (ctor Option.none [Bytes])),
+  executable: true
+}
+
+definition{
+  name: asBool,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: (Option Bool),
+  body: (match value
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.some [Bool] flag)
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [Bool])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [Bool])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [Bool])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [Bool])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [Bool])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [Bool])
+    | LexLeanStd.Json::Json.JMember key member rest => (ctor Option.none [Bool])),
+  executable: true
+}
+
+definition{
+  name: lookStep,
+  parameters: [key : Bytes, state : Look],
+  result: (Option Look),
+  body: (match (project state found)
+    | Option.some hit => (ctor Option.none [Look])
+    | Option.none => (match (nextMember (project state rest))
+      | Option.some cell => (if (same (project cell key) key) then (ctor Option.some [Look] (record Look {rest := (ctor LexLeanStd.Json::Json.JNil), found := (ctor Option.some [LexLeanStd.Json::Json] (project cell value))})) else (ctor Option.some [Look] (record Look {rest := (project cell rest), found := (ctor Option.none [LexLeanStd.Json::Json])})))
+      | Option.none => (ctor Option.none [Look]))),
+  executable: true
+}
+
+definition{
+  name: memberIn,
+  parameters: [chain : LexLeanStd.Json::Json, key : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (project (first (prim iterate_until (fun [key] (state : Look) => (lookStep key state)) 1000000 (record Look {rest := chain, found := (ctor Option.none [LexLeanStd.Json::Json])}) : (Look * Bool))) found),
+  executable: true
+}
+
+definition{
+  name: getIn,
+  parameters: [value : LexLeanStd.Json::Json, key : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match (asObj value)
+    | Option.some chain => (memberIn chain key)
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: present,
+  parameters: [found : (Option LexLeanStd.Json::Json)],
+  result: Bool,
+  body: (match found | Option.some value => true | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: strOf,
+  parameters: [found : (Option LexLeanStd.Json::Json)],
+  result: (Option Bytes),
+  body: (match found
+    | Option.some value => (asStr value)
+    | Option.none => (ctor Option.none [Bytes])),
+  executable: true
+}
+
+definition{
+  name: arrOf,
+  parameters: [found : (Option LexLeanStd.Json::Json)],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match found
+    | Option.some value => (asArr value)
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: countStep,
+  parameters: [state : Tally],
+  result: (Option Tally),
+  body: (match (nextMember (project state rest))
+    | Option.some cell => (ctor Option.some [Tally] (record Tally {rest := (project cell rest), count := ((project state count) + 1)}))
+    | Option.none => (match (nextItem (project state rest))
+      | Option.some elem => (ctor Option.some [Tally] (record Tally {rest := (project elem rest), count := ((project state count) + 1)}))
+      | Option.none => (ctor Option.none [Tally]))),
+  executable: true
+}
+
+definition{
+  name: countOf,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: Nat,
+  body: (project (first (prim iterate_until (fun (state : Tally) => (countStep state)) 1000000 (record Tally {rest := chain, count := 0}) : (Tally * Bool))) count),
+  executable: true
+}
+
+definition{
+  name: gatherStep,
+  parameters: [state : Gather],
+  result: (Option Gather),
+  body: (match (nextItem (project state rest))
+    | Option.some elem => (ctor Option.some [Gather] (record Gather {rest := (project elem rest), items := (cons (project elem value) (project state items))}))
+    | Option.none => (ctor Option.none [Gather])),
+  executable: true
+}
+
+definition{
+  name: itemsOfChain,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: (List LexLeanStd.Json::Json),
+  body: (LexLeanStd.Order::reverseList [LexLeanStd.Json::Json] (project (first (prim iterate_until (fun (state : Gather) => (gatherStep state)) 1000000 (record Gather {rest := chain, items := (nil LexLeanStd.Json::Json)}) : (Gather * Bool))) items)),
+  executable: true
+}
+
+definition{
+  name: hasAll,
+  parameters: [chain : LexLeanStd.Json::Json, keys : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun [chain] (fine : Bool) (key : Bytes) => (if fine then (present (memberIn chain key)) else false)) true keys : Bool),
+  executable: true
+}
+
+definition{
+  name: exactly,
+  parameters: [chain : LexLeanStd.Json::Json, keys : (List Bytes)],
+  result: Bool,
+  body: (both ((countOf chain) =? (prim length keys : Nat)) (hasAll chain keys)),
+  executable: true
+}
+
+definition{
+  name: keysWith,
+  parameters: [chain : LexLeanStd.Json::Json, keys : (List Bytes)],
+  result: Bool,
+  body: (both ((countOf chain) =? ((prim length keys : Nat) + (if (present (memberIn chain (lit "type_arguments"))) then 1 else 0))) (hasAll chain keys)),
+  executable: true
+}
+
+definition{
+  name: k1,
+  parameters: [a : String],
+  result: (List Bytes),
+  body: (cons (lit "kind") (cons (lit a) (nil Bytes))),
+  executable: true
+}
+
+definition{
+  name: k2,
+  parameters: [a : String, b : String],
+  result: (List Bytes),
+  body: (cons (lit "kind") (cons (lit a) (cons (lit b) (nil Bytes)))),
+  executable: true
+}
+
+definition{
+  name: k3,
+  parameters: [a : String, b : String, c : String],
+  result: (List Bytes),
+  body: (cons (lit "kind") (cons (lit a) (cons (lit b) (cons (lit c) (nil Bytes))))),
+  executable: true
+}
+
+definition{
+  name: slashStep,
+  parameters: [text : Bytes, state : Slash],
+  result: (Option Slash),
+  body: (let position : Nat := (project state cursor); (match (LexLeanStd.Text::byteAt text position)
+    | Option.some byte => (ctor Option.some [Slash] (record Slash {cursor := (position + 1), after := (if ((prim to_nat byte : Nat) =? 47) then (position + 1) else (project state after))}))
+    | Option.none => (ctor Option.none [Slash]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: lastSegment,
+  parameters: [text : Bytes],
+  result: Bytes,
+  body: (let after : Nat := (project (first (prim iterate_until (fun [text] (state : Slash) => (slashStep text state)) ((prim length text : Nat) + 1) (record Slash {cursor := 0, after := 0}) : (Slash * Bool))) after); (LexLeanStd.Text::sliceOr text after (prim subtract (prim length text : Nat) after : Nat))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: defNamed,
+  parameters: [schema : LexLeanStd.Json::Json, name : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match (getIn schema (lit "$defs"))
+    | Option.some defs => (getIn defs name)
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: resolveStep,
+  parameters: [schema : LexLeanStd.Json::Json, node : LexLeanStd.Json::Json],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match (strOf (getIn node (lit "$ref")))
+    | Option.some reference => (defNamed schema (lastSegment reference))
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: resolve,
+  parameters: [schema : LexLeanStd.Json::Json, node : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (first (prim iterate_until (fun [schema] (current : LexLeanStd.Json::Json) => (resolveStep schema current)) 4096 node : (LexLeanStd.Json::Json * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: classify,
+  parameters: [schema : LexLeanStd.Json::Json, node : LexLeanStd.Json::Json],
+  result: Pos,
+  body: (match (strOf (getIn node (lit "$ref")))
+    | Option.some reference => (let segment : Bytes := (lastSegment reference); (if (same segment (lit "term")) then (ctor Pos.PTerm) else (if (same segment (lit "type")) then (ctor Pos.PType) else (if (same segment (lit "member")) then (ctor Pos.PMember) else (if (same segment (lit "parameter")) then (ctor Pos.PParam) else (ctor Pos.PNode (resolve schema node)))))))
+    | Option.none => (ctor Pos.PNode node)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: itemsOf,
+  parameters: [schema : LexLeanStd.Json::Json, node : LexLeanStd.Json::Json],
+  result: Pos,
+  body: (match (getIn (resolve schema node) (lit "items"))
+    | Option.some items => (classify schema items)
+    | Option.none => (ctor Pos.PAny)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: memberOf,
+  parameters: [
+    schema : LexLeanStd.Json::Json,
+    object : (Option LexLeanStd.Json::Json),
+    key : Bytes
+  ],
+  result: Pos,
+  body: (match object
+    | Option.some node => (match (getIn (resolve schema node) (lit "properties"))
+      | Option.some properties => (match (getIn properties key)
+        | Option.some member => (classify schema member)
+        | Option.none => (ctor Pos.PAny))
+      | Option.none => (ctor Pos.PAny))
+    | Option.none => (ctor Pos.PAny)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tagIs,
+  parameters: [alternative : LexLeanStd.Json::Json, kind : Bytes],
+  result: Bool,
+  body: (match (getIn alternative (lit "properties"))
+    | Option.some properties => (match (getIn properties (lit "kind"))
+      | Option.some tag => (if (match (strOf (getIn tag (lit "const")))
+        | Option.some constant => (same constant kind)
+        | Option.none => false) then true else (match (arrOf (getIn tag (lit "enum")))
+        | Option.some kinds => (prim list_fold (fun [kind] (found : Bool) (item : LexLeanStd.Json::Json) => (if found then true else (match (asStr item)
+          | Option.some text => (same text kind)
+          | Option.none => false))) false (itemsOfChain kinds) : Bool)
+        | Option.none => false))
+      | Option.none => false)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: alternativeOf,
+  parameters: [schema : LexLeanStd.Json::Json, union : LexLeanStd.Json::Json, kind : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match (arrOf (getIn (resolve schema union) (lit "oneOf")))
+    | Option.some alternatives => (prim list_fold (fun [kind, schema] (found : (Option LexLeanStd.Json::Json)) (item : LexLeanStd.Json::Json) => (match found
+      | Option.some hit => found
+      | Option.none => (let resolved : LexLeanStd.Json::Json := (resolve schema item); (if (tagIs resolved kind) then (ctor Option.some [LexLeanStd.Json::Json] resolved) else (ctor Option.none [LexLeanStd.Json::Json]))))) (ctor Option.none [LexLeanStd.Json::Json]) (itemsOfChain alternatives) : (Option LexLeanStd.Json::Json))
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isUnion,
+  parameters: [schema : LexLeanStd.Json::Json, node : LexLeanStd.Json::Json],
+  result: Bool,
+  body: (match (arrOf (getIn (resolve schema node) (lit "oneOf")))
+    | Option.some alternatives => (prim list_fold (fun [schema] (fine : Bool) (item : LexLeanStd.Json::Json) => (if fine then (match (getIn (resolve schema item) (lit "properties"))
+      | Option.some properties => (present (getIn properties (lit "kind")))
+      | Option.none => false) else false)) true (itemsOfChain alternatives) : Bool)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: unionOf,
+  parameters: [schema : LexLeanStd.Json::Json, pos : Pos],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match pos
+    | Pos.PTerm => (defNamed schema (lit "term"))
+    | Pos.PType => (defNamed schema (lit "type"))
+    | Pos.PNode node => (if (isUnion schema node) then (ctor Option.some [LexLeanStd.Json::Json] node) else (ctor Option.none [LexLeanStd.Json::Json]))
+    | Pos.PMember => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PParam => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PAny => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PArgs => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PTypeArgs => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PFunParams => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PFnTypes => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PNamedArgs => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PAssigns => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PAssign => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PBranches => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PBranch => (ctor Option.none [LexLeanStd.Json::Json])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: schemaOf,
+  parameters: [schema : LexLeanStd.Json::Json, chain : LexLeanStd.Json::Json, pos : Pos],
+  result: (Option LexLeanStd.Json::Json),
+  body: (let tag : (Option Bytes) := (SurfaceGeneric::kindTag chain); (match pos
+    | Pos.PTerm => (match tag
+      | Option.some kind => (match (unionOf schema pos)
+        | Option.some union => (alternativeOf schema union kind)
+        | Option.none => (ctor Option.none [LexLeanStd.Json::Json]))
+      | Option.none => (ctor Option.none [LexLeanStd.Json::Json]))
+    | Pos.PType => (match tag
+      | Option.some kind => (match (unionOf schema pos)
+        | Option.some union => (alternativeOf schema union kind)
+        | Option.none => (ctor Option.none [LexLeanStd.Json::Json]))
+      | Option.none => (ctor Option.none [LexLeanStd.Json::Json]))
+    | Pos.PNode node => (match tag
+      | Option.some kind => (if (isUnion schema node) then (alternativeOf schema node kind) else (ctor Option.some [LexLeanStd.Json::Json] node))
+      | Option.none => (ctor Option.some [LexLeanStd.Json::Json] node))
+    | Pos.PParam => (defNamed schema (lit "parameter"))
+    | Pos.PMember => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PAny => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PArgs => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PTypeArgs => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PFunParams => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PFnTypes => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PNamedArgs => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PAssigns => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PAssign => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PBranches => (ctor Option.none [LexLeanStd.Json::Json])
+    | Pos.PBranch => (ctor Option.none [LexLeanStd.Json::Json]))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: reservedTerm,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "let") (cons (lit "if") (cons (lit "match") (cons (lit "fun") (cons (lit "forall") (cons (lit "nil") (cons (lit "cons") (cons (lit "first") (cons (lit "second") (cons (lit "not") (cons (lit "apply") (cons (lit "ctor") (cons (lit "record") (cons (lit "project") (cons (lit "prim") (cons (lit "ref") (cons (lit "checked") (cons (lit "then") (cons (lit "else") (cons (lit "with") (cons (lit "true") (nil Bytes)))))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: plain,
+  parameters: [name : Bytes],
+  result: Bool,
+  body: (both (SurfaceGeneric::isBare name) (both (if (listed name (reservedTerm)) then false else true) (if (same name (lit "false")) then false else true))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nullarySpelling,
+  parameters: [kind : Bytes],
+  result: (Option Bytes),
+  body: (if (same kind (lit "bool")) then (ctor Option.some [Bytes] (lit "Bool")) else (if (same kind (lit "bytes")) then (ctor Option.some [Bytes] (lit "Bytes")) else (if (same kind (lit "int")) then (ctor Option.some [Bytes] (lit "Int")) else (if (same kind (lit "int8")) then (ctor Option.some [Bytes] (lit "Int8")) else (if (same kind (lit "int16")) then (ctor Option.some [Bytes] (lit "Int16")) else (if (same kind (lit "int32")) then (ctor Option.some [Bytes] (lit "Int32")) else (if (same kind (lit "int64")) then (ctor Option.some [Bytes] (lit "Int64")) else (if (same kind (lit "nat")) then (ctor Option.some [Bytes] (lit "Nat")) else (if (same kind (lit "ordering")) then (ctor Option.some [Bytes] (lit "Ordering")) else (if (same kind (lit "prop")) then (ctor Option.some [Bytes] (lit "Prop")) else (if (same kind (lit "string")) then (ctor Option.some [Bytes] (lit "String")) else (if (same kind (lit "type")) then (ctor Option.some [Bytes] (lit "Type")) else (if (same kind (lit "uint8")) then (ctor Option.some [Bytes] (lit "UInt8")) else (if (same kind (lit "uint16")) then (ctor Option.some [Bytes] (lit "UInt16")) else (if (same kind (lit "uint32")) then (ctor Option.some [Bytes] (lit "UInt32")) else (if (same kind (lit "uint64")) then (ctor Option.some [Bytes] (lit "UInt64")) else (if (same kind (lit "unit")) then (ctor Option.some [Bytes] (lit "Unit")) else (if (same kind (lit "contract_violation")) then (ctor Option.some [Bytes] (lit "ContractViolation")) else (if (same kind (lit "reasoning_failure")) then (ctor Option.some [Bytes] (lit "ReasoningFailure")) else (ctor Option.none [Bytes])))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: reservedType,
+  parameters: [word : Bytes],
+  result: Bool,
+  body: (listed word (cons (lit "Bool") (cons (lit "Bytes") (cons (lit "Int") (cons (lit "Int8") (cons (lit "Int16") (cons (lit "Int32") (cons (lit "Int64") (cons (lit "Nat") (cons (lit "Ordering") (cons (lit "Prop") (cons (lit "String") (cons (lit "Type") (cons (lit "UInt8") (cons (lit "UInt16") (cons (lit "UInt32") (cons (lit "UInt64") (cons (lit "Unit") (cons (lit "ContractViolation") (cons (lit "ReasoningFailure") (cons (lit "List") (cons (lit "Option") (cons (lit "Result") (cons (lit "Set") (cons (lit "Map") (cons (lit "Fn") (nil Bytes))))))))))))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: integerSpelling,
+  parameters: [representation : Bytes],
+  result: (Option Bytes),
+  body: (if (same representation (lit "int")) then (ctor Option.some [Bytes] (lit "Int")) else (if (same representation (lit "int8")) then (ctor Option.some [Bytes] (lit "Int8")) else (if (same representation (lit "int16")) then (ctor Option.some [Bytes] (lit "Int16")) else (if (same representation (lit "int32")) then (ctor Option.some [Bytes] (lit "Int32")) else (if (same representation (lit "int64")) then (ctor Option.some [Bytes] (lit "Int64")) else (if (same representation (lit "uint8")) then (ctor Option.some [Bytes] (lit "UInt8")) else (if (same representation (lit "uint16")) then (ctor Option.some [Bytes] (lit "UInt16")) else (if (same representation (lit "uint32")) then (ctor Option.some [Bytes] (lit "UInt32")) else (if (same representation (lit "uint64")) then (ctor Option.some [Bytes] (lit "UInt64")) else (ctor Option.none [Bytes])))))))))),
+  executable: true
+}
+
+definition{
+  name: allBytes,
+  parameters: [text : Bytes, from : Nat, hexadecimal : Bool],
+  result: Bool,
+  body: (let stop : Nat := (first (prim iterate_until (fun [hexadecimal, text] (position : Nat) => (match (LexLeanStd.Text::byteAt text position)
+    | Option.some byte => (let code : Nat := (prim to_nat byte : Nat); (if (if (both (48 <=? code) (code <=? 57)) then true else (both hexadecimal (both (97 <=? code) (code <=? 102)))) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat])))
+    | Option.none => (ctor Option.none [Nat]))) ((prim length text : Nat) + 1) from : (Nat * Bool))); (stop =? (prim length text : Nat))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: canonicalDigits,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let size : Nat := (prim length text : Nat); (both (0 <? size) (both (allBytes text 0 false) (if (size =? 1) then true else (if (LexLeanStd.Text::startsWith text (lit "0")) then false else true))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: canonicalInteger,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (if (LexLeanStd.Text::startsWith text (lit "-")) then (let digits : Bytes := (LexLeanStd.Text::sliceOr text 1 (prim subtract (prim length text : Nat) 1 : Nat)); (both (canonicalDigits digits) (if (same digits (lit "0")) then false else true))) else (canonicalDigits text)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: canonicalHex,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (both ((prim remainder (prim length text : Nat) 2 0 : Nat) =? 0) (allBytes text 0 true)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: memberText,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: (Option Bytes),
+  body: (match (asObj value)
+    | Option.some chain => (match (strOf (memberIn chain (lit "name")))
+      | Option.some name => (let module : (Option LexLeanStd.Json::Json) := (memberIn chain (lit "module")); (if (both ((countOf chain) =? (if (present module) then 2 else 1)) (SurfaceGeneric::isBare name)) then (match module
+        | Option.some written => (match (asStr written)
+          | Option.some prefix => (if (SurfaceGeneric::isBare prefix) then (ctor Option.some [Bytes] (cat (cat prefix (lit "::")) name)) else (ctor Option.none [Bytes]))
+          | Option.none => (ctor Option.none [Bytes]))
+        | Option.none => (ctor Option.some [Bytes] name)) else (ctor Option.none [Bytes])))
+      | Option.none => (ctor Option.none [Bytes]))
+    | Option.none => (ctor Option.none [Bytes])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: memberOk,
+  parameters: [found : (Option LexLeanStd.Json::Json)],
+  result: Bool,
+  body: (match found
+    | Option.some value => (match (memberText value)
+      | Option.some text => true
+      | Option.none => false)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: paramOk,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: Bool,
+  body: (match (asObj value)
+    | Option.some chain => (match (strOf (memberIn chain (lit "name")))
+      | Option.some name => (both (present (memberIn chain (lit "type"))) (both ((countOf chain) =? 2) (SurfaceGeneric::isBare name)))
+      | Option.none => false)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: paramFound,
+  parameters: [found : (Option LexLeanStd.Json::Json)],
+  result: Bool,
+  body: (match found | Option.some value => (paramOk value) | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isArray,
+  parameters: [chain : LexLeanStd.Json::Json, key : Bytes],
+  result: Bool,
+  body: (present (arrOf (memberIn chain key))),
+  executable: true
+}
+
+definition{
+  name: everyItem,
+  parameters: [
+    chain : LexLeanStd.Json::Json,
+    key : Bytes,
+    test : (Fn (LexLeanStd.Json::Json) Bool)
+  ],
+  result: Bool,
+  body: (match (arrOf (memberIn chain key))
+    | Option.some items => (prim list_fold (fun [test] (fine : Bool) (item : LexLeanStd.Json::Json) => (if fine then (apply test item) else false)) true (itemsOfChain items) : Bool)
+    | Option.none => false),
+  executable: true
+}
+
+definition{
+  name: bareString,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: Bool,
+  body: (match (asStr value)
+    | Option.some text => (SurfaceGeneric::isBare text)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: assignmentOk,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: Bool,
+  body: (match (asObj value)
+    | Option.some chain => (both (exactly chain (cons (lit "field") (cons (lit "value") (nil Bytes)))) (match (strOf (memberIn chain (lit "field")))
+      | Option.some field => (SurfaceGeneric::isBare field)
+      | Option.none => false))
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: branchOk,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: Bool,
+  body: (match (asObj value)
+    | Option.some chain => (both (exactly chain (cons (lit "constructor") (cons (lit "binders") (cons (lit "body") (nil Bytes))))) (both (memberOk (memberIn chain (lit "constructor"))) (everyItem chain (lit "binders") (fun (binder : LexLeanStd.Json::Json) => (match (asStr binder)
+      | Option.some name => (plain name)
+      | Option.none => false)))))
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: typeArgumentsOk,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: Bool,
+  body: (match (memberIn chain (lit "type_arguments"))
+    | Option.some written => (match (asArr written)
+      | Option.some items => (0 <? (countOf items))
+      | Option.none => false)
+    | Option.none => true),
+  executable: true
+}
+
+definition{
+  name: infixOperator,
+  parameters: [kind : Bytes],
+  result: (Option Bytes),
+  body: (if (same kind (lit "add")) then (ctor Option.some [Bytes] (lit "+")) else (if (same kind (lit "eq")) then (ctor Option.some [Bytes] (lit "=")) else (if (same kind (lit "le")) then (ctor Option.some [Bytes] (lit "<=")) else (if (same kind (lit "lt")) then (ctor Option.some [Bytes] (lit "<")) else (if (same kind (lit "beq")) then (ctor Option.some [Bytes] (lit "=?")) else (if (same kind (lit "ble")) then (ctor Option.some [Bytes] (lit "<=?")) else (if (same kind (lit "blt")) then (ctor Option.some [Bytes] (lit "<?")) else (if (same kind (lit "and")) then (ctor Option.some [Bytes] (lit "&&")) else (if (same kind (lit "or")) then (ctor Option.some [Bytes] (lit "||")) else (if (same kind (lit "prop_and")) then (ctor Option.some [Bytes] (lit "/\\")) else (if (same kind (lit "iff")) then (ctor Option.some [Bytes] (lit "<->")) else (if (same kind (lit "implies")) then (ctor Option.some [Bytes] (lit "->")) else (ctor Option.none [Bytes]))))))))))))),
+  executable: true
+}
+
+definition{
+  name: infixLeft,
+  parameters: [kind : Bytes],
+  result: Bytes,
+  body: (if (same kind (lit "implies")) then (lit "premise") else (lit "left")),
+  executable: true
+}
+
+definition{
+  name: infixRight,
+  parameters: [kind : Bytes],
+  result: Bytes,
+  body: (if (same kind (lit "implies")) then (lit "conclusion") else (lit "right")),
+  executable: true
+}
+
+definition{
+  name: termReadable,
+  parameters: [chain : LexLeanStd.Json::Json, kind : Bytes],
+  result: Bool,
+  body: (match (infixOperator kind)
+    | Option.some operator => (exactly chain (cons (lit "kind") (cons (infixLeft kind) (cons (infixRight kind) (nil Bytes)))))
+    | Option.none => (if (same kind (lit "var")) then (both (exactly chain (k1 "name")) (match (strOf (memberIn chain (lit "name")))
+      | Option.some name => (plain name)
+      | Option.none => false)) else (if (same kind (lit "nat")) then (both (exactly chain (k1 "value")) (match (strOf (memberIn chain (lit "value")))
+      | Option.some digits => (canonicalDigits digits)
+      | Option.none => false)) else (if (same kind (lit "bool")) then (both (exactly chain (k1 "value")) (match (memberIn chain (lit "value"))
+      | Option.some value => (match (asBool value)
+        | Option.some flag => true
+        | Option.none => false)
+      | Option.none => false)) else (if (same kind (lit "string")) then (both (exactly chain (k1 "value")) (match (strOf (memberIn chain (lit "value")))
+      | Option.some text => true
+      | Option.none => false)) else (if (same kind (lit "bytes")) then (both (exactly chain (k1 "hex")) (match (strOf (memberIn chain (lit "hex")))
+      | Option.some hex => (canonicalHex hex)
+      | Option.none => false)) else (if (same kind (lit "unit")) then (exactly chain (cons (lit "kind") (nil Bytes))) else (if (same kind (lit "integer")) then (both (exactly chain (k2 "representation" "value")) (match (strOf (memberIn chain (lit "value")))
+      | Option.some value => (match (strOf (memberIn chain (lit "representation")))
+        | Option.some representation => (both (present (match (integerSpelling representation)
+          | Option.some spelling => (ctor Option.some [LexLeanStd.Json::Json] (ctor LexLeanStd.Json::Json.JNil))
+          | Option.none => (ctor Option.none [LexLeanStd.Json::Json]))) (canonicalInteger value))
+        | Option.none => false)
+      | Option.none => false)) else (if (same kind (lit "pair")) then (exactly chain (k2 "left" "right")) else (if (if (same kind (lit "not")) then true else (if (same kind (lit "first")) then true else (same kind (lit "second")))) then (exactly chain (k1 "value")) else (if (same kind (lit "cons")) then (exactly chain (k2 "head" "tail")) else (if (same kind (lit "nil")) then (exactly chain (k1 "element")) else (if (same kind (lit "if")) then (exactly chain (k3 "condition" "then_value" "else_value")) else (if (same kind (lit "let")) then (both (exactly chain (k3 "binder" "value" "body")) (paramFound (memberIn chain (lit "binder")))) else (if (same kind (lit "forall")) then (both (exactly chain (k2 "binder" "body")) (paramFound (memberIn chain (lit "binder")))) else (if (same kind (lit "lambda")) then (both (exactly chain (k3 "parameters" "captures" "body")) (both (everyItem chain (lit "parameters") (fun (parameter : LexLeanStd.Json::Json) => (paramOk parameter))) (everyItem chain (lit "captures") (fun (capture : LexLeanStd.Json::Json) => (bareString capture))))) else (if (same kind (lit "apply")) then (both (exactly chain (k2 "function" "arguments")) (isArray chain (lit "arguments"))) else (if (same kind (lit "project")) then (both (exactly chain (k2 "value" "field")) (match (strOf (memberIn chain (lit "field")))
+      | Option.some field => (SurfaceGeneric::isBare field)
+      | Option.none => false)) else (if (same kind (lit "call")) then (both (keysWith chain (k2 "function" "arguments")) (both (match (memberIn chain (lit "function"))
+      | Option.some function => (match (memberText function)
+        | Option.some written => (match (strOf (getIn function (lit "name")))
+          | Option.some name => (plain name)
+          | Option.none => false)
+        | Option.none => false)
+      | Option.none => false) (both (typeArgumentsOk chain) (isArray chain (lit "arguments"))))) else (if (same kind (lit "constructor")) then (both (keysWith chain (k2 "constructor" "arguments")) (both (memberOk (memberIn chain (lit "constructor"))) (both (typeArgumentsOk chain) (isArray chain (lit "arguments"))))) else (if (same kind (lit "function_ref")) then (both (keysWith chain (k1 "function")) (both (memberOk (memberIn chain (lit "function"))) (typeArgumentsOk chain))) else (if (same kind (lit "record")) then (both (keysWith chain (k2 "type" "fields")) (both (memberOk (memberIn chain (lit "type"))) (both (typeArgumentsOk chain) (everyItem chain (lit "fields") (fun (assignment : LexLeanStd.Json::Json) => (assignmentOk assignment)))))) else (if (same kind (lit "primitive")) then (both (exactly chain (k3 "operation" "arguments" "result")) (both (match (strOf (memberIn chain (lit "operation")))
+      | Option.some operation => (SurfaceGeneric::isBare operation)
+      | Option.none => false) (isArray chain (lit "arguments")))) else (if (same kind (lit "checked_apply")) then (both (keysWith chain (k3 "model" "arguments" "checks")) (both (memberOk (memberIn chain (lit "model"))) (both (typeArgumentsOk chain) (both (isArray chain (lit "arguments")) (everyItem chain (lit "checks") (fun (check : LexLeanStd.Json::Json) => (bareString check))))))) else (if (same kind (lit "match")) then (both (exactly chain (k2 "scrutinee" "branches")) (everyItem chain (lit "branches") (fun (branch : LexLeanStd.Json::Json) => (branchOk branch)))) else false))))))))))))))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: typeReadable,
+  parameters: [chain : LexLeanStd.Json::Json, kind : Bytes],
+  result: Bool,
+  body: (match (nullarySpelling kind)
+    | Option.some spelling => (exactly chain (cons (lit "kind") (nil Bytes)))
+    | Option.none => (if (same kind (lit "parameter")) then (both (exactly chain (k1 "name")) (match (strOf (memberIn chain (lit "name")))
+      | Option.some name => (SurfaceGeneric::isBare name)
+      | Option.none => false)) else (if (if (same kind (lit "list")) then true else (same kind (lit "set"))) then (exactly chain (k1 "element")) else (if (same kind (lit "option")) then (exactly chain (k1 "value")) else (if (same kind (lit "result")) then (exactly chain (k2 "ok" "error")) else (if (same kind (lit "map")) then (exactly chain (k2 "key" "value")) else (if (same kind (lit "product")) then (exactly chain (k2 "left" "right")) else (if (same kind (lit "function")) then (both (exactly chain (k2 "parameters" "result")) (isArray chain (lit "parameters"))) else (if (same kind (lit "named")) then (both (exactly chain (k2 "member" "arguments")) (match (memberIn chain (lit "member"))
+      | Option.some member => (match (asObj member)
+        | Option.some inner => (match (strOf (memberIn inner (lit "name")))
+          | Option.some name => (both (if (both (if (present (memberIn inner (lit "module"))) then false else true) (reservedType name)) then false else true) (both (isArray chain (lit "arguments")) (present (match (memberText member)
+            | Option.some text => (ctor Option.some [LexLeanStd.Json::Json] (ctor LexLeanStd.Json::Json.JNil))
+            | Option.none => (ctor Option.none [LexLeanStd.Json::Json])))))
+          | Option.none => false)
+        | Option.none => false)
+      | Option.none => false)) else false))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: kindOf,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: (Option Bytes),
+  body: (strOf (memberIn chain (lit "kind"))),
+  executable: true
+}
+
+definition{
+  name: termKidPos,
+  parameters: [kind : Bytes, key : Bytes],
+  result: Pos,
+  body: (if (same key (lit "element")) then (ctor Pos.PType) else (if (same key (lit "binder")) then (ctor Pos.PParam) else (if (same key (lit "parameters")) then (ctor Pos.PFunParams) else (if (same key (lit "arguments")) then (ctor Pos.PArgs) else (if (same key (lit "type_arguments")) then (ctor Pos.PTypeArgs) else (if (same key (lit "fields")) then (ctor Pos.PAssigns) else (if (same key (lit "branches")) then (ctor Pos.PBranches) else (if (same key (lit "result")) then (ctor Pos.PType) else (if (if (same key (lit "type")) then true else (if (same key (lit "constructor")) then true else (same key (lit "model")))) then (ctor Pos.PMember) else (if (same key (lit "function")) then (if (same kind (lit "apply")) then (ctor Pos.PTerm) else (ctor Pos.PMember)) else (ctor Pos.PTerm))))))))))),
+  executable: true
+}
+
+definition{
+  name: typeKidPos,
+  parameters: [key : Bytes],
+  result: Pos,
+  body: (if (same key (lit "parameters")) then (ctor Pos.PFnTypes) else (if (same key (lit "arguments")) then (ctor Pos.PNamedArgs) else (if (same key (lit "member")) then (ctor Pos.PMember) else (if (same key (lit "name")) then (ctor Pos.PAny) else (ctor Pos.PType))))),
+  executable: true
+}
+
+definition{
+  name: kidPos,
+  parameters: [schema : LexLeanStd.Json::Json, kids : Kids, key : Bytes],
+  result: Pos,
+  body: (match kids
+    | Kids.KSchema object => (memberOf schema object key)
+    | Kids.KTerm kind => (termKidPos kind key)
+    | Kids.KType => (typeKidPos key)
+    | Kids.KParam => (if (same key (lit "type")) then (ctor Pos.PType) else (ctor Pos.PAny))
+    | Kids.KAssign => (if (same key (lit "value")) then (ctor Pos.PTerm) else (ctor Pos.PAny))
+    | Kids.KBranch => (if (same key (lit "body")) then (ctor Pos.PTerm) else (if (same key (lit "constructor")) then (ctor Pos.PMember) else (ctor Pos.PAny)))
+    | Kids.KNone => (ctor Pos.PAny)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: termReadableAt,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: Bool,
+  body: (match (kindOf chain)
+    | Option.some kind => (termReadable chain kind)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: typeReadableAt,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: Bool,
+  body: (match (kindOf chain)
+    | Option.some kind => (typeReadable chain kind)
+    | Option.none => false),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: kidsFor,
+  parameters: [schema : LexLeanStd.Json::Json, chain : LexLeanStd.Json::Json, pos : Pos],
+  result: Kids,
+  body: (match pos
+    | Pos.PTerm => (if (termReadableAt chain) then (ctor Kids.KTerm (match (kindOf chain)
+      | Option.some kind => kind
+      | Option.none => (lit ""))) else (ctor Kids.KSchema (schemaOf schema chain pos)))
+    | Pos.PType => (if (typeReadableAt chain) then (ctor Kids.KType) else (ctor Kids.KSchema (schemaOf schema chain pos)))
+    | Pos.PParam => (if (paramOk (ctor LexLeanStd.Json::Json.JObj chain)) then (ctor Kids.KParam) else (ctor Kids.KSchema (schemaOf schema chain pos)))
+    | Pos.PNode node => (ctor Kids.KSchema (schemaOf schema chain pos))
+    | Pos.PAssign => (ctor Kids.KAssign)
+    | Pos.PBranch => (ctor Kids.KBranch)
+    | Pos.PMember => (ctor Kids.KNone)
+    | Pos.PAny => (ctor Kids.KNone)
+    | Pos.PArgs => (ctor Kids.KNone)
+    | Pos.PTypeArgs => (ctor Kids.KNone)
+    | Pos.PFunParams => (ctor Kids.KNone)
+    | Pos.PFnTypes => (ctor Kids.KNone)
+    | Pos.PNamedArgs => (ctor Kids.KNone)
+    | Pos.PAssigns => (ctor Kids.KNone)
+    | Pos.PBranches => (ctor Kids.KNone)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: itemPosFor,
+  parameters: [schema : LexLeanStd.Json::Json, pos : Pos],
+  result: Pos,
+  body: (match pos
+    | Pos.PNode node => (itemsOf schema node)
+    | Pos.PArgs => (ctor Pos.PTerm)
+    | Pos.PTypeArgs => (ctor Pos.PType)
+    | Pos.PFunParams => (ctor Pos.PParam)
+    | Pos.PFnTypes => (ctor Pos.PType)
+    | Pos.PNamedArgs => (ctor Pos.PType)
+    | Pos.PAssigns => (ctor Pos.PAssign)
+    | Pos.PBranches => (ctor Pos.PBranch)
+    | Pos.PTerm => (ctor Pos.PAny)
+    | Pos.PType => (ctor Pos.PAny)
+    | Pos.PMember => (ctor Pos.PAny)
+    | Pos.PParam => (ctor Pos.PAny)
+    | Pos.PAny => (ctor Pos.PAny)
+    | Pos.PAssign => (ctor Pos.PAny)
+    | Pos.PBranch => (ctor Pos.PAny)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tx,
+  parameters: [text : Bytes],
+  result: SurfaceDoc::Doc,
+  body: (ctor SurfaceDoc::Doc.DText text),
+  executable: true
+}
+
+definition{
+  name: seq,
+  parameters: [parts : (List SurfaceDoc::Doc)],
+  result: SurfaceDoc::Doc,
+  body: (prim list_fold (fun (rest : SurfaceDoc::Doc) (part : SurfaceDoc::Doc) => (ctor SurfaceDoc::Doc.DSeq part rest)) (ctor SurfaceDoc::Doc.DNil) (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] parts) : SurfaceDoc::Doc),
+  executable: true
+}
+
+definition{
+  name: docOf,
+  parameters: [docs : (List (Bytes * SurfaceDoc::Doc)), key : Bytes],
+  result: SurfaceDoc::Doc,
+  body: (prim list_fold (fun [key] (found : SurfaceDoc::Doc) (entry : (Bytes * SurfaceDoc::Doc)) => (if (same (first entry) key) then (second entry) else found)) (ctor SurfaceDoc::Doc.DNil) docs : SurfaceDoc::Doc),
+  executable: true
+}
+
+definition{
+  name: interleave,
+  parameters: [docs : (List SurfaceDoc::Doc), separator : Bytes],
+  result: (List SurfaceDoc::Doc),
+  body: (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] (second (prim list_fold (fun [separator] (state : (Bool * (List SurfaceDoc::Doc))) (part : SurfaceDoc::Doc) => (if (first state) then (false, (cons part (second state))) else (false, (cons part (cons (tx separator) (second state)))))) (true, (nil SurfaceDoc::Doc)) docs : (Bool * (List SurfaceDoc::Doc))))),
+  executable: true
+}
+
+definition{
+  name: prefixed,
+  parameters: [docs : (List SurfaceDoc::Doc), before : Bytes, after : Bytes],
+  result: (List SurfaceDoc::Doc),
+  body: (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] (prim list_fold (fun [after, before] (out : (List SurfaceDoc::Doc)) (part : SurfaceDoc::Doc) => (cons (tx after) (cons part (cons (tx before) out)))) (nil SurfaceDoc::Doc) docs : (List SurfaceDoc::Doc))),
+  executable: true
+}
+
+definition{
+  name: arrayDoc,
+  parameters: [pos : Pos, docs : (List SurfaceDoc::Doc)],
+  result: SurfaceDoc::Doc,
+  body: (match pos
+    | Pos.PArgs => (seq (prefixed docs (lit " ") (lit "")))
+    | Pos.PNamedArgs => (seq (prefixed docs (lit " ") (lit "")))
+    | Pos.PTypeArgs => (seq (cons (tx (lit "[")) (prim append (interleave docs (lit ", ")) (cons (tx (lit "]")) (nil SurfaceDoc::Doc)) : (List SurfaceDoc::Doc))))
+    | Pos.PFunParams => (seq (prefixed docs (lit "(") (lit ") ")))
+    | Pos.PFnTypes => (seq (cons (tx (lit "(")) (prim append (interleave docs (lit " ")) (cons (tx (lit ")")) (nil SurfaceDoc::Doc)) : (List SurfaceDoc::Doc))))
+    | Pos.PAssigns => (seq (cons (tx (lit "{")) (prim append (interleave docs (lit ", ")) (cons (tx (lit "}")) (nil SurfaceDoc::Doc)) : (List SurfaceDoc::Doc))))
+    | Pos.PBranches => (seq (prim list_fold (fun (out : (List SurfaceDoc::Doc)) (part : SurfaceDoc::Doc) => (prim append out (cons (ctor SurfaceDoc::Doc.DLine) (cons part (nil SurfaceDoc::Doc))) : (List SurfaceDoc::Doc))) (nil SurfaceDoc::Doc) docs : (List SurfaceDoc::Doc)))
+    | Pos.PTerm => (SurfaceGeneric::delimitedRev (lit "[") (lit "]") (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] docs))
+    | Pos.PType => (SurfaceGeneric::delimitedRev (lit "[") (lit "]") (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] docs))
+    | Pos.PMember => (SurfaceGeneric::delimitedRev (lit "[") (lit "]") (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] docs))
+    | Pos.PParam => (SurfaceGeneric::delimitedRev (lit "[") (lit "]") (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] docs))
+    | Pos.PNode node => (SurfaceGeneric::delimitedRev (lit "[") (lit "]") (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] docs))
+    | Pos.PAny => (SurfaceGeneric::delimitedRev (lit "[") (lit "]") (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] docs))
+    | Pos.PAssign => (SurfaceGeneric::delimitedRev (lit "[") (lit "]") (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] docs))
+    | Pos.PBranch => (SurfaceGeneric::delimitedRev (lit "[") (lit "]") (LexLeanStd.Order::reverseList [SurfaceDoc::Doc] docs))),
+  executable: true
+}
+
+definition{
+  name: strAt,
+  parameters: [chain : LexLeanStd.Json::Json, key : Bytes],
+  result: Bytes,
+  body: (match (strOf (memberIn chain key)) | Option.some text => text | Option.none => (lit "")),
+  executable: true
+}
+
+definition{
+  name: memberAt,
+  parameters: [chain : LexLeanStd.Json::Json, key : Bytes],
+  result: Bytes,
+  body: (match (memberIn chain key)
+    | Option.some value => (match (memberText value)
+      | Option.some text => text
+      | Option.none => (lit ""))
+    | Option.none => (lit "")),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: namesAt,
+  parameters: [chain : LexLeanStd.Json::Json, key : Bytes],
+  result: (List SurfaceDoc::Doc),
+  body: (match (arrOf (memberIn chain key))
+    | Option.some items => (prim list_fold (fun (out : (List SurfaceDoc::Doc)) (item : LexLeanStd.Json::Json) => (prim append out (cons (tx (match (asStr item)
+      | Option.some text => text
+      | Option.none => (lit ""))) (nil SurfaceDoc::Doc)) : (List SurfaceDoc::Doc))) (nil SurfaceDoc::Doc) (itemsOfChain items) : (List SurfaceDoc::Doc))
+    | Option.none => (nil SurfaceDoc::Doc)),
+  executable: true
+}
+
+definition{
+  name: typeArgsPart,
+  parameters: [chain : LexLeanStd.Json::Json, docs : (List (Bytes * SurfaceDoc::Doc))],
+  result: (List SurfaceDoc::Doc),
+  body: (if (present (memberIn chain (lit "type_arguments"))) then (cons (tx (lit " ")) (cons (docOf docs (lit "type_arguments")) (nil SurfaceDoc::Doc))) else (nil SurfaceDoc::Doc)),
+  executable: true
+}
+
+definition{
+  name: headed,
+  parameters: [head : Bytes, parts : (List SurfaceDoc::Doc)],
+  result: SurfaceDoc::Doc,
+  body: (seq (cons (tx (cat (lit "(") head)) (prim append parts (cons (tx (lit ")")) (nil SurfaceDoc::Doc)) : (List SurfaceDoc::Doc)))),
+  executable: true
+}
+
+definition{
+  name: termDoc,
+  parameters: [
+    chain : LexLeanStd.Json::Json,
+    kind : Bytes,
+    docs : (List (Bytes * SurfaceDoc::Doc))
+  ],
+  result: SurfaceDoc::Doc,
+  body: (match (infixOperator kind)
+    | Option.some operator => (seq (cons (tx (lit "(")) (cons (docOf docs (infixLeft kind)) (cons (tx (cat (cat (lit " ") operator) (lit " "))) (cons (docOf docs (infixRight kind)) (cons (tx (lit ")")) (nil SurfaceDoc::Doc)))))))
+    | Option.none => (if (same kind (lit "var")) then (tx (strAt chain (lit "name"))) else (if (same kind (lit "nat")) then (tx (strAt chain (lit "value"))) else (if (same kind (lit "bool")) then (tx (match (memberIn chain (lit "value"))
+      | Option.some value => (match (asBool value)
+        | Option.some flag => (if flag then (lit "true") else (lit "false"))
+        | Option.none => (lit ""))
+      | Option.none => (lit ""))) else (if (same kind (lit "string")) then (tx (SurfaceLex::quoteText (strAt chain (lit "value")))) else (if (same kind (lit "bytes")) then (tx (cat (lit "0x") (strAt chain (lit "hex")))) else (if (same kind (lit "unit")) then (tx (lit "()")) else (if (same kind (lit "integer")) then (tx (cat (cat (cat (cat (lit "(") (strAt chain (lit "value"))) (lit " : ")) (match (integerSpelling (strAt chain (lit "representation")))
+      | Option.some spelling => spelling
+      | Option.none => (lit ""))) (lit ")"))) else (if (same kind (lit "pair")) then (seq (cons (tx (lit "(")) (cons (docOf docs (lit "left")) (cons (tx (lit ", ")) (cons (docOf docs (lit "right")) (cons (tx (lit ")")) (nil SurfaceDoc::Doc))))))) else (if (if (same kind (lit "not")) then true else (if (same kind (lit "first")) then true else (same kind (lit "second")))) then (headed kind (cons (tx (lit " ")) (cons (docOf docs (lit "value")) (nil SurfaceDoc::Doc)))) else (if (same kind (lit "cons")) then (headed kind (cons (tx (lit " ")) (cons (docOf docs (lit "head")) (cons (tx (lit " ")) (cons (docOf docs (lit "tail")) (nil SurfaceDoc::Doc)))))) else (if (same kind (lit "nil")) then (headed kind (cons (tx (lit " ")) (cons (docOf docs (lit "element")) (nil SurfaceDoc::Doc)))) else (if (same kind (lit "if")) then (seq (cons (tx (lit "(if ")) (cons (docOf docs (lit "condition")) (cons (tx (lit " then ")) (cons (docOf docs (lit "then_value")) (cons (tx (lit " else ")) (cons (docOf docs (lit "else_value")) (cons (tx (lit ")")) (nil SurfaceDoc::Doc))))))))) else (if (same kind (lit "let")) then (seq (cons (tx (lit "(let ")) (cons (docOf docs (lit "binder")) (cons (tx (lit " := ")) (cons (docOf docs (lit "value")) (cons (tx (lit "; ")) (cons (docOf docs (lit "body")) (cons (tx (lit ")")) (nil SurfaceDoc::Doc))))))))) else (if (same kind (lit "forall")) then (seq (cons (tx (lit "(forall (")) (cons (docOf docs (lit "binder")) (cons (tx (lit "), ")) (cons (docOf docs (lit "body")) (cons (tx (lit ")")) (nil SurfaceDoc::Doc))))))) else (if (same kind (lit "lambda")) then (let captures : (List SurfaceDoc::Doc) := (namesAt chain (lit "captures")); (seq (cons (tx (lit "(fun ")) (prim append (if (0 <? (prim length captures : Nat)) then (cons (tx (lit "[")) (prim append (interleave captures (lit ", ")) (cons (tx (lit "]")) (cons (tx (lit " ")) (nil SurfaceDoc::Doc))) : (List SurfaceDoc::Doc))) else (nil SurfaceDoc::Doc)) (cons (docOf docs (lit "parameters")) (cons (tx (lit "=> ")) (cons (docOf docs (lit "body")) (cons (tx (lit ")")) (nil SurfaceDoc::Doc))))) : (List SurfaceDoc::Doc))))) else (if (same kind (lit "apply")) then (headed (lit "apply") (cons (tx (lit " ")) (cons (docOf docs (lit "function")) (cons (docOf docs (lit "arguments")) (nil SurfaceDoc::Doc))))) else (if (same kind (lit "project")) then (headed (lit "project") (cons (tx (lit " ")) (cons (docOf docs (lit "value")) (cons (tx (cat (lit " ") (strAt chain (lit "field")))) (nil SurfaceDoc::Doc))))) else (if (same kind (lit "call")) then (seq (cons (tx (cat (lit "(") (memberAt chain (lit "function")))) (prim append (typeArgsPart chain docs) (cons (docOf docs (lit "arguments")) (cons (tx (lit ")")) (nil SurfaceDoc::Doc))) : (List SurfaceDoc::Doc)))) else (if (same kind (lit "constructor")) then (headed (lit "ctor") (cons (tx (cat (lit " ") (memberAt chain (lit "constructor")))) (prim append (typeArgsPart chain docs) (cons (docOf docs (lit "arguments")) (nil SurfaceDoc::Doc)) : (List SurfaceDoc::Doc)))) else (if (same kind (lit "function_ref")) then (headed (lit "ref") (cons (tx (cat (lit " ") (memberAt chain (lit "function")))) (typeArgsPart chain docs))) else (if (same kind (lit "record")) then (headed (lit "record") (cons (tx (cat (lit " ") (memberAt chain (lit "type")))) (prim append (typeArgsPart chain docs) (cons (tx (lit " ")) (cons (docOf docs (lit "fields")) (nil SurfaceDoc::Doc))) : (List SurfaceDoc::Doc)))) else (if (same kind (lit "primitive")) then (seq (cons (tx (cat (lit "(prim ") (strAt chain (lit "operation")))) (cons (docOf docs (lit "arguments")) (cons (tx (lit " : ")) (cons (docOf docs (lit "result")) (cons (tx (lit ")")) (nil SurfaceDoc::Doc))))))) else (if (same kind (lit "checked_apply")) then (headed (lit "checked") (cons (tx (cat (lit " ") (memberAt chain (lit "model")))) (prim append (typeArgsPart chain docs) (cons (docOf docs (lit "arguments")) (cons (tx (lit " with ")) (cons (tx (lit "[")) (prim append (interleave (namesAt chain (lit "checks")) (lit ", ")) (cons (tx (lit "]")) (nil SurfaceDoc::Doc)) : (List SurfaceDoc::Doc))))) : (List SurfaceDoc::Doc)))) else (ctor SurfaceDoc::Doc.DGroup (ctor SurfaceDoc::Doc.DNest 2 (seq (cons (tx (lit "(match ")) (cons (docOf docs (lit "scrutinee")) (cons (docOf docs (lit "branches")) (cons (tx (lit ")")) (nil SurfaceDoc::Doc)))))))))))))))))))))))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: typeDoc,
+  parameters: [
+    chain : LexLeanStd.Json::Json,
+    kind : Bytes,
+    docs : (List (Bytes * SurfaceDoc::Doc))
+  ],
+  result: SurfaceDoc::Doc,
+  body: (match (nullarySpelling kind)
+    | Option.some spelling => (tx spelling)
+    | Option.none => (if (same kind (lit "parameter")) then (tx (cat (lit "'") (strAt chain (lit "name")))) else (if (same kind (lit "list")) then (headed (lit "List") (cons (tx (lit " ")) (cons (docOf docs (lit "element")) (nil SurfaceDoc::Doc)))) else (if (same kind (lit "set")) then (headed (lit "Set") (cons (tx (lit " ")) (cons (docOf docs (lit "element")) (nil SurfaceDoc::Doc)))) else (if (same kind (lit "option")) then (headed (lit "Option") (cons (tx (lit " ")) (cons (docOf docs (lit "value")) (nil SurfaceDoc::Doc)))) else (if (same kind (lit "result")) then (headed (lit "Result") (cons (tx (lit " ")) (cons (docOf docs (lit "ok")) (cons (tx (lit " ")) (cons (docOf docs (lit "error")) (nil SurfaceDoc::Doc)))))) else (if (same kind (lit "map")) then (headed (lit "Map") (cons (tx (lit " ")) (cons (docOf docs (lit "key")) (cons (tx (lit " ")) (cons (docOf docs (lit "value")) (nil SurfaceDoc::Doc)))))) else (if (same kind (lit "product")) then (seq (cons (tx (lit "(")) (cons (docOf docs (lit "left")) (cons (tx (lit " * ")) (cons (docOf docs (lit "right")) (cons (tx (lit ")")) (nil SurfaceDoc::Doc))))))) else (if (same kind (lit "function")) then (headed (lit "Fn") (cons (tx (lit " ")) (cons (docOf docs (lit "parameters")) (cons (tx (lit " ")) (cons (docOf docs (lit "result")) (nil SurfaceDoc::Doc)))))) else (let head : Bytes := (memberAt chain (lit "member")); (match (arrOf (memberIn chain (lit "arguments")))
+      | Option.some arguments => (if ((countOf arguments) =? 0) then (tx head) else (seq (cons (tx (cat (lit "(") head)) (cons (docOf docs (lit "arguments")) (cons (tx (lit ")")) (nil SurfaceDoc::Doc))))))
+      | Option.none => (tx head)))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: branchDoc,
+  parameters: [chain : LexLeanStd.Json::Json, docs : (List (Bytes * SurfaceDoc::Doc))],
+  result: SurfaceDoc::Doc,
+  body: (seq (cons (tx (cat (lit "| ") (memberAt chain (lit "constructor")))) (prim append (prefixed (namesAt chain (lit "binders")) (lit " ") (lit "")) (cons (tx (lit " => ")) (cons (docOf docs (lit "body")) (nil SurfaceDoc::Doc))) : (List SurfaceDoc::Doc)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: taggedDoc,
+  parameters: [chain : LexLeanStd.Json::Json, docs : (List (Bytes * SurfaceDoc::Doc))],
+  result: SurfaceDoc::Doc,
+  body: (SurfaceGeneric::objectDoc (SurfaceGeneric::kindTag chain) docs),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: objectAt,
+  parameters: [chain : LexLeanStd.Json::Json, pos : Pos, docs : (List (Bytes * SurfaceDoc::Doc))],
+  result: SurfaceDoc::Doc,
+  body: (match pos
+    | Pos.PTerm => (if (termReadableAt chain) then (termDoc chain (match (kindOf chain)
+      | Option.some kind => kind
+      | Option.none => (lit "")) docs) else (taggedDoc chain docs))
+    | Pos.PType => (if (typeReadableAt chain) then (typeDoc chain (match (kindOf chain)
+      | Option.some kind => kind
+      | Option.none => (lit "")) docs) else (taggedDoc chain docs))
+    | Pos.PMember => (match (memberText (ctor LexLeanStd.Json::Json.JObj chain))
+      | Option.some text => (tx text)
+      | Option.none => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JObj chain)))
+    | Pos.PParam => (if (paramOk (ctor LexLeanStd.Json::Json.JObj chain)) then (seq (cons (tx (cat (strAt chain (lit "name")) (lit " : "))) (cons (docOf docs (lit "type")) (nil SurfaceDoc::Doc)))) else (taggedDoc chain docs))
+    | Pos.PNode node => (taggedDoc chain docs)
+    | Pos.PAssign => (seq (cons (tx (cat (strAt chain (lit "field")) (lit " := "))) (cons (docOf docs (lit "value")) (nil SurfaceDoc::Doc))))
+    | Pos.PBranch => (branchDoc chain docs)
+    | Pos.PAny => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JObj chain))
+    | Pos.PArgs => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JObj chain))
+    | Pos.PTypeArgs => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JObj chain))
+    | Pos.PFunParams => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JObj chain))
+    | Pos.PFnTypes => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JObj chain))
+    | Pos.PNamedArgs => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JObj chain))
+    | Pos.PAssigns => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JObj chain))
+    | Pos.PBranches => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JObj chain))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: noKids,
+  parameters: [kids : Kids],
+  result: Bool,
+  body: (match kids
+    | Kids.KNone => true
+    | Kids.KSchema object => false
+    | Kids.KTerm kind => false
+    | Kids.KType => false
+    | Kids.KParam => false
+    | Kids.KAssign => false
+    | Kids.KBranch => false),
+  executable: true
+}
+
+definition{
+  name: docAt,
+  parameters: [schema : LexLeanStd.Json::Json, value : LexLeanStd.Json::Json, pos : Pos],
+  result: SurfaceDoc::Doc,
+  body: (match value
+    | LexLeanStd.Json::Json.JObj members => (objectAt members pos (docMembersAt schema members (kidsFor schema members pos)))
+    | LexLeanStd.Json::Json.JArr items => (arrayDoc pos (docItemsAt schema items (itemPosFor schema pos)))
+    | LexLeanStd.Json::Json.JBool flag => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JBool flag))
+    | LexLeanStd.Json::Json.JInt negative magnitude => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JInt negative magnitude))
+    | LexLeanStd.Json::Json.JStr text => (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JStr text))
+    | LexLeanStd.Json::Json.JNil => (ctor SurfaceDoc::Doc.DNil)
+    | LexLeanStd.Json::Json.JItem element rest => (ctor SurfaceDoc::Doc.DNil)
+    | LexLeanStd.Json::Json.JMember key inner rest => (ctor SurfaceDoc::Doc.DNil)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: Print,
+  recursive_argument: value
+}
+
+definition{
+  name: docItemsAt,
+  parameters: [schema : LexLeanStd.Json::Json, items : LexLeanStd.Json::Json, pos : Pos],
+  result: (List SurfaceDoc::Doc),
+  body: (match items
+    | LexLeanStd.Json::Json.JItem element rest => (cons (docAt schema element pos) (docItemsAt schema rest pos))
+    | LexLeanStd.Json::Json.JBool flag => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JInt negative magnitude => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JStr text => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JArr inner => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JObj inner => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JNil => (nil SurfaceDoc::Doc)
+    | LexLeanStd.Json::Json.JMember key inner rest => (nil SurfaceDoc::Doc)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: Print,
+  recursive_argument: items
+}
+
+definition{
+  name: docMembersAt,
+  parameters: [schema : LexLeanStd.Json::Json, members : LexLeanStd.Json::Json, kids : Kids],
+  result: (List (Bytes * SurfaceDoc::Doc)),
+  body: (match members
+    | LexLeanStd.Json::Json.JMember key inner rest => (if (noKids kids) then (nil (Bytes * SurfaceDoc::Doc)) else (cons (key, (docAt schema inner (kidPos schema kids key))) (docMembersAt schema rest kids)))
+    | LexLeanStd.Json::Json.JBool flag => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JInt negative magnitude => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JStr text => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JArr inner => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JObj inner => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JNil => (nil (Bytes * SurfaceDoc::Doc))
+    | LexLeanStd.Json::Json.JItem element rest => (nil (Bytes * SurfaceDoc::Doc))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: Print,
+  recursive_argument: members
+}
+
+definition{
+  name: render,
+  parameters: [node : SurfaceDoc::Doc],
+  result: Bytes,
+  body: (SurfaceDoc::renderDoc node 100 (SurfaceGeneric::docNodes node)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: positionOf,
+  parameters: [schema : LexLeanStd.Json::Json, position : Nat],
+  result: Pos,
+  body: (if (position =? 0) then (match (getIn schema (lit "properties"))
+    | Option.some properties => (match (getIn properties (lit "declarations"))
+      | Option.some declarations => (itemsOf schema declarations)
+      | Option.none => (ctor Pos.PAny))
+    | Option.none => (ctor Pos.PAny)) else (if (position =? 1) then (ctor Pos.PTerm) else (if (position =? 2) then (ctor Pos.PType) else (match (defNamed schema (lit "proof"))
+    | Option.some proof => (ctor Pos.PNode proof)
+    | Option.none => (ctor Pos.PAny))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: printAt,
+  parameters: [schema : LexLeanStd.Json::Json, value : LexLeanStd.Json::Json, position : Nat],
+  result: Bytes,
+  body: (render (docAt schema value (positionOf schema position))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: refusal,
+  parameters: [message : Bytes],
+  result: (Result Bytes SurfaceLex::Failure),
+  body: (ctor Result.error [Bytes, SurfaceLex::Failure] (record SurfaceLex::Failure {offset := 0, message := message})),
+  executable: true
+}
+
+definition{
+  name: printSemanticModule,
+  parameters: [schema : LexLeanStd.Json::Json, given : LexLeanStd.Json::Json],
+  result: (Result Bytes SurfaceLex::Failure),
+  body: (match (asObj given)
+    | Option.some chain => (match (arrOf (memberIn chain (lit "declarations")))
+      | Option.some declarations => (if (both ((countOf chain) =? 2) (match (strOf (memberIn chain (lit "spec")))
+        | Option.some spec => true
+        | Option.none => false)) then (let place : Pos := (positionOf schema 0); (ctor Result.ok [Bytes, SurfaceLex::Failure] (second (prim list_fold (fun [place, schema] (state : (Bool * Bytes)) (declaration : LexLeanStd.Json::Json) => (false, (cat (if (first state) then (second state) else (cat (second state) (lit "\n"))) (cat (render (docAt schema declaration place)) (lit "\n"))))) (true, (lit "")) (itemsOfChain declarations) : (Bool * Bytes))))) else (refusal (lit "a module has exactly a `spec` and its `declarations`")))
+      | Option.none => (refusal (lit "a module has a `declarations` array")))
+    | Option.none => (refusal (lit "a module is an object"))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}
