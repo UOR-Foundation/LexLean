@@ -51,6 +51,7 @@ mod surface_generic;
 mod surface_lex;
 mod surface_module;
 mod surface_tooling;
+mod toml_read;
 mod tooling_latex;
 
 /// The module the first component lives in.
@@ -2580,6 +2581,7 @@ fn case(id: &str) {
         "BS-50" => lexicon_schema::case(),
         "BS-51" => lse_scopes::case(),
         "BS-52" => lse_types::case(),
+        "BS-53" => toml_read::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

@@ -11674,6 +11674,41 @@ case then stops at the stack-bound step, `bootstrap/check_signature is no
 package of the committed exports`, as each bootstrap member does before its
 regeneration, which produces the two packages and measures their stack bounds.
 
+### a reader for the compiler's own TOML subset is source (BS-53)
+
+`BS-53` holds the one production root of `LexLeanBoot.TomlRead`
+(`bootstrap/src/TomlRead.lex.tex`) to the `toml` crate: the sections and rows a TOML text holds,
+or none when the text lies outside the subset the compiler's own committed files use (a lexicon
+manifest, an entry file, `language/bootstrap.toml`, or `language/renderer-tokens.toml`). The
+reader is a line-oriented scan over `LexLeanStd.Text::lines` with no recursion: each line extends
+the row it is building (a basic string decoding only the escapes `\\`, `\"`, `\n`, `\t`, `\r`, a
+boolean, a canonical decimal, or a string array that may span lines), closes it at a `[table]` or
+`[[array of table]]` header or at the end of the text, and a repeated `[[name]]` header appends a
+further row to the one section it already opened; duplicate keys in one row and a redefined table
+are refused, as the `toml` crate refuses them. Anything the reader does not fully understand (an
+unsupported escape, a literal or multi-line string, a float, a date, an inline table, or a dotted
+key) is refused too, even though the `toml` crate accepts it. None of the reader admits
+`recursion`.
+
+The case holds the root to the `toml` crate on hand-built documents that reach every scalar type,
+every supported escape, single-line and multi-line arrays with and without a trailing comma, `#`
+comments, a `[table]` header, a repeated `[[array-of-table]]` header, one dotted
+`[[table.array]]` header, CRLF line endings, and the boundary of the subset; on every TOML
+document the compiler's own lexicon manifests, entry files, `language/bootstrap.toml`, and
+`language/renderer-tokens.toml` commit, each converted from the `toml` crate's own read of the
+same bytes, with file order recovered from the text since `toml::Table` does not keep it; and on
+seeded documents that mix flat in-subset fields with a boundary violation. Each of the 8 planted
+defects names the one vector that catches it, and the case asserts that the site of each plant
+occurs once. The row's statement carries no counts.
+
+The case was first compiled and run on the normative host over `release/v0.4` at `f8854bf7db`
+(`cargo test -p repo-conformance --test conformance -- conformance_bs_53`). Its corpus is 37
+named vectors and 826 committed TOML documents, and 200 and 1,500 seeded documents. The evaluator
+agrees with the `toml` crate on 1,063 runs, the rendered package under the pinned rustc on 2,363
+runs, and each of the 8 planted defects is detected by its own vector. The case then stops at the
+stack-bound step, `bootstrap/toml_parse is no package of the committed exports`, as each
+bootstrap member does before its regeneration, which produces the package.
+
 ### the lexer of the authoring notation is source (BS-22)
 
 `BS-22` holds the two production roots of `LexLeanBoot.SurfaceLex`

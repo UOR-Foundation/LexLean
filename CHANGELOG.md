@@ -17,6 +17,9 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The lexicon closure's reader for the TOML subset the compiler's own committed files use
+  (SPEC.md §13.1, §13.2, §12.3) is source: `BS-53`, the module `TomlRead`, held to the `toml`
+  crate on the compiler's own lexicon manifests, entry files, and language bootstrap data.
 - Releases and regeneration need no hand steps (SPEC.md §9.4). `regenerate.yml`
   gains the job `deliver`: when the regenerated commit heads one open pull
   request of this repository, the patch is committed on it, pushed to the pull

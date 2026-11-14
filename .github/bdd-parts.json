@@ -286,6 +286,9 @@
     ],
     "bootstrap-lse-types": [
       "BS-52"
+    ],
+    "bootstrap-toml-read": [
+      "BS-53"
     ]
   },
   "targets": {

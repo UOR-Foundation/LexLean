@@ -1,0 +1,359 @@
+\begin{lexlean}{TomlRead}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Value,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: VStr, fields: [Bytes]},
+    {name: VBool, fields: [Bool]},
+    {name: VNat, fields: [Nat]},
+    {name: VArr, fields: [(List Bytes)]}
+  ]
+}
+
+structure{
+  name: Section,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: path, type: (List Bytes)},
+    {name: isArray, type: Bool},
+    {name: rows, type: (List (List (Bytes * Value)))}
+  ]
+}
+
+structure{
+  name: RawClose,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: path, type: (List Bytes)},
+    {name: isArray, type: Bool},
+    {name: row, type: (List (Bytes * Value))}
+  ]
+}
+
+structure{
+  name: Ps,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: out, type: Bytes},
+    {name: mode, type: Nat},
+    {name: closed, type: Bool}
+  ]
+}
+
+structure{
+  name: Es,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: pos, type: Nat},
+    {name: out, type: (List Bytes)},
+    {name: status, type: Nat}
+  ]
+}
+
+structure{
+  name: Pst,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: rawClosures, type: (List RawClose)},
+    {name: curPath, type: (List Bytes)},
+    {name: curArray, type: Bool},
+    {name: curRow, type: (List (Bytes * Value))},
+    {name: pendingKey, type: (Option Bytes)},
+    {name: pendingVals, type: (List Bytes)},
+    {name: failed, type: Bool}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: skipWs,
+  parameters: [line : Bytes, position : Nat],
+  result: Nat,
+  body: (let total : Nat := (prim length line : Nat); (let rest : Nat := (prim subtract total position : Nat); (position + (LexLeanStd.Text::trimStart (LexLeanStd.Text::sliceOr line position rest) rest)))),
+  executable: true
+}
+
+definition{
+  name: psStep,
+  parameters: [line : Bytes, n : Nat, st : Ps],
+  result: (Option Ps),
+  body: (if (project st closed) then (ctor Option.none [Ps]) else (let position : Nat := (project st pos); (if (position <? n) then (let mode : Nat := (project st mode); (if (mode =? 1) then (match (LexLeanStd.Text::byteAt line position)
+    | Option.some b => (if (if (prim equal b (34 : UInt8) : Bool) then true else (if (prim equal b (92 : UInt8) : Bool) then true else (if (prim equal b (110 : UInt8) : Bool) then true else (if (prim equal b (116 : UInt8) : Bool) then true else (prim equal b (114 : UInt8) : Bool))))) then (ctor Option.some [Ps] (record Ps {pos := (position + 1), out := (cat (project st out) (if (prim equal b (34 : UInt8) : Bool) then 0x22 else (if (prim equal b (92 : UInt8) : Bool) then 0x5c else (if (prim equal b (110 : UInt8) : Bool) then 0x0a else (if (prim equal b (116 : UInt8) : Bool) then 0x09 else 0x0d))))), mode := 0, closed := false})) else (ctor Option.none [Ps]))
+    | Option.none => (ctor Option.none [Ps])) else (match (LexLeanStd.Text::byteAt line position)
+    | Option.some b => (if (prim equal b (34 : UInt8) : Bool) then (ctor Option.some [Ps] (record Ps {pos := (position + 1), out := (project st out), mode := 0, closed := true})) else (if (prim equal b (92 : UInt8) : Bool) then (ctor Option.some [Ps] (record Ps {pos := (position + 1), out := (project st out), mode := 1, closed := false})) else (ctor Option.some [Ps] (record Ps {pos := (position + 1), out := (cat (project st out) (LexLeanStd.Text::sliceOr line position 1)), mode := 0, closed := false}))))
+    | Option.none => (ctor Option.none [Ps])))) else (ctor Option.none [Ps])))),
+  executable: true
+}
+
+definition{
+  name: parseString,
+  parameters: [line : Bytes, start : Nat],
+  result: (Option (Bytes * Nat)),
+  body: (match (LexLeanStd.Text::byteAt line start)
+    | Option.some b => (if (prim equal b (34 : UInt8) : Bool) then (let n : Nat := (prim length line : Nat); (let final : Ps := (first (prim iterate_until (fun [line, n] (st : Ps) => (psStep line n st)) (n + 2) (record Ps {pos := (start + 1), out := 0x, mode := 0, closed := false}) : (Ps * Bool))); (if (project final closed) then (ctor Option.some [(Bytes * Nat)] ((project final out), (project final pos))) else (ctor Option.none [(Bytes * Nat)])))) else (ctor Option.none [(Bytes * Nat)]))
+    | Option.none => (ctor Option.none [(Bytes * Nat)])),
+  executable: true
+}
+
+definition{
+  name: esStep,
+  parameters: [line : Bytes, n : Nat, st : Es],
+  result: (Option Es),
+  body: (if (prim equal (project st status) 0 : Bool) then (let position : Nat := (skipWs line (project st pos)); (if (position <? n) then (match (LexLeanStd.Text::byteAt line position)
+    | Option.some b => (if (prim equal b (34 : UInt8) : Bool) then (match (parseString line position)
+        | Option.some pair => (let afterPos : Nat := (skipWs line (second pair)); (if (afterPos <? n) then (match (LexLeanStd.Text::byteAt line afterPos)
+            | Option.some cb => (if (prim equal cb (44 : UInt8) : Bool) then (ctor Option.some [Es] (record Es {pos := (skipWs line (afterPos + 1)), out := (cons (first pair) (project st out)), status := 0})) else (ctor Option.some [Es] (record Es {pos := afterPos, out := (cons (first pair) (project st out)), status := 2})))
+            | Option.none => (ctor Option.none [Es])) else (ctor Option.some [Es] (record Es {pos := afterPos, out := (cons (first pair) (project st out)), status := 1}))))
+        | Option.none => (ctor Option.some [Es] (record Es {pos := position, out := (project st out), status := 2}))) else (ctor Option.some [Es] (record Es {pos := position, out := (project st out), status := 2})))
+    | Option.none => (ctor Option.none [Es])) else (ctor Option.some [Es] (record Es {pos := position, out := (project st out), status := 1})))) else (ctor Option.none [Es])),
+  executable: true
+}
+
+definition{
+  name: parseStringArray,
+  parameters: [line : Bytes],
+  result: (Option (List Bytes)),
+  body: (let n : Nat := (prim length line : Nat); (let final : Es := (first (prim iterate_until (fun [line, n] (st : Es) => (esStep line n st)) (n + 2) (record Es {pos := 0, out := (nil Bytes), status := 0}) : (Es * Bool))); (if (prim equal (project final status) 1 : Bool) then (ctor Option.some [(List Bytes)] (LexLeanStd.Order::reverseList [Bytes] (project final out))) else (ctor Option.none [(List Bytes)])))),
+  executable: true
+}
+
+definition{
+  name: isBlankOrComment,
+  parameters: [line : Bytes],
+  result: Bool,
+  body: (let t : Bytes := (LexLeanStd.Text::trim line); (if ((prim length t : Nat) =? 0) then true else (LexLeanStd.Text::startsWith t (lit "#")))),
+  executable: true
+}
+
+definition{
+  name: parseHeader,
+  parameters: [t : Bytes],
+  result: (Option ((List Bytes) * Bool)),
+  body: (let isArr : Bool := (LexLeanStd.Text::startsWith t (lit "[[")); (let total : Nat := (prim length t : Nat); (let afterOpen : Bytes := (if isArr then (LexLeanStd.Text::sliceOr t 2 (prim subtract total 2 : Nat)) else (LexLeanStd.Text::sliceOr t 1 (prim subtract total 1 : Nat))); (let closeOk : Bool := (if isArr then (LexLeanStd.Text::endsWith afterOpen (lit "]]")) else (LexLeanStd.Text::endsWith afterOpen (lit "]"))); (if closeOk then (let bodyLen : Nat := (prim length afterOpen : Nat); (let strip : Nat := (if isArr then 2 else 1); (let inner : Bytes := (LexLeanStd.Text::sliceOr afterOpen 0 (prim subtract bodyLen strip : Nat)); (if ((prim length inner : Nat) =? 0) then (ctor Option.none [((List Bytes) * Bool)]) else (ctor Option.some [((List Bytes) * Bool)] ((LexLeanStd.Text::splitOn inner (46 : UInt8)), isArr)))))) else (ctor Option.none [((List Bytes) * Bool)])))))),
+  executable: true
+}
+
+definition{
+  name: pathEq,
+  parameters: [a : (List Bytes), b : (List Bytes)],
+  result: Bool,
+  body: (prim equal (LexLeanStd.Text::joinWith a 0x2e) (LexLeanStd.Text::joinWith b 0x2e) : Bool),
+  executable: true
+}
+
+definition{
+  name: rowHasKey,
+  parameters: [row : (List (Bytes * Value)), key : Bytes],
+  result: Bool,
+  body: (prim list_fold (fun [key] (found : Bool) (entry : (Bytes * Value)) => (if found then true else (prim equal (first entry) key : Bool))) false row : Bool),
+  executable: true
+}
+
+definition{
+  name: rowGet,
+  parameters: [row : (List (Bytes * Value)), key : Bytes],
+  result: (Option Value),
+  body: (prim list_fold (fun [key] (found : (Option Value)) (entry : (Bytes * Value)) => (match found
+    | Option.some v => found
+    | Option.none => (if (prim equal (first entry) key : Bool) then (ctor Option.some [Value] (second entry)) else (ctor Option.none [Value])))) (ctor Option.none [Value]) row : (Option Value)),
+  executable: true
+}
+
+definition{
+  name: rowKeys,
+  parameters: [row : (List (Bytes * Value))],
+  result: (List Bytes),
+  body: (LexLeanStd.Order::reverseList [Bytes] (prim list_fold (fun (acc : (List Bytes)) (entry : (Bytes * Value)) => (cons (first entry) acc)) (nil Bytes) row : (List Bytes))),
+  executable: true
+}
+
+definition{
+  name: sectionMatches,
+  parameters: [sec : Section, path : (List Bytes), isArr : Bool],
+  result: Bool,
+  body: ((pathEq (project sec path) path) && (prim equal (project sec isArray) isArr : Bool)),
+  executable: true
+}
+
+definition{
+  name: anyMatch,
+  parameters: [sections : (List Section), path : (List Bytes), isArr : Bool],
+  result: Bool,
+  body: (prim list_fold (fun [isArr, path] (found : Bool) (sec : Section) => (if found then true else (sectionMatches sec path isArr))) false sections : Bool),
+  executable: true
+}
+
+definition{
+  name: appendRowToSection,
+  parameters: [sec : Section, path : (List Bytes), isArr : Bool, row : (List (Bytes * Value))],
+  result: Section,
+  body: (if (sectionMatches sec path isArr) then (record Section {path := (project sec path), isArray := (project sec isArray), rows := (LexLeanStd.Order::reverseList [(List (Bytes * Value))] (cons row (LexLeanStd.Order::reverseList [(List (Bytes * Value))] (project sec rows))))}) else sec),
+  executable: true
+}
+
+definition{
+  name: mergeInto,
+  parameters: [sections : (List Section), path : (List Bytes), isArr : Bool, row : (List (Bytes * Value))],
+  result: (List Section),
+  body: (LexLeanStd.Order::reverseList [Section] (prim list_fold (fun [isArr, path, row] (acc : (List Section)) (sec : Section) => (cons (appendRowToSection sec path isArr row) acc)) (nil Section) sections : (List Section))),
+  executable: true
+}
+
+definition{
+  name: appendNew,
+  parameters: [sections : (List Section), path : (List Bytes), isArr : Bool, row : (List (Bytes * Value))],
+  result: (List Section),
+  body: (LexLeanStd.Order::reverseList [Section] (cons (record Section {path := path, isArray := isArr, rows := (cons row (nil (List (Bytes * Value))))}) (LexLeanStd.Order::reverseList [Section] sections))),
+  executable: true
+}
+
+definition{
+  name: groupStep,
+  parameters: [acc : (Bool * (List Section)), raw : RawClose],
+  result: (Bool * (List Section)),
+  body: (if (first acc) then acc else (let path : (List Bytes) := (project raw path); (let isArr : Bool := (project raw isArray); (let row : (List (Bytes * Value)) := (project raw row); (let found : Bool := (anyMatch (second acc) path isArr); (if found then (if isArr then (false, (mergeInto (second acc) path isArr row)) else (true, (second acc))) else (false, (appendNew (second acc) path isArr row)))))))),
+  executable: true
+}
+
+definition{
+  name: closeRow,
+  parameters: [rawClosures : (List RawClose), path : (List Bytes), isArr : Bool, row : (List (Bytes * Value))],
+  result: (List RawClose),
+  body: (cons (record RawClose {path := path, isArray := isArr, row := (LexLeanStd.Order::reverseList [(Bytes * Value)] row)}) rawClosures),
+  executable: true
+}
+
+definition{
+  name: classifyAndStep,
+  parameters: [st : Pst, key : Bytes, valText : Bytes],
+  result: Pst,
+  body:
+   (if (prim equal valText (lit "true") : Bool) then
+      (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (cons (key, (ctor Value.VBool true)) (project st curRow)), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := false})
+    else (if (prim equal valText (lit "false") : Bool) then
+      (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (cons (key, (ctor Value.VBool false)) (project st curRow)), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := false})
+    else (if (LexLeanStd.Text::startsWith valText (lit "\"")) then
+      (match (parseString valText 0)
+        | Option.some pair => (if ((second pair) =? (prim length valText : Nat)) then
+            (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (cons (key, (ctor Value.VStr (first pair))) (project st curRow)), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := false})
+          else (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (project st curRow), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := true}))
+        | Option.none => (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (project st curRow), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := true}))
+    else (if (LexLeanStd.Text::startsWith valText (lit "[")) then
+      (if (prim equal valText (lit "[") : Bool) then
+         (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (project st curRow), pendingKey := (ctor Option.some [Bytes] key), pendingVals := (nil Bytes), failed := false})
+       else (if (LexLeanStd.Text::endsWith valText (lit "]")) then
+         (match (parseStringArray (LexLeanStd.Text::sliceOr valText 1 (prim subtract (prim length valText : Nat) 2 : Nat)))
+           | Option.some items => (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (cons (key, (ctor Value.VArr items)) (project st curRow)), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := false})
+           | Option.none => (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (project st curRow), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := true}))
+        else (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (project st curRow), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := true})))
+    else (match (LexLeanStd.Numeral::parseDecimal valText)
+      | Option.some num => (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (cons (key, (ctor Value.VNat num)) (project st curRow)), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := false})
+      | Option.none => (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (project st curRow), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := true})))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tomlLineStep,
+  parameters: [st : Pst, line : Bytes],
+  result: Pst,
+  body:
+   (if (project st failed) then st
+    else (match (project st pendingKey)
+      | Option.some key =>
+          (let t : Bytes := (LexLeanStd.Text::trim line);
+           (if (prim equal t (lit "]") : Bool) then
+              (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray),
+                curRow := (cons (key, (ctor Value.VArr (LexLeanStd.Order::reverseList [Bytes] (project st pendingVals)))) (project st curRow)),
+                pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := false})
+            else (let closing : Bool := (LexLeanStd.Text::endsWith t (lit "]"));
+              (let body : Bytes := (if closing then (LexLeanStd.Text::sliceOr t 0 (prim subtract (prim length t : Nat) 1 : Nat)) else t);
+               (match (parseStringArray body)
+                 | Option.some more =>
+                     (let grown : (List Bytes) := (prim list_fold (fun (acc : (List Bytes)) (item : Bytes) => (cons item acc)) (project st pendingVals) more : (List Bytes));
+                      (if closing then
+                         (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray),
+                           curRow := (cons (key, (ctor Value.VArr (LexLeanStd.Order::reverseList [Bytes] grown))) (project st curRow)),
+                           pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := false})
+                       else
+                         (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray),
+                           curRow := (project st curRow), pendingKey := (ctor Option.some [Bytes] key), pendingVals := grown, failed := false})))
+                 | Option.none => (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray),
+                     curRow := (project st curRow), pendingKey := (project st pendingKey), pendingVals := (project st pendingVals), failed := true}))))))
+      | Option.none =>
+          (if (isBlankOrComment line) then st
+           else (let t : Bytes := (LexLeanStd.Text::trim line);
+             (if (LexLeanStd.Text::startsWith t (lit "[")) then
+                (let closed : (List RawClose) := (closeRow (project st rawClosures) (project st curPath) (project st curArray) (project st curRow));
+                 (match (parseHeader t)
+                   | Option.some pair =>
+                       (record Pst {rawClosures := closed, curPath := (first pair), curArray := (second pair), curRow := (nil (Bytes * Value)), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := false})
+                   | Option.none => (record Pst {rawClosures := closed, curPath := (nil Bytes), curArray := false, curRow := (nil (Bytes * Value)), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := true})))
+              else
+                (match (LexLeanStd.Text::find t (lit "="))
+                  | Option.none => (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (project st curRow), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := true})
+                  | Option.some cut =>
+                      (let key : Bytes := (LexLeanStd.Text::trim (LexLeanStd.Text::sliceOr t 0 cut));
+                       (let valText : Bytes := (LexLeanStd.Text::trim (LexLeanStd.Text::sliceOr t (cut + 1) (prim subtract (prim length t : Nat) (cut + 1) : Nat)));
+                        (if (if ((prim length key : Nat) =? 0) then true else (match (LexLeanStd.Text::find key (lit ".")) | Option.some spot => true | Option.none => false)) then (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (project st curRow), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := true})
+                         else (if (rowHasKey (project st curRow) key) then (record Pst {rawClosures := (project st rawClosures), curPath := (project st curPath), curArray := (project st curArray), curRow := (project st curRow), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := true})
+                          else (classifyAndStep st key valText))))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tomlParse,
+  parameters: [text : Bytes],
+  result: (Option (List Section)),
+  body:
+   (let final : Pst := (prim list_fold (fun (st : Pst) (line : Bytes) => (tomlLineStep st line)) (record Pst {rawClosures := (nil RawClose), curPath := (nil Bytes), curArray := false, curRow := (nil (Bytes * Value)), pendingKey := (ctor Option.none [Bytes]), pendingVals := (nil Bytes), failed := false}) (LexLeanStd.Text::lines text) : Pst);
+    (if (project final failed) then (ctor Option.none [(List Section)])
+     else (match (project final pendingKey)
+       | Option.some k => (ctor Option.none [(List Section)])
+       | Option.none =>
+           (let allRaw : (List RawClose) := (LexLeanStd.Order::reverseList [RawClose] (closeRow (project final rawClosures) (project final curPath) (project final curArray) (project final curRow)));
+            (let grouped : (Bool * (List Section)) := (prim list_fold (fun (acc : (Bool * (List Section))) (raw : RawClose) => (groupStep acc raw)) (false, (nil Section)) allRaw : (Bool * (List Section)));
+             (if (first grouped) then (ctor Option.none [(List Section)]) else (ctor Option.some [(List Section)] (second grouped)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: docSection,
+  parameters: [doc : (List Section), path : (List Bytes), isArr : Bool],
+  result: (Option Section),
+  body: (prim list_fold (fun [isArr, path] (found : (Option Section)) (sec : Section) => (match found | Option.some s => found | Option.none => (if (sectionMatches sec path isArr) then (ctor Option.some [Section] sec) else (ctor Option.none [Section])))) (ctor Option.none [Section]) doc : (Option Section)),
+  executable: true
+}
+\end{semanticmodule}
+\end{lexlean}
