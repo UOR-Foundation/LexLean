@@ -144,9 +144,10 @@ fn token_run(which: u64, token: &str) -> Run {
 /// What the oracle says of a category, a frame, and a surface arity, as the
 /// module's `Shape`.
 fn shape_run(category: u64, frame: u64, arity: u32) -> Run {
-    let category_enum =
-        Category::parse(CATEGORIES[usize::try_from(category).expect("an index")]).expect("a category");
-    let frame_enum = Frame::parse(FRAMES[usize::try_from(frame).expect("an index")]).expect("a frame");
+    let category_enum = Category::parse(CATEGORIES[usize::try_from(category).expect("an index")])
+        .expect("a category");
+    let frame_enum =
+        Frame::parse(FRAMES[usize::try_from(frame).expect("an index")]).expect("a frame");
     let shape = Value::Adt {
         constructor: 0,
         fields: vec![
@@ -236,14 +237,30 @@ fn named() -> Vec<Vector> {
     ];
     for (which, table) in &tables {
         for token in table {
-            add(format!("the token `{token}` of table {which}"), 0, token_run(*which, token));
+            add(
+                format!("the token `{token}` of table {which}"),
+                0,
+                token_run(*which, token),
+            );
         }
         for miss in ["", "Structural", "atom ", "noun_of", "both-", "article"] {
-            add(format!("the near miss `{miss}` in table {which}"), 0, token_run(*which, miss));
+            add(
+                format!("the near miss `{miss}` in table {which}"),
+                0,
+                token_run(*which, miss),
+            );
         }
     }
-    add("a frame is not a category".to_owned(), 0, token_run(0, "infix"));
-    add("a category is not a frame".to_owned(), 0, token_run(1, "function"));
+    add(
+        "a frame is not a category".to_owned(),
+        0,
+        token_run(0, "infix"),
+    );
+    add(
+        "a category is not a frame".to_owned(),
+        0,
+        token_run(1, "function"),
+    );
 
     // shapeFacts: every category with every frame, at arities 0, 1, 2, 3.
     for category in 0..17u64 {
@@ -270,7 +287,11 @@ fn named() -> Vec<Vector> {
     // surfaceSafety.
     for (label, surface, channel) in [
         ("a text word", "natural number", 0),
-        ("a text surface with every safe punctuation", "a: b-c, d. e; f'", 0),
+        (
+            "a text surface with every safe punctuation",
+            "a: b-c, d. e; f'",
+            0,
+        ),
         ("a text surface with a colon", "is: a", 0),
         ("a text surface with a parenthesis", "f(x)", 0),
         ("a text surface with a numeral", "x 2", 0),
@@ -279,7 +300,11 @@ fn named() -> Vec<Vector> {
         ("a text surface with a control", "\\N", 0),
         ("a math plus", "+", 1),
         ("a math surface with an underscore", "a_b", 1),
-        ("a math surface with every unsafe symbol", "\\%$#&~^_{}\"`", 1),
+        (
+            "a math surface with every unsafe symbol",
+            "\\%$#&~^_{}\"`",
+            1,
+        ),
         ("a math surface with brackets", "[a](b)", 1),
         ("a math surface with a brace", "{", 1),
         ("a math surface led by a numeral", "2x", 1),
@@ -359,7 +384,10 @@ fn named() -> Vec<Vector> {
         ("a basic string broken by a line", "a = \"x\n# c"),
         ("a hash in a multi-line string", "a = \"\"\"\n#\n\"\"\""),
         ("a quote inside a multi-line string", "a = \"\"\"x\"#\"\"\""),
-        ("an escape inside a multi-line string", "a = \"\"\"\\\"\"\"#\"\"\""),
+        (
+            "an escape inside a multi-line string",
+            "a = \"\"\"\\\"\"\"#\"\"\"",
+        ),
         ("a hash after a multi-line string", "a = \"\"\"x\"\"\" # c"),
         ("a hash in a multi-line literal string", "a = '''\n#'''"),
         ("a hash after a multi-line literal string", "a = '''x''' #"),
@@ -510,11 +538,65 @@ fn committed() -> Committed {
 // ------------------------------------------------------------------- seeded
 
 const SURFACE_PIECES: &[&str] = &[
-    "a", "nat", "x", "the", "of", "1", "20", " ", " ", ":", "-", ",", ".", ";", "'", "+", "=",
-    "<", "*", "/", "|", "!", "?", "@", "%", "$", "#", "&", "~", "^", "_", "\"", "`", "(", ")",
-    "[", "]", "{", "}", "\\N", "\\alpha", "\u{2200}", "\u{3b1}", "\u{3a9}", "\u{2115}",
-    "\u{2192}", "\u{2264}", "\u{2282}", "\u{2308}", "\u{27e8}", "\u{2983}", "\u{2a01}",
-    "\u{1d538}", "\u{e9}", "\u{20ac}", "\u{2026}", "\u{2032}", "\u{ac}", "\u{d7}",
+    "a",
+    "nat",
+    "x",
+    "the",
+    "of",
+    "1",
+    "20",
+    " ",
+    " ",
+    ":",
+    "-",
+    ",",
+    ".",
+    ";",
+    "'",
+    "+",
+    "=",
+    "<",
+    "*",
+    "/",
+    "|",
+    "!",
+    "?",
+    "@",
+    "%",
+    "$",
+    "#",
+    "&",
+    "~",
+    "^",
+    "_",
+    "\"",
+    "`",
+    "(",
+    ")",
+    "[",
+    "]",
+    "{",
+    "}",
+    "\\N",
+    "\\alpha",
+    "\u{2200}",
+    "\u{3b1}",
+    "\u{3a9}",
+    "\u{2115}",
+    "\u{2192}",
+    "\u{2264}",
+    "\u{2282}",
+    "\u{2308}",
+    "\u{27e8}",
+    "\u{2983}",
+    "\u{2a01}",
+    "\u{1d538}",
+    "\u{e9}",
+    "\u{20ac}",
+    "\u{2026}",
+    "\u{2032}",
+    "\u{ac}",
+    "\u{d7}",
 ];
 const NAME_PIECES: &[&str] = &[
     "Nat", "add", "_", "1", ".", "x9", "-", "\u{3b1}", "'", "Zero", "", " ",
@@ -524,8 +606,8 @@ const TOML_PIECES: &[&str] = &[
 ];
 const ID_PIECES: &[&str] = &["a", "b1", ".", "-", "nat", "add", "", "zero"];
 const TOKEN_PIECES: &[&str] = &[
-    "infix", "function", "-", "noun", "of", "both", "text", "article", "a", "n", "left",
-    "plural", "case", "Atom", " ",
+    "infix", "function", "-", "noun", "of", "both", "text", "article", "a", "n", "left", "plural",
+    "case", "Atom", " ",
 ];
 
 fn joined(seeded: &mut Seeded, pieces: &[&str], most: usize) -> String {
@@ -906,7 +988,11 @@ pub(super) fn case() {
     for source in &corpus.lexicon_texts {
         committed_runs[4].push(comment_run(source));
     }
-    let other_comment_runs: Vec<Run> = corpus.other_texts.iter().map(|source| comment_run(source)).collect();
+    let other_comment_runs: Vec<Run> = corpus
+        .other_texts
+        .iter()
+        .map(|source| comment_run(source))
+        .collect();
     let normative = support::normative_host();
     let (evaluator_seeded, rustc_seeded) = if normative {
         (seeded_runs(EVALUATOR_SEEDED), seeded_runs(RUSTC_SEEDED))
