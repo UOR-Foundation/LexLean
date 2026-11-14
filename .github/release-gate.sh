@@ -11,27 +11,46 @@
 # to a push: a run on the commit itself, or, when the commit is a merge whose
 # tree is the tree of its second parent, a run on that parent. A run counts
 # when every job of it concluded `success` and it holds the join of Atlas,
-# every host of the matrix, and every leg of `.github/vv-rows.json`; a
-# draft run, which has only the `rest` leg, never does. A tag on a commit no
+# every exact supported-host context, and every leg of `.github/vv-rows.json`; a
+# draft run, which has only honesty and the `rest` leg, never does. A tag on a commit no
 # such run verified is refused, naming what was looked for.
 #
 # Inputs, all from the environment: REPO (owner/name), SHA (the tagged
 # commit), OUT (the evidence file to write), and the lines of the header:
-# REF and RELEASE_RUN. `LEXLEAN_CI_ROWS` and `LEXLEAN_CI_WORKFLOW` name the
-# legs file and the workflow when a test runs the script elsewhere. `gh`
+# REF and RELEASE_RUN. `LEXLEAN_CI_ROWS` names the legs file when a test
+# runs the script elsewhere. `gh`
 # reads the runs, the jobs, and the artifacts (`actions: read`).
 set -euo pipefail
 
 rows_file=${LEXLEAN_CI_ROWS:-.github/vv-rows.json}
-workflow=${LEXLEAN_CI_WORKFLOW:-.github/workflows/ci.yml}
 repo=${REPO:?REPO names owner/name}
 sha=${SHA:?SHA names the tagged commit}
 out=${OUT:?OUT names the evidence file}
 ref=${REF:-}
 release_run=${RELEASE_RUN:-}
 
-hosts=$(grep -c '^          - { os: ' "$workflow")
 parts=$(jq -r '.[].part' "$rows_file")
+
+# These are the four auxiliary §8.3 contexts, not the number of matrix rows.
+# Linux x86-64 is the normative gate; Intel macOS is a static aggregate. Every
+# required context must occur exactly once, so a duplicate or foreign context
+# cannot replace a missing host even when the total count remains four.
+hosts_passed() {
+  awk -F'\t' '
+    BEGIN {
+      expected["build and non-Lean tests (aarch64-unknown-linux-gnu)"] = 1
+      expected["build and non-Lean tests (x86_64-apple-darwin)"] = 1
+      expected["build and non-Lean tests (aarch64-apple-darwin)"] = 1
+      expected["build and non-Lean tests (x86_64-pc-windows-msvc)"] = 1
+    }
+    /^build and non-Lean tests \(/ {
+      if (!($1 in expected) || ++seen[$1] != 1 || $2 != "success") bad = 1
+    }
+    END {
+      for (host in expected) if (seen[host] != 1) bad = 1
+      exit bad
+    }'
+}
 
 # The jobs of a run as `name<TAB>conclusion<TAB>started<TAB>completed`, or
 # nothing when the run cannot be read.
@@ -42,23 +61,35 @@ jobs_of() {
 
 # Whether a jobs listing is the whole gate, passed.
 whole_gate_passed() {
-  local jobs=$1 part
+  local jobs=$1 part job
   [ -n "$jobs" ] || return 1
   printf '%s\n' "$jobs" | awk -F'\t' '$2 != "success" { bad = 1 } END { exit bad }' || return 1
-  printf '%s\n' "$jobs" | grep -qxP 'atlas \(join\)\tsuccess\t.*' || return 1
-  [ "$(printf '%s\n' "$jobs" | grep -c '^build and non-Lean tests (')" -eq "$hosts" ] || return 1
+  # Quiet grep can close the pipe early and make printf fail under pipefail.
+  printf '%s\n' "$jobs" | grep -xP 'atlas \(join\)\tsuccess\t.*' >/dev/null || return 1
+  printf '%s\n' "$jobs" | hosts_passed || return 1
   for part in $parts; do
-    printf '%s\n' "$jobs" | grep -qP "^just vv \(\Q$part\E\)\tsuccess\t" || return 1
+    job="just vv ($part)"
+    [ "$part" != honesty ] || job=honesty
+    printf '%s\n' "$jobs" | grep -P "^\Q$job\E\tsuccess\t" >/dev/null || return 1
   done
 }
 
-# The commits whose runs are evidence for this one: the commit, and its second
-# parent when the commit is a merge that lands that parent's tree unchanged.
+# The commits whose runs are evidence for this one: the commit, and, while the
+# commit is a merge that lands its second parent's tree unchanged, that parent,
+# at most four merges down -- the walk `.github/ci-plan.sh` makes, so a push
+# the plan ran nothing for has its evidence here (a cut's release merge and
+# the regenerated head it lands).
 candidates="$sha"
-if parent=$(git rev-parse --verify --quiet "$sha^2") \
-  && [ "$(git rev-parse "$sha^{tree}")" = "$(git rev-parse "$parent^{tree}")" ]; then
-  candidates="$sha $parent"
-fi
+commit=$sha
+for _ in 1 2 3 4; do
+  # The release job's checkout is shallow; deepen it for the commit it walks.
+  git rev-parse --verify --quiet "$commit^2" >/dev/null \
+    || git fetch --quiet --depth=2 origin "$commit" 2>/dev/null || break
+  parent=$(git rev-parse --verify --quiet "$commit^2") || break
+  [ "$(git rev-parse "$commit^{tree}")" = "$(git rev-parse "$parent^{tree}")" ] || break
+  candidates="$candidates $parent"
+  commit=$parent
+done
 
 found=
 for commit in $candidates; do
@@ -91,7 +122,7 @@ fi
   if [ "$commit" = "$sha" ]; then
     echo "gate run commit $commit (the tagged commit)"
   else
-    echo "gate run commit $commit (the second parent of the tagged commit, whose tree $(git rev-parse "$sha^{tree}") the tagged commit carries unchanged)"
+    echo "gate run commit $commit (the second parent of the tagged commit, or of a merge below it, whose tree $(git rev-parse "$sha^{tree}") the tagged commit carries unchanged)"
   fi
   echo
   echo "jobs (name, conclusion, started, completed):"

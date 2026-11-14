@@ -136,4 +136,4 @@ checkpoint above with one step added: language 1.2 refuses the data form
   observes `Quot.sound` and `propext`. The statement above that no row depends
   on `Classical.choice` holds for the 119 fold-law rows, which the rewrite set
   of `linear_arithmetic` and the fold laws use; `conformance_pf_22` holds them
-  to it and `conformance_pf_24` pins the bounds.
+  to it and `conformance_pf_27` pins the bounds.

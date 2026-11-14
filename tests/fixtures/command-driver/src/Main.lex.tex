@@ -1,0 +1,194 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexLeanStd.Host}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: Session,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: next, type: Nat}, {name: program, type: String}]
+}
+
+definition{
+  name: bad,
+  parameters: [],
+  result: (Session * LexLeanStd.Host::Request),
+  body: ((record Session {next := 100, program := ""}), (ctor LexLeanStd.Host::Request.exit (90 : UInt8) 0x 0x)),
+  executable: true
+}
+
+definition{
+  name: go,
+  parameters: [next : Nat, program : String, request : LexLeanStd.Host::Request],
+  result: (Session * LexLeanStd.Host::Request),
+  body: ((record Session {next := next, program := program}), request),
+  executable: true
+}
+
+definition{
+  name: named,
+  parameters: [raw : Bytes],
+  result: String,
+  body: (match (prim utf8_decode raw : (Option String))
+    | Option.some text => text
+    | Option.none => ""),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: executableOf,
+  parameters: [event : LexLeanStd.Host::Event],
+  result: String,
+  body: (match event
+    | LexLeanStd.Host::Event.start begun => (match (project begun executable)
+      | Result.ok raw => (named raw)
+      | Result.error failure => "")
+    | LexLeanStd.Host::Event.read ignored1 => ""
+    | LexLeanStd.Host::Event.finished ignored2 => ""
+    | LexLeanStd.Host::Event.listed ignored3 => ""
+    | LexLeanStd.Host::Event.stat ignored4 => ""
+    | LexLeanStd.Host::Event.canonical ignored5 => ""
+    | LexLeanStd.Host::Event.spawned ignored6 => ""
+    | LexLeanStd.Host::Event.waited ignored7 => ""),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: firstArgument,
+  parameters: [event : LexLeanStd.Host::Event],
+  result: Bytes,
+  body: (match event
+    | LexLeanStd.Host::Event.start begun => (match (project begun arguments)
+      | List.nil => 0x
+      | List.cons head tail => head)
+    | LexLeanStd.Host::Event.read ignored1 => 0x
+    | LexLeanStd.Host::Event.finished ignored2 => 0x
+    | LexLeanStd.Host::Event.listed ignored3 => 0x
+    | LexLeanStd.Host::Event.stat ignored4 => 0x
+    | LexLeanStd.Host::Event.canonical ignored5 => 0x
+    | LexLeanStd.Host::Event.spawned ignored6 => 0x
+    | LexLeanStd.Host::Event.waited ignored7 => 0x),
+  executable: true
+}
+
+definition{
+  name: readOf,
+  parameters: [event : LexLeanStd.Host::Event],
+  result: Bytes,
+  body: (match event
+    | LexLeanStd.Host::Event.start ignored1 => 0x
+    | LexLeanStd.Host::Event.read result => (match result
+      | Result.ok raw => raw
+      | Result.error failure => 0x)
+    | LexLeanStd.Host::Event.finished ignored2 => 0x
+    | LexLeanStd.Host::Event.listed ignored3 => 0x
+    | LexLeanStd.Host::Event.stat ignored4 => 0x
+    | LexLeanStd.Host::Event.canonical ignored5 => 0x
+    | LexLeanStd.Host::Event.spawned ignored6 => 0x
+    | LexLeanStd.Host::Event.waited ignored7 => 0x),
+  executable: true
+}
+
+definition{
+  name: firstListed,
+  parameters: [event : LexLeanStd.Host::Event],
+  result: Bytes,
+  body: (match event
+    | LexLeanStd.Host::Event.start ignored1 => 0x
+    | LexLeanStd.Host::Event.read ignored2 => 0x
+    | LexLeanStd.Host::Event.finished ignored3 => 0x
+    | LexLeanStd.Host::Event.listed result => (match result
+      | Result.ok names => (match names | List.nil => 0x | List.cons head tail => head)
+      | Result.error failure => 0x)
+    | LexLeanStd.Host::Event.stat ignored4 => 0x
+    | LexLeanStd.Host::Event.canonical ignored5 => 0x
+    | LexLeanStd.Host::Event.spawned ignored6 => 0x
+    | LexLeanStd.Host::Event.waited ignored7 => 0x),
+  executable: true
+}
+
+definition{
+  name: exitedThree,
+  parameters: [event : LexLeanStd.Host::Event],
+  result: Bool,
+  body: (match event
+    | LexLeanStd.Host::Event.start ignored1 => false
+    | LexLeanStd.Host::Event.read ignored2 => false
+    | LexLeanStd.Host::Event.finished ignored3 => false
+    | LexLeanStd.Host::Event.listed ignored4 => false
+    | LexLeanStd.Host::Event.stat ignored5 => false
+    | LexLeanStd.Host::Event.canonical ignored6 => false
+    | LexLeanStd.Host::Event.spawned ignored7 => false
+    | LexLeanStd.Host::Event.waited result => (match result
+      | Result.ok waited => (match (project waited finished)
+        | List.nil => false
+        | List.cons head tail => (match (second head)
+          | Option.some code => (prim equal code (3 : Int32) : Bool)
+          | Option.none => false))
+      | Result.error failure => false)),
+  executable: true
+}
+
+definition{
+  name: timedOut,
+  parameters: [event : LexLeanStd.Host::Event],
+  result: Bool,
+  body: (match event
+    | LexLeanStd.Host::Event.start ignored1 => false
+    | LexLeanStd.Host::Event.read ignored2 => false
+    | LexLeanStd.Host::Event.finished ignored3 => false
+    | LexLeanStd.Host::Event.listed ignored4 => false
+    | LexLeanStd.Host::Event.stat ignored5 => false
+    | LexLeanStd.Host::Event.canonical ignored6 => false
+    | LexLeanStd.Host::Event.spawned ignored7 => false
+    | LexLeanStd.Host::Event.waited result => (match result
+      | Result.ok waited => (match (project waited finished)
+        | List.nil => true
+        | List.cons head tail => false)
+      | Result.error failure => false)),
+  executable: true
+}
+
+definition{
+  name: child,
+  parameters: [program : String, mode : String],
+  result: LexLeanStd.Host::Child,
+  body: (record LexLeanStd.Host::Child {program := program, arguments := (cons mode (nil String)), directory := ".", environment := (nil (String * String)), output := (prim join (cons "work/" (cons mode (cons "-out" (nil String)))) "" : String), errors := (prim join (cons "work/" (cons mode (cons "-err" (nil String)))) "" : String)}),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: begin,
+  parameters: [event : LexLeanStd.Host::Event],
+  result: (Session * LexLeanStd.Host::Request),
+  body: (if (prim equal (firstArgument event) 0x6368696c64 : Bool) then (go 100 "" (ctor LexLeanStd.Host::Request.exit (3 : UInt8) 0x6f75740a 0x6572720a)) else (if (prim equal (firstArgument event) 0x736c656570 : Bool) then (go 101 "" (ctor LexLeanStd.Host::Request.wait (nil Nat) 600000)) else (go 1 (executableOf event) (ctor LexLeanStd.Host::Request.createDir "work")))),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: script,
+  parameters: [k : Nat, program : String, event : LexLeanStd.Host::Event],
+  result: (Session * LexLeanStd.Host::Request),
+  body: (if (k =? 1) then (go 2 program (ctor LexLeanStd.Host::Request.write "work/a.txt" 0x6869)) else (if (k =? 2) then (go 3 program (ctor LexLeanStd.Host::Request.read "work/a.txt")) else (if (k =? 3) then (if (prim equal (readOf event) 0x6869 : Bool) then (go 4 program (ctor LexLeanStd.Host::Request.list "work")) else (bad)) else (if (k =? 4) then (go 5 program (ctor LexLeanStd.Host::Request.stat "work/a.txt")) else (if (k =? 5) then (go 6 program (ctor LexLeanStd.Host::Request.canonical "work")) else (if (k =? 6) then (go 7 program (ctor LexLeanStd.Host::Request.rename "work/a.txt" "work/b.txt")) else (if (k =? 7) then (go 8 program (ctor LexLeanStd.Host::Request.lock "lock")) else (if (k =? 8) then (go 9 program (ctor LexLeanStd.Host::Request.spawn (child program "child"))) else (if (k =? 9) then (go 10 program (ctor LexLeanStd.Host::Request.wait (cons 0 (nil Nat)) 20000)) else (if (k =? 10) then (if (exitedThree event) then (go 11 program (ctor LexLeanStd.Host::Request.list "work")) else (bad)) else (if (k =? 11) then (if (prim equal (firstListed event) 0x622e747874 : Bool) then (go 12 program (ctor LexLeanStd.Host::Request.read "work/child-out")) else (bad)) else (if (k =? 12) then (if (prim equal (readOf event) 0x6f75740a : Bool) then (go 13 program (ctor LexLeanStd.Host::Request.read "work/child-err")) else (bad)) else (if (k =? 13) then (if (prim equal (readOf event) 0x6572720a : Bool) then (go 14 program (ctor LexLeanStd.Host::Request.spawn (child program "sleep"))) else (bad)) else (if (k =? 14) then (go 15 program (ctor LexLeanStd.Host::Request.wait (cons 1 (nil Nat)) 100)) else (if (k =? 15) then (if (timedOut event) then (go 16 program (ctor LexLeanStd.Host::Request.stop 1)) else (bad)) else (if (k =? 16) then (go 17 program (ctor LexLeanStd.Host::Request.removeFile "work/b.txt")) else (if (k =? 17) then (go 18 program (ctor LexLeanStd.Host::Request.removeTree "work")) else (if (k =? 18) then (go 18 program (ctor LexLeanStd.Host::Request.exit (3 : UInt8) 0x6f75740a 0x6572720a)) else (if (k =? 101) then (go 102 program (ctor LexLeanStd.Host::Request.exit (0 : UInt8) 0x 0x)) else (bad)))))))))))))))))))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: step,
+  parameters: [state : (Option Session), event : LexLeanStd.Host::Event],
+  result: (Session * LexLeanStd.Host::Request),
+  body: (match state
+    | Option.none => (begin event)
+    | Option.some held => (script (project held next) (project held program) event)),
+  axioms: [Classical.choice, Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, files, overflow, process], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

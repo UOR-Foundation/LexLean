@@ -411,6 +411,7 @@ fn enc_item(item: &Item) -> Value {
             vec![text(name), list(members.iter().map(enc_item).collect())],
         ),
         Item::InnerAttr(name, args) => i("IAttr", vec![text(name), texts(args)]),
+        Item::Cfg(condition, inner) => i("ICfg", vec![text(condition), enc_item(inner)]),
         Item::Enum(name, generics, derives, variants) => i(
             "IEnum",
             vec![
@@ -432,7 +433,7 @@ fn enc_crate(krate: &Crate) -> Value {
 
 /// A run of `validateRuntime`: the crate and what the Rust validator makes
 /// of it.
-fn run_of(krate: &Crate) -> Run {
+pub(super) fn run_of(krate: &Crate) -> Run {
     (
         vec![enc_crate(krate)],
         verdict(rt_validate::validate(krate)),
@@ -446,10 +447,136 @@ fn read(path: &str) -> String {
         .unwrap_or_else(|error| panic!("{path}: {error}"))
 }
 
+/// The crates of `RB-24`'s rules on the support crate: a `cfg` item outside
+/// the closed set, a function without its twin, twins of two arities, three
+/// crates the validator accepts or refuses by what a `cfg` function declares,
+/// and a name of the host table at each place the validator admits one (a
+/// `use`, a type, a path, and a call), whose effect no root of `validate`
+/// admits.
+fn host_plants(base: &Crate) -> Vec<(String, Crate)> {
+    let tick = base
+        .items
+        .iter()
+        .find_map(|item| match item {
+            Item::Fn(function) if function.sig.name == "tick" => Some(function.clone()),
+            _ => None,
+        })
+        .expect("the support crate's `tick`");
+    let named = |name: &str, wider: bool| {
+        let mut function = tick.clone();
+        name.clone_into(&mut function.sig.name);
+        if wider {
+            function.sig.params.push(Param {
+                name: "extra".to_owned(),
+                mutable: false,
+                ty: Type::Unit,
+            });
+        }
+        function
+    };
+    let cfg = |condition: &str, function: Function| {
+        Item::Cfg(condition.to_owned(), Box::new(Item::Fn(function)))
+    };
+    let twins = |function: &Function| {
+        vec![
+            cfg("unix", function.clone()),
+            cfg("not_unix", function.clone()),
+        ]
+    };
+    let path = |segments: &[&str]| -> Vec<String> {
+        segments
+            .iter()
+            .map(|segment| (*segment).to_owned())
+            .collect()
+    };
+    let mem = || Item::Use(path(&["core", "mem"]), None);
+    let planted: Vec<(&str, Vec<Item>)> = vec![
+        ("cfg: twins and a use under a condition", {
+            let mut items = twins(&named("pause", false));
+            items.push(Item::Cfg("not_unix".to_owned(), Box::new(mem())));
+            items
+        }),
+        (
+            "cfg: twins named as a function of the crate",
+            twins(&named("tick", false)),
+        ),
+        (
+            "cfg: twins of another arity stand for a function of the crate",
+            {
+                let mut items = vec![Item::Static(
+                    "TICKED".to_owned(),
+                    Type::Unit,
+                    Expr::Call(path(&["tick"]), vec![Expr::Lit(Lit::Nat(1))]),
+                )];
+                items.extend(twins(&named("tick", true)));
+                items
+            },
+        ),
+        (
+            "cfg: a condition outside the closed set",
+            vec![Item::Cfg("windows".to_owned(), Box::new(mem()))],
+        ),
+        (
+            "cfg: a unit struct under a condition",
+            vec![Item::Cfg(
+                "unix".to_owned(),
+                Box::new(Item::UnitStruct("Marker".to_owned(), Vec::new())),
+            )],
+        ),
+        (
+            "cfg: a function without its twin",
+            vec![cfg("unix", named("pause", false))],
+        ),
+        (
+            "cfg: twins of two arities",
+            vec![
+                cfg("unix", named("pause", false)),
+                cfg("not_unix", named("pause", true)),
+            ],
+        ),
+        (
+            "host: a use of `Duration`",
+            vec![Item::Use(path(&["core", "time", "Duration"]), None)],
+        ),
+        (
+            "host: the type `File`",
+            vec![Item::Alias(
+                "Handle".to_owned(),
+                Vec::new(),
+                Type::Named("File".to_owned(), Vec::new()),
+            )],
+        ),
+        (
+            "host: a path at `thread`",
+            vec![Item::Static(
+                "SPAWNED".to_owned(),
+                Type::Unit,
+                Expr::Path(path(&["thread"])),
+            )],
+        ),
+        (
+            "host: a call of `Instant::now`",
+            vec![Item::Static(
+                "STARTED".to_owned(),
+                Type::Unit,
+                Expr::Call(path(&["Instant", "now"]), Vec::new()),
+            )],
+        ),
+    ];
+    planted
+        .into_iter()
+        .map(|(what, items)| {
+            let mut krate = base.clone();
+            krate.items.extend(items);
+            (format!("support: {what}"), krate)
+        })
+        .collect()
+}
+
 /// A named crate for each refusal and acceptance the runtime's own cases
-/// state: the two shipped crates, the profiles they are valid in, and every
-/// plant of `RB-17` and `RB-19`.
-fn named() -> Vec<(String, Crate)> {
+/// state: the two shipped crates, the profiles they are valid in, every
+/// plant of `RB-17` and `RB-19`, and the crates of `RB-24`'s rules.
+pub(super) fn named() -> Vec<(String, Crate)> {
     let support = read(SUPPORT);
     let probe = read(PROBE);
     let base = rt_decode::decode(&support).expect("the support crate decodes");
@@ -482,6 +609,7 @@ fn named() -> Vec<(String, Crate)> {
     for (what, planted, _, _) in site_plants(&probed) {
         out.push((format!("site: {what}"), planted));
     }
+    out.extend(host_plants(&base));
     out
 }
 
@@ -869,6 +997,6 @@ pub(super) fn case() {
 // The counts the specification states, over the committed tree: SPEC.md
 // §17.23, the register statement of BS-09, its scenario, and VERIFICATION.md
 // restate them, and the case fails when the tree no longer gives them.
-const NAMED: usize = 117;
-const REFUSED: usize = 576;
-const WITHIN: usize = 717;
+const NAMED: usize = 128;
+const REFUSED: usize = 584;
+const WITHIN: usize = 728;

@@ -7,7 +7,10 @@
 mod artifacts;
 mod authoring;
 mod authoring_core;
+mod binder_arm;
 mod bootstrap;
+/// The performance of the certified components against their oracles (#277).
+pub use bootstrap::perf as bootstrap_perf;
 mod calculus;
 mod certification;
 mod cli_api;
@@ -38,6 +41,7 @@ mod production;
 mod production_export;
 mod proofs;
 mod reasoning;
+mod recursive_argument;
 mod repository;
 mod runtime;
 mod runtime_semantics;
@@ -55,6 +59,7 @@ mod rust_runtime;
 pub use rust_runtime::{
     check_golden as check_runtime_transcript, golden_text, parse_golden, GOLDEN_FILE,
 };
+mod rust_driver;
 mod rust_runtime_text;
 mod rust_scaffold;
 mod rust_std;
@@ -67,6 +72,11 @@ mod stdlib_buffer;
 mod stdlib_digest;
 mod stdlib_fixed_point;
 mod stdlib_identity;
+mod stdlib_json;
+mod stdlib_json_read;
+mod stdlib_map;
+mod stdlib_numeral;
+mod stdlib_order;
 mod stdlib_sha256;
 mod target_machine;
 mod tooling;

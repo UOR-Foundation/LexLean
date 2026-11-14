@@ -1,0 +1,252 @@
+\begin{lexlean}{ProjectText}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LockText}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Sha256}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: LexiconSource,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: builtin, fields: [Bytes]},
+    {name: path, fields: [Bytes, Bytes]},
+    {name: git, fields: [Bytes, Bytes, Bytes, Bytes]}
+  ]
+}
+
+structure{
+  name: ArtifactSource,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: digest, type: Bytes}, {name: location, type: Bytes}]
+}
+
+structure{
+  name: SourcePackage,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: packageName, type: Bytes},
+    {name: version, type: Bytes},
+    {name: location, type: Bytes}
+  ]
+}
+
+structure{
+  name: Limits,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: maxFileBytes, type: Nat},
+    {name: maxTotalSourceBytes, type: Nat},
+    {name: maxPrimitiveAtoms, type: Nat},
+    {name: maxTokenLatticeEdges, type: Nat},
+    {name: maxParseStates, type: Nat},
+    {name: maxIrNodes, type: Nat},
+    {name: maxScopeDepth, type: Nat},
+    {name: maxImportDepth, type: Nat},
+    {name: maxDiagnostics, type: Nat},
+    {name: maxChildOutputBytes, type: Nat},
+    {name: childTimeoutMs, type: Nat}
+  ]
+}
+
+structure{
+  name: PdfProvider,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: program, type: Bytes},
+    {name: programSha256, type: Bytes},
+    {name: versionArgv, type: (List Bytes)},
+    {name: versionStdoutSha256, type: Bytes},
+    {name: compileArgv, type: (List Bytes)},
+    {name: output, type: Bytes},
+    {name: resources, type: (List Bytes)}
+  ]
+}
+
+structure{
+  name: ProjectConfig,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: projectName, type: Bytes},
+    {name: language, type: Bytes},
+    {name: modulePrefix, type: Bytes},
+    {name: sourceRoots, type: (List Bytes)},
+    {name: entrypoints, type: (List Bytes)},
+    {name: buildRoot, type: Bytes},
+    {name: lockfile, type: Bytes},
+    {name: leanWorkspace, type: Bytes},
+    {name: lexiconSources, type: (List LexiconSource)},
+    {name: artifactSources, type: (List ArtifactSource)},
+    {name: sourcePackages, type: (List SourcePackage)},
+    {name: limits, type: Limits},
+    {name: pdf, type: (Option PdfProvider)}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: stringLine,
+  parameters: [key : String, value : Bytes],
+  result: Bytes,
+  body: (LockText::stringLine (lit key) value),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: arrayLine,
+  parameters: [key : String, values : (List Bytes)],
+  result: Bytes,
+  body: (LockText::line (lit key) (LockText::tomlArray values)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: digestLine,
+  parameters: [key : String, digest : Bytes],
+  result: Bytes,
+  body: (LockText::digestLine (lit key) digest),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: numberLine,
+  parameters: [key : String, value : Nat],
+  result: Bytes,
+  body: (LockText::line (lit key) (LexLeanStd.Numeral::decimal value)),
+  executable: true
+}
+
+definition{
+  name: header,
+  parameters: [table : String],
+  result: Bytes,
+  body: (LockText::header (lit table)),
+  executable: true
+}
+
+definition{
+  name: packageOf,
+  parameters: [source : LexiconSource],
+  result: Bytes,
+  body: (match source
+    | LexiconSource.builtin named => named
+    | LexiconSource.path named location => named
+    | LexiconSource.git named url revision subdirectory => named),
+  executable: true
+}
+
+definition{
+  name: sourcesSorted,
+  parameters: [rows : (List LexiconSource)],
+  result: (List LexiconSource),
+  body: (prim list_fold (fun (acc : (List LexiconSource)) (entry : (Bytes * LexiconSource)) => (cons (second entry) acc)) (nil LexiconSource) (LexLeanStd.Order::reverseList [(Bytes * LexiconSource)] (LexLeanStd.Order::sortByKey [LexiconSource] (LexLeanStd.Order::reverseList [(Bytes * LexiconSource)] (prim list_fold (fun (acc : (List (Bytes * LexiconSource))) (row : LexiconSource) => (cons ((packageOf row), row) acc)) (nil (Bytes * LexiconSource)) rows : (List (Bytes * LexiconSource)))))) : (List LexiconSource)),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: sourceText,
+  parameters: [source : LexiconSource],
+  result: Bytes,
+  body: (cat (header "[[lexicon_source]]") (match source
+    | LexiconSource.builtin named => (cat (stringLine "package" named) (stringLine "kind" (lit "builtin")))
+    | LexiconSource.path named location => (cat (cat (stringLine "package" named) (stringLine "kind" (lit "path"))) (stringLine "path" location))
+    | LexiconSource.git named url revision subdirectory => (cat (cat (cat (cat (stringLine "package" named) (stringLine "kind" (lit "git"))) (stringLine "url" url)) (stringLine "revision" revision)) (stringLine "subdirectory" subdirectory)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: sourcesText,
+  parameters: [rows : (List LexiconSource)],
+  result: Bytes,
+  body: (match rows
+    | List.nil => (cat (lit "lexicon_source = []") 0x0a)
+    | List.cons leading others => (prim list_fold (fun (acc : Bytes) (row : LexiconSource) => (cat acc (sourceText row))) 0x (sourcesSorted rows) : Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: artifactText,
+  parameters: [artifact : ArtifactSource],
+  result: Bytes,
+  body: (cat (cat (header "[[artifact_source]]") (digestLine "sha256" (project artifact digest))) (stringLine "path" (project artifact location))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: packageText,
+  parameters: [member : SourcePackage],
+  result: Bytes,
+  body: (cat (cat (cat (cat (header "[[source_package]]") (stringLine "package" (project member packageName))) (stringLine "version" (project member version))) (stringLine "kind" (lit "path"))) (stringLine "path" (project member location))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: limitsText,
+  parameters: [given : Limits],
+  result: Bytes,
+  body: (cat (cat (cat (cat (cat (cat (cat (cat (cat (cat (cat (header "[limits]") (numberLine "max_file_bytes" (project given maxFileBytes))) (numberLine "max_total_source_bytes" (project given maxTotalSourceBytes))) (numberLine "max_primitive_atoms" (project given maxPrimitiveAtoms))) (numberLine "max_token_lattice_edges" (project given maxTokenLatticeEdges))) (numberLine "max_parse_states" (project given maxParseStates))) (numberLine "max_ir_nodes" (project given maxIrNodes))) (numberLine "max_scope_depth" (project given maxScopeDepth))) (numberLine "max_import_depth" (project given maxImportDepth))) (numberLine "max_diagnostics" (project given maxDiagnostics))) (numberLine "max_child_output_bytes" (project given maxChildOutputBytes))) (numberLine "child_timeout_ms" (project given childTimeoutMs))),
+  executable: true
+}
+
+definition{
+  name: pdfText,
+  parameters: [provider : PdfProvider],
+  result: Bytes,
+  body: (cat (cat (cat (cat (cat (cat (cat (cat (header "[pdf]") (stringLine "mode" (lit "external"))) (stringLine "program" (project provider program))) (digestLine "program_sha256" (project provider programSha256))) (arrayLine "version_argv" (project provider versionArgv))) (digestLine "version_stdout_sha256" (project provider versionStdoutSha256))) (arrayLine "compile_argv" (project provider compileArgv))) (stringLine "output" (project provider output))) (arrayLine "resources" (project provider resources))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: canonicalProject,
+  parameters: [config : ProjectConfig],
+  result: Bytes,
+  body: (let head : Bytes := (cat (cat (cat (cat (cat (cat (cat (cat (cat (stringLine "spec" (lit "lexlean/project/1")) (stringLine "name" (project config projectName))) (stringLine "language" (project config language))) (stringLine "module_prefix" (project config modulePrefix))) (arrayLine "source_roots" (project config sourceRoots))) (arrayLine "entrypoints" (project config entrypoints))) (stringLine "build_root" (project config buildRoot))) (stringLine "lockfile" (project config lockfile))) (stringLine "lean_workspace" (project config leanWorkspace))) (stringLine "lean_toolchain" (LockText::leanToolchain))); (let artifacts : Bytes := (prim list_fold (fun (acc : Bytes) (row : ArtifactSource) => (cat acc (artifactText row))) 0x (project config artifactSources) : Bytes); (let packages : Bytes := (prim list_fold (fun (acc : Bytes) (row : SourcePackage) => (cat acc (packageText row))) 0x (project config sourcePackages) : Bytes); (let tail : Bytes := (match (project config pdf)
+    | Option.some provider => (pdfText provider)
+    | Option.none => 0x); (cat (cat (cat (cat (cat head (sourcesText (project config lexiconSources))) artifacts) packages) (limitsText (project config limits))) tail))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: configSha256,
+  parameters: [config : ProjectConfig],
+  result: Bytes,
+  body: (LexLeanStd.Sha256::sha256Hex (canonicalProject config)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

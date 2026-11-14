@@ -1,0 +1,113 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (left) (right) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{byteText}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Numeral.pick (LexLeanStd.Numeral.byteValues) (value)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{bigEndian}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : Nat) (width : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterate ((fun (state : (Prod (Nat) (ByteArray))) => ((LexLeanRuntime.quotient ((state).1) (256) (0) : Nat), cat (byteText ((LexLeanRuntime.remainder ((state).1) (256) (0) : Nat))) ((state).2)))) (width) ((value, ByteArray.mk \#[])) : (Prod (Nat) (ByteArray)))).2}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wordBytes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(word : UInt32)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (cat (byteText ((toNat (LexLeanStd.Sha256.shiftRight (word) ((24 : UInt32))) : Nat))) (byteText ((toNat ((LexLeanRuntime.bitAnd (LexLeanStd.Sha256.shiftRight (word) ((16 : UInt32))) ((255 : UInt32)) : UInt32)) : Nat)))) (byteText ((toNat ((LexLeanRuntime.bitAnd (LexLeanStd.Sha256.shiftRight (word) ((8 : UInt32))) ((255 : UInt32)) : UInt32)) : Nat)))) (byteText ((toNat ((LexLeanRuntime.bitAnd (word) ((255 : UInt32)) : UInt32)) : Nat)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{digestBytes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(digest : LexLeanStd.Sha256.Digest)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (cat (cat (cat (cat (cat (wordBytes ((digest).h0)) (wordBytes ((digest).h1))) (wordBytes ((digest).h2))) (wordBytes ((digest).h3))) (wordBytes ((digest).h4))) (wordBytes ((digest).h5))) (wordBytes ((digest).h6))) (wordBytes ((digest).h7))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{frame}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(label : ByteArray) (payload : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (cat (bigEndian ((LexLeanRuntime.length (label) : Nat)) (4)) (label)) (bigEndian ((LexLeanRuntime.length (payload) : Nat)) (8))) (payload)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{framedHash}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(domain : ByteArray) (frames : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{digestBytes (LexLeanStd.Sha256.sha256 (cat (cat (domain) (ByteArray.mk \#[0])) (frames)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{treeDigest}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(files : List ((Prod (ByteArray) (ByteArray))))}.\par
+\noindent Closure 1: binds \texttt{(acc, row)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{framedHash (lit ("lexlean-tree-v1")) ((LexLeanCollections.listFold ((fun (acc : ByteArray) (row : (Prod (ByteArray) (ByteArray))) => cat (acc) (frame ((row).1) ((row).2)))) (ByteArray.mk \#[]) (files) : ByteArray))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{sourceId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(projectToml : ByteArray) (lockText : ByteArray) (sources : List ((Prod (ByteArray) (ByteArray))))}.\par
+\noindent Closure 1: binds \texttt{(acc, row)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{framedHash (lit ("lexlean-source-v1")) (cat (cat (frame (lit ("project")) (projectToml)) (frame (lit ("lock")) (lockText))) ((LexLeanCollections.listFold ((fun (acc : ByteArray) (row : (Prod (ByteArray) (ByteArray))) => cat (acc) (cat (frame (lit ("path")) ((row).1)) (frame (lit ("source")) ((row).2))))) (ByteArray.mk \#[]) (sources) : ByteArray)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{semanticId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(compilerSemantics : ByteArray) (language : ByteArray) (linkedIr : ByteArray) (lexiconClosure : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{framedHash (lit ("lexlean-semantic-v1")) (cat (cat (cat (cat (frame (lit ("compiler-semantics")) (compilerSemantics)) (frame (lit ("language")) (language))) (frame (lit ("toolchain")) (lit ("leanprover/lean4:v4.32.1")))) (frame (lit ("linked-ir")) (linkedIr))) (frame (lit ("lexicon-closure")) (lexiconClosure)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{buildId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(sourceDigest : ByteArray) (semanticDigest : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{framedHash (lit ("lexlean-build-v1")) (cat (frame (lit ("source-id")) (sourceDigest)) (frame (lit ("semantic-id")) (semanticDigest)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{attestationId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(attestationBody : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{framedHash (lit ("lexlean-attestation-v1")) (frame (lit ("attestation-body")) (attestationBody))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{pdfRecipeId}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(texDigest : ByteArray) (programDigest : ByteArray) (versionDigest : ByteArray) (compileArgv : ByteArray) (resources : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{framedHash (lit ("lexlean-pdf-recipe-v1")) (cat (cat (cat (cat (frame (lit ("tex")) (texDigest)) (frame (lit ("program")) (programDigest))) (frame (lit ("version-output")) (versionDigest))) (frame (lit ("argv")) (compileArgv))) (frame (lit ("resources")) (resources)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}

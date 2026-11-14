@@ -6,8 +6,8 @@
 //! share a fixture (a verified project, an export, a compiled environment, all
 //! built once per test process) run in one part and the fixture is not built
 //! once per part. One part, the remainder, names no ID: it runs every test of
-//! the suite no other part names, its library tests, doctests, and meta-gate
-//! target included, so an ID added to the register runs there until the plan
+//! the suite no other part names, its library tests and doctests included; target parts own complete
+//! integration targets such as the honesty meta-gate, so an ID added to the register runs there until the plan
 //! moves it.
 //!
 //! `cargo xtask bdd` runs `cargo test` with [`CARGO_ARGUMENTS`] and, when
@@ -46,6 +46,8 @@ pub struct Plan {
     pub remainder: String,
     /// The named parts: each the conformance IDs whose tests it runs.
     pub parts: BTreeMap<String, Vec<String>>,
+    /// Parts that own complete integration-test targets, including future tests.
+    pub targets: BTreeMap<String, Vec<String>>,
 }
 
 fn is_name(name: &str) -> bool {
@@ -77,7 +79,7 @@ impl Plan {
             .ok_or_else(|| format!("{PLAN_FILE}: an object is required"))?;
         if let Some(unknown) = object
             .keys()
-            .find(|key| !["remainder", "parts"].contains(&key.as_str()))
+            .find(|key| !["remainder", "parts", "targets"].contains(&key.as_str()))
         {
             return Err(format!(
                 "{PLAN_FILE}: `{unknown}` is not a field of the plan"
@@ -106,7 +108,16 @@ impl Plan {
                 .collect::<Result<_, _>>()?;
             parts.insert(name.clone(), ids);
         }
-        let plan = Self { remainder, parts };
+        let targets = match object.get("targets") {
+            Some(value) => serde_json::from_value::<BTreeMap<String, Vec<String>>>(value.clone())
+                .map_err(|error| format!("{PLAN_FILE}: targets: {error}"))?,
+            None => BTreeMap::new(),
+        };
+        let plan = Self {
+            remainder,
+            parts,
+            targets,
+        };
         plan.check()?;
         Ok(plan)
     }
@@ -139,7 +150,7 @@ impl Plan {
                 self.remainder
             ));
         }
-        if self.parts.contains_key(&self.remainder) {
+        if self.parts.contains_key(&self.remainder) || self.targets.contains_key(&self.remainder) {
             return Err(format!(
                 "{PLAN_FILE}: `{}` is both the remainder and a named part",
                 self.remainder
@@ -168,13 +179,37 @@ impl Plan {
                 }
             }
         }
+        let mut target_owner = BTreeMap::new();
+        for (part, targets) in &self.targets {
+            if !is_name(part) || self.parts.contains_key(part) || targets.is_empty() {
+                return Err(format!(
+                    "{PLAN_FILE}: invalid or repeated target part `{part}`"
+                ));
+            }
+            for target in targets {
+                if !is_name(target) {
+                    return Err(format!("{PLAN_FILE}: invalid test target `{target}`"));
+                }
+                if let Some(first) = target_owner.insert(target, part) {
+                    return Err(format!(
+                        "{PLAN_FILE}: target `{target}` belongs to `{first}` and `{part}`"
+                    ));
+                }
+            }
+        }
         Ok(())
     }
 
     /// Every part's name, the remainder last.
     #[must_use]
     pub fn names(&self) -> Vec<String> {
-        let mut names: Vec<String> = self.parts.keys().cloned().collect();
+        let mut names: Vec<String> = self
+            .parts
+            .keys()
+            .chain(self.targets.keys())
+            .cloned()
+            .collect();
+        names.sort();
         names.push(self.remainder.clone());
         names
     }
@@ -189,6 +224,46 @@ impl Plan {
             .collect()
     }
 
+    /// Cargo target selectors for a part. Integration targets are discovered
+    /// from Cargo metadata rather than a list of tests that can become stale.
+    /// The remainder keeps every unassigned target and the library/doctests.
+    ///
+    /// # Errors
+    /// An unknown part or a target absent from Cargo's metadata.
+    pub fn cargo_targets(
+        &self,
+        part: &str,
+        integration: &BTreeSet<String>,
+    ) -> Result<Vec<Vec<String>>, String> {
+        for target in self.targets.values().flatten() {
+            if !integration.contains(target) {
+                return Err(format!(
+                    "{PLAN_FILE}: test target `{target}` does not exist"
+                ));
+            }
+        }
+        if let Some(targets) = self.targets.get(part) {
+            return Ok(vec![targets
+                .iter()
+                .flat_map(|target| ["--test".to_owned(), target.clone()])
+                .collect()]);
+        }
+        if part == self.remainder && !self.targets.is_empty() {
+            let assigned: BTreeSet<&String> = self.targets.values().flatten().collect();
+            let mut selected = vec!["--lib".to_owned(), "--bins".to_owned()];
+            for target in integration
+                .iter()
+                .filter(|target| !assigned.contains(target))
+            {
+                selected.extend(["--test".to_owned(), target.clone()]);
+            }
+            // Cargo forbids --doc with another target selector.
+            return Ok(vec![selected, vec!["--doc".to_owned()]]);
+        }
+        self.harness_filters(part)?;
+        Ok(vec![Vec::new()])
+    }
+
     /// The harness arguments (after `--`) that select one part: `--exact`
     /// and the part's test names, or for the remainder `--exact` and a
     /// `--skip` of every test a named part runs.
@@ -197,6 +272,9 @@ impl Plan {
     ///
     /// A part the plan does not have.
     pub fn harness_filters(&self, part: &str) -> Result<Vec<String>, String> {
+        if self.targets.contains_key(part) {
+            return Ok(Vec::new());
+        }
         let mut filters = vec!["--exact".to_owned()];
         if part == self.remainder {
             for name in self.named_tests() {
@@ -253,6 +331,48 @@ mod tests {
         );
         let unknown = plan.harness_filters("none").expect_err("no such part");
         assert!(unknown.contains("heavy, other, rest"), "{unknown}");
+    }
+
+    #[test]
+    fn complete_targets_move_without_copying_their_test_names() {
+        let plan = Plan::parse(
+            r#"{
+            "remainder": "rest", "parts": {"first": ["RP-01"]},
+            "targets": {"honesty": ["bdd"]}
+        }"#,
+        )
+        .expect("a target part");
+        let targets = ["bdd", "conformance", "future"]
+            .into_iter()
+            .map(str::to_owned)
+            .collect();
+        assert_eq!(
+            plan.cargo_targets("honesty", &targets).expect("honesty"),
+            [vec!["--test", "bdd"]]
+        );
+        assert!(plan
+            .harness_filters("honesty")
+            .expect("all tests")
+            .is_empty());
+        assert_eq!(
+            plan.cargo_targets("rest", &targets).expect("rest"),
+            [
+                vec![
+                    "--lib",
+                    "--bins",
+                    "--test",
+                    "conformance",
+                    "--test",
+                    "future"
+                ],
+                vec!["--doc"]
+            ]
+        );
+        assert!(plan.cargo_targets("honesty", &Default::default()).is_err());
+        assert!(Plan::parse(
+            r#"{"remainder":"rest","parts":{},"targets":{"one":["bdd"],"two":["bdd"]}}"#
+        )
+        .is_err());
     }
 
     #[test]

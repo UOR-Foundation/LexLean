@@ -1,0 +1,184 @@
+\begin{lexlean}{Json}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{Numeral}
+\importmodule{Order}
+\importmodule{Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Json,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: JBool, fields: [Bool]},
+    {name: JInt, fields: [Bool, Nat]},
+    {name: JStr, fields: [Bytes]},
+    {name: JArr, fields: [Json]},
+    {name: JObj, fields: [Json]},
+    {name: JNil, fields: []},
+    {name: JItem, fields: [Json, Json]},
+    {name: JMember, fields: [Bytes, Json, Json]}
+  ]
+}
+
+definition{
+  name: escapedPiece,
+  parameters: [subject : Bytes, position : Nat, byte : UInt8],
+  result: Bytes,
+  body: (let value : Nat := (prim to_nat byte : Nat); (if (value =? 34) then 0x5c22 else (if (value =? 92) then 0x5c5c else (if (value =? 8) then 0x5c62 else (if (value =? 12) then 0x5c66 else (if (value =? 10) then 0x5c6e else (if (value =? 13) then 0x5c72 else (if (value =? 9) then 0x5c74 else (if (value <? 32) then (prim append 0x5c753030 (Numeral::hexByte byte) : Bytes) else (Text::sliceOr subject position 1)))))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: escapeStep,
+  parameters: [subject : Bytes, state : (Nat * Bytes)],
+  result: (Option (Nat * Bytes)),
+  body: (match (prim index subject (first state) : (Option UInt8))
+    | Option.some byte => (ctor Option.some [(Nat * Bytes)] (((first state) + 1), (prim append (second state) (escapedPiece subject (first state) byte) : Bytes)))
+    | Option.none => (ctor Option.none [(Nat * Bytes)])),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: quoted,
+  parameters: [subject : Bytes],
+  result: Bytes,
+  body: (prim append (prim append 0x22 (second (first (prim iterate_until (fun [subject] (state : (Nat * Bytes)) => (escapeStep subject state)) (prim length subject : Nat) (0, 0x) : ((Nat * Bytes) * Bool)))) : Bytes) 0x22 : Bytes),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: escapeString,
+  parameters: [text : Bytes],
+  result: Bytes,
+  body: (quoted text),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+
+definition{
+  name: integerText,
+  parameters: [negative : Bool, magnitude : Nat],
+  result: Bytes,
+  body: (if (negative && (0 <? magnitude)) then (prim append 0x2d (Numeral::decimal magnitude) : Bytes) else (Numeral::decimal magnitude)),
+  executable: true
+}
+
+definition{
+  name: arrayText,
+  parameters: [items : (List Bytes)],
+  result: Bytes,
+  body: (prim append (prim append 0x5b (Text::joinWith items 0x2c) : Bytes) 0x5d : Bytes),
+  executable: true
+}
+
+definition{
+  name: keepLast,
+  parameters: [kept : (List (Bytes * Bytes)), entry : (Bytes * Bytes)],
+  result: (List (Bytes * Bytes)),
+  body: (match kept
+    | List.nil => (cons entry kept)
+    | List.cons head rest => (if (prim equal (first head) (first entry) : Bool) then (cons entry rest) else (cons entry kept))),
+  executable: true
+}
+
+definition{
+  name: memberText,
+  parameters: [entry : (Bytes * Bytes)],
+  result: Bytes,
+  body: (prim append (prim append (quoted (first entry)) 0x3a : Bytes) (second entry) : Bytes),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: objectText,
+  parameters: [entries : (List (Bytes * Bytes))],
+  result: Bytes,
+  body: (let unique : (List (Bytes * Bytes)) := (prim list_fold (fun (kept : (List (Bytes * Bytes))) (entry : (Bytes * Bytes)) => (keepLast kept entry)) (nil (Bytes * Bytes)) (Order::sortEntries entries) : (List (Bytes * Bytes))); (let texts : (List Bytes) := (prim list_fold (fun (texts : (List Bytes)) (entry : (Bytes * Bytes)) => (cons (memberText entry) texts)) (nil Bytes) unique : (List Bytes)); (prim append (prim append 0x7b (Text::joinWith texts 0x2c) : Bytes) 0x7d : Bytes))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: writeValue,
+  parameters: [value : Json],
+  result: Bytes,
+  body: (match value
+    | Json.JBool flag => (if flag then 0x74727565 else 0x66616c7365)
+    | Json.JInt negative magnitude => (integerText negative magnitude)
+    | Json.JStr text => (quoted text)
+    | Json.JArr items => (arrayText (renderItems items))
+    | Json.JObj members => (objectText (renderMembers members))
+    | Json.JNil => 0x
+    | Json.JItem element rest => 0x
+    | Json.JMember key inner rest => 0x),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: Write,
+  recursive_argument: value
+}
+
+definition{
+  name: renderItems,
+  parameters: [items : Json],
+  result: (List Bytes),
+  body: (match items
+    | Json.JBool flag => (nil Bytes)
+    | Json.JInt negative magnitude => (nil Bytes)
+    | Json.JStr text => (nil Bytes)
+    | Json.JArr inner => (nil Bytes)
+    | Json.JObj inner => (nil Bytes)
+    | Json.JNil => (nil Bytes)
+    | Json.JItem element rest => (cons (writeValue element) (renderItems rest))
+    | Json.JMember key inner rest => (nil Bytes)),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: Write,
+  recursive_argument: items
+}
+
+definition{
+  name: renderMembers,
+  parameters: [members : Json],
+  result: (List (Bytes * Bytes)),
+  body: (match members
+    | Json.JBool flag => (nil (Bytes * Bytes))
+    | Json.JInt negative magnitude => (nil (Bytes * Bytes))
+    | Json.JStr text => (nil (Bytes * Bytes))
+    | Json.JArr inner => (nil (Bytes * Bytes))
+    | Json.JObj inner => (nil (Bytes * Bytes))
+    | Json.JNil => (nil (Bytes * Bytes))
+    | Json.JItem element rest => (nil (Bytes * Bytes))
+    | Json.JMember key inner rest => (cons (key, (writeValue inner)) (renderMembers rest))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  mutual: Write,
+  recursive_argument: members
+}
+
+definition{
+  name: writeJson,
+  parameters: [value : Json],
+  result: Bytes,
+  body: (writeValue value),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: writeJsonFile,
+  parameters: [value : Json],
+  result: Bytes,
+  body: (prim append (writeValue value) 0x0a : Bytes),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

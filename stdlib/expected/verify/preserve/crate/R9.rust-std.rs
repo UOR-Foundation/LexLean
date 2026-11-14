@@ -855,142 +855,176 @@ pub fn format_int(p0: i64) -> Str {
     Str::format_i64(p0)
 }
 
-pub fn f0(v0: List<i64>) -> R<List<i64>> {
-    f1(2u64, 0u64, 0i64, v0)
+#[derive(Clone)]
+pub enum Fn0 {
+    F2((Bytes, Bytes)),
 }
 
-pub fn f1(v0: u64, v1: u64, v2: i64, v3: List<i64>) -> R<List<i64>> {
-    let m1 = v3;
-    match m1.uncons() {
-        None => {
-            Ok(List::<i64>::nil())
+impl Fn0 {
+    pub fn apply(&self, p0: (bool, List<(Bytes, Bytes)>), p1: (Bytes, Bytes)) -> (bool, List<(Bytes, Bytes)>) {
+        match self {
+            Fn0::F2(k0) => f2(k0.clone(), p0, p1),
         }
-        Some((v4, v5)) => {
-            let a2 = v1;
-            let a3 = 0u64;
-            if nat_eq(a2, a3) {
-                f1(v0, 1u64, v4, v5)
+    }
+}
+
+#[derive(Clone)]
+pub enum Fn1 {
+    F6,
+}
+
+impl Fn1 {
+    pub fn apply(&self, p0: List<(Bytes, Bytes)>, p1: (Bytes, Bytes)) -> List<(Bytes, Bytes)> {
+        match self {
+            Fn1::F6 => f6(p0, p1),
+        }
+    }
+}
+
+pub fn f0(v0: List<(Bytes, Bytes)>, v1: Bytes, v2: Bytes) -> List<(Bytes, Bytes)> {
+    let v3: (Bytes, Bytes) = (v1, v2);
+    let v4: (bool, List<(Bytes, Bytes)>) = f1(Fn0::F2(v3.clone()), (false, List::<(Bytes, Bytes)>::nil()), v0);
+    let m2 = {
+        let (h1, _) = v4;
+        h1
+    };
+    if m2 {
+        f3({
+            let (_, h3) = v4;
+            h3
+        })
+    } else {
+        f3(List::cons(v3, {
+            let (_, h4) = v4;
+            h4
+        }))
+    }
+}
+
+pub fn f1(v0: Fn0, p8: (bool, List<(Bytes, Bytes)>), p9: List<(Bytes, Bytes)>) -> (bool, List<(Bytes, Bytes)>) {
+    let m7 = (p8, p9);
+    {
+        let mut m7 = m7;
+        loop {
+            let step = {
+                let (v1, v2) = m7;
+                let m5 = v2;
+                match m5.uncons() {
+                    None => {
+                        Err::<((bool, List<(Bytes, Bytes)>), List<(Bytes, Bytes)>), (bool, List<(Bytes, Bytes)>)>(v1)
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<((bool, List<(Bytes, Bytes)>), List<(Bytes, Bytes)>), (bool, List<(Bytes, Bytes)>)>(({
+                            let c6: Fn0 = v0.clone();
+                            c6.apply(v1, v3)
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m7 = next; }
+                Err(done) => break done,
+            }
+        }
+    }
+}
+
+pub fn f2(v0: (Bytes, Bytes), v1: (bool, List<(Bytes, Bytes)>), v2: (Bytes, Bytes)) -> (bool, List<(Bytes, Bytes)>) {
+    f4(v0, v1, v2)
+}
+
+pub fn f3(v0: List<(Bytes, Bytes)>) -> List<(Bytes, Bytes)> {
+    f5(Fn1::F6, List::<(Bytes, Bytes)>::nil(), v0)
+}
+
+pub fn f4(v0: (Bytes, Bytes), v1: (bool, List<(Bytes, Bytes)>), v2: (Bytes, Bytes)) -> (bool, List<(Bytes, Bytes)>) {
+    let m11 = {
+        let (h10, _) = v1;
+        h10
+    };
+    if m11 {
+        (true, List::cons(v2, {
+            let (_, h12) = v1;
+            h12
+        }))
+    } else {
+        let a15 = {
+            let (h13, _) = v0.clone();
+            h13
+        };
+        let a16 = {
+            let (h14, _) = v2.clone();
+            h14
+        };
+        if equal(a15, a16) {
+            (true, List::cons(v0, {
+                let (_, h17) = v1;
+                h17
+            }))
+        } else {
+            if f7({
+                let (h18, _) = v0.clone();
+                h18
+            }, {
+                let (h19, _) = v2.clone();
+                h19
+            }) {
+                (true, List::cons(v2, List::cons(v0, {
+                    let (_, h20) = v1;
+                    h20
+                })))
             } else {
-                Ok(List::cons(f2(v0, f3(v2, v4)?)?, f1(v0, 0u64, 0i64, v5)?))
+                (false, List::cons(v2, {
+                    let (_, h21) = v1;
+                    h21
+                }))
             }
         }
     }
 }
 
-pub fn f2(v0: u64, v1: i64) -> R<i64> {
-    let a4 = v0;
-    let a5 = 0u64;
-    if nat_eq(a4, a5) {
-        f4(v1)
-    } else {
-        let a6 = v0;
-        let a7 = 1u64;
-        if nat_eq(a6, a7) {
-            f5(v1)
-        } else {
-            Ok(v1)
+pub fn f5(v0: Fn1, p25: List<(Bytes, Bytes)>, p26: List<(Bytes, Bytes)>) -> List<(Bytes, Bytes)> {
+    let m24 = (p25, p26);
+    {
+        let mut m24 = m24;
+        loop {
+            let step = {
+                let (v1, v2) = m24;
+                let m22 = v2;
+                match m22.uncons() {
+                    None => {
+                        Err::<(List<(Bytes, Bytes)>, List<(Bytes, Bytes)>), List<(Bytes, Bytes)>>(v1)
+                    }
+                    Some((v3, v4)) => {
+                        Ok::<(List<(Bytes, Bytes)>, List<(Bytes, Bytes)>), List<(Bytes, Bytes)>>(({
+                            let c23: Fn1 = v0.clone();
+                            c23.apply(v1, v3)
+                        }, v4))
+                    }
+                }
+            };
+            match step {
+                Ok(next) => { m24 = next; }
+                Err(done) => break done,
+            }
         }
     }
 }
 
-pub fn f3(v0: i64, v1: i64) -> R<i64> {
-    let a9 = v0;
-    let a10 = {
-        let a8 = v1;
-        int_neg(a8)?
+pub fn f6(v0: List<(Bytes, Bytes)>, v1: (Bytes, Bytes)) -> List<(Bytes, Bytes)> {
+    List::cons(v1, v0)
+}
+
+pub fn f7(v0: Bytes, v1: Bytes) -> bool {
+    let a31 = {
+        let a27 = v0;
+        let a28 = v1;
+        compare_bytes(a27, a28)
     };
-    int_sub(a9, a10)
-}
-
-pub fn f4(v0: i64) -> R<i64> {
-    let m14 = {
-        let a12 = v0;
-        let a13 = {
-            let a11 = 32768i64;
-            int_neg(a11)?
-        };
-        compare(a12, a13)
+    let a32 = {
+        let a29 = Bytes::lit(&[]);
+        let a30 = Bytes::lit(&[0x01]);
+        compare_bytes(a29, a30)
     };
-    if match m14 {
-        Ordering::Less => {
-            true
-        }
-        Ordering::Equal => {
-            false
-        }
-        Ordering::Greater => {
-            false
-        }
-    } {
-        let a15 = 32768i64;
-        int_neg(a15)
-    } else {
-        let m18 = {
-            let a16 = 32767i64;
-            let a17 = v0;
-            compare(a16, a17)
-        };
-        if match m18 {
-            Ordering::Less => {
-                true
-            }
-            Ordering::Equal => {
-                false
-            }
-            Ordering::Greater => {
-                false
-            }
-        } {
-            Ok(32767i64)
-        } else {
-            Ok(v0)
-        }
-    }
-}
-
-pub fn f5(v0: i64) -> R<i64> {
-    let m22 = {
-        let a20 = v0;
-        let a21 = {
-            let a19 = 2147483648i64;
-            int_neg(a19)?
-        };
-        compare(a20, a21)
-    };
-    if match m22 {
-        Ordering::Less => {
-            true
-        }
-        Ordering::Equal => {
-            false
-        }
-        Ordering::Greater => {
-            false
-        }
-    } {
-        f3(v0, 4294967296i64)
-    } else {
-        let m25 = {
-            let a23 = 2147483647i64;
-            let a24 = v0;
-            compare(a23, a24)
-        };
-        if match m25 {
-            Ordering::Less => {
-                true
-            }
-            Ordering::Equal => {
-                false
-            }
-            Ordering::Greater => {
-                false
-            }
-        } {
-            let a26 = v0;
-            let a27 = 4294967296i64;
-            int_sub(a26, a27)
-        } else {
-            Ok(v0)
-        }
-    }
+    equal(a31, a32)
 }
