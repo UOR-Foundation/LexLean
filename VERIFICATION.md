@@ -43,6 +43,42 @@ Outside `vv`:
 
 Each gate below was made to fail by planting a defect, running the gate's command, recording the failure, and removing the defect. The observed lines are verbatim gate output (paths abbreviated to the repository root). `cargo xtask release-check` requires a `### <gate> can fail` record for every gate and audit named in `repo_model::release::GATES`.
 
+### BS-15 render corpus materialization
+
+Issue #457 changes only the construction of the two render vectors in
+`crates/conformance/src/cases/bootstrap/rust_package.rs`. The previous code
+encoded every full-library render, filtered the evaluator vector, then
+replaced the large native inputs with their existing 4,096-byte prefixes.
+The discarded full runs were inputs to neither differential. The direct
+assembler retains the same order: accepted manifests, shaped inputs, then
+seeded render mutants. At or below 16,384 bytes it uses the unchanged run and
+expected files in both vectors; above that boundary it constructs only the
+same native prefix and recipe outcome. The complete-library recipe assertion
+against `package::package` in `accepted` is unchanged.
+
+The construction change alters no corpus generation, seed, count, negative
+fixture, planted defect, native comparison, certificate limit, export check,
+host condition, timeout, or compiler-semantics input. On the original
+`cf76090d` base, the native render vector contains 735 runs and the evaluator
+vector 241; 494 full-library argument encodings that neither vector consumed
+are no longer materialized. After accepted `BS-21` (#395, `c66f83d`) adds its
+package, the same construction retains 737 native renders and 241 evaluator
+renders, avoiding 496 unused full-library encodings. These are work-count
+deductions, not measured CI speedups; the accepted member's corpus and count
+changes are retained.
+
+The library unit regression `render_corpora_preserve_inputs_and_outcomes`
+compares both vectors with the previous assembler on both profiles, distinct
+supplied package outcomes, recipe outcomes, and libraries of 0, 4,096,
+16,383, 16,384, 16,385 and 32,768 bytes. Local validation in the authoring
+environment passed whitespace checks and an independent assembly model:
+24 evaluator and 36 native results were identical in order and bytes across
+27 empty/mixed collection cases, and changes to the boundary, prefix and
+supplied-outcome routing were detected. That model does not execute Rust or
+the package renderer. Rust formatting, Clippy, the library regression and the
+complete release gate were not run locally because the environment has no
+Rust toolchain; they remain required acceptance evidence on the final tree.
+
 ### Intel host partition custody and complete evidence
 
 The three non-Intel auxiliary host legs keep their existing locked,
