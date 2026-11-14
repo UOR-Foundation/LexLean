@@ -2,8 +2,9 @@
 //! (SPEC.md §9.4). The `bootstrap-export` job exports the bootstrap project
 //! once, requires its packages to equal the committed packages, and uploads
 //! the bundle with a custody record that binds it to the repository, the
-//! run and its attempt, the commit and its tree, the toolchain pins and the
-//! toolchains that ran, and the bundle's bytes. A conformance case of the same
+//! run and its attempt, the commit and its tree, the toolchain pins, the
+//! toolchains that ran and the addresses of their executables, and the
+//! bundle's bytes. A conformance case of the same
 //! run that needs the export takes it from there instead of exporting the
 //! project again: the harness names the directory it waits in through
 //! [`VARIABLE`], checks the record against its own run and checkout, replays
@@ -26,7 +27,7 @@ use crate::support::{self, P};
 pub const VARIABLE: &str = "LEXLEAN_BOOTSTRAP_EXPORT";
 
 /// The custody record's format.
-pub const SPEC: &str = "lexlean/ci-bootstrap-export/1";
+pub const SPEC: &str = "lexlean/ci-bootstrap-export/2";
 
 /// The custody record, beside the bundle in the uploaded directory.
 pub const CUSTODY_FILE: &str = "custody.json";
@@ -48,6 +49,10 @@ pub const ARTIFACT_DIR: &str = "artifact";
 
 /// The repository files whose bytes pin the toolchains and the dependencies.
 pub const PINS: [&str; 3] = ["rust-toolchain.toml", "lean-toolchain", "Cargo.lock"];
+
+/// The executables of the pinned Lean toolchain a custody record addresses,
+/// beside `rustc` (SPEC.md §22.11).
+pub const LEAN_EXECUTABLES: [&str; 3] = ["lake", "lean", "leanchecker"];
 
 /// The longest a case waits for the run's export: the export job's own
 /// limit, after which the job has failed and the fetcher says so.
@@ -73,6 +78,10 @@ pub struct Custody {
     pub pins: BTreeMap<String, String>,
     /// What the toolchains report: `rustc -vV` and `lean --version`.
     pub toolchains: BTreeMap<String, String>,
+    /// The address of each executable: the SHA-256 of `lake`, `lean`, and
+    /// `leanchecker` of the pinned toolchain, and the address of the `rustc`
+    /// that compiled the job's own binary (§22.11).
+    pub executables: BTreeMap<String, String>,
     /// The project-relative bundle directory of the export.
     pub bundle_path: String,
     /// [`bundle_digest`] of the bundle.
@@ -98,6 +107,8 @@ pub struct Identity {
     pub pins: BTreeMap<String, String>,
     /// What the toolchains report.
     pub toolchains: BTreeMap<String, String>,
+    /// The address of each executable.
+    pub executables: BTreeMap<String, String>,
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
@@ -130,7 +141,8 @@ fn run(root: &Utf8Path, program: &str, arguments: &[&str]) -> Result<String, Str
 /// # Errors
 ///
 /// When the run is not named by GitHub's variables, the checkout's tracked
-/// files differ from its commit, or a toolchain cannot be asked its version.
+/// files differ from its commit, a toolchain cannot be asked its version, or
+/// an executable of the pinned toolchain cannot be read.
 pub fn identity(root: &Utf8Path) -> Result<Identity, String> {
     let variable = |name: &str| -> Result<String, String> {
         std::env::var(name)
@@ -169,6 +181,19 @@ pub fn identity(root: &Utf8Path) -> Result<Identity, String> {
         ("lean".to_owned(), run(root, "lean", &["--version"])?),
         ("rustc".to_owned(), run(root, "rustc", &["-vV"])?),
     ]);
+    let bin = lexlean::verify::toolchain::toolchain_root()
+        .map_err(|error| format!("the pinned toolchain: {}", error.message))?
+        .join("bin");
+    let mut executables = BTreeMap::new();
+    for name in LEAN_EXECUTABLES {
+        let bytes = std::fs::read(bin.join(name).as_std_path())
+            .map_err(|error| format!("{bin}/{name}: {error}"))?;
+        executables.insert(name.to_owned(), sha256_hex(&bytes));
+    }
+    executables.insert(
+        "rustc".to_owned(),
+        lexlean::build_identity::RUSTC_SHA256.to_owned(),
+    );
     Ok(Identity {
         repository,
         run_id,
@@ -177,6 +202,7 @@ pub fn identity(root: &Utf8Path) -> Result<Identity, String> {
         tree: run(root, "git", &["rev-parse", "HEAD^{tree}"])?,
         pins,
         toolchains,
+        executables,
     })
 }
 
@@ -262,6 +288,12 @@ pub fn check(custody: &Custody, current: &Identity, bundle: &(String, u64)) -> R
         custody.toolchains == current.toolchains,
     );
     same(
+        "executables",
+        &custody.executables,
+        &current.executables,
+        custody.executables == current.executables,
+    );
+    same(
         "bundle",
         &(&custody.bundle_sha256, custody.bundle_files),
         &(&bundle.0, bundle.1),
@@ -330,6 +362,7 @@ pub fn publish(output: &Utf8Path) -> Result<Custody, String> {
         tree: before.tree,
         pins: before.pins,
         toolchains: before.toolchains,
+        executables: before.executables,
         bundle_path: exported.output.bundle.to_string(),
         bundle_sha256,
         bundle_files,
@@ -349,7 +382,7 @@ pub fn publish(output: &Utf8Path) -> Result<Custody, String> {
 /// # Errors
 ///
 /// When the run has no export, the record names another run, commit, tree,
-/// pin, toolchain, or bundle, or the bundle does not replay.
+/// pin, toolchain, executable, or bundle, or the bundle does not replay.
 pub fn take(directory: &Utf8Path) -> Result<Exported, String> {
     std::fs::create_dir_all(directory.as_std_path())
         .and_then(|()| std::fs::write(directory.join(WANTED).as_std_path(), b""))
