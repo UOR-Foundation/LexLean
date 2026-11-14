@@ -5,7 +5,7 @@
 [platform_independent]
 ".lexlean/verified/$ATTESTATION/audit/LexLeanAudit.Ad1605008869c9555fe0be891295af405.LexLeanExample.Main.lean" = "ce72b0930147248dfa799553ba634a7da3d05df24977acc9873052cdc47d91a2"
 ".lexlean/verified/$ATTESTATION/audit/output.txt" = "e0a31c670eac06f52782d864e0a948c11d06d4901077474ddcc6afb86817ac0a"
-".lexlean/verified/$ATTESTATION/build-manifest.json" = "b28a8b7f6b46856794133ce395af92db35aa6ac8cd114c0f28a89ab2d7028b7a"
+".lexlean/verified/$ATTESTATION/build-manifest.json" = "1fdf0006c7f12bd24fe4e73cbc150aeaef4bde53f0c41012e6b612e55a1346cb"
 ".lexlean/verified/$ATTESTATION/coverage/LexLeanExample/Main.coverage.json" = "5a81aa88d63337f087021e9bf442e661a9154c61b6977d71c9d2fd8517c80bd1"
 ".lexlean/verified/$ATTESTATION/lexicons/Main.closure.json" = "e3ccaf68438657e3d4be155b2252ba99b8ced2217f6272103a7fc43b3beb96d0"
 ".lexlean/verified/$ATTESTATION/maps/LexLeanExample/Main.map.json" = "d6d24b5fec7055222d14df40cc252d795826c7d7aa69958786eaf834136db1ca"
