@@ -49,8 +49,12 @@ workspace carried at those versions without a tag.
   A release is cut by pushing the line's head to `cut/vX.Y.Z`: `cut.yml` runs
   the new `cargo xtask bump-version X.Y.Z` (every site of the workspace
   version, the changelog's `## Unreleased` heading, and `Cargo.lock`), opens the
-  pull request, and regenerates it; `tag.yml` tags the merge once its gate
-  passes, dispatches `release.yml`, and opens the pull request into `main`.
+  pull request, regenerates it, waits for the gate on the regenerated head,
+  merges the pull request at that head, and calls `tag.yml`, which tags the
+  merge, dispatches `release.yml`, and opens the pull request into `main`; no
+  person merges a cut. `tag.yml` still tags a person's merge of a cut, and
+  accepts the run that verified a merged head's tree without waiting for the
+  merge's own.
 - Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
   new diagnostic code; changes the language-1.2 identity). The runtime gains a
   sixth native module, `LexLeanRuntime.Regions`: a checker of local box

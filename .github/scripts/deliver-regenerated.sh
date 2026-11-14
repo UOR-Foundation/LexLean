@@ -15,7 +15,9 @@
 #
 # Inputs, from the environment: REPO, COMMIT, BRANCH (may be empty), RUN_URL,
 # REGENERATED (the downloaded `regenerated-<commit>` artifact), GITHUB_REF,
-# GITHUB_STEP_SUMMARY. The checkout is COMMIT with the workflow token.
+# GITHUB_STEP_SUMMARY. The checkout is COMMIT with the workflow token. Output,
+# to GITHUB_OUTPUT: `head`, the commit the gate was dispatched on, when it was
+# (`cut.yml` waits for that run and lands the cut on it); nothing otherwise.
 set -euo pipefail
 
 repo=${REPO:?REPO names owner/name}
@@ -23,6 +25,7 @@ commit=${COMMIT:?COMMIT names the regenerated commit}
 branch=${BRANCH:-}
 dir=${REGENERATED:?REGENERATED names the artifact directory}
 summary=${GITHUB_STEP_SUMMARY:-/dev/null}
+output=${GITHUB_OUTPUT:-/dev/null}
 say() { printf '%s\n' "$1" | tee -a "$summary"; }
 
 (cd "$dir" && sha256sum --check --quiet SHA256SUMS)
@@ -54,6 +57,12 @@ if [ -s "$dir/regenerated.patch" ]; then
 fi
 if git diff --cached --quiet; then
   say "The regenerated tree of \`$commit\` is the committed tree: nothing to deliver."
+  # A caller's branch was pushed with the workflow token, which started no
+  # run: the gate is dispatched for it all the same.
+  if [ -n "${BRANCH:-}" ]; then
+    gh workflow run ci.yml --repo "$repo" --ref "$branch"
+    echo "head=$commit" >> "$output"
+  fi
 else
   paths=$(git diff --cached --name-only | wc -l)
   {
@@ -71,6 +80,7 @@ else
   # A plain push is a fast-forward or nothing.
   git push origin "HEAD:refs/heads/$branch"
   gh workflow run ci.yml --repo "$repo" --ref "$branch"
+  echo "head=$(git rev-parse HEAD)" >> "$output"
   say "Delivered $paths regenerated paths to \`$branch\` as \`$(git rev-parse HEAD)\` and dispatched \`ci.yml\` there."
 fi
 

@@ -79,12 +79,12 @@ fn sites(old: &str, new: &str) -> Vec<Site> {
             format!("\"a {new} tree must refuse release"),
             1,
         ),
-        // The unreleased entries become the release's (Keep a Changelog); the
-        // next landing opens a new `## Unreleased`.
+        // The unreleased entries become the release's (Keep a Changelog), under
+        // a fresh, empty `## Unreleased` that the next cut finds.
         site(
             "CHANGELOG.md",
             "\n## Unreleased\n".to_owned(),
-            format!("\n## {new}\n"),
+            format!("\n## Unreleased\n\n## {new}\n"),
             1,
         ),
     ]

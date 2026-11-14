@@ -16,7 +16,8 @@
 #
 # A push to `regenerate/**` starts it from any commit, because GitHub
 # dispatches only a workflow its default branch carries. `cut.yml` calls it on
-# the version commit of a release cut, naming the branch to deliver to.
+# the version commit of a release cut, naming the branch to deliver to, and
+# lands the cut once the gate passes on the head this returns (`head`).
 name: regenerate
 
 on:
@@ -41,6 +42,10 @@ on:
       atlas:
         type: boolean
         default: false
+    outputs:
+      head:
+        description: The commit of `branch` the gate was dispatched on (the delivered head), or empty when nothing was delivered or dispatched
+        value: ${{ jobs.deliver.outputs.head }}
 
 permissions:
   contents: read
@@ -350,6 +355,8 @@ jobs:
       contents: write
       actions: write
       pull-requests: read
+    outputs:
+      head: ${{ steps.deliver.outputs.head }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -359,6 +366,7 @@ jobs:
           name: regenerated-${{ inputs.ref || github.sha }}
           path: ${{ runner.temp }}/regenerated
       - name: Commit the regenerated tree to the pull request and run the gate there
+        id: deliver
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
