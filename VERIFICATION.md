@@ -11416,6 +11416,8 @@ JSON 128). It now reads a semantic module to 1024 levels on a stack of its
 own; `conformance_sm_12` reads, converts both ways, and writes the 1000-cell
 fixture through it on a 2 MiB thread and refuses the 1100-cell one, and fails
 when the API reads the notation to 256 levels or runs on its caller's stack.
+`conformance_au_08`, which reads every committed module through the API, passes
+(862 s).
 
 Against `v0.4.0` itself: the diff touches no identity input (`language/`,
 `schemas/`, the embedded goldens); every one of the 17 examples' committed
