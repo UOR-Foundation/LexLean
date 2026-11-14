@@ -39,6 +39,11 @@ walkdir = { workspace = true }
 rustix = { workspace = true }
 signal-hook = { workspace = true }
 
+# The build script records the address of the `rustc` that compiles this crate
+# (SPEC.md §22.11): the SHA-256 of its executable and driver library.
+[build-dependencies]
+sha2 = { workspace = true }
+
 # `production-data` embeds the native preservation library
 # (`language/preservation-1.2/library/`, 32.2 of the 36.4 MB of language data),
 # which only certificate generation reads: `production build`, and `verify`
