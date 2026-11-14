@@ -30,6 +30,19 @@ workspace carried at those versions without a tag.
   version, the changelog's `## Unreleased` heading, and `Cargo.lock`), opens the
   pull request, and regenerates it; `tag.yml` tags the merge once its gate
   passes, dispatches `release.yml`, and opens the pull request into `main`.
+- The bootstrap project configures `max_file_bytes = 25165824` (SPEC.md
+  §17.23, the maintainer's decision): with `BS-73` a part of its certificate is
+  12,928,150 bytes, beyond the 6,291,456 it configured. A semantic input, so its
+  lock and every package move.
+
+- The bootstrap project configures `child_timeout_ms = 900000` (SPEC.md
+  §17.23, the maintainer's decision): verifying `BS-73`, the certificate of a
+  production root (`LexLeanPreserve.Cf85a168f307e9378e5b0df3a87d82042.R62`,
+  the root's own name is being identified) took `lean` past the 300,000 ms
+  default, observed at 300,004 ms (run 43531029081, r14). `compiler` and
+  `stdlib` keep the default. A semantic input, so its lock and every package
+  move.
+
 - Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
   new diagnostic code; changes the language-1.2 identity). The runtime gains a
   sixth native module, `LexLeanRuntime.Regions`: a checker of local box
@@ -58,6 +71,11 @@ workspace carried at those versions without a tag.
   A landing that moves the language-1.2 ID now also updates the constant;
   `RP-10` names the new value when it is stale.
 
+- Decoding a semantic module from its canonical JSON as language-1.2 source, ninth slice
+  of the typed IR (SPEC.md §17.23, §17.12, `BS-73`, #269; no new diagnostic code, no change
+  to the language-1.2 identity). `decodeSemanticModule` of `SemanticDecode` returns what
+  `SemanticModule::parse` decodes, or the decoding rejection it reports, for every committed
+  semantic module and for mutated ones. The register is 505 IDs.
 - The declarations of reasoning and text components, and semantic modules of every
   kind, as language-1.2 source, eighth slice of the typed IR (SPEC.md §17.23, §17.12,
   `BS-72`, #269; no new diagnostic code, no change to the language-1.2 identity).

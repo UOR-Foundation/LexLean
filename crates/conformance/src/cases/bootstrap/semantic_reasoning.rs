@@ -827,7 +827,7 @@ fn is_reasoning(declaration: &SemanticDeclaration) -> bool {
     !is_ordinary(declaration) && !is_model(declaration)
 }
 
-fn enc_any(declaration: &SemanticDeclaration) -> Value {
+pub(super) fn enc_any(declaration: &SemanticDeclaration) -> Value {
     if is_ordinary(declaration) {
         adt(
             "AnyDeclaration",

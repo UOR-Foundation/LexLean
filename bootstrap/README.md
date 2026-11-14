@@ -79,3 +79,6 @@ realizations, evidence, and models as the linked IR embeds them.
 `src/SemanticReasoning.lex.tex` (SPEC.md §17.23, `BS-72`) imports `SemanticDecls`, `SemanticModels`,
 `SemanticTerms`, `SemanticTypes`, and the standard library's `Json` and `Order`, and writes the
 declarations of reasoning and text components and semantic modules of every kind.
+`src/SemanticDecode.lex.tex` (SPEC.md §17.23, `BS-73`) imports `SemanticDecls`, `SemanticModels`,
+`SemanticReasoning`, `SemanticTerms`, `SemanticTypes`, and the standard library's `Json`, `JsonRead`,
+`Numeral`, and `Order`, and decodes a semantic module from its canonical JSON.

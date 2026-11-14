@@ -301,6 +301,9 @@
     ],
     "bootstrap-semantic-reasoning": [
       "BS-72"
+    ],
+    "bootstrap-semantic-decode": [
+      "BS-73"
     ]
   },
   "targets": {

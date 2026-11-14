@@ -12019,6 +12019,86 @@ Measured with the compiler binary of this tree's compiler sources: `lexlean
 check` of the `bootstrap/` project passes, with each root eligible for `rust-std`
 with exactly its declared effects, and `lexlean fmt --check` passes.
 
+### decoding a semantic module from JSON is source (BS-73)
+
+The regeneration of the typed-IR stack at this slice's tip (run 43481945154,
+r9) stopped bootstrap's production export at `LLS8002`: a part of its
+certificate is 12,928,150 bytes, beyond the 6,291,456 bytes the project let
+one file hold. The project now configures `max_file_bytes = 25165824` (the
+maintainer's decision, 2026-11-13; a semantic input, so the lock and every
+package move at the landing), which leaves room for the further slices of the
+typed IR. Which root the oversized part belongs to, and whether it has a
+structural fix as `RB-24`'s validator twin did, is open; the raise unblocks
+the batch and is not the end of the matter.
+
+With the fourteen axioms restored (below), the next regeneration (run
+43531029081, r14) stopped at a second `LLS8002`: `lean` exceeded
+`child_timeout_ms` checking the certificate of a production root,
+`LexLeanPreserve.Cf85a168f307e9378e5b0df3a87d82042.R62` (the root's own name
+is being identified), 300,004 ms observed against the 300,000 ms default.
+The project now configures `child_timeout_ms = 900000` for `bootstrap` alone
+(the maintainer's decision, 2026-11-13); `compiler` and `stdlib` keep the
+default. Whether the slow certificate has a structural fix, in the style of
+`RB-24`'s table-to-`inList` restructuring, is open and tracked separately
+from the raise that unblocks the batch.
+
+Once that export ran, the gate caught `LLV7005` on three of the module's
+hand-written helpers (`oneByte`, `trailing`, `utf8Of`, the loose JSON
+reader): each declared the axioms its own proof never uses (run 43498736513,
+r10, `observed []`). They were copied from the standard library's reader
+this one is modelled on, and `LLV7005` catches an unused axiom only when a
+root's own proof is examined, so a reader built from an existing one
+inherits axioms it never needs until its own root is checked. The first fix
+swept all seventeen of the module's loose-JSON-reader helpers to no axioms,
+past the three the gate had actually named; the next regeneration (run
+43509954359, r13) caught the opposite violation on the other fourteen
+(`byteAt`, `digitAt`, `digitsUntil`, `hexAt`, `looseAdvance`, `looseEscape`,
+`looseInteger`, `looseKeyAt`, `looseStep`, `looseString`, `looseStringStep`,
+`looseValueAt`, `readLoose`, `unicodeEscape`): their own proofs do use
+`[Quot.sound, propext]`, so the sweep had removed axioms fourteen of the
+seventeen genuinely need. Only `oneByte`, `trailing`, and `utf8Of` declare
+none; every other helper but the root, `decodeSemanticModule`, declares
+`[Quot.sound, propext]`.
+
+`BS-73` holds the production root `decodeSemanticModule` of
+`LexLeanBoot.SemanticDecode` (`bootstrap/src/SemanticDecode.lex.tex`) to the
+decoding half of `lexlean::ir::semantic::SemanticModule::parse`: serde's typed
+decoding of the module and everything it holds, the comparison with the
+canonical form, and the closed-schema walk that names the first member serde
+ignored. The standard library's reader takes canonical text only, so the
+module reads JSON text as serde does: whitespace between tokens, members in any
+order and repeated, every escape including surrogate pairs, and integers
+without fractions or exponents. The root returns the module's specification and declarations, in the
+representation `SemanticReasoning` (`BS-72`) writes, or the rejection the parser
+reports first. The decoders are generated from the description of the oracle's
+types that writes `BS-71` and `BS-72`; each recurses on a count of the
+document's values, and serde's nesting limit is checked as the document's
+depth. The root admits exactly `allocation`, `overflow`, and `recursion`. The
+oracle is the existing public code of `semantic.rs`; no Rust outside the case
+changes.
+
+The case's domain is the texts that the canonical JSON parser accepts or that
+serde rejects first, since a text serde decodes and the canonical parser then
+rejects fails for a reason outside decoding. A text the parser decodes and then
+fails to validate decodes; validation is outside the claim. The runs are every
+distinct semantic module of every committed project that links, modules of the
+`BS-71` and `BS-72` examples, a module nested 127 levels and one nested 128, and
+mutations of ten example modules and twenty short committed modules: a member
+removed, a member repeated, an unknown member with the value `0`, `false`, or `[]`, an omitted
+default written out, a kind renamed, a string or count of another type, a
+negative count, an array replaced by an object, and texts out of canonical
+form (whitespace, members out of order, an escaped key). The case asserts that every outcome occurs among them. The evaluator takes
+the committed modules whose JSON is at most 16,384 bytes and the rendered package
+all of them. Each planted defect weakens one decoding rule (the nesting limit,
+the canonical comparison, the unit-variant rule, either omitted default, the
+unknown-member and duplicate-member rules, negative counts, one kind, and the
+path's index syntax, whitespace, and `\u` escapes), and the runs detect it; the case asserts that the site of
+each plant occurs once. The row's statement carries no counts.
+
+Measured with the compiler binary of this tree's compiler sources: `lexlean
+check` of the `bootstrap/` project passes, with the root eligible for `rust-std`
+with exactly its declared effects, and `lexlean fmt --check` passes.
+
 ## The `bdd` recipe as the parts of one run (Issue #131)
 
 With UOR Atlas verified as the parts of one run, the `rest` leg became the
