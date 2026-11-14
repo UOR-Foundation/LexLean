@@ -893,13 +893,22 @@ pub(crate) fn run(id: &str) {
                 assert_eq!(error.code.as_str(), "LLS8001", "{}", error.message);
             }
         }
-        // §8.2: only leanprover/lean4:v4.32.1, in the configuration, at lock
+        // §8.2: only leanprover/lean4:v4.32.2, in the configuration, at lock
         // time, and at verification preflight.
         "CF-14" => {
+            // The previous patch is no longer an admissible kernel pin.
+            let previous = P::example();
+            previous.edit(
+                "lexlean.toml",
+                "lean_toolchain = \"leanprover/lean4:v4.32.2\"",
+                "lean_toolchain = \"leanprover/lean4:v4.32.1\"",
+            );
+            load_fails_with(&previous, "LLC0101");
+
             let config = P::example();
             config.edit(
                 "lexlean.toml",
-                "lean_toolchain = \"leanprover/lean4:v4.32.1\"",
+                "lean_toolchain = \"leanprover/lean4:v4.32.2\"",
                 "lean_toolchain = \"leanprover/lean4:v4.31.0\"",
             );
             load_fails_with(&config, "LLC0101");
@@ -914,7 +923,7 @@ pub(crate) fn run(id: &str) {
                 error
                     .diagnostics
                     .iter()
-                    .any(|d| d.message.contains("v4.31.0") && d.message.contains("v4.32.1")),
+                    .any(|d| d.message.contains("v4.31.0") && d.message.contains("v4.32.2")),
                 "the diagnostic names both strings: {error}"
             );
             lock_check_fails_with(&pin, "LLC0101");

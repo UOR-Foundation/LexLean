@@ -256,7 +256,7 @@ fn named() -> Vec<Vector> {
         ),
         (
             "the oracle's own module printed",
-            r#"{"authority":{"id":"A","lean_githash":"g","lean_version":"4.32.1"},"declarations":[{"constructors":[{"fields":[],"name":"false"}],"kind":"type","name":"Bool","parameters":[]},{"kind":"call","name":"f"}],"imports":[],"spec":"lexlean/tooling-module/1"}"#,
+            r#"{"authority":{"id":"A","lean_githash":"g","lean_version":"4.32.2"},"declarations":[{"constructors":[{"fields":[],"name":"false"}],"kind":"type","name":"Bool","parameters":[]},{"kind":"call","name":"f"}],"imports":[],"spec":"lexlean/tooling-module/1"}"#,
         ),
         ("a module whose spec is a boolean", r#"{"spec":true}"#),
         ("a module whose spec is an object", r#"{"spec":{"a":1}}"#),

@@ -68,6 +68,12 @@ pub struct Pin {
     pub tree_sha256: String,
     /// The Lean toolchain the oracle is built with.
     pub lean_toolchain: String,
+    /// The Lean the oracle's own `lean/lean-toolchain` names when it is an
+    /// earlier patch release of `lean_toolchain`'s version, which the pin
+    /// builds with `lean_toolchain` (§17.19). Absent, the oracle's own file
+    /// names `lean_toolchain` itself.
+    #[serde(default)]
+    pub source_lean_toolchain: Option<String>,
     /// The Rust toolchain the oracle is built with.
     pub rust_toolchain: String,
     /// The Lake target that is built.
@@ -92,6 +98,24 @@ pub struct Licence {
     pub vendored: bool,
     /// Why.
     pub reason: String,
+}
+
+/// Whether `earlier` names a release `leanprover/lean4:vX.Y.p` and `later`
+/// names `leanprover/lean4:vX.Y.q` with `p < q`: the same version but for an
+/// earlier patch, which a patch release builds unchanged.
+fn earlier_patch(earlier: &str, later: &str) -> bool {
+    let split = |name: &str| -> Option<(String, u32)> {
+        let version = name.strip_prefix("leanprover/lean4:v")?;
+        let (minor, patch) = version.rsplit_once('.')?;
+        let parts: Vec<&str> = minor.split('.').collect();
+        let numeric =
+            |part: &str| !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit());
+        if parts.len() != 2 || !parts.iter().all(|part| numeric(part)) || !numeric(patch) {
+            return None;
+        }
+        Some((minor.to_owned(), patch.parse().ok()?))
+    };
+    matches!((split(earlier), split(later)), (Some((a, p)), Some((b, q))) if a == b && p < q)
 }
 
 fn is_hex(text: &str, length: usize) -> bool {
@@ -156,6 +180,14 @@ impl Pin {
             return Err(
                 "nothing of the oracle is vendored: the repository ships no licence text".into(),
             );
+        }
+        if let Some(source) = &pin.source_lean_toolchain {
+            if !earlier_patch(source, &pin.lean_toolchain) {
+                return Err(format!(
+                    "source_lean_toolchain `{source}` is not an earlier patch release of lean_toolchain `{}`",
+                    pin.lean_toolchain
+                ));
+            }
         }
         Ok(pin)
     }
@@ -661,7 +693,8 @@ pub fn check_toolchains(pin: &Pin, repo: &Path) -> Result<(), Unavailable> {
 
 /// Refuse a checkout of the oracle that needs another Lean than the pin
 /// states: its own `lean/lean-toolchain` is part of the tree the pin hashes,
-/// and it must be LexLean's.
+/// and it must be LexLean's, or exactly the earlier patch release the pin
+/// names as `source_lean_toolchain`, which is built with LexLean's.
 ///
 /// # Errors
 ///
@@ -669,7 +702,9 @@ pub fn check_toolchains(pin: &Pin, repo: &Path) -> Result<(), Unavailable> {
 pub fn check_source_toolchain(pin: &Pin, source: &Path) -> Result<(), Unavailable> {
     let needed = std::fs::read_to_string(source.join("lean/lean-toolchain"))
         .map_err(|error| Unavailable::ToolchainDrift(format!("lean/lean-toolchain: {error}")))?;
-    if needed.trim() == pin.lean_toolchain {
+    if needed.trim() == pin.lean_toolchain
+        || pin.source_lean_toolchain.as_deref() == Some(needed.trim())
+    {
         Ok(())
     } else {
         Err(Unavailable::ToolchainDrift(format!(

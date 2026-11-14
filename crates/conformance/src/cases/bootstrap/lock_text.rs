@@ -635,7 +635,7 @@ const PLANTS: &[Plant] = &[
     Plant {
         label: "the toolchain is another",
         root: 1,
-        site: "\"leanprover/lean4:v4.32.1\"",
+        site: "\"leanprover/lean4:v4.32.2\"",
         replacement: "\"leanprover/lean4:v4.32.0\"",
         vector: "an empty language-1.2 lock",
     },

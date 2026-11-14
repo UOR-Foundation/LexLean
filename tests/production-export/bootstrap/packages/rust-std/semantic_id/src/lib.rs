@@ -923,7 +923,7 @@ impl Fn3 {
 }
 
 pub fn f0(v0: Bytes, v1: Bytes, v2: Bytes, v3: Bytes) -> R<Bytes> {
-    f1(f2(Str::lit("lexlean-semantic-v1")), f3(f3(f3(f3(f4(f2(Str::lit("compiler-semantics")), v0), f4(f2(Str::lit("language")), v1)), f4(f2(Str::lit("toolchain")), f2(Str::lit("leanprover/lean4:v4.32.1")))), f4(f2(Str::lit("linked-ir")), v2)), f4(f2(Str::lit("lexicon-closure")), v3)))
+    f1(f2(Str::lit("lexlean-semantic-v1")), f3(f3(f3(f3(f4(f2(Str::lit("compiler-semantics")), v0), f4(f2(Str::lit("language")), v1)), f4(f2(Str::lit("toolchain")), f2(Str::lit("leanprover/lean4:v4.32.2")))), f4(f2(Str::lit("linked-ir")), v2)), f4(f2(Str::lit("lexicon-closure")), v3)))
 }
 
 pub fn f1(v0: Bytes, v1: Bytes) -> R<Bytes> {

@@ -3,7 +3,7 @@
 A language-1.2 project's generated Lean can be built in a separate Lake
 workspace together with the runtime generated from a matching compiler
 checkout. This is useful for Lean tests and tactics over the generated
-modules. It requires Rust, Git, jq, tar, the pinned `leanprover/lean4:v4.32.1`
+modules. It requires Rust, Git, jq, tar, the pinned `leanprover/lean4:v4.32.2`
 toolchain through elan, and the source checkout; an installed LexLean binary
 alone does not export the runtime's Lean source.
 
@@ -65,7 +65,7 @@ and both manifests with the consumer's build instructions.
 Create a separate directory containing `lean-toolchain` with this one line:
 
 ```text
-leanprover/lean4:v4.32.1
+leanprover/lean4:v4.32.2
 ```
 
 For a project with generated module `Probe.Main` using `Portable` and

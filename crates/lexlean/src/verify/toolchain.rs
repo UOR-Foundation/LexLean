@@ -228,7 +228,7 @@ fn load_tool(
 }
 
 /// Locate and preflight the pinned toolchain: `lean` and `lake` must report
-/// version 4.32.1 (§8.2); every executable digest is recorded (§22.9). The
+/// version 4.32.2 (§8.2); every executable digest is recorded (§22.9). The
 /// version probes run under the configured child limits (§25.5).
 pub fn preflight(limits: &Limits) -> Result<Toolchain, Diagnostic> {
     let root = toolchain_root()?;
@@ -307,29 +307,33 @@ mod tests {
         for (tool, banner) in [
             (
                 "lean",
-                "Lean (version 4.32.1, x86_64-unknown-linux-gnu, commit f054605, Release)",
+                "Lean (version 4.32.2, x86_64-unknown-linux-gnu, commit f3b06c7, Release)",
             ),
             (
                 "lake",
-                "Lake version 5.0.0-src+f054605 (Lean version 4.32.1)",
+                "Lake version 5.0.0-src+f3b06c7 (Lean version 4.32.2)",
             ),
         ] {
             assert!(reports_pinned_version(tool, banner), "{tool}: {banner}");
         }
         for (tool, banner) in [
+            ("lean", "Lean (version 4.32.1, release)"),
+            ("lean", "Lean (version 4.32.20, release)"),
             ("lean", "Lean (version 4.32.10, release)"),
-            ("lean", "Lean (version 4.32.1-rc1, release)"),
-            ("lean", "Lean (version 4.31.0, built with 4.32.1)"),
-            ("lean", "unrecognized banner 4.32.1"),
-            ("lean", "Lean (version 4.32.1, release"),
-            ("lean", "Lean (version 4.32.1, release)\nextra output"),
+            ("lean", "Lean (version 4.32.2-rc1, release)"),
+            ("lean", "Lean (version 4.31.0, built with 4.32.2)"),
+            ("lean", "unrecognized banner 4.32.2"),
+            ("lean", "Lean (version 4.32.2, release"),
+            ("lean", "Lean (version 4.32.2, release)\nextra output"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.32.1)"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.32.20)"),
             ("lake", "Lake version 5.0.0 (Lean version 4.32.10)"),
-            ("lake", "Lake version 5.0.0 (Lean version 4.32.1-rc1)"),
-            ("lake", "Lake version 4.32.1 (Lean version 4.31.0)"),
-            ("lake", "Lake version 5.0.0 (Lean version 4.32.1"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.32.2-rc1)"),
+            ("lake", "Lake version 4.32.2 (Lean version 4.31.0)"),
+            ("lake", "Lake version 5.0.0 (Lean version 4.32.2"),
             (
                 "lake",
-                "Lake version 5.0.0 (Lean version 4.32.1)\nextra output",
+                "Lake version 5.0.0 (Lean version 4.32.2)\nextra output",
             ),
         ] {
             assert!(!reports_pinned_version(tool, banner), "{tool}: {banner}");

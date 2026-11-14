@@ -1,4 +1,4 @@
-//! The reserved identifier-like tokens of the pinned Lean 4.32.1 toolchain
+//! The reserved identifier-like tokens of the pinned Lean 4.32.2 toolchain
 //! (SPEC.md §17.8): a component ID whose generated Lean name is one of these
 //! is rejected, because Lean's identifier parser turns any identifier that
 //! exactly matches a token-table entry into that token (`Lean.Parser.Basic`,

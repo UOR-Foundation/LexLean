@@ -433,7 +433,7 @@ const PLANTS: &[Plant] = &[
     },
     Plant {
         label: "the toolchain is another",
-        site: "(lit \"leanprover/lean4:v4.32.1\")",
+        site: "(lit \"leanprover/lean4:v4.32.2\")",
         replacement: "(lit \"leanprover/lean4:v4.32.0\")",
         vector: "an empty manifest",
     },

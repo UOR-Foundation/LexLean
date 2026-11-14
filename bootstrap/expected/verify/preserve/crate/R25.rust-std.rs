@@ -1254,7 +1254,7 @@ pub fn f2(v0: Adt0) -> R<Adt3> {
         Adt0::C0(_, _, _, _, _, _, h9, _, _, _, _) => {
             h9
         }
-    })?, f4(Str::lit("lean_toolchain"), f5(f6(Str::lit("leanprover/lean4:v4.32.1"))), f4(Str::lit("selection"), f8(match v0.clone() {
+    })?, f4(Str::lit("lean_toolchain"), f5(f6(Str::lit("leanprover/lean4:v4.32.2"))), f4(Str::lit("selection"), f8(match v0.clone() {
         Adt0::C0(_, _, _, _, _, _, _, h10, _, _, _) => {
             h10
         }

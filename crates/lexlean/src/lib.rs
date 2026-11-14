@@ -139,15 +139,15 @@ pub fn supports_language(language: &str) -> bool {
 }
 
 /// The exact pinned Lean toolchain string (SPEC.md §8.2).
-pub const LEAN_TOOLCHAIN: &str = "leanprover/lean4:v4.32.1";
+pub const LEAN_TOOLCHAIN: &str = "leanprover/lean4:v4.32.2";
 
 /// The Lean version a verification environment must report (SPEC.md §8.2).
-pub const LEAN_VERSION: &str = "4.32.1";
+pub const LEAN_VERSION: &str = "4.32.2";
 
 /// The source commit of the pinned Lean release (SPEC.md §8.2). The tooling
 /// registry cites it and `conformance_tl_02` equates it with the pin in
 /// `model/authorities.toml`.
-pub const LEAN_GITHASH: &str = "f054605aea4b840552cca2e725580bffd1e1b704";
+pub const LEAN_GITHASH: &str = "f3b06c705e6c85f5314019d5d3baab0fec5b580c";
 
 /// The compiler crate version.
 pub const COMPILER_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -294,7 +294,7 @@ fn embedded_digest(keep: impl Fn(&str) -> bool) -> Sha256Digest {
 /// consistently with itself, so agreement on verdicts could not reveal it.
 /// The 1.0 and 1.1 IDs need no constant: no file they cover is left out.
 pub const LANGUAGE_1_2_SEMANTICS_ID: &str =
-    "a82990b56aa082f57e3bf3e2d6494d75a8170f26e269448de19110f5459655ad";
+    "4b3ed2378d6c43bb32a41d466cf140337e8b1cedc5e1f345aaf3395f488f63a9";
 
 /// The compiler-semantics ID for one selected language. Language 1.0 excludes
 /// all files introduced solely for 1.1 and 1.2, and Language 1.1 excludes

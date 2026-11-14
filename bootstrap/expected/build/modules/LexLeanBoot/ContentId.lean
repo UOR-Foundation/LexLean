@@ -30,7 +30,7 @@ namespace LexLeanBoot.ContentId
 
 @[expose] public def sourceId (projectToml : ByteArray) (lockText : ByteArray) (sources : List ((Prod (ByteArray) (ByteArray)))) : ByteArray := framedHash (lit ("lexlean-source-v1")) (cat (cat (frame (lit ("project")) (projectToml)) (frame (lit ("lock")) (lockText))) ((LexLeanCollections.listFold ((fun (acc : ByteArray) (row : (Prod (ByteArray) (ByteArray))) => cat (acc) (cat (frame (lit ("path")) ((row).1)) (frame (lit ("source")) ((row).2))))) (_root_.ByteArray.mk #[]) (sources) : ByteArray)))
 
-@[expose] public def semanticId (compilerSemantics : ByteArray) (language : ByteArray) (linkedIr : ByteArray) (lexiconClosure : ByteArray) : ByteArray := framedHash (lit ("lexlean-semantic-v1")) (cat (cat (cat (cat (frame (lit ("compiler-semantics")) (compilerSemantics)) (frame (lit ("language")) (language))) (frame (lit ("toolchain")) (lit ("leanprover/lean4:v4.32.1")))) (frame (lit ("linked-ir")) (linkedIr))) (frame (lit ("lexicon-closure")) (lexiconClosure)))
+@[expose] public def semanticId (compilerSemantics : ByteArray) (language : ByteArray) (linkedIr : ByteArray) (lexiconClosure : ByteArray) : ByteArray := framedHash (lit ("lexlean-semantic-v1")) (cat (cat (cat (cat (frame (lit ("compiler-semantics")) (compilerSemantics)) (frame (lit ("language")) (language))) (frame (lit ("toolchain")) (lit ("leanprover/lean4:v4.32.2")))) (frame (lit ("linked-ir")) (linkedIr))) (frame (lit ("lexicon-closure")) (lexiconClosure)))
 
 @[expose] public def buildId (sourceDigest : ByteArray) (semanticDigest : ByteArray) : ByteArray := framedHash (lit ("lexlean-build-v1")) (cat (frame (lit ("source-id")) (sourceDigest)) (frame (lit ("semantic-id")) (semanticDigest)))
 

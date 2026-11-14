@@ -17,6 +17,21 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Breaking security update: replace the single Lean 4.32.1 pin with
+  `leanprover/lean4:v4.32.2`, source commit
+  `f3b06c705e6c85f5314019d5d3baab0fec5b580c` (SPEC.md §8.2). The
+  [upstream point release](https://lean-lang.org/doc/reference/latest/releases/v4.32.2/)
+  fixes the nested-inductive kernel soundness issue
+  [leanprover/lean4#14576](https://github.com/leanprover/lean4/issues/14576).
+  All three compiler-semantics identities change; projects and generated
+  evidence must be regenerated under the new pin. The older toolchain is
+  refused. Historical evidence and frozen language-1.0/1.1 runtime text
+  retain their original bytes. This is a patch migration, not the separate
+  Lean 4.33.1 feature upgrade. The differential oracle's pinned commit names
+  4.32.1 and upstream has none naming 4.32.2, so its pin gains the optional
+  `source_lean_toolchain` (an exactly named earlier patch release, built with
+  the pinned Lean; SPEC.md §17.19).
+
 - Canonical JSON refuses duplicate keys that differ only in their escapes (SPEC.md §21.7,
   `AR-11`, #475). The duplicate check compared each key as written, so `{"a":1,"\u0061":2}`
   passed it and `Json::parse` returned `{"a":2}`, dropping the first member; keys are now

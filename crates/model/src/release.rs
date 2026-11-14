@@ -424,7 +424,7 @@ pub fn check(root: &Path, hidden_tests: &BTreeSet<String>) -> Result<(), Vec<Str
     match read("release/version-output.txt") {
         Ok(text) => {
             let expected = format!(
-                "lexlean {RELEASE_VERSION}\nlanguage 1.0\ncompiler-semantics {semantics}\nlean-toolchain leanprover/lean4:v4.32.1\n"
+                "lexlean {RELEASE_VERSION}\nlanguage 1.0\ncompiler-semantics {semantics}\nlean-toolchain leanprover/lean4:v4.32.2\n"
             );
             if text != expected {
                 fail(

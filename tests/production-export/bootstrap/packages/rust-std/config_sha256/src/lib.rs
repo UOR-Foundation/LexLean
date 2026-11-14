@@ -1317,7 +1317,7 @@ pub fn f8(v0: Str, v1: List<Bytes>) -> R<Bytes> {
 }
 
 pub fn f9() -> Bytes {
-    f24(Str::lit("leanprover/lean4:v4.32.1"))
+    f24(Str::lit("leanprover/lean4:v4.32.2"))
 }
 
 pub fn f10(v0: Fn0, p55: Bytes, p56: List<Adt2>) -> R<Bytes> {

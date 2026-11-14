@@ -125,7 +125,7 @@ mod tests {
 
     fn module() -> Json {
         Json::parse(
-            br#"{"authority":{"id":"A","lean_githash":"g","lean_version":"4.32.1"},"declarations":[{"constructors":[{"fields":[],"name":"false"}],"kind":"type","name":"Bool","parameters":[]},{"kind":"call","name":"f"}],"imports":[],"spec":"lexlean/tooling-module/1"}"#,
+            br#"{"authority":{"id":"A","lean_githash":"g","lean_version":"4.32.2"},"declarations":[{"constructors":[{"fields":[],"name":"false"}],"kind":"type","name":"Bool","parameters":[]},{"kind":"call","name":"f"}],"imports":[],"spec":"lexlean/tooling-module/1"}"#,
         )
         .expect("a module")
     }
