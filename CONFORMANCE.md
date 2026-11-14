@@ -593,7 +593,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `SM-09` | `build` | Linked IR has stable schema-tagged canonical JSON with alpha-safe binder serialization. |
 | `SM-10` | `build` | Source ID and semantic ID use exactly the specified framed hash inputs. |
 | `SM-11` | `build` | Linked project result sets contain every selected module and imported module exactly once in stable order. |
-| `SM-12` | `build` | No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. Semantic modules retain the 128-level JSON nesting limit and an over-deep list is refused with LLT4001 naming smaller definitions joined by prim append as the remedy. |
+| `SM-12` | `build` | No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. A semantic module nests as deeply as the project's max_scope_depth allows, in its notation and in its data: a list of 1000 elements checks and builds, and its snapshot is written on a caller's default stack without a panic, while a list nested past the bound is refused, with LLP2001 in the notation and LLT4001 in the data, naming max_scope_depth. |
 | `SM-13` | `build` | Inherited section parameters are represented explicitly and emitted only on declarations that use them. |
 | `SM-14` | `build` | A numeral without a unique expected type is rejected rather than defaulted. |
 | `SM-15` | `build` | A native core module is closed typed DAG data shared by both backends, carries explicit declaration policies, and accepts no backend source text. |

@@ -182,15 +182,19 @@ fn range((start, end): (usize, usize)) -> SnapshotRange {
     SnapshotRange { start, end }
 }
 
+// The values below nest as deeply as the linker admitted (`max_scope_depth`),
+// beyond the bounded readers' 128 levels; the snapshot is built and written
+// on a stack sized for that (`crate::on_stack`).
 fn json_value(value: &Json) -> serde_json::Value {
-    serde_json::from_str(&value.to_canonical_string()).expect("canonical linked IR is valid JSON")
+    crate::artifact::canonical_json::from_str_unbounded(&value.to_canonical_string())
+        .expect("canonical linked IR is valid JSON")
 }
 
 /// One elaboration value as canonical JSON.
 fn canonical_value<T: Serialize>(item: &T) -> serde_json::Value {
     let text = serde_json::to_string(item).expect("elaboration serializes");
-    serde_json::from_str(
-        &Json::parse(text.as_bytes())
+    crate::artifact::canonical_json::from_str_unbounded(
+        &Json::parse_unbounded(text.as_bytes())
             .expect("serialized elaboration is JSON")
             .to_canonical_string(),
     )
@@ -219,6 +223,16 @@ impl SemanticSnapshot {
     /// types cannot enter the public API because this constructor is private
     /// to the crate.
     pub(crate) fn from_checked(
+        checked: &CheckedProject,
+        language: &str,
+        compiler_semantics_id: Sha256Digest,
+    ) -> Self {
+        crate::on_stack(crate::config::MAX_COMPILE_STACK_BYTES, || {
+            Self::from_checked_inline(checked, language, compiler_semantics_id)
+        })
+    }
+
+    fn from_checked_inline(
         checked: &CheckedProject,
         language: &str,
         compiler_semantics_id: Sha256Digest,
@@ -438,18 +452,28 @@ impl SemanticSnapshot {
         &self.lexicon_closure
     }
 
-    /// Canonical JSON value.
+    /// Canonical JSON value. It nests as deeply as the snapshot's data, so a
+    /// caller that walks or drops it does so on a stack sized for that;
+    /// [`Self::canonical_bytes`] needs no such care.
     #[must_use]
     pub fn to_json(&self) -> Json {
+        crate::on_stack(crate::config::MAX_COMPILE_STACK_BYTES, || {
+            self.to_json_inline()
+        })
+    }
+
+    fn to_json_inline(&self) -> Json {
         let value = serde_json::to_value(self).expect("snapshot DTO serializes");
         let bytes = serde_json::to_vec(&value).expect("snapshot JSON serializes");
-        Json::parse(&bytes).expect("snapshot DTO uses the canonical JSON domain")
+        Json::parse_unbounded(&bytes).expect("snapshot DTO uses the canonical JSON domain")
     }
 
     /// Canonical JSON file bytes, including LexLean's single final LF.
     #[must_use]
     pub fn canonical_bytes(&self) -> Vec<u8> {
-        self.to_json().to_file_bytes()
+        crate::on_stack(crate::config::MAX_COMPILE_STACK_BYTES, || {
+            self.to_json_inline().to_file_bytes()
+        })
     }
 
     /// SHA-256 of [`Self::canonical_bytes`].

@@ -78,11 +78,12 @@ Feature: semantic-ir
     And the `All` selection returns the same complete sorted set
 
   @SM-12 @build
-  Scenario: No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. Semantic modules retain the 128-level JSON nesting limit and an over-deep list is refused with LLT4001 naming smaller definitions joined by prim append as the remedy.
+  Scenario: No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. A semantic module nests as deeply as the project's max_scope_depth allows, in its notation and in its data: a list of 1000 elements checks and builds, and its snapshot is written on a caller's default stack without a panic, while a list nested past the bound is refused, with LLP2001 in the notation and LLT4001 in the data, naming max_scope_depth.
     Given the example project checked through the internal pipeline
     When the linked IR is serialized to canonical JSON
     Then the JSON contains none of `natural number`, `For every`, `reflexivity`, or `Close the goal`
-    And a 122-element list checks while a 123-element list, including in a subsequent declaration, fails with LLT4001 naming the 128-level JSON bound and smaller definitions joined by prim append
+    And a 1000-element list checks and builds and its snapshot is written on a 2 MiB stack, while a 1100-element list, including in a subsequent declaration, fails with LLP2001 naming max_scope_depth 1024
+    And under max_scope_depth 150 a 145-element list checks, 146 elements fail with LLT4001 and 148 with LLP2001, each naming max_scope_depth
     And two 100-element definitions joined by prim append check, and malformed, noncanonical, duplicate-member and out-of-schema data remain refused
 
   @SM-13 @build

@@ -174,7 +174,9 @@ pub fn declarations_json(module: &str, rows: &[DeclarationRow]) -> Json {
 }
 
 fn prepare(module: &str, declaration: &SemanticDeclaration, known: &BTreeSet<Key>) -> Prepared {
-    let raw = Json::parse(
+    // As deep as the linker admitted it (`max_scope_depth`), past the bounded
+    // reader's 128 levels.
+    let raw = Json::parse_unbounded(
         &serde_json::to_vec(declaration).expect("a declaration serializes to canonical JSON"),
     )
     .expect("a declaration uses canonical JSON values");
