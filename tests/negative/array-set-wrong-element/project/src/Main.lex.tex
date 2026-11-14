@@ -1,0 +1,12 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: put,
+  parameters: [values : array{element: Int8}, value : Int16],
+  result: array{element: Int8},
+  body: (prim array_set values 0 value : array{element: Int8})
+}
+\end{semanticmodule}
+\end{lexlean}

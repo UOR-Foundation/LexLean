@@ -144,6 +144,7 @@ pub fn source_type(
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -664,7 +665,10 @@ fn runtime_type(source: &Source<'_>, ty: &SemanticType) -> Result<RuntimeType, S
                     .collect::<Result<_, _>>()?,
             )
         }
-        SemanticType::Type | SemanticType::Prop | SemanticType::Parameter { name: _ } => {
+        SemanticType::Type
+        | SemanticType::Prop
+        | SemanticType::Array { element: _ }
+        | SemanticType::Parameter { name: _ } => {
             return Err(format!(
                 "`{}` has no runtime encoding",
                 source.type_text(ty)
@@ -684,6 +688,7 @@ fn function_type(ty: &SemanticType) -> Option<(&[SemanticType], &SemanticType)> 
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -815,6 +820,13 @@ fn primitive_name(operation: SemanticPrimitive) -> Result<(&'static str, &'stati
         SemanticPrimitive::LessThan => ("LexLeanCollections", "lessThan"),
         // Certificates read elaborated declarations, in which a widening
         // conversion is the ordinary term it means (§17.12).
+        SemanticPrimitive::ArrayFromList
+        | SemanticPrimitive::ArrayToList
+        | SemanticPrimitive::ArraySet => {
+            return Err(format!(
+                "{operation:?} is formal-only and has no certificate rule"
+            ));
+        }
         SemanticPrimitive::ToInt => {
             return Err(format!(
                 "{operation:?} is certified only through its elaboration"
@@ -844,6 +856,7 @@ fn integer_suffix(ty: &SemanticType) -> Result<&'static str, String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int8
         | SemanticType::Int16
@@ -890,6 +903,7 @@ fn element_of(ty: &SemanticType) -> Result<SemanticType, String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -928,6 +942,7 @@ fn option_value(ty: &SemanticType) -> Result<SemanticType, String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -974,6 +989,7 @@ fn numeric(ty: &SemanticType) -> Result<Numeric, String> {
         | SemanticType::Parameter { name: _ }
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int8
         | SemanticType::Int16
@@ -1024,6 +1040,7 @@ fn sequence(ty: &SemanticType) -> Result<Sequence, String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -1076,6 +1093,7 @@ fn equal_suffix(ty: &SemanticType) -> Result<&'static str, String> {
         SemanticType::Type
         | SemanticType::Parameter { name: _ }
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Option { value: _ }
@@ -2394,6 +2412,7 @@ fn named_types(ty: &SemanticType, out: &mut Vec<SemanticType>) {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -2514,6 +2533,7 @@ impl<'a> Gen<'a> {
             }
             | SemanticType::Type
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Nat
             | SemanticType::Bool
@@ -2639,7 +2659,10 @@ impl Gen<'_> {
                         .ok_or_else(|| format!("`{text}` has no ADT in the layout"))?,
                 }
             }
-            SemanticType::Type | SemanticType::Prop | SemanticType::Parameter { name: _ } => {
+            SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Array { element: _ }
+            | SemanticType::Parameter { name: _ } => {
                 return Err(format!(
                     "`{}` has no runtime realization",
                     self.source.type_text(ty)
@@ -2670,6 +2693,7 @@ fn parts(ty: &SemanticType) -> Result<(SemanticType, SemanticType), String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -2716,6 +2740,7 @@ fn shape_tag(ty: &SemanticType) -> &'static str {
         } => "document",
         SemanticType::Type
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Parameter { name: _ }
         | SemanticType::Function {
             parameters: _,
@@ -2789,6 +2814,7 @@ fn component_types(ty: &SemanticType) -> Vec<SemanticType> {
         }
         | SemanticType::Type
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Parameter { name: _ }
         | SemanticType::Function {
             parameters: _,
@@ -2969,6 +2995,7 @@ impl Gen<'_> {
             }
             SemanticType::Type
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Function {
                 parameters: _,

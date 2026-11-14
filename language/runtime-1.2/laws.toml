@@ -112,3 +112,108 @@ parameters = [
   { kind = "list", element = { kind = "parameter", name = "A" } },
   { kind = "list", element = { kind = "parameter", name = "A" } },
 ]
+
+# The array laws (SPEC.md §17.12, *Arrays*): an array is the list of its
+# elements. They are declarations of `LexLeanRuntime.Arrays`, which each row
+# names; a row without `module` is a declaration of the module above.
+
+[[law]]
+name = "array_to_list_from_list"
+lean = "LexLeanArrays.to_list_from_list"
+module = "LexLeanRuntime.Arrays"
+type_parameters = ["A"]
+premises = 0
+parameters = [
+  { kind = "list", element = { kind = "parameter", name = "A" } },
+]
+
+[[law]]
+name = "array_from_list_to_list"
+lean = "LexLeanArrays.from_list_to_list"
+module = "LexLeanRuntime.Arrays"
+type_parameters = ["A"]
+premises = 0
+parameters = [
+  { kind = "array", element = { kind = "parameter", name = "A" } },
+]
+
+[[law]]
+name = "array_length"
+lean = "LexLeanArrays.length_to_list"
+module = "LexLeanRuntime.Arrays"
+type_parameters = ["A"]
+premises = 0
+parameters = [
+  { kind = "array", element = { kind = "parameter", name = "A" } },
+]
+
+[[law]]
+name = "array_index"
+lean = "LexLeanArrays.index_to_list"
+module = "LexLeanRuntime.Arrays"
+type_parameters = ["A"]
+premises = 0
+parameters = [
+  { kind = "array", element = { kind = "parameter", name = "A" } },
+  { kind = "nat" },
+]
+
+[[law]]
+name = "array_index_beyond"
+lean = "LexLeanArrays.index_beyond"
+module = "LexLeanRuntime.Arrays"
+type_parameters = ["A"]
+premises = 0
+parameters = [
+  { kind = "array", element = { kind = "parameter", name = "A" } },
+  { kind = "nat" },
+]
+
+[[law]]
+name = "array_set_length"
+lean = "LexLeanArrays.length_set"
+module = "LexLeanRuntime.Arrays"
+type_parameters = ["A"]
+premises = 0
+parameters = [
+  { kind = "array", element = { kind = "parameter", name = "A" } },
+  { kind = "nat" },
+  { kind = "parameter", name = "A" },
+]
+
+[[law]]
+name = "array_set_index_same"
+lean = "LexLeanArrays.index_set_same"
+module = "LexLeanRuntime.Arrays"
+type_parameters = ["A"]
+premises = 0
+parameters = [
+  { kind = "array", element = { kind = "parameter", name = "A" } },
+  { kind = "nat" },
+  { kind = "parameter", name = "A" },
+]
+
+[[law]]
+name = "array_set_index_other"
+lean = "LexLeanArrays.index_set_other"
+module = "LexLeanRuntime.Arrays"
+type_parameters = ["A"]
+premises = 0
+parameters = [
+  { kind = "array", element = { kind = "parameter", name = "A" } },
+  { kind = "nat" },
+  { kind = "nat" },
+  { kind = "parameter", name = "A" },
+]
+
+[[law]]
+name = "array_set_beyond"
+lean = "LexLeanArrays.set_beyond"
+module = "LexLeanRuntime.Arrays"
+type_parameters = ["A"]
+premises = 0
+parameters = [
+  { kind = "array", element = { kind = "parameter", name = "A" } },
+  { kind = "nat" },
+  { kind = "parameter", name = "A" },
+]

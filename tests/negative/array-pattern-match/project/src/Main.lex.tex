@@ -1,0 +1,14 @@
+\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: head,
+  parameters: [values : array{element: Int8}],
+  result: Nat,
+  body: (match values
+    | List.nil => 0
+    | List.cons first rest => 1)
+}
+\end{semanticmodule}
+\end{lexlean}

@@ -161,7 +161,10 @@ impl Writer<'_, '_> {
                 }
                 self.b.apps(head, &args)
             }
-            SemanticType::Type | SemanticType::Prop | SemanticType::Parameter { name: _ } => {
+            SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Array { element: _ }
+            | SemanticType::Parameter { name: _ } => {
                 return Err(format!(
                     "`{}` has no runtime encoding",
                     self.gen.source.type_text(ty)
@@ -283,6 +286,7 @@ impl Writer<'_, '_> {
             }
             | SemanticType::Type
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ } => {
                 return Err(format!(
                     "`{}` has no value encoding",
@@ -323,6 +327,7 @@ impl Writer<'_, '_> {
             }
             | SemanticType::Type
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Nat
             | SemanticType::Bool

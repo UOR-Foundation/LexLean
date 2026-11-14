@@ -37,6 +37,12 @@ statement = "Lean 4.32.1 translates a code-generating definition to base-phase L
 authority = "LEAN-LCNF-4-32-1"
 
 [[claim]]
+id = "AUTH-LEAN-ARRAY-4-32-1"
+level = "some-true"
+statement = "In Lean 4.32.1 an `Array` is stored as a contiguous object whose size and elements are read in constant time (`lean_array_get_size`, `lean_array_fget`), and `Array.set`, through which `Array.setIfInBounds` writes, is implemented by `lean_array_fset`, which writes in place when the array object is referenced once (`lean_is_exclusive`) and copies the array first otherwise."
+authority = "LEAN-ARRAY-4-32-1"
+
+[[claim]]
 id = "AUTH-RUSTC-1-97-1"
 level = "some-true"
 statement = "rustc 1.97.1 compiles a safe Rust 2021 crate with the semantics The Rust Reference states for that release: the checked integer methods return None exactly on overflow, the wrapping shifts mask their amount, integer division truncates toward zero, and a #![no_std] crate that declares no extern crate links neither alloc nor std."

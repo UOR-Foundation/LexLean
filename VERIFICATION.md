@@ -940,6 +940,78 @@ Planted: `mentions_family_group` ignored the arguments again (the comparison
 test ir::semantic::family_order_tests::a_group_instantiated_at_its_own_type_has_two_motives ... FAILED
 ```
 
+### an array can take any element, lose its runtime import, or drag in the laws module (SM-39)
+
+`SM-39` holds the language-1.2 arrays of §17.12. `conformance_sm_39` reads the
+shipped runtime: `LexLeanRuntime.Arrays` imports the portable module alone,
+declares the two instances, the three primitives, and the nine registered laws,
+and no row of it depends on more than `propext`. It renders `examples/arrays`
+and requires the generated Lean to import the arrays module and to name
+`_root_.Array` and `_root_.LexLeanArrays`, and the canonical document to name
+neither root. It requires a module that applies an array law and no fold law
+to import the arrays module and not the laws module. It refuses, in linking,
+six element types that are not fixed-width integers, a write of another
+element type, a write to a list, both conversions applied to the wrong
+container or at the wrong element, an index at the wrong element, a pattern
+match on an array, an unregistered law, a law applied to a list, and a
+language-1.1 use, and in eligibility a production root over an array
+(`LLT4005`). With the pinned Lean it verifies the example with exactly its
+stated axioms and a round trip at each of the eight element types, and has
+Lean refuse, with `LLV7002`, a copy whose loop advances by two and a law
+applied to a statement it does not prove.
+
+Four planted defects were run against it, each alone, and each was refused.
+Command: `cargo test -p repo-conformance --test conformance conformance_sm_39 -- --exact`.
+
+- The element check accepting every type (`check_array_element` returning
+  `Ok` first): refused at the first element refusal.
+
+```text
+thread 'conformance_sm_39' panicked at crates/conformance/src/support.rs:874:14:
+check fails
+```
+
+- The arrays import never written (`(arrays && false, ARRAYS)` in
+  `render_lean`): refused at the rendered example.
+
+```text
+thread 'conformance_sm_39' panicked at crates/conformance/src/cases/semantic_ir/arrays.rs:245:9:
+missing "public import LexLeanRuntime.Arrays\n" in:
+```
+
+- Every `law` proof importing the laws module, whatever module states its law
+  (`law_modules` inserting `LAWS` always): refused at the module that applies
+  an array law alone.
+
+```text
+thread 'conformance_sm_39' panicked at crates/conformance/src/cases/semantic_ir/arrays.rs:270:5:
+an array law imports the arrays module alone:
+```
+
+- `array_set` typed to write an `Int16` whatever the array holds: refused at
+  the committed example, which no longer links.
+
+```text
+phase link: primitive ArraySet argument 2 has type Int8, expected Int16
+```
+
+Two registry plants are part of the case itself: a law row that names a
+theorem the arrays module does not declare, and the index law filed under the
+portable module, are each refused by `check_laws_registry` with the module
+named. The production audit of §17.17 refused the first version of this
+change, which wrote the array type with a rest pattern in
+`production/lower.rs` ("a rest pattern would classify constructs by default");
+every production match now names the element field.
+
+The five negative fixtures `array-element-not-fixed-width`,
+`array-set-wrong-element`, `array-pattern-match`, `array-under-1.1`
+(`LLT4001`), and `array-production-root` (`LLT4005`) hold the same refusals
+through the command line.
+
+That the pinned Lean indexes an array in constant time and writes one in
+place when it is referenced once is cited (`LEAN-ARRAY-4-32-1`), not gated
+here: no case measures time.
+
 ### a declaration ID can miss a reference or keep a proof (SM-38)
 
 `SM-38` holds the declaration and statement IDs of §21.9. `conformance_sm_38`

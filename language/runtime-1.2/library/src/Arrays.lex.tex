@@ -1,0 +1,430 @@
+\begin{lexlean}{Arrays}
+\useglossary{lexlean.std.nat@1.2.0}
+\useglossary{runtime.titles@1.0.0}
+\importmodule{Portable}
+\title{Runtime arrays}
+\begin{coremodule}
+imports [Init, LexLeanRuntime.Portable]
+
+definition LexLeanArrays.arrayIndexable : @7 := @40 {
+  all: [LexLeanArrays.arrayIndexable],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 8},
+  transparency: implicit-reducible
+}
+definition LexLeanArrays.arrayLengthable : @43 := @48 {
+  all: [LexLeanArrays.arrayLengthable],
+  class: false,
+  compiled: true,
+  generated: false,
+  instance: {attribute: global, priority: 1000, synthesis_order: []},
+  policy: exact{axioms: []},
+  reducibility: regular{height: 5},
+  transparency: implicit-reducible
+}
+definition LexLeanArrays.fromList : @53 := @58 {
+  all: [LexLeanArrays.fromList],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+definition LexLeanArrays.toList : @61 := @66 {
+  all: [LexLeanArrays.toList],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 1},
+  transparency: semireducible
+}
+theorem LexLeanArrays.from_list_to_list : @78 := @83 {
+  all: [LexLeanArrays.from_list_to_list],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  tags: [defeq, backward_defeq],
+  transparency: semireducible
+}
+theorem LexLeanArrays.index_beyond : @116 := @125 {
+  all: [LexLeanArrays.index_beyond],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+definition LexLeanArrays.set : @129 := @138 {
+  all: [LexLeanArrays.set],
+  class: false,
+  compiled: true,
+  generated: false,
+  policy: exact{axioms: []},
+  reducibility: regular{height: 7},
+  transparency: semireducible
+}
+theorem LexLeanArrays.index_set_other : @171 := @188 {
+  all: [LexLeanArrays.index_set_other],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanArrays.index_set_same : @217 := @228 {
+  all: [LexLeanArrays.index_set_same],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanArrays.list_index : @258 := @476 {
+  all: [LexLeanArrays.list_index],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanArrays.index_to_list : @491 := @534 {
+  all: [LexLeanArrays.index_to_list],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanArrays.length_set : @545 := @554 {
+  all: [LexLeanArrays.length_set],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanArrays.length_to_list : @567 := @571 {
+  all: [LexLeanArrays.length_to_list],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  tags: [defeq, backward_defeq],
+  transparency: semireducible
+}
+theorem LexLeanArrays.set_beyond : @581 := @592 {
+  all: [LexLeanArrays.set_beyond],
+  class: false,
+  generated: false,
+  policy: exact{axioms: [propext]},
+  transparency: semireducible
+}
+theorem LexLeanArrays.to_list_from_list : @599 := @603 {
+  all: [LexLeanArrays.to_list_from_list],
+  class: false,
+  generated: false,
+  policy: exact{axioms: []},
+  tags: [defeq, backward_defeq],
+  transparency: semireducible
+}
+
+@0 := Sort 1
+@1 := LexLeanRuntime.Indexable
+@2 := Array.{0}
+@3 := #0
+@4 := @2 @3
+@7 := {α : @0} -> @1 @4 @3
+@10 := LexLeanRuntime.Indexable.mk @4 @3
+@11 := Nat
+@12 := GetElem?.getElem?.{0, 0, 0}
+@13 := #2
+@14 := @2 @13
+@17 := proof(proof(proof(@12 @14) @11) @13)
+@21 := LT.lt.{0} @11 instLTNat
+@22 := @21 @3
+@23 := proof(Array.size.{0})
+@24 := #4
+@25 := proof(@23 @24)
+@26 := #1
+@36 := proof(proof(proof(proof(@17
+            proof(fun (xs : @14) => proof(fun (i : @11) => proof(@22 proof(@25 @26)))))
+          proof(proof(Array.instGetElem?NatLtSize.{0}) @13))
+        @26)
+      @3)
+@40 := fun {α : @0} => @10 (fun (value : @4) => fun (offset : @11) => @36)
+@43 := {α : @0} -> LexLeanRuntime.Lengthable @4
+@48 := fun {α : @0} => LexLeanRuntime.Lengthable.mk @4 (@23 @3)
+@49 := List.{0}
+@50 := @49 @3
+@51 := @2 @26
+@53 := {α : @0} -> (values : @50) -> @51
+@58 := fun {α : @0} => fun (values : @50) => List.toArray.{0} @26 @3
+@59 := @49 @26
+@61 := {α : @0} -> (value : @4) -> @59
+@62 := proof(Array.toList.{0})
+@66 := fun {α : @0} => fun (value : @4) => @62 @26 @3
+@67 := Eq.{1}
+@68 := @67 @51
+@70 := LexLeanArrays.fromList @26
+@71 := LexLeanArrays.toList
+@72 := @71 @26
+@73 := @72 @3
+@74 := @70 @73
+@78 := {α : @0} -> (value : @4) -> @68 @74 @3
+@79 := proof(rfl.{1})
+@83 := proof(fun {α : @0} => proof(fun (value : @4) => proof(proof(@79 @51) @74)))
+@87 := LE.le.{0} @11 instLENat
+@88 := LexLeanRuntime.length
+@89 := @88 @14
+@90 := LexLeanArrays.arrayLengthable
+@95 := @87 (@89 (@90 @13) @26) @3
+@96 := Option.{0}
+@97 := #3
+@98 := @96 @97
+@99 := @67 @98
+@100 := LexLeanRuntime.index
+@101 := @2 @97
+@103 := @100 @101 @97
+@104 := LexLeanArrays.arrayIndexable
+@109 := @99 (@103 (@104 @97) @13 @26)
+@116 := {α : @0} ->
+  (value : @4) -> (offset : @11) -> (a._@._internal._hyg.#0 : @95) -> @109 (Option.none.{0} @97)
+@125 := proof(fun {α : @0} =>
+    proof(fun (value : @4) =>
+      proof(fun (offset : @11) =>
+        proof(fun (beyond : @95) =>
+          proof(proof(proof(proof(proof(Array.getElem?_eq_none.{0}) @97) @26) @13) @3)))))
+@129 := {α : @0} -> (value : @4) -> (offset : @11) -> (element : @13) -> @101
+@138 := fun {α : @0} =>
+  fun (value : @4) =>
+  fun (offset : @11) => fun (element : @13) => Array.setIfInBounds.{0} @97 @13 @26 @3
+@146 := @67 Bool (Nat.beq @13 @26) Bool.false
+@147 := #5
+@149 := @67 (@96 @147)
+@154 := @100 (@2 @147) @147 (@104 @147)
+@155 := LexLeanArrays.set
+@171 := {α : @0} ->
+  (value : @4) ->
+  (offset : @11) ->
+  (other : @11) ->
+  (element : @97) ->
+  (a._@._internal._hyg.#0 : @146) -> @149 (@154 (@155 @147 @24 @97 @26) @13) (@154 @24 @13)
+@188 := proof(fun {α : @0} =>
+    proof(fun (value : @4) =>
+      proof(fun (offset : @11) =>
+        proof(fun (other : @11) =>
+          proof(fun (element : @97) =>
+            proof(fun (distinct : @146) =>
+              proof(proof(proof(proof(proof(proof(proof(Array.getElem?_setIfInBounds_ne.{0}) @147)
+                          @24)
+                        @97)
+                      @13)
+                    proof(proof(proof(proof(Nat.ne_of_beq_eq_false) @97) @13) @3))
+                  @26)))))))
+@189 := @21 @26
+@192 := @88 @101 (@90 @97)
+@193 := @192 @13
+@194 := @189 @193
+@196 := @67 (@96 @24)
+@197 := @2 @24
+@201 := @100 @197 @24 (@104 @24)
+@205 := @155 @24 @97 @13 @26
+@217 := {α : @0} ->
+  (value : @4) ->
+  (offset : @11) ->
+  (element : @13) ->
+  (a._@._internal._hyg.#0 : @194) -> @196 (@201 @205 @13) (Option.some.{0} @24 @26)
+@228 := proof(fun {α : @0} =>
+    proof(fun (value : @4) =>
+      proof(fun (offset : @11) =>
+        proof(fun (element : @13) =>
+          proof(fun (bound : @194) =>
+            proof(proof(proof(proof(proof(proof(Array.getElem?_setIfInBounds_self_of_lt.{0}) @24)
+                      @97)
+                    @13)
+                  @26)
+                @3))))))
+@229 := @96 @13
+@230 := @67 @229
+@231 := @49 @13
+@233 := @100 @231 @13
+@234 := LexLeanRuntime.instIndexableList
+@236 := @233 (@234 @13)
+@239 := @230 (@236 @26 @3)
+@242 := @12 @231 @11 @13
+@243 := List.length.{0}
+@249 := @242 (fun (as : @231) => fun (i : @11) => @22 (@243 @24 @26))
+@250 := List.instGetElem?NatLtLength.{0}
+@252 := @249 (@250 @13)
+@258 := {α : @0} -> (values : @50) -> (offset : @11) -> @239 (@252 @26 @3)
+@260 := proof(proof(List.rec.{0, 0}) @13)
+@261 := proof(@49 @24)
+@268 := proof(@196 proof(proof(proof(proof(proof(@100 @261) @24) proof(@234 @24)) @26) @3))
+@271 := proof(proof(proof(@12 @261) @11) @24)
+@272 := proof(#6)
+@286 := proof(@260
+      proof(fun (values : @231) =>
+        proof((offset : @11) ->
+          proof(@268
+              proof(proof(proof(proof(@271
+                        proof(fun (as : @261) =>
+                          proof(fun (i : @11) => proof(@22 proof(proof(@243 @272) @26)))))
+                      proof(@250 @24))
+                    @26)
+                  @3)))))
+@287 := proof(Eq.refl.{1})
+@288 := proof(@287 @98)
+@289 := proof(@49 @97)
+@300 := proof(@286
+      proof(fun (offset : @11) =>
+        proof(@288
+            proof(proof(proof(proof(proof(@100 @289) @97) proof(@234 @97))
+                  proof(proof(List.nil.{0}) @97))
+                @3))))
+@301 := proof(@49 @147)
+@308 := proof(@149 proof(proof(proof(proof(proof(@100 @301) @147) proof(@234 @147)) @26) @3))
+@311 := proof(proof(proof(@12 @301) @11) @147)
+@312 := proof(#7)
+@324 := proof((offset : @11) ->
+    proof(@308
+        proof(proof(proof(proof(@311
+                  proof(fun (as : @301) =>
+                    proof(fun (i : @11) => proof(@22 proof(proof(@243 @312) @26)))))
+                proof(@250 @147))
+              @26)
+            @3)))
+@325 := proof(Nat.casesAuxOn.{0})
+@326 := @67 @11
+@327 := proof(@326 @26)
+@328 := proof(@327 @3)
+@329 := proof(#8)
+@331 := proof(@67 proof(@96 @329))
+@332 := proof(@49 @329)
+@336 := proof(proof(proof(@100 @332) @329) proof(@234 @329))
+@337 := proof(List.cons.{0})
+@340 := proof(proof(proof(@337 @329) @147) @24)
+@341 := proof(@336 @340)
+@343 := proof(@331 proof(@341 @13))
+@356 := proof(proof(proof(proof(proof(proof(@12 @332) @11) @329)
+          proof(fun (as : @332) =>
+            proof(fun (i : @11) => proof(@22 proof(proof(@243 proof(#10)) @26)))))
+        proof(@250 @329))
+      @340)
+@362 := proof(proof(@325
+        proof(fun (a._@._internal.#0.LexLeanRuntime.Arrays.#3532254125._hygCtx._hyg.#38 : @11) =>
+          proof((h : @328) -> proof(@343 proof(@356 @13)))))
+      @3)
+@363 := proof(@326 @3)
+@365 := proof(proof(OfNat.ofNat.{0}) @11)
+@366 := proof(0)
+@367 := proof(@365 @366)
+@368 := proof(instOfNatNat)
+@370 := proof(@367 proof(@368 @366))
+@371 := proof(@363 @370)
+@373 := proof(proof(Eq.ndrec.{0, 1}) @11)
+@395 := proof(proof(proof(proof(@373 @370)
+          proof(fun (offset : @11) => proof(proof(@331 proof(@341 @3)) proof(@356 @3))))
+        proof(proof(@287 proof(@96 @312))
+            proof(proof(proof(proof(proof(@100 proof(@49 @312)) @312) proof(@234 @312))
+                  proof(proof(proof(@337 @312) @24) @97))
+                @370)))
+      @26)
+@396 := proof(Eq.symm.{1})
+@397 := proof(@396 @11)
+@403 := proof(@362
+      proof(fun (h._@.LexLeanRuntime.Arrays.#3532254125._hygCtx._hyg.#39 : @371) =>
+        proof(@395 proof(proof(proof(@397 @26) @370) @3))))
+@412 := proof(proof(proof(proof(proof(HAdd.hAdd.{0, 0, 0}) @11) @11) @11)
+      proof(proof(proof(instHAdd.{0}) @11) proof(instAddNat)))
+@413 := proof(@412 @3)
+@414 := proof(1)
+@417 := proof(proof(@365 @414) proof(@368 @414))
+@419 := proof(@327 proof(@413 @417))
+@421 := proof(proof(@412 @26) @417)
+@422 := proof(@373 @421)
+@423 := proof(#9)
+@425 := proof(@67 proof(@96 @423))
+@426 := proof(@49 @423)
+@430 := proof(proof(proof(@100 @426) @423) proof(@234 @423))
+@433 := proof(proof(proof(@337 @423) @272) @147)
+@476 := proof(fun {α : @0} =>
+    proof(fun (values : @50) =>
+      proof(fun (offset : @11) =>
+        proof(proof(proof(@300
+                proof(fun (head : @13) =>
+                  proof(fun (tail : @289) =>
+                    proof(fun (hypothesis : @324) =>
+                      proof(fun (offset : @11) =>
+                        proof(proof(@403
+                              proof(fun (offset : @11) =>
+                                proof(fun (h._@.LexLeanRuntime.Arrays.#3532254125._hygCtx._hyg.#48 : @419) =>
+                                  proof(proof(proof(proof(@422
+                                            proof(fun (offset : @11) =>
+                                              proof(proof(@425 proof(proof(@430 @433) @3))
+                                                  proof(proof(proof(proof(proof(proof(proof(@12
+                                                                  @426)
+                                                                @11)
+                                                              @423)
+                                                            proof(fun (as : @426) =>
+                                                              proof(fun (i : @11) =>
+                                                                proof(@22
+                                                                    proof(proof(@243 proof(α))
+                                                                        @26)))))
+                                                          proof(@250 @423))
+                                                        @433)
+                                                      @3))))
+                                          proof(@97 @26))
+                                        @13)
+                                      proof(proof(proof(@397 @13) @421) @3)))))
+                            proof(proof(@287 @11) @3)))))))
+              @26)
+            @3))))
+@483 := @230 (@100 @14 @13 (@104 @13) @26 @3)
+@485 := @71 @13 @26
+@487 := @236 @485 @3
+@488 := @483 @487
+@491 := {α : @0} -> (value : @4) -> (offset : @11) -> @488
+@493 := proof(proof(Eq.mpr.{0}) @488)
+@495 := proof(proof(@252 @485) @3)
+@496 := proof(@483 @495)
+@497 := proof(@493 @496)
+@498 := proof(id.{0})
+@499 := proof(Sort 0)
+@534 := proof(fun {α : @0} =>
+    proof(fun (value : @4) =>
+      proof(fun (offset : @11) =>
+        proof(proof(@497
+              proof(proof(@498 proof(proof(proof(@67 @499) @488) @496))
+                  proof(proof(proof(proof(proof(proof(proof(congrArg.{1, 1}) @229) @499) @487) @495)
+                        proof(fun (_a : @229) => proof(@109 @3)))
+                      proof(proof(proof(proof(LexLeanArrays.list_index) @13) @485) @3))))
+            proof(proof(proof(proof(@396 @229) proof(proof(@252 proof(proof(@62 @13) @26)) @3)) @36)
+                proof(proof(proof(proof(Array.getElem?_toList.{0}) @13) @26) @3))))))
+@545 := {α : @0} ->
+  (value : @4) -> (offset : @11) -> (element : @13) -> @326 (@192 (@155 @97 @13 @26 @3)) @193
+@554 := proof(fun {α : @0} =>
+    proof(fun (value : @4) =>
+      proof(fun (offset : @11) =>
+        proof(fun (element : @13) =>
+          proof(proof(proof(proof(proof(Array.size_setIfInBounds.{0}) @97) @13) @26) @3)))))
+@558 := @88 @51 (@90 @26) @3
+@567 := {α : @0} -> (value : @4) -> @326 @558 (@88 @59 (LexLeanRuntime.instLengthableList @26) @73)
+@571 := proof(fun {α : @0} => proof(fun (value : @4) => proof(proof(@79 @11) @558)))
+@573 := @87 @193 @26
+@581 := {α : @0} ->
+  (value : @4) ->
+  (offset : @11) -> (element : @13) -> (a._@._internal._hyg.#0 : @573) -> @67 @197 @205 @97
+@592 := proof(fun {α : @0} =>
+    proof(fun (value : @4) =>
+      proof(fun (offset : @11) =>
+        proof(fun (element : @13) =>
+          proof(fun (beyond : @573) =>
+            proof(proof(proof(proof(proof(proof(Array.setIfInBounds_eq_of_size_le.{0}) @24) @97)
+                    @13)
+                  @3)
+                @26))))))
+@593 := @67 @59
+@595 := @72 (@70 @3)
+@599 := {α : @0} -> (values : @50) -> @593 @595 @3
+@603 := proof(fun {α : @0} => proof(fun (values : @50) => proof(proof(@79 @59) @595)))
+\end{coremodule}
+\end{lexlean}

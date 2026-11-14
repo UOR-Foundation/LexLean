@@ -55,6 +55,11 @@ pub const REASONING: &str = "LexLeanRuntime.Reasoning";
 /// rewrites with and a `law` proof applies.
 pub const LAWS: &str = "LexLeanRuntime.Laws";
 
+/// The arrays (`LexLeanArrays`): the instances `length` and `index` resolve
+/// on an array, the array primitives, and the laws that relate an array to
+/// the list of its elements.
+pub const ARRAYS: &str = "LexLeanRuntime.Arrays";
+
 /// The decision regions (`LexLeanRegions`): the checker data, the local box
 /// obligations, and the soundness theorem a `region_check` proof applies.
 pub const REGIONS: &str = "LexLeanRuntime.Regions";
@@ -205,15 +210,25 @@ fn check_laws(
     registry: &crate::ir::semantic::laws::Registry,
 ) -> Result<(), String> {
     let path = crate::ir::semantic::laws::REGISTRY_PATH;
-    let module = modules
-        .iter()
-        .find(|module| module.name == registry.module)
-        .ok_or_else(|| format!("{path}: `{}` is not a runtime module", registry.module))?;
-    for name in registry
-        .rewrites
-        .iter()
-        .chain(registry.laws.iter().map(|law| &law.lean))
-    {
+    let find = |name: &str| {
+        modules
+            .iter()
+            .find(|module| module.name == name)
+            .ok_or_else(|| format!("{path}: `{name}` is not a runtime module"))
+    };
+    // A rewrite is a declaration of the registry's module; a law is one of
+    // the module its row names, or of the registry's.
+    let own = find(&registry.module)?;
+    let rewrites = registry.rewrites.iter().map(|name| (name, own));
+    let mut laws = Vec::new();
+    for law in &registry.laws {
+        let module = match &law.module {
+            Some(module) => find(module)?,
+            None => own,
+        };
+        laws.push((&law.lean, module));
+    }
+    for (name, module) in rewrites.chain(laws) {
         if !module
             .declarations
             .iter()
@@ -221,7 +236,7 @@ fn check_laws(
         {
             return Err(format!(
                 "{path}: `{name}` is not a declaration of `{}`",
-                registry.module
+                module.name
             ));
         }
     }
@@ -351,9 +366,15 @@ mod tests {
                 super::MODELS,
                 super::REASONING,
                 super::LAWS,
+                super::ARRAYS,
                 super::REGIONS
             ]
         );
+        let arrays = modules
+            .iter()
+            .find(|module| module.name == super::ARRAYS)
+            .expect("the arrays module");
+        assert_eq!(arrays.imports, [super::PORTABLE]);
         let regions = modules
             .iter()
             .find(|module| module.name == super::REGIONS)

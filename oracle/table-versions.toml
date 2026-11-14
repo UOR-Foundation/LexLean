@@ -29,4 +29,5 @@ history = [
   { version = 2, rows_sha256 = "9e89707c1feef429273944202895c6351353e77df926b48bf2525dbe44697660" },
   { version = 3, rows_sha256 = "af5c29d1187b1efd96b25aa55722f7d476e8913ad3bd08f3caba09cc68381803" },
   { version = 4, rows_sha256 = "f873b0725c4adc1581aa24495df9c07c41f3268c8c2239344119f1c4b940ac43" },
+  { version = 5, rows_sha256 = "fdd3eea7ad31673d4f0c3c3c3df9e0080db90c9a3007b8a5d6847861f563f0e9" },
 ]

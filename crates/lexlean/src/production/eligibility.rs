@@ -161,13 +161,16 @@ pub const fn primitive_key(operation: SemanticPrimitive) -> &'static str {
         SemanticPrimitive::LessThan => "primitive.less_than",
         SemanticPrimitive::ToInt => "primitive.to_int",
         SemanticPrimitive::ToNat => "primitive.to_nat",
+        SemanticPrimitive::ArrayFromList => "primitive.array_from_list",
+        SemanticPrimitive::ArrayToList => "primitive.array_to_list",
+        SemanticPrimitive::ArraySet => "primitive.array_set",
     }
 }
 
 /// Every primitive operation, in declaration order. [`primitive_index`] is
 /// exhaustive, so a new operation cannot be added without extending it, and
 /// the conformance suite checks the two agree.
-pub const PRIMITIVES: [SemanticPrimitive; 56] = [
+pub const PRIMITIVES: [SemanticPrimitive; 59] = [
     SemanticPrimitive::Subtract,
     SemanticPrimitive::Multiply,
     SemanticPrimitive::Quotient,
@@ -224,6 +227,9 @@ pub const PRIMITIVES: [SemanticPrimitive; 56] = [
     SemanticPrimitive::LessThan,
     SemanticPrimitive::ToInt,
     SemanticPrimitive::ToNat,
+    SemanticPrimitive::ArrayFromList,
+    SemanticPrimitive::ArrayToList,
+    SemanticPrimitive::ArraySet,
 ];
 
 /// The position of an operation in [`PRIMITIVES`].
@@ -286,6 +292,9 @@ pub const fn primitive_index(operation: SemanticPrimitive) -> usize {
         SemanticPrimitive::LessThan => 53,
         SemanticPrimitive::ToInt => 54,
         SemanticPrimitive::ToNat => 55,
+        SemanticPrimitive::ArrayFromList => 56,
+        SemanticPrimitive::ArrayToList => 57,
+        SemanticPrimitive::ArraySet => 58,
     }
 }
 
@@ -293,7 +302,7 @@ pub const fn primitive_index(operation: SemanticPrimitive) -> usize {
 /// the primitive keys, which [`PRIMITIVES`] enumerates. The conformance suite
 /// checks this list, the primitive keys, and the declaration keys against
 /// the registry rows in both directions.
-pub const STRUCTURAL_KEYS: [&str; 92] = [
+pub const STRUCTURAL_KEYS: [&str; 93] = [
     "type.type",
     "type.parameter",
     "type.nat",
@@ -322,6 +331,7 @@ pub const STRUCTURAL_KEYS: [&str; 92] = [
     "type.set",
     "type.contract_violation",
     "type.reasoning_failure",
+    "type.array",
     "term.var",
     "term.nat",
     "term.integer",
@@ -424,6 +434,7 @@ pub const fn type_key(ty: &SemanticType) -> &'static str {
         } => "type.function",
         SemanticType::Map { key: _, value: _ } => "type.map",
         SemanticType::Set { element: _ } => "type.set",
+        SemanticType::Array { element: _ } => "type.array",
         SemanticType::ContractViolation => "type.contract_violation",
         SemanticType::ReasoningFailure => "type.reasoning_failure",
     }
@@ -635,7 +646,8 @@ fn representation(ty: &SemanticType) -> Option<Representation> {
             result: _,
         }
         | SemanticType::Map { key: _, value: _ }
-        | SemanticType::Set { element: _ } => None,
+        | SemanticType::Set { element: _ }
+        | SemanticType::Array { element: _ } => None,
     }
 }
 
@@ -684,6 +696,7 @@ pub(crate) fn type_text(ty: &SemanticType, owner: &Owner<'_>) -> String {
         }
         SemanticType::Map { key, value } => format!("Map {} {}", wrap(key), wrap(value)),
         SemanticType::Set { element } => format!("Set {}", wrap(element)),
+        SemanticType::Array { element } => format!("Array {}", wrap(element)),
         SemanticType::ContractViolation => "ContractViolation".to_owned(),
         SemanticType::ReasoningFailure => "ReasoningFailure".to_owned(),
     }
@@ -730,6 +743,9 @@ pub(crate) fn substitute(ty: &SemanticType, map: &BTreeMap<String, SemanticType>
             value: boxed(value),
         },
         SemanticType::Set { element } => SemanticType::Set {
+            element: boxed(element),
+        },
+        SemanticType::Array { element } => SemanticType::Array {
             element: boxed(element),
         },
         SemanticType::Type
@@ -792,6 +808,9 @@ pub(crate) fn anchor(ty: &SemanticType, from: &str) -> SemanticType {
             value: boxed(value),
         },
         SemanticType::Set { element } => SemanticType::Set {
+            element: boxed(element),
+        },
+        SemanticType::Array { element } => SemanticType::Array {
             element: boxed(element),
         },
         SemanticType::Type
@@ -1020,6 +1039,11 @@ impl<'a> Walk<'a> {
                 parameters: _,
                 result: _,
             } => Some("a function, so a closure would escape the root".to_owned()),
+            // §17.13: an array is formal-only, so no root's boundary holds
+            // one; the construct row refuses it wherever it occurs.
+            SemanticType::Array { element: _ } => {
+                Some("an array, which has no production realization".to_owned())
+            }
             SemanticType::Option { value: inner }
             | SemanticType::List { element: inner }
             | SemanticType::Set { element: inner } => self.boundary(inner, visiting, crossing),
@@ -1510,7 +1534,8 @@ impl<'a> Walk<'a> {
             ),
             SemanticType::Option { value: inner }
             | SemanticType::List { element: inner }
-            | SemanticType::Set { element: inner } => self.ty(inner, site),
+            | SemanticType::Set { element: inner }
+            | SemanticType::Array { element: inner } => self.ty(inner, site),
             SemanticType::Result {
                 ok: left,
                 error: right,
@@ -2890,7 +2915,8 @@ fn mentions(ty: &SemanticType, module: &str, group: &BTreeSet<String>) -> bool {
         }
         SemanticType::Option { value: inner }
         | SemanticType::List { element: inner }
-        | SemanticType::Set { element: inner } => mentions(inner, module, group),
+        | SemanticType::Set { element: inner }
+        | SemanticType::Array { element: inner } => mentions(inner, module, group),
         SemanticType::Result {
             ok: left,
             error: right,

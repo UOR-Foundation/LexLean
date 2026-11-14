@@ -309,6 +309,14 @@ recursion = false
 note = "A reasoning failure is a pair of Booleans, plain data with exactly four values."
 
 [[construct]]
+key = "type.array"
+disposition = "formal-only"
+allocation = false
+overflow = []
+recursion = false
+note = "Formal only: an array is realized by the generated Lean alone, and no production target has a realization of it, so a root whose closure reaches one fails."
+
+[[construct]]
 key = "term.var"
 disposition = "runtime"
 allocation = false
@@ -1010,6 +1018,30 @@ allocation = false
 overflow = []
 recursion = false
 note = "Realized through its elaboration: a let, bit tests by bit_and and equal, conditionals, and a natural-number sum, which never leaves the 64-bit range."
+
+[[construct]]
+key = "primitive.array_from_list"
+disposition = "formal-only"
+allocation = false
+overflow = []
+recursion = false
+note = "Formal only: an array is realized by the generated Lean alone, and no production target has a realization of it, so a root whose closure reaches one fails."
+
+[[construct]]
+key = "primitive.array_to_list"
+disposition = "formal-only"
+allocation = false
+overflow = []
+recursion = false
+note = "Formal only: an array is realized by the generated Lean alone, and no production target has a realization of it, so a root whose closure reaches one fails."
+
+[[construct]]
+key = "primitive.array_set"
+disposition = "formal-only"
+allocation = false
+overflow = []
+recursion = false
+note = "Formal only: an array is realized by the generated Lean alone, and no production target has a realization of it, so a root whose closure reaches one fails."
 
 [[construct]]
 key = "declaration.structure"

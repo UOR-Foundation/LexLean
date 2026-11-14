@@ -26,12 +26,13 @@ pub fn run(id: &str) {
 }
 
 /// The runtime namespaces a generated module once carried a copy of.
-const NAMESPACES: [&str; 6] = [
+const NAMESPACES: [&str; 7] = [
     "LexLeanRuntime",
     "LexLeanCollections",
     "LexLeanModels",
     "LexLeanReasoning",
     "LexLeanLaws",
+    "LexLeanArrays",
     "LexLeanRegions",
 ];
 
@@ -73,9 +74,10 @@ fn rt_01() {
             runtime::MODELS,
             runtime::REASONING,
             runtime::LAWS,
+            runtime::ARRAYS,
             runtime::REGIONS
         ],
-        "the registry lists the six runtime modules in dependency order"
+        "the registry lists the seven runtime modules in dependency order"
     );
     // The registry lists the modules and nothing else.
     let registry: toml::Table = disk(runtime::REGISTRY_PATH)
@@ -176,6 +178,7 @@ fn rt_01() {
     for input in [
         "tests/runtime-library/oracle",
         "tests/runtime-library/laws-oracle",
+        "tests/runtime-library/arrays-oracle",
         "tests/runtime-library/regions-oracle",
     ] {
         assert!(

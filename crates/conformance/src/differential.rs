@@ -327,6 +327,7 @@ fn sample(
         }
         | SemanticType::Type
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Parameter { name: _ } => panic!("{ty:?} is not a boundary type"),
     }
 }

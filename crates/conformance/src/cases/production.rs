@@ -338,7 +338,7 @@ fn schema_kinds(definition: &str, property: &str) -> BTreeSet<String> {
 
 /// One minimal well-formed value of every type kind and every term kind, as
 /// semantic-module JSON. The analysis must map each to its own registry key.
-const TYPE_SAMPLES: [&str; 28] = [
+const TYPE_SAMPLES: [&str; 29] = [
     r#"{"kind":"type"}"#,
     r#"{"kind":"parameter","name":"T"}"#,
     r#"{"kind":"nat"}"#,
@@ -365,6 +365,7 @@ const TYPE_SAMPLES: [&str; 28] = [
     r#"{"kind":"function","parameters":[{"kind":"nat"}],"result":{"kind":"nat"}}"#,
     r#"{"kind":"map","key":{"kind":"nat"},"value":{"kind":"nat"}}"#,
     r#"{"kind":"set","element":{"kind":"nat"}}"#,
+    r#"{"kind":"array","element":{"kind":"int8"}}"#,
     r#"{"kind":"contract_violation"}"#,
     r#"{"kind":"reasoning_failure"}"#,
 ];
@@ -418,7 +419,7 @@ const TERM_SAMPLES: [&str; 42] = [
 /// allocation, overflowing representations, and recursion. A changed column
 /// is a change to LexLean's production contract, so it must change here too.
 #[rustfmt::skip]
-const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 148] = [
+const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 152] = [
     ("type.type", "formal-only", false, &[], false),
     ("type.parameter", "runtime", false, &[], false),
     ("type.nat", "runtime", false, &[], false),
@@ -447,6 +448,7 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 148] = [
     ("type.set", "runtime", true, &[], false),
     ("type.contract_violation", "runtime", false, &[], false),
     ("type.reasoning_failure", "runtime", false, &[], false),
+    ("type.array", "formal-only", false, &[], false),
     ("term.var", "runtime", false, &[], false),
     ("term.nat", "runtime", false, &[], false),
     ("term.integer", "runtime", false, &[], false),
@@ -546,6 +548,9 @@ const REGISTRY_ROWS: [(&str, &str, bool, &[&str], bool); 148] = [
     ("primitive.less_than", "runtime", false, &[], false),
     ("primitive.to_int", "runtime", false, &["int"], false),
     ("primitive.to_nat", "runtime", false, &[], false),
+    ("primitive.array_from_list", "formal-only", false, &[], false),
+    ("primitive.array_to_list", "formal-only", false, &[], false),
+    ("primitive.array_set", "formal-only", false, &[], false),
     ("declaration.structure", "runtime", false, &[], false),
     ("declaration.class", "runtime", false, &[], false),
     ("declaration.instance", "runtime", false, &[], false),

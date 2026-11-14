@@ -79,6 +79,13 @@ impl<'a> Writer<'_, 'a> {
             })
         };
         Ok(match operation {
+            SemanticPrimitive::ArrayFromList
+            | SemanticPrimitive::ArrayToList
+            | SemanticPrimitive::ArraySet => {
+                return Err(format!(
+                    "{operation:?} is formal-only and has no certificate rule"
+                ));
+            }
             SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
                 return Err(format!(
                     "{operation:?} is certified only through its elaboration"
@@ -283,6 +290,13 @@ impl<'a> Writer<'_, 'a> {
             return self.template_call(template, &instance, arguments, &types, expr, scope);
         }
         match operation {
+            SemanticPrimitive::ArrayFromList
+            | SemanticPrimitive::ArrayToList
+            | SemanticPrimitive::ArraySet => {
+                return Err(format!(
+                    "{operation:?} is formal-only and has no certificate rule"
+                ));
+            }
             SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
                 return Err(format!(
                     "{operation:?} is certified only through its elaboration"

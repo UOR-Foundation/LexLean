@@ -93,6 +93,7 @@ impl Writer<'_, '_> {
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::String
@@ -133,6 +134,7 @@ impl Writer<'_, '_> {
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int8
             | SemanticType::Int16
@@ -183,6 +185,7 @@ impl Writer<'_, '_> {
             SemanticType::Type
             | SemanticType::Parameter { name: _ }
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Option { value: _ }
@@ -241,6 +244,13 @@ impl Writer<'_, '_> {
             value: Box::new(SemanticType::Int64),
         };
         let special = match operation {
+            SemanticPrimitive::ArrayFromList
+            | SemanticPrimitive::ArrayToList
+            | SemanticPrimitive::ArraySet => {
+                return Err(format!(
+                    "{operation:?} is formal-only and has no certificate rule"
+                ));
+            }
             SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
                 return Err(format!(
                     "{operation:?} is certified only through its elaboration"
@@ -310,6 +320,13 @@ impl Writer<'_, '_> {
         let head = self.runtime(site, namespace, name)?;
         let mut leading: Vec<Term> = Vec::new();
         match operation {
+            SemanticPrimitive::ArrayFromList
+            | SemanticPrimitive::ArrayToList
+            | SemanticPrimitive::ArraySet => {
+                return Err(format!(
+                    "{operation:?} is formal-only and has no certificate rule"
+                ));
+            }
             SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
                 return Err(format!(
                     "{operation:?} is certified only through its elaboration"
@@ -339,6 +356,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -397,6 +415,13 @@ impl Writer<'_, '_> {
                 let ty = first.ok_or("a sequence operation without an operand")?;
                 leading.push(self.lean_ty(ty)?);
                 let class = match operation {
+                    SemanticPrimitive::ArrayFromList
+                    | SemanticPrimitive::ArrayToList
+                    | SemanticPrimitive::ArraySet => {
+                        return Err(format!(
+                            "{operation:?} is formal-only and has no certificate rule"
+                        ));
+                    }
                     SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
                         return Err(format!(
                             "{operation:?} is certified only through its elaboration"
@@ -476,6 +501,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -518,6 +544,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -608,6 +635,7 @@ impl Writer<'_, '_> {
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8
@@ -688,6 +716,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -852,6 +881,7 @@ impl Writer<'_, '_> {
             SemanticType::Type
             | SemanticType::Parameter { name: _ }
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8
@@ -983,6 +1013,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -1129,6 +1160,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -1169,6 +1201,7 @@ impl Writer<'_, '_> {
                     | SemanticType::Nat
                     | SemanticType::Bool
                     | SemanticType::Prop
+                    | SemanticType::Array { element: _ }
                     | SemanticType::Unit
                     | SemanticType::Int
                     | SemanticType::Int8
@@ -1345,6 +1378,7 @@ impl Writer<'_, '_> {
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8

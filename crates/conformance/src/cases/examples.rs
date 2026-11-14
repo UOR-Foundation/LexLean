@@ -171,7 +171,7 @@ pub(crate) fn run(id: &str) {
         // exactly the one prescribed diagnostic code.
         "EX-07" => {
             let root = support::repo_root();
-            let prescribed: [(&str, &str); 303] = [
+            let prescribed: [(&str, &str); 308] = [
                 ("unknown-word", "LLL1004"),
                 ("unknown-symbol", "LLL1004"),
                 ("unknown-control", "LLL1004"),
@@ -319,6 +319,13 @@ pub(crate) fn run(id: &str) {
                 ("collection-unbounded-iteration", "LLT4001"),
                 ("collection-literal-limit", "LLS8002"),
                 ("collection-under-1.1", "LLT4001"),
+                // §17.12: arrays fail closed before any backend, and a
+                // production root over one fails closed in eligibility.
+                ("array-element-not-fixed-width", "LLT4001"),
+                ("array-set-wrong-element", "LLT4001"),
+                ("array-pattern-match", "LLT4001"),
+                ("array-under-1.1", "LLT4001"),
+                ("array-production-root", "LLT4005"),
                 // §17.13: a production root fails closed before any backend.
                 ("production-hidden-dependency", "LLT4005"),
                 ("production-unbounded-type", "LLT4005"),

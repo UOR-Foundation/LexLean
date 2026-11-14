@@ -740,6 +740,12 @@ suite = "semantic-ir"
 statement = "A language-1.2 build publishes, for every semantic module, a declaration ID for each declaration and a statement ID for each theorem: the declaration ID is a framed SHA-256 of the declaration's canonical JSON and of the declaration IDs of the project declarations it references, with declarations that reference one another hashed as one group, and the statement ID omits the theorem's proof; changing one literal of one definition changes the declaration IDs of exactly that definition and of the declarations that reach it by reference, changing a theorem's proof alone leaves its statement ID unchanged, adding or reordering independent declarations changes no ID, the IDs equal their recomputation from the specified framed inputs, the file validates against `api/schemas/declarations.schema.json`, and a language-1.0 or 1.1 build publishes none."
 
 [[id]]
+id = "SM-39"
+level = "build"
+suite = "semantic-ir"
+statement = "Language 1.2 has arrays of one fixed-width integer type: the type lowers to the pinned Lean's `Array`, `length` and `index` apply to an array, and the primitives `array_from_list`, `array_to_list`, and `array_set` convert a list to an array, an array to the list of its elements, and replace one element, leaving the array as it is when the offset is at or past its length; the runtime module `LexLeanRuntime.Arrays` states the two instances, the three primitives, and the laws that relate an array to its list as LexLean source, every row within `propext`, and a `law` proof applies a registered array law and imports the module that states it; the committed arrays example proves, for all arrays, that an int8 dot product computed by index equals its list definition and that an in-place rectification keeps the length, and verifies with exactly the axioms its policies state; a use in language 1.1, an element type that is not a fixed-width integer, an ill-typed primitive, and a pattern match on an array are each refused as LLT4001, a production root whose closure reaches an array is refused as LLT4005, and Lean refuses a loop that skips an element with LLV7002."
+
+[[id]]
 id = "DF-01"
 level = "build"
 suite = "declarations"

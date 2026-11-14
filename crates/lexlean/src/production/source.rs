@@ -401,6 +401,7 @@ impl<'a> Source<'a> {
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8
@@ -805,6 +806,7 @@ impl<'a> Source<'a> {
             SemanticType::Type
             | SemanticType::Parameter { name: _ }
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8
@@ -864,6 +866,7 @@ impl<'a> Source<'a> {
                 | SemanticType::Nat
                 | SemanticType::Bool
                 | SemanticType::Prop
+                | SemanticType::Array { element: _ }
                 | SemanticType::Unit
                 | SemanticType::Int
                 | SemanticType::Int8
@@ -915,6 +918,7 @@ impl<'a> Source<'a> {
                         | SemanticType::Nat
                         | SemanticType::Bool
                         | SemanticType::Prop
+                        | SemanticType::Array { element: _ }
                         | SemanticType::Unit
                         | SemanticType::Int
                         | SemanticType::Int8

@@ -1392,6 +1392,7 @@ const fn is_violation(ty: &SemanticType) -> bool {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -1438,6 +1439,7 @@ pub(crate) const fn fixed_kind(ty: &SemanticType) -> Option<IntKind> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::String
@@ -1523,6 +1525,7 @@ pub(crate) fn template_of(
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8
@@ -1563,6 +1566,7 @@ pub(crate) fn template_of(
             | SemanticType::Nat
             | SemanticType::Bool
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Unit
             | SemanticType::Int
             | SemanticType::Int8
@@ -1691,7 +1695,10 @@ pub(crate) fn template_of(
         | SemanticPrimitive::FormatDecimal
         | SemanticPrimitive::LessThan
         | SemanticPrimitive::ToInt
-        | SemanticPrimitive::ToNat => return Ok(None),
+        | SemanticPrimitive::ToNat
+        | SemanticPrimitive::ArrayFromList
+        | SemanticPrimitive::ArrayToList
+        | SemanticPrimitive::ArraySet => return Ok(None),
     }))
 }
 
@@ -1910,6 +1917,7 @@ impl Lowerer<'_> {
             }
             SemanticType::Type
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Function {
                 parameters: _,
@@ -2048,6 +2056,7 @@ impl Lowerer<'_> {
             }
             SemanticType::Type
             | SemanticType::Prop
+            | SemanticType::Array { element: _ }
             | SemanticType::Parameter { name: _ }
             | SemanticType::Function {
                 parameters: _,
@@ -2169,7 +2178,10 @@ impl Lowerer<'_> {
                 left: Box::new(Ty::Bool),
                 right: Box::new(Ty::Bool),
             },
-            SemanticType::Type | SemanticType::Prop | SemanticType::Parameter { name: _ } => {
+            SemanticType::Type
+            | SemanticType::Prop
+            | SemanticType::Array { element: _ }
+            | SemanticType::Parameter { name: _ } => {
                 return Err(format!(
                     "`{}` has no runtime realization",
                     self.source.type_text(ty)
@@ -3450,6 +3462,7 @@ impl Lowerer<'_> {
                 | SemanticType::Parameter { name: _ }
                 | SemanticType::Bool
                 | SemanticType::Prop
+                | SemanticType::Array { element: _ }
                 | SemanticType::Unit
                 | SemanticType::Int8
                 | SemanticType::Int16
@@ -3488,6 +3501,7 @@ impl Lowerer<'_> {
                 | SemanticType::Nat
                 | SemanticType::Bool
                 | SemanticType::Prop
+                | SemanticType::Array { element: _ }
                 | SemanticType::Unit
                 | SemanticType::Int
                 | SemanticType::Int8
@@ -3523,6 +3537,13 @@ impl Lowerer<'_> {
         let operation = match operation {
             // Every backend reads elaborated declarations, in which a
             // widening conversion is the ordinary term it means (§17.12).
+            SemanticPrimitive::ArrayFromList
+            | SemanticPrimitive::ArrayToList
+            | SemanticPrimitive::ArraySet => {
+                return Err(format!(
+                    "{operation:?} is formal-only and has no production realization"
+                ));
+            }
             SemanticPrimitive::ToInt | SemanticPrimitive::ToNat => {
                 return Err(format!(
                     "{operation:?} is lowered only through its elaboration"
@@ -3626,6 +3647,7 @@ fn product(ty: SemanticType) -> Result<(SemanticType, SemanticType), String> {
         | SemanticType::Nat
         | SemanticType::Bool
         | SemanticType::Prop
+        | SemanticType::Array { element: _ }
         | SemanticType::Unit
         | SemanticType::Int
         | SemanticType::Int8
@@ -3833,6 +3855,7 @@ impl Source<'_> {
                 | SemanticType::Nat
                 | SemanticType::Bool
                 | SemanticType::Prop
+                | SemanticType::Array { element: _ }
                 | SemanticType::Unit
                 | SemanticType::Int
                 | SemanticType::Int8

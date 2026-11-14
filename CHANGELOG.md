@@ -17,6 +17,25 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Arrays of fixed-width integers (SPEC.md §17.12, *Arrays*, `SM-39`; no new
+  diagnostic code; changes the language-1.2 identity). Language 1.2 gains the
+  type `array{element: T}` over one fixed-width integer type, lowered to the
+  pinned Lean's `Array`; `length` and `index` apply to it, and the primitives
+  `array_from_list`, `array_to_list`, and `array_set` convert it to and from
+  the list of its elements and replace one element, an offset at or past the
+  length leaving the array as it is. The runtime gains a native module,
+  `LexLeanRuntime.Arrays`: the two instances, the three primitives, and nine
+  laws that relate an array to its list, every row within `propext`
+  (`tests/runtime-library/ARRAYS.md`). A `law` proof now imports the module
+  that states its law, so a module that applies an array law does not import
+  `LexLeanRuntime.Laws`. `examples/arrays` proves, for all arrays, that an
+  int8 dot product computed by index equals its definition on lists, and that
+  a rectification written in place keeps the length. The array type and its
+  primitives are formal-only for production (§17.13): a root that reaches one
+  is `LLT4005`. That the pinned Lean writes a singly referenced array in place
+  is cited (`LEAN-ARRAY-4-32-1`), not established here. The design and the
+  decisions left to the owners are in `docs/proposals/verified-arrays.md`.
+  The register is 497 IDs.
 - Every part of a verification names its toolchain by address (SPEC.md
   §22.11, §9.4). A shard writes `toolchain.json` (`lexlean/verify-toolchain/1`)
   beside its output: the SHA-256 of the `lean`, `lake`, and `leanchecker` its
@@ -73,7 +92,6 @@ workspace carried at those versions without a tag.
   feature disables a normative capability. A default build is unchanged.
   A landing that moves the language-1.2 ID now also updates the constant;
   `RP-10` names the new value when it is stale.
-
 - `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
   command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
   new language-1.2 module `RuntimeHost`, that calls the step and carries out each
