@@ -159,9 +159,12 @@ fn write_escaped(text: &str, out: &mut String) {
 }
 
 /// A streaming duplicate-key check over raw JSON bytes: every object level
-/// keeps the set of keys seen so far (as their raw escaped spelling, which
-/// canonical JSON makes unique per key). Structural errors are left to the
-/// full parser; only a duplicate is reported here.
+/// keeps the set of keys seen so far, compared after JSON escape decoding.
+/// The input need not be canonical yet, so `"a"` and `"\u0061"` are the same
+/// key and must collide here; comparing the raw spelling would let the full
+/// parser keep the last of them silently. Structural errors, including a key
+/// that does not decode, are left to the full parser; only a duplicate is
+/// reported here.
 fn check_duplicate_keys(bytes: &[u8]) -> Result<(), String> {
     #[derive(Clone, Copy, PartialEq, Eq)]
     enum Frame {
@@ -189,8 +192,9 @@ fn check_duplicate_keys(bytes: &[u8]) -> Result<(), String> {
                 }
                 if expecting_key {
                     if let Some((Frame::Object, keys)) = frames.last_mut() {
-                        let key = bytes[start..end].to_vec();
-                        if !keys.insert(key) {
+                        // The slice includes both quotes, so it is one JSON string.
+                        let decoded = serde_json::from_slice::<String>(&bytes[start - 1..=end]);
+                        if decoded.is_ok_and(|key| !keys.insert(key.into_bytes())) {
                             return Err(format!(
                                 "duplicate key {}",
                                 String::from_utf8_lossy(&bytes[start..end])
