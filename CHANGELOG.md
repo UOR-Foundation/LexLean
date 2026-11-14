@@ -36,6 +36,22 @@ workspace carried at those versions without a tag.
   is cited (`LEAN-ARRAY-4-32-1`), not established here. The design and the
   decisions left to the owners are in `docs/proposals/verified-arrays.md`.
   The register is 497 IDs.
+- Every part of a verification names its toolchain by address (SPEC.md
+  §22.11, §9.4). A shard writes `toolchain.json` (`lexlean/verify-toolchain/1`)
+  beside its output: the SHA-256 of the `lean`, `lake`, and `leanchecker` its
+  preflight hashed, of the running `lexlean`, and the address of the `rustc`
+  that compiled it (its executable and `rustc_driver` library, which the build
+  script hashes). A part that reads another refuses it (`LLI9001`, naming the
+  part, the tool, and both addresses) unless all five equal its own. A record
+  names only the executable it ran, so a part that ran another `lake`,
+  `lexlean`, or `rustc` was accepted before. `VR-23` plants another `lake`
+  address in a shard's output, and on unix a join whose own `lake` differs by
+  one byte. The bootstrap export's custody record becomes
+  `lexlean/ci-bootstrap-export/2`: it also names the SHA-256 of the pinned
+  `lake`, `lean`, and `leanchecker` and the address of the `rustc` that built
+  the exporting binary, and a leg whose own differ refuses the export (`RP-14`
+  plants another `leanchecker` and another `rustc`). Published directories,
+  attestations, and `expected/verify` are unchanged.
 - Releases and regeneration need no hand steps (SPEC.md §9.4). `regenerate.yml`
   gains the job `deliver`: when the regenerated commit heads one open pull
   request of this repository, the patch is committed on it, pushed to the pull
