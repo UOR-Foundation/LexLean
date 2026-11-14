@@ -83,6 +83,38 @@ fn semantic_json_depth_diagnostic() {
         depth > 1000,
         "the snapshot carries the whole list ({depth} levels)"
     );
+
+    // The authoring API reads, converts, and writes the same module for a
+    // caller on a default 2 MiB stack, and refuses one nested past its bound.
+    std::thread::Builder::new()
+        .stack_size(2 << 20)
+        .spawn(|| {
+            let source = depth_fixture("list-1000.lex.tex");
+            let value = lexlean::sdk::read_module(&source).expect("the API reads 1000 cells");
+            let data = lexlean::sdk::to_data_form(&source).expect("to the data form");
+            assert_eq!(
+                lexlean::sdk::read_module(&data).expect("the data form reads"),
+                value
+            );
+            let notation = lexlean::sdk::to_notation(&data).expect("back to the notation");
+            assert_eq!(
+                lexlean::sdk::read_module(&notation).expect("it reads"),
+                value
+            );
+            let written = lexlean::sdk::write_module(&source, &value).expect("written");
+            assert_eq!(
+                lexlean::sdk::read_module(&written).expect("it reads"),
+                value
+            );
+            let spans = lexlean::sdk::declaration_spans(&source).expect("spans");
+            assert_eq!(spans.map(|spans| spans.len()), Some(1));
+            let refused = lexlean::sdk::read_module(&depth_fixture("negative/list-1100.lex.tex"))
+                .expect_err("past the API's bound");
+            assert!(refused.message.contains("nested more deeply"), "{refused}");
+        })
+        .expect("authoring API caller thread")
+        .join()
+        .expect("the authoring API reads a list of 1000 cells on a default stack");
 }
 
 fn semantic_json_depth_diagnostic_on_stack(project: &P) {

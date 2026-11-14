@@ -13494,6 +13494,15 @@ bounds are the project's. Three planted defects, each restored:
 | the linker reads the data with `parse` (127 levels) | fails: the 1000-cell list is refused |
 | `to_json` re-reads with the bounded `Json::parse` | fails: `recursion limit exceeded` panic in the snapshot |
 | `canonical_bytes` runs on its caller's stack | fails: `STATUS_STACK_OVERFLOW` on the 2 MiB thread |
+| the authoring API reads the notation to 256 levels | fails: the 1000-cell list is not read |
+| the authoring API runs on its caller's stack | fails: `STATUS_STACK_OVERFLOW` on the 2 MiB thread |
+
+The authoring API had the same limits on its caller's stack (notation 256,
+JSON 128), so `conformance_au_08`, which reads every committed module through
+it, failed on the 1000-cell fixture in the gate. It now reads a semantic
+module to 1024 levels on a stack of its own; `conformance_sm_12` reads,
+converts both ways, and writes the fixture on a 2 MiB thread and refuses the
+1100-cell one, and `conformance_au_08` passes.
 
 `SP-02` asserted the 130-level let-chain refusal; it now asserts that the
 chain checks. `conformance_au_01`, `conformance_au_03` (a 50,000-level

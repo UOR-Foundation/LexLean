@@ -27,7 +27,10 @@ workspace carried at those versions without a tag.
   admitted (rendering, declaration IDs, the snapshot and its canonical bytes)
   reads to the same depth on a stack sized for it: a list of 1000 elements
   checks, builds, verifies, and has a snapshot. Past the bound the notation is
-  `LLP2001` and the data `LLT4001`, each naming `max_scope_depth`. A module
+  `LLP2001` and the data `LLT4001`, each naming `max_scope_depth`. The
+  authoring API (`lexlean::sdk`) reads, converts, and writes a semantic module
+  to 1024 levels, the default `max_scope_depth`, on a stack of its own, where
+  it read the notation to 256 and the JSON to 128 on its caller's. A module
   within the old limits reads, renders, and hashes to the same bytes as
   before. This reverses the decision of #375 to keep the 128-level limit.
   The register is unchanged.
