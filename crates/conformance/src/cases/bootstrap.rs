@@ -32,6 +32,7 @@ mod lock_text;
 mod lse_scopes;
 mod lse_types;
 mod manifest_text;
+mod package_ref;
 mod project_text;
 mod runtime_validate;
 mod rust_assemble;
@@ -2582,6 +2583,7 @@ fn case(id: &str) {
         "BS-51" => lse_scopes::case(),
         "BS-52" => lse_types::case(),
         "BS-53" => toml_read::case(),
+        "BS-54" => package_ref::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

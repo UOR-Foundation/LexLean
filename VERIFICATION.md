@@ -11709,6 +11709,34 @@ runs, and each of the 8 planted defects is detected by its own vector. The case 
 stack-bound step, `bootstrap/toml_parse is no package of the committed exports`, as each
 bootstrap member does before its regeneration, which produces the package.
 
+### a package@version reference is source (BS-54)
+
+`BS-54` holds the one production root of `LexLeanBoot.PackageRef`
+(`bootstrap/src/PackageRef.lex.tex`) to `lexicon::package::PackageRef::parse`: the package and
+the exact version of a `package@version` text, or none. The package is held to
+`LexiconLse::isPackageId` (`BS-25`); the version is held to the full SemVer 2.0.0 grammar, not
+only the plain `X.Y.Z` every committed reference happens to write, since the oracle is
+`semver::Version::parse` itself and a project's own `imports` may write a pre-release or build
+metadata. None of the root admits `recursion`.
+
+The case holds the root to the oracle on hand-built references that reach a pre-release, build
+metadata, both, a leading zero in a core or a numeric pre-release part (refused), build metadata
+with a leading zero (allowed, since that rule is only for a numeric identifier outside build
+metadata), an empty or malformed segment, a non-ascii-alnum pre-release byte, an invalid package
+ID, and a missing or a doubled at-sign; on every `package@version` text a `\useglossary`
+directive or a `lexicon.toml` manifest's `imports` commits; and on seeded references mixing a
+random package word, random core parts, and an optional pre-release and build each occasionally
+malformed. Each of the 5 planted defects names the one vector that catches it, and the case
+asserts that the site of each plant occurs once. The row's statement carries no counts.
+
+The case was first compiled and run on the normative host over `release/v0.4` at `f8854bf7db`
+(`cargo test -p repo-conformance --test conformance -- conformance_bs_54`). Its corpus is 28
+named vectors and 37 committed references, and 300 and 2,000 seeded references. The evaluator
+agrees with the oracle on 365 runs, the rendered package under the pinned rustc on 2,065 runs,
+and each of the 5 planted defects is detected by its own vector. The case then stops at the
+stack-bound step, `bootstrap/parse_package_ref is no package of the committed exports`, as each
+bootstrap member does before its regeneration, which produces the package.
+
 ### the lexer of the authoring notation is source (BS-22)
 
 `BS-22` holds the two production roots of `LexLeanBoot.SurfaceLex`

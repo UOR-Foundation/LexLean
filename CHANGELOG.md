@@ -17,6 +17,9 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The lexicon closure's `package@version` reference is source (SPEC.md §13.1, §12.2): `BS-54`,
+  the module `PackageRef`, held to `lexicon::package::PackageRef::parse` on the compiler's own
+  `\useglossary` directives and lexicon manifests.
 - The lexicon closure's reader for the TOML subset the compiler's own committed files use
   (SPEC.md §13.1, §13.2, §12.3) is source: `BS-53`, the module `TomlRead`, held to the `toml`
   crate on the compiler's own lexicon manifests, entry files, and language bootstrap data.

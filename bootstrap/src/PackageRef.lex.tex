@@ -1,0 +1,161 @@
+\begin{lexlean}{PackageRef}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexiconLse}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Text}
+\title{Natural number addition}
+\begin{semanticmodule}
+structure{
+  name: PackageRef,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: package, type: Bytes},
+    {name: version, type: Bytes}
+  ]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: isAsciiAlpha,
+  parameters: [byte : UInt8],
+  result: Bool,
+  body: (let value : Nat := (prim to_nat byte : Nat); (((65 <=? value) && (value <=? 90)) || ((97 <=? value) && (value <=? 122)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isAlnumHyphen,
+  parameters: [byte : UInt8],
+  result: Bool,
+  body: (if (LexLeanStd.Numeral::isDecimal byte) then true else (if (isAsciiAlpha byte) then true else (prim equal byte (45 : UInt8) : Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: alnumHyphenEnd,
+  parameters: [subject : Bytes],
+  result: Nat,
+  body: (first (prim iterate_until (fun [subject] (position : Nat) => (match (LexLeanStd.Text::byteAt subject position)
+    | Option.some b => (if (isAlnumHyphen b) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat]))) (prim length subject : Nat) 0 : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isAllDigits,
+  parameters: [subject : Bytes],
+  result: Bool,
+  body: ((LexLeanStd.Numeral::decimalEnd subject) =? (prim length subject : Nat)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isPrereleaseSegment,
+  parameters: [segment : Bytes],
+  result: Bool,
+  body: (let n : Nat := (prim length segment : Nat); (if (n =? 0) then false else (if ((alnumHyphenEnd segment) =? n) then (if (isAllDigits segment) then (LexLeanStd.Numeral::canonicalDecimal segment) else true) else false))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isBuildSegment,
+  parameters: [segment : Bytes],
+  result: Bool,
+  body: (let n : Nat := (prim length segment : Nat); (if (n =? 0) then false else ((alnumHyphenEnd segment) =? n))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: segCount,
+  parameters: [segments : (List Bytes)],
+  result: Nat,
+  body: (prim list_fold (fun (count : Nat) (segment : Bytes) => (count + 1)) 0 segments : Nat),
+  executable: true
+}
+
+definition{
+  name: allCanonicalDecimal,
+  parameters: [segments : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun (ok : Bool) (segment : Bytes) => (if ok then (LexLeanStd.Numeral::canonicalDecimal segment) else false)) true segments : Bool),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: allPrereleaseSegments,
+  parameters: [segments : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun (ok : Bool) (segment : Bytes) => (if ok then (isPrereleaseSegment segment) else false)) true segments : Bool),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: allBuildSegments,
+  parameters: [segments : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun (ok : Bool) (segment : Bytes) => (if ok then (isBuildSegment segment) else false)) true segments : Bool),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isSemverCore,
+  parameters: [core : Bytes],
+  result: Bool,
+  body: (let parts : (List Bytes) := (LexLeanStd.Text::splitOn core (46 : UInt8)); (if ((segCount parts) =? 3) then (allCanonicalDecimal parts) else false)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isExactVersion,
+  parameters: [version : Bytes],
+  result: Bool,
+  body: (match (LexLeanStd.Text::find version (lit "+"))
+    | Option.some plusAt => (let mainPart : Bytes := (LexLeanStd.Text::sliceOr version 0 plusAt); (let buildPart : Bytes := (LexLeanStd.Text::sliceOr version (plusAt + 1) (prim subtract (prim length version : Nat) (plusAt + 1) : Nat)); (if (allBuildSegments (LexLeanStd.Text::splitOn buildPart (46 : UInt8))) then (match (LexLeanStd.Text::find mainPart (lit "-"))
+        | Option.some dashAt => ((isSemverCore (LexLeanStd.Text::sliceOr mainPart 0 dashAt)) && (allPrereleaseSegments (LexLeanStd.Text::splitOn (LexLeanStd.Text::sliceOr mainPart (dashAt + 1) (prim subtract (prim length mainPart : Nat) (dashAt + 1) : Nat)) (46 : UInt8))))
+        | Option.none => (isSemverCore mainPart)) else false)))
+    | Option.none => (match (LexLeanStd.Text::find version (lit "-"))
+        | Option.some dashAt => ((isSemverCore (LexLeanStd.Text::sliceOr version 0 dashAt)) && (allPrereleaseSegments (LexLeanStd.Text::splitOn (LexLeanStd.Text::sliceOr version (dashAt + 1) (prim subtract (prim length version : Nat) (dashAt + 1) : Nat)) (46 : UInt8))))
+        | Option.none => (isSemverCore version))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: parsePackageRef,
+  parameters: [text : Bytes],
+  result: (Option PackageRef),
+  body: (match (LexLeanStd.Text::find text (lit "@"))
+    | Option.some at => (let package : Bytes := (LexLeanStd.Text::sliceOr text 0 at); (let version : Bytes := (LexLeanStd.Text::sliceOr text (at + 1) (prim subtract (prim length text : Nat) (at + 1) : Nat)); (if (LexiconLse::isPackageId package) then (if (isExactVersion version) then (ctor Option.some [PackageRef] (record PackageRef {package := package, version := version})) else (ctor Option.none [PackageRef])) else (ctor Option.none [PackageRef]))))
+    | Option.none => (ctor Option.none [PackageRef])),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

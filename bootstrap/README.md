@@ -67,3 +67,6 @@ conservative checker of semantic expressions of SPEC.md §13.7.
 `src/TomlRead.lex.tex` (SPEC.md §17.23, `BS-53`) imports the standard library's `Text`,
 `Numeral`, and `Order`: a reader for the TOML subset the compiler's own committed files use of
 SPEC.md §13.1, §13.2, and §12.3.
+`src/PackageRef.lex.tex` (SPEC.md §17.23, `BS-54`) imports `LexiconLse` (`BS-25`), whose package
+IDs it checks, and the standard library's `Numeral` and `Text`: a `package@version` reference
+of SPEC.md §13.1 and §12.2.

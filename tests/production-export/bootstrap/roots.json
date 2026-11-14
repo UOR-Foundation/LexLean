@@ -585,6 +585,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "parse_package_ref",
+      "root": "LexLeanBoot.PackageRef.parsePackageRef",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "toml_parse",
       "root": "LexLeanBoot.TomlRead.tomlParse",
       "targets": [
