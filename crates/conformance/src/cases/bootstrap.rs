@@ -27,7 +27,10 @@ mod diagnostics;
 mod gnaf_validate;
 mod lexicon_lre;
 mod lexicon_lse;
+mod lexicon_schema;
 mod lock_text;
+mod lse_scopes;
+mod lse_types;
 mod manifest_text;
 mod project_text;
 mod runtime_validate;
@@ -2590,6 +2593,9 @@ fn case(id: &str) {
         "BS-40" => core_read::case(),
         "BS-42" => grammar_math::case(),
         "BS-43" => proposition_terms::case(),
+        "BS-50" => lexicon_schema::case(),
+        "BS-51" => lse_scopes::case(),
+        "BS-52" => lse_types::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

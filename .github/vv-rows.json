@@ -430,5 +430,32 @@
     "width": "",
     "memory_kib": "",
     "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-lexicon-schema",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lexicon-schema",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-lse-scopes",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lse-scopes",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-bootstrap-lse-types",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "bootstrap-lse-types",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
   }
 ]

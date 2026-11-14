@@ -77,3 +77,12 @@ reads to, `SurfaceLex`, whose string reader it reads strings with, `SurfaceGener
 and refusals it reads and returns, and the standard library's `Numeral` and `Text`.
 `src/PropositionTerms.lex.tex` (SPEC.md §17.23, `BS-43`) imports `GrammarProof`, whose text tokens
 and keyword occurrences it reads and returns, `PrimitiveScan`, and the standard library's `Numeral`.
+`src/LexiconSchema.lex.tex` (SPEC.md §17.23, `BS-50`) imports `PrimitiveScan` (`BS-03`), whose
+atoms it reads, `LexiconLse` (`BS-25`), whose byte classes it uses, and the standard library's
+`Text`: the tables and predicates of the lexicon entry schema of SPEC.md §13.
+`src/LseScopes.lex.tex` (SPEC.md §17.23, `BS-51`) imports `LexiconLse` (`BS-25`), whose
+expressions it walks, and the standard library's `Order`: the scopes, references, and outer
+shape of a semantic expression of SPEC.md §13.8.
+`src/LseTypes.lex.tex` (SPEC.md §17.23, `BS-52`) imports `LexiconLse` (`BS-25`), whose
+expressions it checks and prints, and the standard library's `Numeral` and `Order`: the
+conservative checker of semantic expressions of SPEC.md §13.7.
