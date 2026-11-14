@@ -1601,17 +1601,25 @@
 'LexLeanBoot.SurfaceLex.wordEnd' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.SurfaceLex.wordStep' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.SurfaceModule.Located' does not depend on any axioms
-'LexLeanBoot.SurfaceModule.beginMarker' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.atomFrom' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceModule.closeStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceModule.closing' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.SurfaceModule.control' does not depend on any axioms
 'LexLeanBoot.SurfaceModule.dataRange' depends on axioms: [propext, Quot.sound]
-'LexLeanBoot.SurfaceModule.endMarker' does not depend on any axioms
 'LexLeanBoot.SurfaceModule.environment' does not depend on any axioms
-'LexLeanBoot.SurfaceModule.lastAt' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.isControl' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.isLetter' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceModule.kindOf' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.lettersEnd' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.SurfaceModule.lit' does not depend on any axioms
-'LexLeanBoot.SurfaceModule.locateFrom' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.SurfaceModule.locateModule' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceModule.nameAt' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.nameBytes' does not depend on any axioms
+'LexLeanBoot.SurfaceModule.nextAtom' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceModule.openStep' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceModule.opening' depends on axioms: [propext, Quot.sound]
+'LexLeanBoot.SurfaceModule.opensAtom' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.SurfaceModule.tail' does not depend on any axioms
-'LexLeanBoot.SurfaceModule.tryKind' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.SurfaceTooling.Sp' does not depend on any axioms
 'LexLeanBoot.SurfaceTooling.declarationSpans' depends on axioms: [propext, Quot.sound]
 'LexLeanBoot.SurfaceTooling.failure' does not depend on any axioms
