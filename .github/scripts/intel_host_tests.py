@@ -322,7 +322,9 @@ def source_identity(root):
 def run_identity():
     result = {name: os.environ.get(name, "") for name in ("GITHUB_REPOSITORY", "GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT")}
     require(all(result.values()), "GitHub repository, run ID and attempt are required")
-    require(result["GITHUB_REPOSITORY"] == "UOR-Foundation/LexLean", "foreign repository")
+    # GitHub names a repository case-insensitively, and the repository is now
+    # spelled `UOR-Foundation/lexlean`; any other repository stays foreign.
+    require(result["GITHUB_REPOSITORY"].lower() == "uor-foundation/lexlean", "foreign repository")
     require(all(result[n].isdigit() for n in ("GITHUB_RUN_ID", "GITHUB_RUN_ATTEMPT")), "invalid run ID/attempt")
     return result
 
