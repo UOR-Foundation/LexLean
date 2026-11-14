@@ -998,6 +998,12 @@ suite = "proofs"
 statement = "The runtime module LexLeanRuntime.Regions states the decision-region checker and its soundness theorem as LexLean source with every row's axioms within propext and Quot.sound, and the language-1.2 region_check proof form lowers a property of a first-match decision fragment to that checker's data, closes it with one kernel-decided obligation, is refused in linking outside the fragment or as a branch, and by Lean for a defective rule."
 
 [[id]]
+id = "PF-26"
+level = "build"
+suite = "proofs"
+statement = "The language-1.2 linear_arithmetic proof form decides a first-match chain of many conditions: when the fixed script leaves a goal open, a second attempt adds the law LexLeanLaws.ite_eq_iff, which reads an if equal to a value as the disjunction of its branches, each with its condition, and the propositional simplifications that drop every branch whose condition is decided, so a chain of fourteen conditions verifies for all inputs, a proof the fixed script closes keeps its axioms, and a false bound on the chain is refused by Lean."
+
+[[id]]
 id = "LN-01"
 level = "build"
 suite = "lean-backend"

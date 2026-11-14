@@ -1537,6 +1537,24 @@ const LINEAR_BRIDGES: &[&str] = &[
     "↓reduceIte",
 ];
 
+/// What `linear_arithmetic` adds when the fixed script leaves a goal open:
+/// the equation of a conditional, which reads an `if` equal to a value as the
+/// disjunction of its branches, each with its condition, and the
+/// propositional simplifications that drop a branch whose condition is
+/// decided (§17.12). A first-match chain of many conditions then becomes
+/// cases `omega` decides rather than nested splits. They are a second
+/// attempt, not part of the first, so a proof the fixed script closes keeps
+/// the proof term, and the axioms, it has always had.
+const LINEAR_CASES: &[&str] = &[
+    "LexLeanLaws.ite_eq_iff",
+    "and_false",
+    "false_and",
+    "or_false",
+    "false_or",
+    "not_false_eq_true",
+    "not_true_eq_false",
+];
+
 /// The fixed-width integer types in the order `linear_arithmetic` names
 /// their order lemmas, each with the projection to its mathematical value.
 const FIXED_WIDTH: &[(&str, &str)] = &[
@@ -1585,10 +1603,19 @@ fn linear_arithmetic(pad: &str, definitions: &[String]) -> String {
     } else {
         format!("{pad}subst_vars\n")
     };
+    let mut cases = lemmas.clone();
+    cases.extend(LINEAR_CASES.iter().map(|lemma| (*lemma).to_owned()));
+    let attempt = |lemmas: &[String], last: &str| {
+        format!(
+            "(try set_option linter.unusedSimpArgs false in simp only [{}] at *\n{pad}     try set_option linter.unusedSimpArgs false in simp only [{}] at *\n{pad}     all_goals (repeat' split)\n{pad}     all_goals omega{last})\n",
+            lemmas.join(", "),
+            bits.join(", ")
+        )
+    };
     format!(
-        "{pad}intros\n{subst}{pad}try set_option linter.unusedSimpArgs false in simp only [{}] at *\n{pad}try set_option linter.unusedSimpArgs false in simp only [{}] at *\n{pad}all_goals (repeat' split)\n{pad}all_goals omega\n",
-        lemmas.join(", "),
-        bits.join(", ")
+        "{pad}intros\n{subst}{pad}first\n{pad}  | {}{pad}  | {}",
+        attempt(&lemmas, &format!("\n{pad}     done")),
+        attempt(&cases, "")
     )
 }
 

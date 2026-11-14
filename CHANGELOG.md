@@ -362,6 +362,20 @@ workspace carried at those versions without a tag.
   move the counts `BS-05` to `BS-08` and `BS-11` to `BS-15` assert, and `BS-05`
   now holds the list match under `rust-core` with a crate by hand, since the
   mutants reach it too rarely to rely on. The register is 468 IDs.
+- `linear_arithmetic` decides a first-match chain of many conditions (`PF-26`,
+  SPEC.md §17.12). The fold laws gain `LexLeanLaws.ite_eq_iff`, an `if` equal
+  to a value read as the disjunction of its branches with their conditions.
+  The fixed script becomes the first alternative of a `first`; the second
+  repeats it with `ite_eq_iff` and `and_false, false_and, or_false, false_or,
+  not_false_eq_true, not_true_eq_false`, which drop each branch whose
+  condition is decided. Before, the script's `repeat' split` exhausted the
+  simplifier's step bound on a chain of more than about ten conditions and
+  `omega` failed: a fourteen-rule decision (a state machine's transition
+  table, a policy's rules) could not be proved. A proof the fixed script
+  already closes keeps its proof term and its axioms. The fold-laws example
+  carries a fourteen-condition `band` with theorems on its top and middle
+  bands. The language-1.2 compiler-semantics ID changes. The register is 497
+  IDs.
 
 ## 0.4.0
 

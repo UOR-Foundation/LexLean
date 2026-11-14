@@ -172,3 +172,10 @@ Feature: proofs
     When the runtime is built, the example is rendered and verified, copies put != in a rule, leave a field unbounded, compare a sum, use the form as a branch, a language-1.1 module uses the form, and a copy drops the occupancy test from a rule
     Then the regions module is a native core module importing only Init with every row within propext and Quot.sound, and each property lowers to one application of LexLeanRegions.holds whose obligation the kernel decides
     And the malformed copies and the language-1.1 use fail with LLT4001 and the defective rule fails verification with LLV7002 at exactly the properties it breaks
+
+  @PF-26 @build
+  Scenario: The language-1.2 linear_arithmetic proof form decides a first-match chain of many conditions: when the fixed script leaves a goal open, a second attempt adds the law LexLeanLaws.ite_eq_iff, which reads an if equal to a value as the disjunction of its branches, each with its condition, and the propositional simplifications that drop every branch whose condition is decided, so a chain of fourteen conditions verifies for all inputs, a proof the fixed script closes keeps its axioms, and a false bound on the chain is refused by Lean.
+    Given the committed fold-laws example, whose band function is a first-match chain of fourteen less_than conditions, with theorems about its top and middle bands proved by linear_arithmetic
+    When it is rendered and verified, and a copy states the middle band one too low
+    Then the generated Lean is the fixed script, whose second attempt adds LexLeanLaws.ite_eq_iff, and it verifies for all inputs
+    And the false copy checks but fails verification with LLV7002
