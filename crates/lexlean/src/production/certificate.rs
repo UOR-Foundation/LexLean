@@ -90,6 +90,24 @@ pub struct Certificate {
     pub source: Option<String>,
 }
 
+impl Certificate {
+    /// The certificate once its bytes are written to the stage: what the
+    /// audit reads of it (its module, its theorems, and each row's name, group
+    /// and pinned axioms), with its text, its record and its expression DAG
+    /// released. The bytes are then held once, on disk, and the process holds
+    /// the certificate by its name and identity while Lean checks it.
+    #[must_use]
+    pub fn released(mut self) -> Self {
+        self.text = String::new();
+        self.source = None;
+        if let Some(data) = &mut self.data {
+            data.nodes = Vec::new();
+            data.proof_nodes = Vec::new();
+        }
+        self
+    }
+}
+
 /// One constructor of a closed document type, as tooling that writes
 /// source values needs it.
 #[derive(Debug, Clone, PartialEq, Eq)]
