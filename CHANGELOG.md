@@ -35,6 +35,14 @@ workspace carried at those versions without a tag.
   12,928,150 bytes, beyond the 6,291,456 it configured. A semantic input, so its
   lock and every package move.
 
+- The bootstrap project configures `child_timeout_ms = 900000` (SPEC.md
+  §17.23, the maintainer's decision): verifying `BS-73`, the certificate of a
+  production root (`LexLeanPreserve.Cf85a168f307e9378e5b0df3a87d82042.R62`,
+  the root's own name is being identified) took `lean` past the 300,000 ms
+  default, observed at 300,004 ms (run 43531029081, r14). `compiler` and
+  `stdlib` keep the default. A semantic input, so its lock and every package
+  move.
+
 - Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
   new diagnostic code; changes the language-1.2 identity). The runtime gains a
   sixth native module, `LexLeanRuntime.Regions`: a checker of local box

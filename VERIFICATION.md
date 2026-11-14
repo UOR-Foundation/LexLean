@@ -12031,6 +12031,17 @@ typed IR. Which root the oversized part belongs to, and whether it has a
 structural fix as `RB-24`'s validator twin did, is open; the raise unblocks
 the batch and is not the end of the matter.
 
+With the fourteen axioms restored (below), the next regeneration (run
+43531029081, r14) stopped at a second `LLS8002`: `lean` exceeded
+`child_timeout_ms` checking the certificate of a production root,
+`LexLeanPreserve.Cf85a168f307e9378e5b0df3a87d82042.R62` (the root's own name
+is being identified), 300,004 ms observed against the 300,000 ms default.
+The project now configures `child_timeout_ms = 900000` for `bootstrap` alone
+(the maintainer's decision, 2026-11-13); `compiler` and `stdlib` keep the
+default. Whether the slow certificate has a structural fix, in the style of
+`RB-24`'s table-to-`inList` restructuring, is open and tracked separately
+from the raise that unblocks the batch.
+
 Once that export ran, the gate caught `LLV7005` on three of the module's
 hand-written helpers (`oneByte`, `trailing`, `utf8Of`, the loose JSON
 reader): each declared the axioms its own proof never uses (run 43498736513,

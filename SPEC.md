@@ -8857,7 +8857,13 @@ process may produce, so the project configures `max_child_output_bytes = 2684354
 the ninth slice, `BS-73`, a part of its certificate is 12,928,150 bytes, beyond
 the 6,291,456 bytes the project configured, so the project configures
 `max_file_bytes = 25165824` (the maintainer's decision), with room for the
-further slices of the typed IR.
+further slices of the typed IR. Verifying that slice, the certificate of the
+production root `LexLeanPreserve.Cf85a168f307e9378e5b0df3a87d82042.R62` (the
+root's own name is being identified) took `lean` past the `child_timeout_ms`
+default: 300,004 ms observed against 300,000 configured (run 43531029081,
+r14). The project therefore configures `child_timeout_ms = 900000` for
+`bootstrap` alone (the maintainer's decision); `compiler` and `stdlib` stay
+at the default.
 
 `BS-16` holds `validateRequest` of `GnafValidate` to `gnaf::validate` (§17.15). The root takes the projection
 of a request that validation reads, as first-order data: the length of the domain, the machine (its capacity,
