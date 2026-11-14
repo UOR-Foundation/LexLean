@@ -6981,7 +6981,10 @@ carry. Nothing of the oracle is therefore vendored; it is *acquired*. The
 pin's `rust_toolchain` and `lean_toolchain` are LexLean's own, and must equal
 the channel of `rust-toolchain.toml` and the content of `lean-toolchain`; so
 must the `lean/lean-toolchain` of the oracle's own files, which the digest
-covers. A bump of either toolchain that leaves the pin behind makes the oracle
+covers, unless the pin's optional `source_lean_toolchain` names exactly the
+release that file names, which must be an earlier patch release of the same
+Lean version as `lean_toolchain` (a pin naming any other value is malformed);
+the oracle is then built with `lean_toolchain` all the same. A bump of either toolchain that leaves the pin behind makes the oracle
 *unavailable* with a message that names both values (a toolchain drift, to be
 repaired by repinning below), not a build that fails somewhere else.
 

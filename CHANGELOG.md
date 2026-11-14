@@ -27,7 +27,10 @@ workspace carried at those versions without a tag.
   evidence must be regenerated under the new pin. The older toolchain is
   refused. Historical evidence and frozen language-1.0/1.1 runtime text
   retain their original bytes. This is a patch migration, not the separate
-  Lean 4.33.1 feature upgrade.
+  Lean 4.33.1 feature upgrade. The differential oracle's pinned commit names
+  4.32.1 and upstream has none naming 4.32.2, so its pin gains the optional
+  `source_lean_toolchain` (an exactly named earlier patch release, built with
+  the pinned Lean; SPEC.md §17.19).
 
 - Releases and regeneration need no hand steps (SPEC.md §9.4). `regenerate.yml`
   gains the job `deliver`: when the regenerated commit heads one open pull
