@@ -153,6 +153,15 @@ class FactoryTests(unittest.TestCase):
         self.assertGreater(len(lanes["lanes"]), 0)
         self.assertEqual(set(lanes["producer"]), set(bdd["targets"]))
 
+    def test_run_identity_names_this_repository_in_any_case(self):
+        for name in ("UOR-Foundation/LexLean", "UOR-Foundation/lexlean"):
+            with patch.dict(os.environ, {"GITHUB_REPOSITORY": name, "GITHUB_RUN_ID": "1", "GITHUB_RUN_ATTEMPT": "1"}):
+                self.assertEqual(factory.run_identity()["GITHUB_REPOSITORY"], name)
+        for name in ("someone/lexlean", "UOR-Foundation/lexlean-fork"):
+            with patch.dict(os.environ, {"GITHUB_REPOSITORY": name, "GITHUB_RUN_ID": "1", "GITHUB_RUN_ATTEMPT": "1"}):
+                with self.assertRaises(BaseException):
+                    factory.run_identity()
+
     def test_plan_missing_duplicate_foreign_and_added_part_are_refused(self):
         fixture = Fixture(self.directory)
         for change in (lambda p: p["lanes"]["lower"].clear(), lambda p: p["lanes"]["print"].append("a"), lambda p: p["lanes"]["moves"].append("unknown")):
