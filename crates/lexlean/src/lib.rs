@@ -333,7 +333,11 @@ pub fn compiler_semantics_id_for(language: &str) -> Sha256Digest {
     static V1_2: OnceLock<Sha256Digest> = OnceLock::new();
     match language {
         LANGUAGE_VERSION | LANGUAGE_1_1 => {
-            let slot = if language == LANGUAGE_VERSION { &V1_0 } else { &V1_1 };
+            let slot = if language == LANGUAGE_VERSION {
+                &V1_0
+            } else {
+                &V1_1
+            };
             *slot.get_or_init(|| {
                 embedded_digest(semantics_selection(language).expect("a supported language"))
             })
