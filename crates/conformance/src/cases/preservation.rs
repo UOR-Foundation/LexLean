@@ -1758,17 +1758,11 @@ pub fn run(id: &str) {
                     }
                 }
             }
-            // A semantic module is JSON, and the JSON of the front end nests
-            // at most 128 levels: a chain of 100 `let`s is read (a family
-            // above certifies it) and a chain of 130 is refused, as the
-            // module that is not valid JSON of this reader, before any limit
-            // of this section.
-            let deep = crate::stress::let_chain_default(130);
-            let error = deep.check_fails_with("LLT4001");
-            assert!(
-                error.to_string().contains("recursion limit exceeded"),
-                "{error}"
-            );
+            // A semantic module nests as deeply as the project's
+            // max_scope_depth allows (1024 here; `SM-12` holds the bound): a
+            // chain of 130 `let`s, past the 128 levels of the JSON reader
+            // the front end once had, is read.
+            crate::stress::let_chain_default(130).check_ok();
             let quadratic = stress
                 .join()
                 .unwrap_or_else(|panic| std::panic::resume_unwind(panic));

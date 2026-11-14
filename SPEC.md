@@ -5397,10 +5397,19 @@ because they bound what verification can be given. Checking a project holds
 memory that grows linearly with the number of its functions when they are
 independent (1500, 3000, 7000, and 14000 trivial functions take 56, 101, 223,
 and 435 MB), before any limit of this section or of `max_ir_nodes` is reached;
-a chain of calls is the case above. And a semantic module is JSON read with the
-reader's recursion limit of 128 levels: a term nested deeper than that (a chain
-of 130 nested `let`s) is `LLT4001`, `invalid semantic-module JSON: recursion
-limit exceeded`, whatever `max_scope_depth` says; a chain of 100 is read.
+a chain of calls is the case above. And a semantic module nests as deeply as
+the project's `max_scope_depth` allows, as the compile thread's stack hosts it
+(§25.5), in its notation and in the JSON the notation reads to; a list of n
+elements nests about n levels, and a chain of n nested `let`s about n. Notation
+nested deeper is `LLP2001`, and JSON nested deeper is `LLT4001`, each naming
+`max_scope_depth`; the JSON diagnostic also recommends splitting long lists
+into smaller definitions joined by `prim append`. Both locate the
+semantic-module body, not the nested term; neither reports coordinates in
+generated JSON as positions in the authored source. Every later reading of
+what the linker admitted (the rendering of a build, definition digests, the
+semantic snapshot and its canonical bytes) reads it to the same depth, on a
+stack sized for it, never on its caller's: a list of 1000 elements checks,
+builds, verifies, and has a snapshot (`SM-12`).
 
 **Proof.** The proof follows the source term construct by construct through
 the library's compatibility lemmas. A recursive definition's relation is
@@ -7304,8 +7313,11 @@ with that member left out. Members are written in the order `name`,
 `type_parameters`, `parameters`, `type`, `result`, `statement`, `fields`,
 `constructors`, `arguments`, `body`, `proof`, `axioms`, then the others in
 key order, and are read in any order; a member written twice, an integer
-beyond 64 bits, a value nested deeper than 256 levels, and a word that is not
-a name where a string is expected are errors. Because the generic notation
+beyond 64 bits, a value nested deeper than its reader reads, and a word that
+is not a name where a string is expected are errors. A project's semantic
+module is read to its `max_scope_depth` (§17.17, the limits of the front end);
+a text read with no project, as by the authoring library, to 256 levels.
+Because the generic notation
 covers every value, no value of any schema is unspellable, and a variant added
 to a schema has a notation the day it is added.
 
@@ -10646,7 +10658,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `SM-09` | `semantic-ir` | Linked IR has stable schema-tagged canonical JSON with alpha-safe binder serialization. | §17.9 |
 | `SM-10` | `semantic-ir` | Source ID and semantic ID use exactly the specified framed hash inputs. | §21.3, §21.4 |
 | `SM-11` | `semantic-ir` | Linked project result sets contain every selected module and imported module exactly once in stable order. | §17.5, §23.3 |
-| `SM-12` | `semantic-ir` | No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. | §6 I4, §17 |
+| `SM-12` | `semantic-ir` | No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. A semantic module nests as deeply as the project's max_scope_depth allows, in its notation and in its data: a list of 1000 elements checks and builds, and its snapshot is written on a caller's default stack without a panic, while a list nested past the bound is refused, with LLP2001 in the notation and LLT4001 in the data, naming max_scope_depth. | §6 I4, §17 |
 | `SM-13` | `semantic-ir` | Inherited section parameters are represented explicitly and emitted only on declarations that use them. | §17.5, §18.3 |
 | `SM-14` | `semantic-ir` | A numeral without a unique expected type is rejected rather than defaulted. | §15.5 |
 | `SM-15` | `semantic-ir` | A native core module is closed typed DAG data shared by both backends, carries explicit declaration policies, and accepts no backend source text. | §17.10 |

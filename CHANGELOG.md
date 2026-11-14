@@ -15,6 +15,25 @@ versions. `v0.1.0` is tagged, and `v0.4.0` is tagged at the commit that carries
 this changelog; the sections for `0.1.1`, `0.2.0`, and `0.3.0` record what the
 workspace carried at those versions without a tag.
 
+## Unreleased
+
+A patch on `v0.4.0` carrying one fix, also landed on `release/v0.4` as #529;
+nothing else of that line is here, and no language identity moves.
+
+- A semantic module nests as deeply as the project's `max_scope_depth` allows
+  (SPEC.md §17.17, §17.21.3, `SM-12`, #528; no new diagnostic code). The front
+  end read a module's JSON with a fixed 128-level limit, so a list of more than
+  about 122 elements was refused, and past about 115 the semantic snapshot
+  panicked writing its own bytes. Both the JSON and the notation are now read
+  to the project's bound on the compile thread's stack, and every later
+  reading of what the linker admitted (rendering, definition digests, the
+  snapshot and its canonical bytes) reads to the same depth on a stack sized
+  for it: a list of 1000 elements checks, builds, verifies, and has a
+  snapshot. Past the bound the notation is `LLP2001` and the data `LLT4001`,
+  each naming `max_scope_depth`. The readable type and term forms of the
+  notation gain the depth check the generic form had. A module within the old
+  limits reads, renders, and hashes to the same bytes as in `0.4.0`.
+
 ## 0.4.0
 
 Release `0.4.0` is cut at the downstream boundary (#92, 2026-10-25): what the

@@ -26,10 +26,14 @@ use super::SurfaceError;
 /// The width the printer lays a value out at.
 pub const WIDTH: usize = 100;
 
-/// The deepest nesting the parser reads. The decoder that consumes the
-/// canonical text reads 128 levels; this is the bound that keeps the parser
-/// itself off the end of the stack on hostile text.
+/// The deepest nesting the parser reads unless its reader is given another
+/// bound ([`Reader::with_max_depth`]): the bound that keeps the parser off the
+/// end of a default stack on hostile text. The linker reads a project's
+/// modules to its `max_scope_depth` instead, on a stack sized for it.
 pub const MAX_DEPTH: usize = 256;
+
+/// The refusal of text nested deeper than its reader reads.
+pub const TOO_DEEP: &str = "nested more deeply than the notation reads";
 
 /// The members that print first, in this order; every other member follows in
 /// key order. The order is for the reader (a declaration's name comes before
@@ -144,10 +148,12 @@ pub struct Reader<'t> {
     pub text: &'t str,
     tokens: Vec<Spanned>,
     at: usize,
+    /// The deepest nesting this reader reads.
+    pub max_depth: usize,
 }
 
 impl<'t> Reader<'t> {
-    /// Lex `text`.
+    /// Lex `text`, to be read to [`MAX_DEPTH`] levels.
     ///
     /// # Errors
     ///
@@ -157,7 +163,16 @@ impl<'t> Reader<'t> {
             text,
             tokens: lex(text)?,
             at: 0,
+            max_depth: MAX_DEPTH,
         })
+    }
+
+    /// This reader, reading to `max_depth` levels; the caller reads on a
+    /// stack sized for them.
+    #[must_use]
+    pub const fn with_max_depth(mut self, max_depth: usize) -> Self {
+        self.max_depth = max_depth;
+        self
     }
 
     /// The next token, not consumed.
@@ -265,8 +280,8 @@ fn integer(word: &str) -> Option<&str> {
 ///
 /// Text that is not a value.
 pub fn value(reader: &mut Reader<'_>, depth: usize) -> Result<Json, SurfaceError> {
-    if depth > MAX_DEPTH {
-        return Err(reader.error("nested more deeply than the notation reads"));
+    if depth > reader.max_depth {
+        return Err(reader.error(TOO_DEEP));
     }
     let offset = reader.offset();
     match reader.bump() {

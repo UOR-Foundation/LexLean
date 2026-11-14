@@ -901,6 +901,13 @@ fn check_project_inline(
             // Artifact declarations are charged before they decode, against
             // the nodes every earlier module linked (§17.12 rule 2).
             artifacts.begin_module(ir_node_count, total_bytes);
+            // The notation and the data nest as deeply as the compile thread's
+            // stack hosts `max_scope_depth` (§25.5), and no deeper.
+            let max_depth = project
+                .config
+                .limits
+                .compile_stack_plan()
+                .effective_max_scope_depth;
             // The notation is read to the canonical JSON the decoder reads, so
             // that what a module means is decided in one place (§17.21).
             let data: std::borrow::Cow<'_, str> = if ast.surface {
@@ -913,12 +920,23 @@ fn check_project_inline(
                 }
                 let spec = crate::ir::semantic::semantic_module_spec(&project.config.language)
                     .expect("language 1.2 has a semantic-module schema");
-                match crate::surface::semantic::parse_module(&ast.data.text, spec) {
+                match crate::surface::semantic::parse_module_bounded(
+                    &ast.data.text,
+                    spec,
+                    usize::try_from(max_depth).unwrap_or(usize::MAX),
+                ) {
                     Ok(json) => std::borrow::Cow::Owned(json.to_canonical_string()),
                     Err(error) => {
+                        let bound = if error.message == crate::surface::generic::TOO_DEEP {
+                            format!(
+                                " ({max_depth} levels, the project's max_scope_depth as its compile stack hosts it; a list of n elements nests about n levels)"
+                            )
+                        } else {
+                            String::new()
+                        };
                         return Err(err(vec![Diagnostic::new(
                             code!("LLP2001"),
-                            format!("phase link: semantic notation: {}", error.message),
+                            format!("phase link: semantic notation: {}{bound}", error.message),
                         )
                         .with_span(notation_span(
                             &load.path,
@@ -943,36 +961,42 @@ fn check_project_inline(
             // A package's source writes a sibling module by its own name; the
             // linked project names it by its key, so the references are read
             // under the key and every later phase finds the module (§10.5).
-            let data: std::borrow::Cow<'_, str> = if renamed.is_empty() {
+            // Data deeper than the compile thread hosts is left as written, for
+            // the semantic reader to refuse by its depth.
+            let too_deep = u64::try_from(crate::production::lower::json_depth(&data))
+                .map_or(true, |depth| depth > max_depth);
+            let data: std::borrow::Cow<'_, str> = if renamed.is_empty() || too_deep {
                 data
             } else {
                 let to_key: BTreeMap<String, String> = renamed
                     .iter()
                     .map(|(key, written)| (written.clone(), key.clone()))
                     .collect();
-                let mut json = crate::artifact::canonical_json::Json::parse(data.as_bytes())
-                    .map_err(|reason| {
-                        err(vec![Diagnostic::new(
-                            code!("LLP2001"),
-                            format!("phase link: semantic data: {reason}"),
-                        )
-                        .with_span(span_of_range(
-                            &load.path,
-                            &load.atoms,
-                            ast.data.range,
-                        ))])
-                    })?;
+                let mut json =
+                    crate::artifact::canonical_json::Json::parse_unbounded(data.as_bytes())
+                        .map_err(|reason| {
+                            err(vec![Diagnostic::new(
+                                code!("LLP2001"),
+                                format!("phase link: semantic data: {reason}"),
+                            )
+                            .with_span(span_of_range(
+                                &load.path,
+                                &load.atoms,
+                                ast.data.range,
+                            ))])
+                        })?;
                 rename_member_modules(&mut json, &to_key);
                 std::borrow::Cow::Owned(json.to_canonical_string())
             };
             Some(
-                SemanticModule::parse(
+                SemanticModule::parse_bounded(
                     &data,
                     &project.config.language,
                     &load.prefix,
                     &imports,
                     &imported_semantic,
                     &artifacts,
+                    max_depth,
                 )
                 .map_err(|failure| {
                     err(vec![Diagnostic::new(
