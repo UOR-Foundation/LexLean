@@ -249,8 +249,20 @@ fn file_row(kind: &str, path: &str, bytes: &[u8]) -> FileRow {
 
 /// Render the complete platform-independent build artifact set from a
 /// checked project (§21.5, §21.6). No Lean process runs here (CL-05).
-#[allow(clippy::too_many_lines)]
+/// The printers recurse once per level of what the compile thread admitted,
+/// so they run on a stack of the same size (§25.5).
 pub fn render_build(
+    project: &Project,
+    checked: &CheckedProject,
+) -> Result<RenderedBuild, LexLeanError> {
+    crate::on_stack(
+        project.config.limits.compile_stack_plan().stack_bytes,
+        || render_build_inline(project, checked),
+    )
+}
+
+#[allow(clippy::too_many_lines)]
+fn render_build_inline(
     project: &Project,
     checked: &CheckedProject,
 ) -> Result<RenderedBuild, LexLeanError> {

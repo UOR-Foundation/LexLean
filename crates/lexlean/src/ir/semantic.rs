@@ -2014,7 +2014,8 @@ impl SemanticDeclaration {
             production: production.clone(),
         };
         let text = serde_json::to_string(&normalized).expect("definition serializes");
-        let canonical = crate::artifact::canonical_json::Json::parse(text.as_bytes())
+        // As deep as the linker admitted the definition (`max_scope_depth`).
+        let canonical = crate::artifact::canonical_json::Json::parse_unbounded(text.as_bytes())
             .expect("serialized definition is JSON")
             .to_canonical_string();
         Some(crate::artifact::content_id::Sha256Digest::of(
@@ -8803,10 +8804,15 @@ fn elimination_binder_types(
     Ok(expected)
 }
 
+/// The nesting [`SemanticModule::parse`] reads, which is serde's own: deep
+/// enough for any module a default thread's stack can decode, debug or not.
+pub const DEFAULT_SEMANTIC_JSON_DEPTH: u64 = 127;
+
 impl SemanticModule {
     /// Decode canonical JSON and enforce all conservative semantic checks.
     /// `module_prefix` is the project's Lean module prefix, under which the
-    /// backend names every imported declaration.
+    /// backend names every imported declaration. The data may nest
+    /// [`DEFAULT_SEMANTIC_JSON_DEPTH`] levels; see [`Self::parse_bounded`].
     pub fn parse(
         text: &str,
         language: &str,
@@ -8815,10 +8821,44 @@ impl SemanticModule {
         imported_modules: &BTreeMap<String, &Self>,
         artifacts: &model::ArtifactStore,
     ) -> Result<Self, SemanticFailure> {
-        let module: Self = serde_json::from_str(text)
+        Self::parse_bounded(
+            text,
+            language,
+            module_prefix,
+            imports,
+            imported_modules,
+            artifacts,
+            DEFAULT_SEMANTIC_JSON_DEPTH,
+        )
+    }
+
+    /// [`Self::parse`] with the data nesting at most `max_depth` levels (the
+    /// linker passes `max_scope_depth` as the compile thread's stack hosts
+    /// it, §25.5). The decoder recurses once per level, so the caller decodes
+    /// on a stack sized for `max_depth`.
+    pub fn parse_bounded(
+        text: &str,
+        language: &str,
+        module_prefix: &str,
+        imports: &[String],
+        imported_modules: &BTreeMap<String, &Self>,
+        artifacts: &model::ArtifactStore,
+        max_depth: u64,
+    ) -> Result<Self, SemanticFailure> {
+        // Measured without recursing, so data too deep for the stack is
+        // refused before anything recurses on it. The notation has already
+        // become JSON, so no coordinate of it locates the term in the source.
+        let depth = crate::production::lower::json_depth(text);
+        if u64::try_from(depth).map_or(true, |depth| depth > max_depth) {
+            return Err(format!(
+                "invalid semantic-module JSON: nests {depth} levels, more than the {max_depth} that max_scope_depth allows; a list of n elements nests about n levels, so raise max_scope_depth or split long lists into smaller definitions joined by `prim append`"
+            )
+            .into());
+        }
+        let module: Self = crate::artifact::canonical_json::from_str_unbounded(text)
             .map_err(|error| format!("invalid semantic-module JSON: {error}"))?;
-        let canonical =
-            crate::artifact::canonical_json::Json::parse(text.as_bytes())?.to_canonical_string();
+        let canonical = crate::artifact::canonical_json::Json::parse_unbounded(text.as_bytes())?
+            .to_canonical_string();
         if canonical != text {
             return Err("semantic-module JSON is not canonical".to_owned().into());
         }
@@ -8827,8 +8867,9 @@ impl SemanticModule {
         // member must survive into the typed value, except an explicitly
         // written default (an empty list or `false`) that serialization
         // omits.
-        let source: serde_json::Value = serde_json::from_str(text)
-            .map_err(|error| format!("invalid semantic-module JSON: {error}"))?;
+        let source: serde_json::Value =
+            crate::artifact::canonical_json::from_str_unbounded(text)
+                .map_err(|error| format!("invalid semantic-module JSON: {error}"))?;
         let typed = serde_json::to_value(&module).expect("semantic module serializes");
         if let Some(path) = ignored_member(&source, &typed, "$") {
             return Err(format!(

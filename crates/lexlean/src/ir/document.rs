@@ -251,7 +251,9 @@ impl DocumentModule {
         if let Some(semantic) = &self.semantic {
             fields.push((
                 "semantic",
-                Json::parse(
+                // As deep as the linker admitted it (`max_scope_depth`), which
+                // can be beyond the bounded reader's 128 levels.
+                Json::parse_unbounded(
                     &serde_json::to_vec(semantic)
                         .expect("semantic module serializes to canonical JSON domain"),
                 )

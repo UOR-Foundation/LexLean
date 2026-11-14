@@ -11385,3 +11385,42 @@ script's output to that function, so the file the gate job writes is the file
 | the committed tree | `cargo test -p repo-conformance --test conformance conformance_rp_18 -- --exact` | ok |
 | the script no longer writes the gate line | same | `the evidence satisfies the release criterion` failed: `Err(["release/vv-evidence.txt does not record the gate passing"])` |
 | the criterion accepts the legs' lines | `cargo test -p repo-model the_ci_evidence_criterion` | `left: Ok(())` against the refusal |
+
+## A semantic module nests to `max_scope_depth`, on `v0.4.0` (`SM-12`, #528)
+
+A patch on tag `v0.4.0` carrying only the fix of #529, for consumers that pin
+`v0.4.0` and must keep their artifacts byte-identical. Before it, on a Windows
+host with the debug compiler, a language-1.2 project whose one definition is a
+list of more than about 122 cells was `LLT4001` from the 128-level JSON reader,
+and past about 115 the semantic snapshot panicked writing its own bytes.
+
+The fix is #529's, applied to `v0.4.0`. Two parts of #529 do not apply here:
+declaration IDs, which `v0.4.0` does not have, and the #375 diagnostic, which
+`v0.4.0` predates. One part of the later line comes with it: the readable type
+and term forms of the notation gain the depth check the generic form had, six
+lines, which the fix needs to refuse a deep list instead of recursing on it.
+It can refuse nothing `v0.4.0` accepted, since anything nested past 128 JSON
+levels was already refused and the check fires at `max_scope_depth`.
+
+With the patched compiler: lists of 130, 256, and 1000 cells check and build,
+and 1100 is `LLP2001` naming `max_scope_depth` 1024. `lexlean verify` with the
+pinned Lean 4.32.1 verified 256 cells (26 s) and 1000 cells (22 s).
+`conformance_sm_12` passes (4 s). The planted defects of #529 each fail it: the
+linker reading with `parse` (127 levels); `to_json` re-reading with the
+bounded `Json::parse` (panic); `canonical_bytes` on its caller's stack
+(`STATUS_STACK_OVERFLOW`). `SP-02`'s 130-level let-chain refusal becomes the
+assertion that the chain checks.
+
+The authoring API had the same limits on its caller's stack (notation 256,
+JSON 128). It now reads a semantic module to 1024 levels on a stack of its
+own; `conformance_sm_12` reads, converts both ways, and writes the 1000-cell
+fixture through it on a 2 MiB thread and refuses the 1100-cell one, and fails
+when the API reads the notation to 256 levels or runs on its caller's stack.
+`conformance_au_08`, which reads every committed module through the API, passes
+(862 s).
+
+Against `v0.4.0` itself: the diff touches no identity input (`language/`,
+`schemas/`, the embedded goldens); every one of the 17 examples' committed
+locks (languages 1.0, 1.1, and 1.2) passes `lexlean lock --check` under the
+patched compiler, so no compiler-semantics ID moves; and `cargo xtask
+check-golden` passes for every project, so no published artifact moves.
