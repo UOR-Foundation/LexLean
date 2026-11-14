@@ -17,6 +17,11 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Canonical JSON refuses duplicate keys that differ only in their escapes (SPEC.md §21.7,
+  `AR-11`, #475). The duplicate check compared each key as written, so `{"a":1,"\u0061":2}`
+  passed it and `Json::parse` returned `{"a":2}`, dropping the first member; keys are now
+  compared after escape decoding. Equal keys in distinct objects stay admitted, and no valid
+  canonical document is affected.
 - Every part of a verification names its toolchain by address (SPEC.md
   §22.11, §9.4). A shard writes `toolchain.json` (`lexlean/verify-toolchain/1`)
   beside its output: the SHA-256 of the `lean`, `lake`, and `leanchecker` its

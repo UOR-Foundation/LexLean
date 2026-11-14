@@ -534,6 +534,18 @@ pub(crate) fn run(id: &str) {
                 "nested duplicate keys are rejected"
             );
             assert!(
+                Json::parse(b"{\"a\":1,\"\\u0061\":2}").is_err(),
+                "a key spelled with an escape duplicates its plain spelling"
+            );
+            assert!(
+                Json::parse(b"{\"x\":{\"a\\\"b\":1,\"a\\u0022b\":2}}").is_err(),
+                "nested keys that decode equal are duplicates"
+            );
+            assert!(
+                Json::parse(b"[{\"a\":1},{\"\\u0061\":2}]").is_ok(),
+                "keys that decode equal in distinct objects are not duplicates"
+            );
+            assert!(
                 Json::parse(b"{\"a\":[{\"b\":1},{\"b\":2}]}").is_ok(),
                 "equal keys in distinct objects are not duplicates"
             );
