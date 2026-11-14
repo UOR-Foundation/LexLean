@@ -265,6 +265,28 @@ pub fn render_build(
     let aliases = crate::backend::lean::DocumentAliases::of_documents(
         checked.modules.values().map(|module| &module.document),
     );
+    // §21.9: every declaration of a language-1.2 semantic module is named by
+    // its content and the IDs of the project declarations it references.
+    let declaration_rows = if project.config.language == "1.2" {
+        let semantic: Vec<(&str, &crate::ir::semantic::SemanticModule)> = checked
+            .modules
+            .iter()
+            .filter_map(|(name, module)| {
+                module
+                    .document
+                    .semantic
+                    .as_ref()
+                    .map(|semantic| (name.as_str(), semantic))
+            })
+            .collect();
+        crate::artifact::declaration_id::declaration_ids(
+            crate::compiler_semantics_id_for(&project.config.language),
+            &project.config.language,
+            &semantic,
+        )
+    } else {
+        BTreeMap::new()
+    };
     let mut report_total: u64 = 0;
     for (name, checked_module) in &checked.modules {
         let lean_emitter = crate::backend::lean::render_module(
@@ -414,6 +436,18 @@ pub fn render_build(
                 &production_bytes,
             ));
             files.push((production_path, production_bytes));
+        }
+
+        if let Some(rows) = declaration_rows.get(name) {
+            let declarations_path = format!("declarations/{module_path}.json");
+            let declarations_bytes =
+                crate::artifact::declaration_id::declarations_json(name, rows).to_file_bytes();
+            outputs.push(file_row(
+                "declarations",
+                &declarations_path,
+                &declarations_bytes,
+            ));
+            files.push((declarations_path, declarations_bytes));
         }
 
         manifest_modules.push(ModuleRow {
@@ -1022,6 +1056,18 @@ impl Engine {
         let operational = crate::verify::operational::Operational::from_environment()
             .map_err(LexLeanError::from_diagnostic)?;
         let (mut checked, lock) = self.checked(&request.selection)?;
+        // A project with a production root is certified, which needs the
+        // native library; a build without it refuses here, before a build is
+        // rendered or published (§8.4), not partway through verification.
+        if checked
+            .modules
+            .values()
+            .filter_map(|module| module.production.as_ref())
+            .any(|report| !report.roots.is_empty())
+        {
+            crate::production::preserve::require_library()
+                .map_err(LexLeanError::from_diagnostic)?;
+        }
         let mut rendered = render_build(&self.project, &checked)?;
         // Rendering is the last consumer of parser atoms,
         // declaration-origin tables, visibility sets, and the core

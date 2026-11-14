@@ -17,12 +17,288 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- Every part of a verification names its toolchain by address (SPEC.md
+  §22.11, §9.4). A shard writes `toolchain.json` (`lexlean/verify-toolchain/1`)
+  beside its output: the SHA-256 of the `lean`, `lake`, and `leanchecker` its
+  preflight hashed, of the running `lexlean`, and the address of the `rustc`
+  that compiled it (its executable and `rustc_driver` library, which the build
+  script hashes). A part that reads another refuses it (`LLI9001`, naming the
+  part, the tool, and both addresses) unless all five equal its own. A record
+  names only the executable it ran, so a part that ran another `lake`,
+  `lexlean`, or `rustc` was accepted before. `VR-23` plants another `lake`
+  address in a shard's output, and on unix a join whose own `lake` differs by
+  one byte. The bootstrap export's custody record becomes
+  `lexlean/ci-bootstrap-export/2`: it also names the SHA-256 of the pinned
+  `lake`, `lean`, and `leanchecker` and the address of the `rustc` that built
+  the exporting binary, and a leg whose own differ refuses the export (`RP-14`
+  plants another `leanchecker` and another `rustc`). Published directories,
+  attestations, and `expected/verify` are unchanged.
+- Releases and regeneration need no hand steps (SPEC.md §9.4). `regenerate.yml`
+  gains the job `deliver`: when the regenerated commit heads one open pull
+  request of this repository, the patch is committed on it, pushed to the pull
+  request's branch as a fast-forward, the gate is dispatched there, and the
+  `regenerate/` branch is deleted; the patch is still the run's artifact
+  otherwise. `ci.yml`'s plan treats a dispatch on a pull request's head branch
+  as that pull request (draft: honesty then `rest`), and a passed dispatched run
+  of a merged head lets the merge push run nothing, as a pull request run does.
+  A release is cut by pushing the line's head to `cut/vX.Y.Z`: `cut.yml` runs
+  the new `cargo xtask bump-version X.Y.Z` (every site of the workspace
+  version, the changelog's `## Unreleased` heading, and `Cargo.lock`), opens the
+  pull request, and regenerates it; `tag.yml` tags the merge once its gate
+  passes, dispatches `release.yml`, and opens the pull request into `main`.
+- Decision regions (SPEC.md §17.12, `PF-24`, UOR-Foundation/PrismPM#605; no
+  new diagnostic code; changes the language-1.2 identity). The runtime gains a
+  sixth native module, `LexLeanRuntime.Regions`: a checker of local box
+  obligations for first-match decisions over natural-number fields, and
+  `LexLeanRegions.holds`, its soundness theorem, within `propext` and
+  `Quot.sound` (`tests/runtime-library/REGIONS.md`). The language-1.2 proof
+  form `region_check` proves a property `breaks request = false` of such a
+  decision with one kernel-decided obligation and that theorem; the lowered
+  data is definitionally the module's own definitions, so the lowering is not
+  trusted. Verdant Resonance (35 rules, 15 properties), which
+  `linear_arithmetic` could not prove, verifies. The register is 496 IDs.
+- A check-only build of the crate, #495. The `lexlean` crate's
+  `production-data` feature, on by default, embeds
+  `language/preservation-1.2/library/`, the native preservation library that
+  only certificate generation reads (32.2 of the 36.4 MB of embedded data).
+  Built with `--no-default-features`, the crate leaves it out and reports the
+  language-1.2 compiler-semantics ID from `LANGUAGE_1_2_SEMANTICS_ID`, which
+  `RP-10` now requires to equal the ID recomputed from disk; a project's
+  `check`, `lock`, `fmt`, and `build` behave as in a default build, and
+  `production build` and the `verify` of a project with a production root are
+  refused with the new `LLC0205` before anything is published (`RP-19`).
+  Its version report adds the line `variant check-only`: it shares the
+  compiler-semantics IDs of a full build, not its executable identity.
+  SPEC.md §8.4 names this feature as the one exception to its rule that no
+  feature disables a normative capability. A default build is unchanged.
+  A landing that moves the language-1.2 ID now also updates the constant;
+  `RP-10` names the new value when it is stale.
+
+- `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
+  command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
+  new language-1.2 module `RuntimeHost`, that calls the step and carries out each
+  request with one standard-library call (no signal API, no third-party crate).
+  The package manifest gains `entry`, the provenance gains `entry` and the digest
+  of `src/main.rs`, `RuntimeSyntax` gains the `cfgItem` item, the closed table of
+  the standard library grows from 51 to 121 names, and the validator gains the
+  rules `hidden-effect`, `cfg-condition`, `cfg-item`, and `cfg-pair`. The
+  language-1.2 compiler-semantics ID moves; 1.0 and 1.1 do not.
+  The register is 494 IDs.
+- A one-pass writer for the counts of the bootstrap count cases, #92.
+  Under `LEXLEAN_COUNTS=fast` each of `BS-05` to `BS-08` and `BS-11` to
+  `BS-15` records every count it checks in `target/count-report/` instead of
+  failing at the first that moved, and stops before its evaluator and rustc
+  runs (`LEXLEAN_COUNTS=report` runs it whole); `cargo xtask counts --write`
+  carries the moved counts into the case's constants, its §31 row, register
+  statement and scenario, and the prose of §17.23 that repeats them, and
+  lists every number it cannot place unambiguously. A landing that moved
+  the counts took a run and a hand mirror per stage of the cases; it takes
+  one pass. Unset, the cases assert as before. The register is unchanged.
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, the maintainer's decision): with `RB-24`'s runtime validator, Lean's
+  extraction of the project writes more than the 33,554,432 bytes it allowed. A
+  semantic input, so its lock and every package move.
+- The bootstrap project configures `max_total_source_bytes = 536870912` (SPEC.md
+  §17.23): with `BS-27` its production export is 135,273,215 bytes, beyond the
+  134,217,728 it configured. A semantic input, so its lock and every package move.
+- The authoring notation of a tooling module as language-1.2 source, the fifth
+  slice of the front end (SPEC.md §17.23, §17.20, §17.21, `BS-27`, #269; no new
+  diagnostic code, no change to the language-1.2 identity).
+  `printToolingModule`, `parseToolingModule`, and `declarationSpans` of
+  `SurfaceTooling` return what `surface::tooling::print_module`,
+  `parse_module`, and `declaration_spans` return; the printer admits
+  `recursion` and the other two do not. The register is 484 IDs.
+- `cargo xtask check-freshness` (SPEC.md §9.4), run in the honesty job before the expensive roots:
+  every input a committed build oracle records still hashes to its recorded digest, every lock
+  passes `lexlean lock --check`, and every committed export package names this compiler's
+  semantics and its project's committed semantic ID. Stale generated files fail in minutes.
+- CI exports the bootstrap project once per run (SPEC.md §9.4): the `bootstrap export` job
+  runs `cargo xtask export-bootstrap` at the `examples` leg's profile, requires the committed
+  packages, and uploads the bundle with a custody record (`lexlean/ci-bootstrap-export/1`); a
+  leg takes it when a case first needs it, and the harness checks the record against its own
+  run and checkout and replays the bundle. No bootstrap part verifies the bootstrap project.
+- CI runs the Windows x86-64 host's tests as five lanes of one run (SPEC.md §8.3): the four
+  conformance lanes of `.github/intel-host-lanes.json` and a `producer` lane with every other test
+  and doctest. A join on `ubuntu-24.04` keeps the context `build and non-Lean tests
+  (x86_64-pc-windows-msvc)` and passes only when the lanes' executed tests equal the host's
+  listing, each once. The single Windows job took 106-126 minutes.
+- Declaration IDs (SPEC.md §21.9, `SM-38`; no new diagnostic code, no change to
+  any compiler-semantics ID). A language-1.2 build publishes
+  `declarations/<module>.json` (`lexlean/declarations/1`, schema
+  `api/schemas/declarations.schema.json`) with a declaration ID for every
+  declaration of a semantic module, a framed SHA-256 over its canonical JSON
+  and the IDs of the project declarations it references, with each group of
+  declarations that reference one another hashed as one, and a statement ID
+  for every theorem that omits its proof. Builds of languages 1.0 and 1.1 are
+  unchanged. The register is 483 IDs.
+- The evaluator differential of the `BS` cases runs its corpus on every processor of the host:
+  the calling thread and helpers from one budget the process shares, each taking the next run.
+  The verdict and the disagreements it reports are the sequential ones; each `bdd-bootstrap-*`
+  part of the gate is a single case, so three of a runner's four processors were idle.
+- `regenerate.yml` (SPEC.md §9.4): a push to `regenerate/<name>`, or a dispatch, runs the write recipes on runners, the production
+  export, the verification records and the other oracles as three parallel jobs, and returns one
+  reviewed patch, so that a change which moves committed output is no longer regenerated on a
+  workstation.
+  A fourth job then writes the moved counts of the bootstrap count cases, the model documents,
+  and the stack bound of each recursive package that lacks one, so the patch is the whole landing.
+- `rustix` 1.1.6 (RUSTSEC-2026-0486: the extended-attribute functions marked unwritten bytes as
+  initialized for a zero-length buffer), so `cargo deny` passes; `errno` and `tempfile` resolve
+  `windows-sys` 0.59, the version `fs4` 0.13 and `rustix` 1.1.6 both accept.
+- The generic notation as language-1.2 source, fourth slice of the front end
+  (SPEC.md §17.23, §17.21, `BS-24`, #269; no new diagnostic code, no change to
+  the language-1.2 identity). `parseGeneric` and `printGeneric` of
+  `SurfaceGeneric` return what `surface::generic::parse` and `print` return, over
+  the standard library's `Json`; the reader admits no `recursion` and the printer
+  admits it. The register is 482 IDs.
+- The layout algebra of the authoring notation as language-1.2 source, third
+  slice of the front end (SPEC.md §17.23, §17.21, `BS-23`, #269; no new
+  diagnostic code, no change to the language-1.2 identity). `renderDoc` of
+  `SurfaceDoc` returns what `surface::doc::render` returns for a document at a
+  width; it admits no `recursion`. The register is 481 IDs.
+- The lexer of the authoring notation as language-1.2 source, second slice of
+  the front end (SPEC.md §17.23, §17.21, `BS-22`, #269; no new diagnostic code,
+  no change to the language-1.2 identity). `lexText` and `quoteText` of
+  `SurfaceLex` return what `surface::lex::lex` and `surface::lex::quote` return,
+  the tokens with their byte ranges or the first lexical error, and a quoted
+  text; they admit no `recursion`. The register is 480 IDs.
+- The build manifest as language-1.2 source (SPEC.md §17.23, §21.6, `BS-34`,
+  #274; no new diagnostic code, no change to the language-1.2 identity).
+  `buildManifest` of `ManifestText` returns the file bytes of
+  `BuildManifest::to_json` through the standard library's `Json` writer, and
+  admits `recursion` through it. The register is 493 IDs.
+- The structural grammar as language-1.2 source, first slice of the front end
+  (SPEC.md §17.23, §15.1, §15.2, `BS-21`, #269; no new diagnostic code, no change
+  to the language-1.2 identity). `parseModule` of `StructuralGrammar` reads the
+  atoms of `scanSource` and returns what `grammar::structural::parse_module`
+  returns, with its coverage rows, or the same refusal, to the byte on 267
+  hand-built vectors, the committed modules, and 2,000 seeded edits; 44 planted
+  defects are each detected by a vector of their own. It admits no `recursion`.
+  The largest certificate part is 2,879,430 bytes. The register is 479 IDs.
+- The reader of LexLean Rendering Expressions and the facts of a render as
+  language-1.2 source, the second slice of the lexicon (SPEC.md §17.23, §13.9,
+  `BS-26`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `parseLre` and `renderFacts` of `LexiconLre` return what
+  `lexicon::lre::parse` and the walkers of `Render` return; neither admits
+  `recursion`. The register is 486 IDs.
+- The reader and the canonical printer of LexLean Semantic Expressions as
+  language-1.2 source, the first slice of the lexicon (SPEC.md §17.23, §13.8,
+  `BS-25`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `parseLse` and `printLse` of `LexiconLse` return what
+  `lexicon::lse::parse` and `Lse::print` return; the reader admits no
+  `recursion` and the printer admits it. The register is 485 IDs.
+- Where the module of a source is, as language-1.2 source (SPEC.md §17.23,
+  §17.21, `BS-28`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `locateModule` of `SurfaceModule` returns what
+  `surface::module::locate` returns and admits no `recursion`. The register is
+  479 IDs.
+- The human diagnostic output and the argument pre-scans of the command line as
+  language-1.2 source (SPEC.md §17.23, §20.6, §23, `BS-30`, #274; no new
+  diagnostic code, no change to the language-1.2 identity). `humanDiagnostics`,
+  `wantsJson`, and `namedCommand` of `CliOutput` return what
+  `cli::human_diagnostics_text`, `wants_json`, and `named_command` return; none
+  admits `recursion`. The register is 489 IDs.
+- The canonical diagnostic and the failure it makes as language-1.2 source
+  (SPEC.md §17.23, §20.1, §24.5, `BS-29`, #274; no new diagnostic code, no change
+  to the language-1.2 identity). `diagnosticText`, `sortDiagnostics`, and
+  `reportDiagnostics` of `Diagnostics` return what `Diagnostic::to_json`,
+  `sort_canonical`, and `LexLeanError::from_diagnostics(..).bounded(..)` return;
+  none admits `recursion`. The register is 488 IDs.
+- The canonical text of the project manifest and its digest as language-1.2
+  source (SPEC.md §10.1, §17.23, `BS-33`, #274; no new diagnostic code, no change
+  to the language-1.2 identity). `canonicalProject` and `configSha256` of
+  `ProjectText` return what `ProjectConfig::canonical_toml` and `config_sha256`
+  return; neither admits `recursion`. The register is 492 IDs.
+- The canonical text of the lock file as language-1.2 source (SPEC.md §11.2,
+  §17.23, `BS-31`, #274; no new diagnostic code, no change to the language-1.2
+  identity). `canonicalLock` and `tomlString` of `LockText` return what
+  `Lock::canonical_bytes` and `config::toml_string` return; neither admits
+  `recursion`. The register is 490 IDs.
+- The labeled hash recipes of content identity as language-1.2 source (SPEC.md
+  §17.23, §21.1 to §21.5, `BS-32`, #274; no new diagnostic code, no change to the
+  language-1.2 identity). `treeDigest`, `sourceId`, `semanticId`, `buildId`,
+  `attestationId`, and `pdfRecipeId` of `ContentId` return what the recipes of
+  `artifact::content_id` return; none admits `recursion`. The register is 491 IDs.
+  `recursion`.
+- Canonical JSON reading in the standard library, the fourth member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-13`). The module
+  `LexLeanStd.JsonRead` holds the production roots `readJson` and
+  `readJsonFile` for `rust-std`, which read the canonical JSON of §21.7 back
+  into the `Json` value of `LexLeanStd.Json` and refuse any text the writer
+  would not write: whitespace, `null`, a number past `i64` or not in its
+  shortest form, keys out of order or repeated, an escape the writer does not
+  emit, and a byte after the value. They are held to `Json::parse` with the
+  text required to be what `to_canonical_string` writes of it. `stdlib/lexlean.toml`
+  gains the entrypoint, so the locks of `stdlib` and its consumers move. The
+  register is 478 IDs.
+- Maps and sets in the standard library, the fifth member the self-hosted
+  compiler needs, #276 (SPEC.md §17.22, `SL-14`). The module `LexLeanStd.Map`
+  holds ten production roots for `rust-std` over strictly ascending lists of
+  `Bytes` keys: `mapFromEntries`, `mapInsert`, `mapGet`, `mapRemove`, and
+  `mapExtend` for a map of `Bytes` values, and `setContains`, `setRemove`,
+  `setUnion`, `setIntersection`, and `setDifference` for a set, held to
+  `BTreeMap` and `BTreeSet`, whose `String` keys the front end's tables and name
+  sets use. `stdlib/lexlean.toml` gains the entrypoint, so the locks of `stdlib`
+  and its consumers move, and the ten packages move the counts `BS-05` to
+  `BS-08` and `BS-11` to `BS-15` assert. The register is 477 IDs.
+- Canonical JSON writing in the standard library, the third member the
+  self-hosted compiler needs, #276 (SPEC.md §17.22, `SL-11`). The module
+  `LexLeanStd.Json` holds the recursive value of §21.7 and the production
+  roots `writeJson`, `writeJsonFile`, and `escapeString` for `rust-std`, held
+  to `canonical_json::Json::to_canonical_string` and `to_file_bytes`: keys in
+  UTF-8 byte order with the last of a repeated key kept, shortest integers,
+  the required escapes, no whitespace. `stdlib/lexlean.toml` gains the
+  entrypoint, so the locks of `stdlib` and its consumers move, and the three
+  packages move the counts `BS-05` to `BS-08` and `BS-13` to `BS-15` assert.
+  The register is 476 IDs.
+- Induction over a nested inductive type, #278 (SPEC.md §16.9, §17.10, §17.12,
+  `SM-37`). A new proof step, `nested_induction`, proves a statement about a
+  value of a nested inductive type (a type with a constructor that holds
+  itself under `List`, `Option`, `Result`, or a product) by the type's own
+  recursor: one branch for each constructor of the recursive family, in the
+  recursor's order, each binding its fields and one hypothesis for every field
+  that is a member of the family. The compiler checks the branch set, the
+  binder counts and the members before any backend and lowers the step to
+  `induction x using T.rec (motive_n := ...)` with positional `next` goals.
+  `induction` keeps refusing such a type, and its message now names
+  `nested_induction`. Moves the compiler-semantics identity: `semantic_ir` 15
+  to 16 and `proof_lowering` 3 to 4 in `language/semantics-1.2.toml`, and both
+  schemas gain the step; the locks, records, goldens, fixtures and packages the
+  digest binds are regenerated at landing. The register is 475 IDs.
+- Structural recursion over the recursive family of a nested inductive type,
+  #278 (SPEC.md §17.12, `DF-19`). A mutual definition group may decrease on any
+  member of the family the pinned Lean takes as the motives of the type's
+  recursor (the type, then each `List`, `Option`, `Result`, or product that
+  holds it, in the order of discovery), so a function over a type with a
+  constructor that holds `List (String * Json)` recurses through the list and
+  through the pair. One checker change; no file of the compiler-semantics
+  digest moves, so no identity moves. The register is 470 IDs.
+
 - The Intel macOS host-gate cost correction for #235 keeps SP-02's complete
   certificate scaling families and TC-03's seeded argument/fuel sweep on the
   normative Linux host, with fixed certificate vectors and committed fixture
   assertions on every supported host. TC-03 and TC-05 render and parse their
   shared fixture modules once for declaration membership checks. No
   acceptance recipe, normative assertion, or kernel replay is removed.
+
+
+- `PD-10`, the first slice of the effects boundary (#271). The standard library
+  gains `LexLeanStd.Host`, the types a command root is written against, and the
+  production registry of language 1.2 gains the effects `files` and `process`
+  and one `[[request]]` row per constructor of `Request`. A root whose closure
+  builds a request must admit that request's effect, or it fails with `LLT4005`.
+  Nothing performs a request yet. The language-1.2 compiler-semantics ID moves;
+  1.0 and 1.1 do not.
+
+- `SP-33`, certificate B of a match arm that returns a boxed field (#310). `fold`
+  of the Rust lowering and `returnedLet` of `RustBodies` fold a returned clone,
+  which is the arm the library's `mCons` states (`LLV7015`). `lower.rs` is a file
+  of the renderer, so `rust_renderer` and the language-1.2 identity move.
+
+- `SP-32`, certificate A of a recursive function with a matched parameter before
+  its recursive argument (#314). The Lean backend states the declared argument
+  with `termination_by structural` when a definition is executable and matches
+  such a parameter, where Lean's own search took that parameter and left the
+  definition stuck on it (`LLV7013`). `lean_backend` of language 1.2 moves.
 
 - The #34 closure pass (documentation and evidence; no register row, language
   datum, schema, or compiler source moves). Sixteen examples carry a `README.md`
@@ -612,6 +888,26 @@ of this tree show.
   inputs of the escaper and the scaffold, and 277 seeded mutants; twenty-one
   planted defects are each detected. No file of the renderer changes. The
   register is 467 IDs.
+Historical original #390 record (`ffb352ac`, before the final Host identity):
+the evidence and regeneration described in the following entry belong to that
+source. The current explicit redelivery is source-only; model projections,
+bootstrap products, combined counts and final acceptance remain pending.
+
+- The validation of a GNAF request as language-1.2 source, first part of the GNAF
+  requests and certification (SPEC.md §17.23, §17.15, §17.18, `BS-16`, #275; no new
+  diagnostic code, no change to the language-1.2 identity). `validateRequest` of
+  `GnafValidate` makes the checks `gnaf::validate` runs on a request, in the oracle's
+  order and with the same twenty-one refusals, and writes the refusal through the
+  standard library's `Buffer`; it is a production root for `rust-std`. It is held to
+  the oracle to the byte on 3,862 requests (60 committed, 802 hand-built, 3,000
+  seeded mutants; 3,522 refused), under the calculus evaluator and under the rendered
+  package compiled by the pinned rustc; twelve planted defects are each detected.
+  `bootstrap/lexlean.lock` and the production export are regenerated with the new
+  package, so the counts `BS-05`, `BS-06`, `BS-07`, `BS-08`, `BS-13`, `BS-14`, and
+  `BS-15` assert move by one manifest. What remains of #275: the answer, the
+  universe, and the certification (`BS-17` to `BS-19`), the premise facts after the
+  evaluator, `calculus::interp`, `realization`, and `Program::id`. The register is
+  470 IDs.
 - Explicit shared byte literals (#68, `SM-19`, `MD-02`; languages 1.1 and 1.2):
   a modeled byte literal is lowered as `_root_.ByteArray.mk #[…]` with every
   octet written `_root_.UInt8.ofNat (nat_lit n)`, an octet occurring four or

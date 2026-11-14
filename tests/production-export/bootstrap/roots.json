@@ -25,6 +25,22 @@
       "version": "1.0.0"
     },
     {
+      "name": "canonical_lock",
+      "root": "LexLeanBoot.LockText.canonicalLock",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "canonical_project",
+      "root": "LexLeanBoot.ProjectText.canonicalProject",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "check_arguments",
       "root": "LexLeanBoot.CalculusCheck.checkArguments",
       "targets": [
@@ -49,6 +65,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "config_sha256",
+      "root": "LexLeanBoot.ProjectText.configSha256",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "correspond_crate",
       "root": "LexLeanBoot.RustValidate.correspondCrate",
       "targets": [
@@ -59,6 +83,14 @@
     {
       "name": "dead_functions",
       "root": "LexLeanBoot.RustLower.deadFunctions",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "declaration_spans",
+      "root": "LexLeanBoot.SurfaceTooling.declarationSpans",
       "targets": [
         "rust-std"
       ],
@@ -99,6 +131,14 @@
     {
       "name": "lex",
       "root": "LexLeanBoot.TokenAudit.lex",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "lex_text",
+      "root": "LexLeanBoot.SurfaceLex.lexText",
       "targets": [
         "rust-std"
       ],
@@ -153,6 +193,30 @@
       "version": "1.0.0"
     },
     {
+      "name": "parse_generic",
+      "root": "LexLeanBoot.SurfaceGeneric.parseGeneric",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parse_module",
+      "root": "LexLeanBoot.StructuralGrammar.parseModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parse_tooling_module",
+      "root": "LexLeanBoot.SurfaceTooling.parseToolingModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "print_crate",
       "root": "LexLeanBoot.RustPrint.printCrate",
       "targets": [
@@ -169,8 +233,40 @@
       "version": "1.0.0"
     },
     {
+      "name": "print_generic",
+      "root": "LexLeanBoot.SurfaceGeneric.printGeneric",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "print_tooling_module",
+      "root": "LexLeanBoot.SurfaceTooling.printToolingModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "quote_text",
+      "root": "LexLeanBoot.SurfaceLex.quoteText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "reject_atoms",
       "root": "LexLeanBoot.PrimitiveScan.rejectAtoms",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "render_doc",
+      "root": "LexLeanBoot.SurfaceDoc.renderDoc",
       "targets": [
         "rust-std"
       ],
@@ -217,6 +313,14 @@
       "version": "1.0.0"
     },
     {
+      "name": "toml_string",
+      "root": "LexLeanBoot.LockText.tomlString",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "use_trees",
       "root": "LexLeanBoot.CalculusCheck.useTrees",
       "targets": [
@@ -233,8 +337,160 @@
       "version": "1.0.0"
     },
     {
+      "name": "validate_request",
+      "root": "LexLeanBoot.GnafValidate.validateRequest",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "validate_runtime",
       "root": "LexLeanBoot.RuntimeValidate.validateRuntime",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parse_lse",
+      "root": "LexLeanBoot.LexiconLse.parseLse",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "print_lse",
+      "root": "LexLeanBoot.LexiconLse.printLse",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "parse_lre",
+      "root": "LexLeanBoot.LexiconLre.parseLre",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "render_facts",
+      "root": "LexLeanBoot.LexiconLre.renderFacts",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "locate_module",
+      "root": "LexLeanBoot.SurfaceModule.locateModule",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "diagnostic_text",
+      "root": "LexLeanBoot.Diagnostics.diagnosticText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "report_diagnostics",
+      "root": "LexLeanBoot.Diagnostics.reportDiagnostics",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "sort_diagnostics",
+      "root": "LexLeanBoot.Diagnostics.sortDiagnostics",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "human_diagnostics",
+      "root": "LexLeanBoot.CliOutput.humanDiagnostics",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "named_command",
+      "root": "LexLeanBoot.CliOutput.namedCommand",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "wants_json",
+      "root": "LexLeanBoot.CliOutput.wantsJson",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "attestation_id",
+      "root": "LexLeanBoot.ContentId.attestationId",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "build_id",
+      "root": "LexLeanBoot.ContentId.buildId",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "pdf_recipe_id",
+      "root": "LexLeanBoot.ContentId.pdfRecipeId",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "semantic_id",
+      "root": "LexLeanBoot.ContentId.semanticId",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "source_id",
+      "root": "LexLeanBoot.ContentId.sourceId",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "tree_digest",
+      "root": "LexLeanBoot.ContentId.treeDigest",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "build_manifest",
+      "root": "LexLeanBoot.ManifestText.buildManifest",
       "targets": [
         "rust-std"
       ],

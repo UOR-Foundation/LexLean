@@ -207,7 +207,7 @@ const PAYLOADS: &[&str] = &[
     "x 009",
 ];
 
-fn class_index(class: AtomClass) -> u64 {
+pub(super) fn class_index(class: AtomClass) -> u64 {
     match class {
         AtomClass::Control => 0,
         AtomClass::Word => 1,
@@ -219,7 +219,7 @@ fn class_index(class: AtomClass) -> u64 {
     }
 }
 
-fn atom_value(atom: &Atom) -> Value {
+pub(super) fn atom_value(atom: &Atom) -> Value {
     Value::Adt {
         constructor: 0,
         fields: vec![
@@ -256,7 +256,7 @@ fn place_value(span: &Span) -> Value {
 /// The oracle's diagnostic as the `Rejection` the roots return: its code,
 /// message, primary span, and help. The scanner sets nothing else, which the
 /// conversion asserts rather than drops.
-fn rejection_value(diagnostic: &Diagnostic) -> Value {
+pub(super) fn rejection_value(diagnostic: &Diagnostic) -> Value {
     assert!(
         diagnostic.labels.is_empty()
             && diagnostic.notes.is_empty()

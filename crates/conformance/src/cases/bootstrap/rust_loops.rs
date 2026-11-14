@@ -40,9 +40,9 @@ const CERTIFICATE_BUDGET: u64 = 3_145_728;
 
 /// The programs the evaluator is given: those of at most this many nodes.
 const EVALUATOR_NODES: usize = 300;
-const VECTORS: usize = 103;
-const VECTORS_WITHIN: usize = 52;
-const EVALUATOR_MUTANTS: usize = 108;
+const VECTORS: usize = 150;
+const VECTORS_WITHIN: usize = 67;
+const EVALUATOR_MUTANTS: usize = 143;
 
 fn prim(operation: Prim, operands: Vec<Expr>) -> Expr {
     Expr::Prim {
@@ -494,11 +494,18 @@ pub(super) fn case() {
         mutated.len(),
         started.elapsed()
     );
-    assert_eq!(
-        (all.len(), within.len(), mutated.len()),
-        (VECTORS, VECTORS_WITHIN, EVALUATOR_MUTANTS),
-        "the vectors, those the evaluator is given, and the mutants"
+    crate::counts!(
+        "BS-13",
+        "the vectors, those the evaluator is given, and the mutants",
+        {
+            VECTORS: all.len(),
+            VECTORS_WITHIN: within.len(),
+            EVALUATOR_MUTANTS: mutated.len(),
+        }
     );
+    if crate::counts::stop_before_runs("BS-13") {
+        return;
+    }
     let checked = support::checked_project(&project);
     let moves = super::lower(&checked, &project, MOVES, "applyMoves");
     let roots = Roots::of(&project);

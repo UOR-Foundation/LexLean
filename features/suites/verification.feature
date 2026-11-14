@@ -75,12 +75,12 @@ Feature: verification
 
   @VR-11 @build
   Scenario: None, allow-subset, and exact axiom policies are enforced exactly and recorded per declaration.
-    Given the attestation of the verified nat-add-zero example under \noaxioms
-    When the declarations row for LexLeanExample.Main.add_zero is read
-    Then its policy kind is `none` and its observed set is empty
-    And the em fixture verified under \allowaxioms{Classical.choice;Quot.sound;propext} records the sorted observed set Classical.choice, Quot.sound, propext
-    And the same em fixture under \allowaxioms{Classical.choice} fails with LLV7005 naming the excess propext and Quot.sound
+    Given the verified nat-add-zero example under \noaxioms and the em and language-1.2 policy fixtures
+    When their declaration policies are verified and the attestation rows and diagnostics are read
+    Then LexLeanExample.Main.add_zero records policy kind `none` and an empty observed set
+    And the em fixture under \allowaxioms{Classical.choice;Quot.sound;propext} records that sorted observed set, while \allowaxioms{Classical.choice} fails with LLV7005 naming the excess propext and Quot.sound
     And an exact policy passes only when the observed set matches and fails with LLV7005 on any mismatch
+    And three wrong language-1.2 declaration policies report all three LLV7005 diagnostics in source order in JSON output, each at its declaration source span, and publish no verified artifact
 
   @VR-12 @build
   Scenario: Child process output is normalized with the exact path and line rules before hashing.
@@ -162,9 +162,10 @@ Feature: verification
     And a verified directory in which a telemetry key is planted is refused
 
   @VR-23 @build
-  Scenario: A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, or a join reading a record of an executable other than its own, is refused.
+  Scenario: A project verified as the parts of one run, each shard running the processes its plan names with the oleans of the shards it needs and the join reading every shard's records, publishes a verified directory byte-identical to the whole verification's with the same attestation identity, and a shard whose plan leaves a module without its imports, a join missing a record, a join reading a record of an executable other than its own, or a part that ran a toolchain other than its own, is refused.
     Given a committed multi-module example project and a plan of two shards and a join over its import graph
     When it is verified whole and as the parts of one run
     Then the join publishes a verified directory byte-identical to the whole verification's, with the same attestation identity
     And a shard whose plan elaborates a module before its imports, and a join that is handed one shard too few, are refused
+    And a join reading a part whose toolchain addresses name another lake is refused
     And a join reading a replay record whose executable digest is not its own leanchecker's is refused

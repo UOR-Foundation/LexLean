@@ -28,6 +28,65 @@ fn process_records(dir: &camino::Utf8Path) -> Vec<serde_json::Value> {
         .collect()
 }
 
+/// One audit must report every user policy violation before publication (#377).
+fn multiple_policy_violations() {
+    let _guard = support::env_shared();
+    let project = P::example();
+    project.edit("lexlean.toml", "language = \"1.0\"", "language = \"1.2\"");
+    let source = r#"\begin{lexlean}{Main}
+\useglossary{lexlean.std.nat@1.2.0}
+\title{Natural number addition}
+\begin{semanticmodule}
+definition{
+  name: first,
+  parameters: [xs : (List String)],
+  result: String,
+  body: (prim join xs "," : String),
+  executable: true
+}
+
+definition{
+  name: second,
+  parameters: [xs : (List String)],
+  result: String,
+  body: (prim join xs ";" : String),
+  executable: true
+}
+
+definition{
+  name: third,
+  parameters: [b : Bytes],
+  result: (Option String),
+  body: (prim utf8_decode b : (Option String)),
+  executable: true,
+  axioms: [propext]
+}
+\end{semanticmodule}
+\end{lexlean}
+"#;
+    project.write("src/Main.lex.tex", source);
+    project.relock();
+    let (exit, json, stderr) = project.cli(&["verify", "--diagnostic-format", "json"]);
+    assert_eq!(exit, 1, "{stderr}");
+    let json: serde_json::Value = serde_json::from_str(&json).expect("JSON command result");
+    let diagnostics = json["diagnostics"].as_array().expect("diagnostics");
+    assert_eq!(diagnostics.len(), 3, "every policy failure: {json}");
+    for (diagnostic, name) in diagnostics.iter().zip(["first", "second", "third"]) {
+        assert_eq!(diagnostic["code"], "LLV7005");
+        assert!(diagnostic["message"]
+            .as_str()
+            .expect("message")
+            .contains(&format!(".Main.{name}`")));
+        let span = &diagnostic["primary"];
+        assert_eq!(span["path"], "src/Main.lex.tex");
+        let start = span["byte_start"].as_u64().expect("start") as usize;
+        let end = span["byte_end"].as_u64().expect("end") as usize;
+        assert!(source[start..end].contains(&format!("name: {name},")));
+        assert!(end - start < source.len() / 2);
+    }
+    assert!(support::file_set(&project.root.join(".lexlean/verified")).is_empty());
+}
+
 /// The cases whose assertions need the pinned toolchain (§8.3); every
 /// other case is platform independent and runs on every supported host.
 const LEAN_BACKED: [&str; 14] = [
@@ -634,6 +693,7 @@ pub(crate) fn run(id: &str) {
         }
         // §22.6: policies enforced exactly and recorded per declaration.
         "VR-11" => {
+            multiple_policy_violations();
             let attestation = &support::verified().attestation;
             let declarations = attestation["declarations"].as_array().expect("policy rows");
             let row = declarations
@@ -763,6 +823,12 @@ pub(crate) fn run(id: &str) {
             let files = support::file_set(&fixture.outcome.root);
             type Matcher = Box<dyn Fn(&str) -> bool>;
             // The slots present exactly when a production root exists.
+            // §21.9: language 1.2 publishes each semantic module's
+            // declaration IDs; languages 1.0 and 1.1 publish none.
+            let language_1_2: Vec<(&str, Matcher)> = vec![(
+                "declarations/*.json",
+                Box::new(|f: &str| f.starts_with("declarations/") && f.ends_with(".json")),
+            )];
             let production: Vec<(&str, Matcher)> = vec![
                 (
                     "production/*.eligibility.json",
@@ -904,6 +970,10 @@ pub(crate) fn run(id: &str) {
                     !production.iter().any(|(_, matches)| matches(file)),
                     "§22.8: `{file}` exists without a production root"
                 );
+                assert!(
+                    !language_1_2.iter().any(|(_, matches)| matches(file)),
+                    "§22.8: `{file}` exists outside language 1.2"
+                );
             }
             for (pattern, matches) in &patterns {
                 assert!(
@@ -934,11 +1004,12 @@ pub(crate) fn run(id: &str) {
                         patterns
                             .iter()
                             .chain(&production)
+                            .chain(&language_1_2)
                             .any(|(_, matches)| matches(file)),
                         "§22.8: `{file}` is outside the fixed artifact set"
                     );
                 }
-                for (pattern, matches) in patterns.iter().chain(&production) {
+                for (pattern, matches) in patterns.iter().chain(&production).chain(&language_1_2) {
                     assert!(
                         files.iter().any(|file| matches(file)),
                         "§22.8: the `{pattern}` slot is populated with production roots"

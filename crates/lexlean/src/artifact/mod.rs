@@ -3,6 +3,7 @@
 
 pub mod canonical_json;
 pub mod content_id;
+pub mod declaration_id;
 pub mod manifest;
 pub mod snapshot;
 pub mod source_map;

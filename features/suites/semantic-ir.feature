@@ -78,10 +78,12 @@ Feature: semantic-ir
     And the `All` selection returns the same complete sorted set
 
   @SM-12 @build
-  Scenario: No semantic IR node can contain opaque prose, raw backend text, or an unknown extension.
+  Scenario: No semantic IR node can contain opaque prose, raw backend text, or an unknown extension. Semantic modules retain the 128-level JSON nesting limit and an over-deep list is refused with LLT4001 naming smaller definitions joined by prim append as the remedy.
     Given the example project checked through the internal pipeline
     When the linked IR is serialized to canonical JSON
     Then the JSON contains none of `natural number`, `For every`, `reflexivity`, or `Close the goal`
+    And a 122-element list checks while a 123-element list, including in a subsequent declaration, fails with LLT4001 naming the 128-level JSON bound and smaller definitions joined by prim append
+    And two 100-element definitions joined by prim append check, and malformed, noncanonical, duplicate-member and out-of-schema data remain refused
 
   @SM-13 @build
   Scenario: Inherited section parameters are represented explicitly and emitted only on declarations that use them.
@@ -257,3 +259,17 @@ Feature: semantic-ir
     When the project is linked, built, and verified by the pinned Lean, its formatted source and its LaTeX are read back, and each planted project is linked
     Then the theorem verifies with exactly the axioms its policy states and the formatter writes the proof unchanged
     And each planted project is refused naming the misuse
+
+  @SM-37 @build
+  Scenario: A language-1.2 theorem may be proved by `nested_induction`, an induction over a nested inductive type of the document, one that holds a member of itself under `List`, `Option`, `Result`, or a product and is in no mutual group: the proof names a parameter of the theorem, states one proposition for each auxiliary member of the type's recursive family in the order the pinned Lean's recursor takes them, and gives a branch for every constructor of the type and of each auxiliary member, each binding the constructor's fields followed by one hypothesis for each field that is a member of the family, in field order; the backend lowers it to `induction` over the recursor the pinned Lean generates for the type, with the propositions as its auxiliary motives and the goals taken in the order of its minor premises, so that a theorem over every value of a type with a constructor that holds a `List` of the type verifies under the pinned Lean 4.32.1 with exactly the axioms `propext` and `Quot.sound`, the set its build observes; the schema, the linker, the notation, the formatter, and the canonical LaTeX accept it, and a use in language 1.1, a local whose type is not a nested inductive of the document or lies in a mutual group, an auxiliary member that is missing, repeated, or out of order, a missing or repeated branch, a branch with the wrong number of binders, a proposition that is not well typed, and an `induction` proof on a nested type are each refused as LLT4001.
+    Given a language-1.2 project whose type holds a `List` of itself and a `List` of pairs that end in itself, whose mutual definition groups range over its recursive family, and whose theorem over every value of the type is proved by `nested_induction`, and the planted projects that misuse the form
+    When the project is linked, built, and verified by the pinned Lean, its formatted source and its LaTeX are read back, and each planted project is linked
+    Then the generated Lean induces over the recursor the pinned Lean generates for the type, with the goals in the order of its minor premises, and the theorem verifies with exactly the axioms `propext` and `Quot.sound` and the formatter writes the proof unchanged
+    And each planted project is refused as LLT4001 naming the misuse, and no backend output is written
+
+  @SM-38 @build
+  Scenario: A language-1.2 build publishes, for every semantic module, a declaration ID for each declaration and a statement ID for each theorem: the declaration ID is a framed SHA-256 of the declaration's canonical JSON and of the declaration IDs of the project declarations it references, with declarations that reference one another hashed as one group, and the statement ID omits the theorem's proof; changing one literal of one definition changes the declaration IDs of exactly that definition and of the declarations that reach it by reference, changing a theorem's proof alone leaves its statement ID unchanged, adding or reordering independent declarations changes no ID, the IDs equal their recomputation from the specified framed inputs, the file validates against `api/schemas/declarations.schema.json`, and a language-1.0 or 1.1 build publishes none.
+    Given a language-1.2 project whose definitions reference one another, with a mutual pair of inductive types, a definition nothing references, and a theorem over one definition
+    When the project is built, its declarations file is read, and copies are built with one literal changed, with the theorem's proof changed, and with a declaration added and the declarations reordered
+    Then the IDs equal their recomputation from the framed inputs, the file validates against its schema, and exactly the changed definition and the declarations that reach it change ID
+    And the theorem's statement ID survives the change of its proof, and a language-1.0 build publishes no declarations file

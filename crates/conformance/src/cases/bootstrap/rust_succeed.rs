@@ -29,7 +29,7 @@ const CERTIFICATE_BUDGET: u64 = 3_145_728;
 const EVALUATOR_NODES: usize = 300;
 const VECTORS: usize = 76;
 const VECTORS_WITHIN: usize = 75;
-const EVALUATOR_MUTANTS: usize = 149;
+const EVALUATOR_MUTANTS: usize = 152;
 
 /// The lowering up to the moves, as the roots compose it.
 struct Roots {
@@ -222,11 +222,18 @@ pub(super) fn case() {
         mutated.len(),
         started.elapsed()
     );
-    assert_eq!(
-        (all.len(), within.len(), mutated.len()),
-        (VECTORS, VECTORS_WITHIN, EVALUATOR_MUTANTS),
-        "the vectors, those the evaluator is given, and the mutants"
+    crate::counts!(
+        "BS-12",
+        "the vectors, those the evaluator is given, and the mutants",
+        {
+            VECTORS: all.len(),
+            VECTORS_WITHIN: within.len(),
+            EVALUATOR_MUTANTS: mutated.len(),
+        }
     );
+    if crate::counts::stop_before_runs("BS-12") {
+        return;
+    }
     let checked = support::checked_project(&project);
     let moves = super::lower(&checked, &project, MOVES, "applyMoves");
     let roots = Roots::of(&project);

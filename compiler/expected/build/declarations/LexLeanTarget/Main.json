@@ -1,0 +1,1 @@
+{"declarations":[{"id":"cc1efae01af97ab9043340f77ffabf4efe077c365a967293657de70b5c4d0020","kind":"definition","name":"emptyProgram","references":[{"module":"TargetSyntax","name":"Adt"},{"module":"TargetSyntax","name":"Function"},{"module":"TargetSyntax","name":"Program"}]}],"module":"Main","spec":"lexlean/declarations/1"}

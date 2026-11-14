@@ -1137,6 +1137,41 @@ pub fn run_part(
                 declaration_spans.insert(full_name, span);
             }
         }
+        if let Some(semantic) = &document.semantic {
+            // The v2 renderer emits one Lean mapping per semantic declaration,
+            // ordered by generated offset. Reuse those checked source ranges
+            // instead of parsing the same normalized notation again.
+            let ranges: Vec<_> = if semantic.spec == "lexlean/semantic-module/2" {
+                module
+                    .map
+                    .mappings
+                    .iter()
+                    .filter(|mapping| {
+                        module.map.artifacts[mapping.artifact].kind
+                            == crate::artifact::source_map::ArtifactKind::Lean
+                            && module.map.nodes[mapping.node].kind == "semantic-declaration"
+                    })
+                    .filter_map(|mapping| mapping.src_range)
+                    .collect()
+            } else {
+                // Legacy v1 maps only the whole module, so keep its source lookup.
+                let normalized = &checked.modules[&module.module].normalized;
+                crate::backend::semantic::notation_declaration_spans(normalized, "semanticmodule")
+                    .or_else(|| {
+                        crate::backend::semantic::declaration_spans_in(
+                            normalized,
+                            "\\semanticdata{",
+                        )
+                    })
+                    .unwrap_or_default()
+            };
+            for (declaration, range) in semantic.declarations.iter().zip(ranges) {
+                declaration_spans.insert(
+                    format!("{}.{}", module.lean_module, declaration.name()),
+                    source_span(checked, module, range),
+                );
+            }
+        }
     }
 
     // Generated-source audit before any Lean invocation (§18.2): the build
@@ -1298,16 +1333,23 @@ pub fn run_part(
     // What the parts before this one wrote (§9.4): their `.olean` files into
     // the staged tree, and, for the part that publishes, their records.
     stages.enter("part-import");
+    // The addresses of everything this run executes or was built by
+    // (§22.11): a part writes them beside its output and a reader requires
+    // its own. The running executable must be readable to be named.
+    let own_addresses = toolchain::Addresses::of(
+        &toolchain,
+        running_executable_sha256().map_err(|io_error| {
+            fail(internal(format!(
+                "reading the running executable: {io_error}"
+            )))
+        })?,
+    );
     let mut imported =
         partition::import(part.inputs(), &olean_root, part.publishes()).map_err(fail)?;
-    // Every record another part wrote was run by the toolchain this run's
-    // preflight hashed: the attestation lists them under its digests.
-    partition::check_toolchain(
-        &imported,
-        toolchain.lean.sha256,
-        toolchain.leanchecker.sha256,
-    )
-    .map_err(fail)?;
+    // Every part before this one ran the toolchain this run's preflight
+    // hashed, and every record it wrote names it: the attestation lists them
+    // under its digests.
+    partition::check_toolchain(&imported, &own_addresses).map_err(fail)?;
 
     // The leanchecker identity (module documentation), before any replay:
     // the preflight's toolchain-relative path and digest line, then the
@@ -1897,7 +1939,7 @@ pub fn run_part(
             .plan()
             .map(|plan| plan.elaborate.clone())
             .unwrap_or_default();
-        partition::export(staging.path(), output, &own).map_err(fail)?;
+        partition::export(staging.path(), output, &own, &own_addresses).map_err(fail)?;
         telemetry_run.succeeded();
         return Ok(PartOutcome::Shard {
             output: (*output).to_owned(),
@@ -1974,13 +2016,20 @@ pub fn run_part(
     stages.enter("policy");
     // Stage 11: per-declaration policy enforcement (§22.6).
     let mut declaration_rows: Vec<Json> = Vec::new();
+    let mut policy_diagnostics = Vec::new();
+    let mut reject_policy = |name: &str, mut diagnostic: Diagnostic| {
+        if let Some(span) = declaration_spans.get(name) {
+            diagnostic = diagnostic.with_span(span.clone());
+        }
+        policy_diagnostics.push(diagnostic);
+    };
     for module in &build.modules {
         let document = &checked.modules[&module.module].document;
         for declaration in document.declarations() {
             let full_name = format!("{}.{}", module.lean_module, declaration.lean_name);
             let observed_set = observed.get(&full_name).cloned().unwrap_or_default();
             if !declaration.policy.permits(&observed_set) {
-                let mut diagnostic = Diagnostic::new(
+                let diagnostic = Diagnostic::new(
                     code!("LLV7005"),
                     format!(
                         "`{full_name}` violates its {} axiom policy: observed [{}]",
@@ -1988,10 +2037,7 @@ pub fn run_part(
                         observed_set.join(", ")
                     ),
                 );
-                if let Some(span) = declaration_spans.get(&full_name).cloned() {
-                    diagnostic = diagnostic.with_span(span);
-                }
-                return Err(fail(diagnostic));
+                reject_policy(&full_name, diagnostic);
             }
             declaration_rows.push(Json::object(vec![
                 ("name", Json::Str(full_name)),
@@ -2026,15 +2072,18 @@ pub fn run_part(
                     continue;
                 };
                 if !declaration.policy.permits(&observed_set) {
-                    return Err(fail(Diagnostic::new(
-                        code!("LLV7005"),
-                        format!(
-                            "`{}` violates its {} axiom policy: observed [{}]",
-                            declaration.name,
-                            declaration.policy.kind(),
-                            observed_set.join(", ")
+                    reject_policy(
+                        &declaration.name,
+                        Diagnostic::new(
+                            code!("LLV7005"),
+                            format!(
+                                "`{}` violates its {} axiom policy: observed [{}]",
+                                declaration.name,
+                                declaration.policy.kind(),
+                                observed_set.join(", ")
+                            ),
                         ),
-                    )));
+                    );
                 }
                 declaration_rows.push(Json::object(vec![
                     ("name", Json::Str(declaration.name.clone())),
@@ -2102,7 +2151,7 @@ pub fn run_part(
                             .iter()
                             .any(|axiom| !declaration.axioms().contains(axiom))
                         {
-                            return Err(fail(Diagnostic::new(
+                            reject_policy(&format!("{}.{}", module.lean_module, declaration.name()), Diagnostic::new(
                                 code!("LLV7005"),
                                 format!(
                                     "`{full_name}`, generated by `{}`, violates its {} axiom policy: observed [{}]",
@@ -2110,7 +2159,7 @@ pub fn run_part(
                                     declaration.axiom_policy_kind(),
                                     observed_set.join(", ")
                                 ),
-                            )));
+                            ));
                         }
                         union.extend(observed_set.iter().cloned());
                         declaration_rows.push(Json::object(vec![
@@ -2140,7 +2189,7 @@ pub fn run_part(
                         ]));
                     }
                     if union.into_iter().collect::<Vec<_>>() != declaration.axioms() {
-                        return Err(fail(Diagnostic::new(
+                        reject_policy(&format!("{}.{}", module.lean_module, declaration.name()), Diagnostic::new(
                             code!("LLV7005"),
                             format!(
                                 "`{}.{}` violates its {} axiom policy: its generated declarations observe exactly a different set",
@@ -2148,7 +2197,7 @@ pub fn run_part(
                                 declaration.name(),
                                 declaration.axiom_policy_kind()
                             ),
-                        )));
+                        ));
                     }
                     continue;
                 }
@@ -2159,14 +2208,17 @@ pub fn run_part(
                     )))
                 })?;
                 if observed_set != declaration.axioms() {
-                    return Err(fail(Diagnostic::new(
-                        code!("LLV7005"),
-                        format!(
-                            "`{full_name}` violates its {} axiom policy: observed [{}]",
-                            declaration.axiom_policy_kind(),
-                            observed_set.join(", ")
+                    reject_policy(
+                        &full_name,
+                        Diagnostic::new(
+                            code!("LLV7005"),
+                            format!(
+                                "`{full_name}` violates its {} axiom policy: observed [{}]",
+                                declaration.axiom_policy_kind(),
+                                observed_set.join(", ")
+                            ),
                         ),
-                    )));
+                    );
                 }
                 declaration_rows.push(Json::object(vec![
                     ("name", Json::Str(full_name)),
@@ -2210,14 +2262,14 @@ pub fn run_part(
                 )))
             })?;
             if observed_set != *axioms {
-                return Err(fail(Diagnostic::new(
+                reject_policy(name, Diagnostic::new(
                     code!("LLV7005"),
                     format!(
                         "`{name}` of the runtime module `{}` violates its exact axiom policy: observed [{}]",
                         module.name,
                         observed_set.join(", ")
                     ),
-                )));
+                ));
             }
             declaration_rows.push(Json::object(vec![
                 ("name", Json::Str(name.clone())),
@@ -2238,6 +2290,10 @@ pub fn run_part(
                 ("result", Json::Str("ok".to_owned())),
             ]));
         }
+    }
+
+    if !policy_diagnostics.is_empty() {
+        return Err(LexLeanError::from_diagnostics(policy_diagnostics));
     }
 
     stages.enter("extraction");

@@ -39,6 +39,23 @@ walkdir = { workspace = true }
 rustix = { workspace = true }
 signal-hook = { workspace = true }
 
+# The build script records the address of the `rustc` that compiles this crate
+# (SPEC.md §22.11): the SHA-256 of its executable and driver library.
+[build-dependencies]
+sha2 = { workspace = true }
+
+# `production-data` embeds the native preservation library
+# (`language/preservation-1.2/library/`, 32.2 of the 36.4 MB of language data),
+# which only certificate generation reads: `production build`, and `verify`
+# of a project with a production root. A build without it (SPEC.md §8.4) is
+# a checker for hosts where 31 MB costs start time and memory, such as
+# WebAssembly; it reports the language-1.2 compiler-semantics ID from the
+# constant RP-10 holds to the full tree, and refuses those two commands with
+# LLC0205 instead of reading data it does not have.
+[features]
+default = ["production-data"]
+production-data = []
+
 [dev-dependencies]
 proptest = { workspace = true }
 

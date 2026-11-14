@@ -28,6 +28,9 @@ const SEMANTIC_DIRS: [(&str, &str); 4] = [
     ("tests/golden/canonical-json", "tests/golden/canonical-json"),
 ];
 
+/// The embedded directory the `production-data` feature carries.
+const PRODUCTION_DATA_DIR: &str = "language/preservation-1.2/library";
+
 fn main() {
     let manifest = PathBuf::from(env::var("CARGO_MANIFEST_DIR").expect("cargo sets this"));
 
@@ -46,7 +49,16 @@ fn main() {
     // Bytewise-sorted repository-relative path order, the §11.5 tree order.
     files.sort_by(|a, b| a.0.as_bytes().cmp(b.0.as_bytes()));
 
+    // Without `production-data` the native preservation library is left out
+    // (SPEC.md §8.4): only certificate generation reads it, and it is most of
+    // the embedded bytes. Its files are absent, not empty, so a reader that
+    // reached one would find it missing rather than read an empty library.
+    let production_data = env::var_os("CARGO_FEATURE_PRODUCTION_DATA").is_some();
     let mut out = String::new();
+    out.push_str(&format!(
+        "/// Whether this build embeds the production data (`{PRODUCTION_DATA_DIR}/`).\n\
+         pub const PRODUCTION_DATA: bool = {production_data};\n\n"
+    ));
     out.push_str(
         "/// Every embedded normative file as `(repository-relative path, bytes)`,\n\
          /// in bytewise-sorted path order.\n\
@@ -54,6 +66,9 @@ fn main() {
     );
     for (rel, abs) in &files {
         println!("cargo:rerun-if-changed={}", abs.display());
+        if !production_data && rel.starts_with(&format!("{PRODUCTION_DATA_DIR}/")) {
+            continue;
+        }
         out.push_str(&format!(
             "    ({:?}, include_bytes!({:?})),\n",
             rel,
@@ -82,6 +97,83 @@ fn main() {
         errors.display()
     );
     fs::write(out_dir.join("errors.toml"), bytes).expect("write errors.toml");
+
+    rustc_identity(&out_dir);
+}
+
+/// The address of the compiler that builds this crate (SPEC.md §22.11): the
+/// SHA-256 of one line `<sha256 of the file>  <sysroot-relative path>` per
+/// file of the `rustc` executable and its driver library, in path order, and
+/// what `rustc -vV` reports. The `rustc` executable is a thin launcher; the
+/// compiler is the driver library it loads, so both are addressed. A compiler
+/// whose sysroot cannot be read is a build failure, never an empty address.
+fn rustc_identity(out_dir: &Path) {
+    use sha2::{Digest, Sha256};
+    use std::process::Command;
+
+    println!("cargo:rerun-if-env-changed=RUSTC");
+    let rustc = env::var("RUSTC").unwrap_or_else(|_| "rustc".to_owned());
+    let run = |argument: &str| {
+        let output = Command::new(&rustc)
+            .arg(argument)
+            .output()
+            .unwrap_or_else(|error| panic!("running `{rustc} {argument}`: {error}"));
+        assert!(
+            output.status.success(),
+            "`{rustc} {argument}` failed: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        String::from_utf8(output.stdout).expect("rustc reports UTF-8")
+    };
+    let version = run("-vV").replace("\r\n", "\n");
+    let sysroot = PathBuf::from(run("--print=sysroot").trim());
+    let mut files: Vec<(String, PathBuf)> = Vec::new();
+    for directory in ["bin", "lib"] {
+        let Ok(entries) = fs::read_dir(sysroot.join(directory)) else {
+            continue;
+        };
+        for entry in entries.filter_map(Result::ok) {
+            let name = entry.file_name().to_string_lossy().into_owned();
+            let compiler = name == "rustc"
+                || name == "rustc.exe"
+                || name.starts_with("rustc_driver-")
+                || name.starts_with("librustc_driver-");
+            if compiler && entry.path().is_file() {
+                files.push((format!("{directory}/{name}"), entry.path()));
+            }
+        }
+    }
+    files.sort();
+    assert!(
+        files.iter().any(|(path, _)| path.starts_with("bin/rustc")),
+        "{}: no `rustc` executable in the compiler's sysroot",
+        sysroot.display()
+    );
+    let mut listing = String::new();
+    for (relative, path) in &files {
+        println!("cargo:rerun-if-changed={}", path.display());
+        let bytes =
+            fs::read(path).unwrap_or_else(|error| panic!("reading {}: {error}", path.display()));
+        listing.push_str(&hex(&Sha256::digest(&bytes)));
+        listing.push_str("  ");
+        listing.push_str(relative);
+        listing.push('\n');
+    }
+    let address = hex(&Sha256::digest(listing.as_bytes()));
+    fs::write(
+        out_dir.join("rustc_identity.rs"),
+        format!(
+            "/// What `rustc -vV` reported for the compiler that built this crate.\n\
+             pub const RUSTC_VERSION: &str = {version:?};\n\
+             /// The address of that compiler's executable and driver library.\n\
+             pub const RUSTC_SHA256: &str = {address:?};\n"
+        ),
+    )
+    .expect("write rustc_identity.rs");
+}
+
+fn hex(bytes: &[u8]) -> String {
+    bytes.iter().map(|byte| format!("{byte:02x}")).collect()
 }
 
 /// Resolve a crate-relative normative path: a directory or file as such; a
