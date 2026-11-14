@@ -9900,6 +9900,26 @@ or 1.1 build publishes no declarations file, so their output is unchanged.
 
 ---
 
+
+### 21.10 UOR addresses
+
+A UOR address is the label `sha256:` followed by the 64 lowercase hexadecimal digits of the SHA-256 of an artifact's canonical bytes: 71 bytes, the form of the UOR Foundation's `uor-addr` labels. Every content identity this specification defines is the SHA-256 of the canonical bytes of one artifact kind, so each recorded identity is its artifact's UOR address with the label's prefix removed. Recorded identities stay bare hexadecimal; the address is the same digest.
+
+| Kind | Canonical bytes | Recorded as |
+| --- | --- | --- |
+| file | the file's bytes as stored | lock `workspace_file` and package digests, manifest `inputs` and `outputs`, `.olean`, executable, process-stream, and PDF digests |
+| tree | `lexlean-tree-v1`, NUL, then `frame(path, bytes)` per row in path order (§11.5) | tree digests of packages |
+| compiler semantics | the tree of the language's embedded files (§21.2) | `compiler_semantics`, `semantics_id` |
+| project configuration | the canonical `lexlean.toml` (§10.1) | `project_config_sha256` |
+| source | the §21.3 recipe: `lexlean-source-v1`, NUL, then its frames | `source_id` |
+| semantic | the §21.4 recipe | `semantic_id` |
+| build | the §21.5 recipe | `build_id` |
+| attestation | the §22.9 recipe | `attestation_id` |
+| PDF recipe | the §19.8 recipe | `recipe_id` |
+| Rust program | the program's canonical JSON with one final LF (§21.7) | a package's `program` |
+
+A framed kind's bytes begin with its own domain and a NUL, so two kinds never share an address by their framing (UOR-GNAF draft.2 §14.3 requires typed domains for addresses); a file kind is its bytes, whose kind the field that records it names. The compiler writes each framed kind's bytes and its identity with one recipe, into a buffer or into the hash (`artifact::address`, `artifact::content_id`), so the two cannot differ. `AR-15` recomputes, with its own SHA-256, the address of every identity that the committed build manifests, locks, build outputs, and Rust packages record, and requires each to equal the recorded identity.
+
 ## 22. Verification
 
 ### 22.1 Verification stages
@@ -11875,6 +11895,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `AR-12` | `artifacts` | Concurrent and failed builds preserve atomic content-addressed artifacts and never overwrite unexplained bytes. | §21.8 |
 | `AR-13` | `artifacts` | Two clean builds in different absolute directories produce byte-identical platform-independent artifacts. | §28.4 |
 | `AR-14` | `artifacts` | Platform-independent build evidence is distinguished from platform-bound oleans, process records, PDF bytes, and attestations. | §21, §22 |
+| `AR-15` | `artifacts` | Every content identity a committed artifact records, the source, semantic, build, and compiler-semantics IDs of each build manifest and lock, each lock workspace file, each committed build output, and each Rust package's files and program, is the SHA-256 of the canonical bytes of its kind, so its UOR address is `sha256:` and that digest, and a recorded identity that no longer names its artifact is refused. | §21.10 |
 | `VR-01` | `verification` | Verification runs every specified stage in order and exposes no stage-suppression option. | §22.1 |
 | `VR-02` | `verification` | Lean, Lake, and leanchecker versions and executable hashes are checked and recorded before use. | §22.2 |
 | `VR-03` | `verification` | Lean execution uses the pinned Lake environment and never updates or fetches workspace dependencies. | §22.2 |
@@ -12170,7 +12191,7 @@ Every row below is normative, has honesty level `build`, and MUST be copied byte
 | `LM-09` | `language-models` | No prompt is code: no member of the closed language maps `string` or `bytes` to a function, a term, or source — every operation of the primitive registry that takes a `string` or `bytes` operand is classified by the audit with a data result, the registry's schema enumeration and the production registry's primitive rows equal one another and equal that classified set, and the text declarations of `lexlean/semantic-module/2` state no `string`-typed member, so a prompt reaches a model only as the tokens `encodeText` makes of it; a planted operation or text member of that shape is caught by the audit with its name. | §17.12 |
 | `LM-13` | `language-models` | The text laws a tokenizer elaborates through are LexLean source and not authored text: the module that states them is one language-1.2 native core module of the embedded `language/text-1.2` project, the project holds no file of Lean source, no independently authored Lean file anywhere in the release tree declares the `LexLeanText` namespace or lies under its module root, and the one-time migration input is absent; the registry lists only that module, the declarations and their exact axiom policies are read from its native data, which the compiler embeds and hashes into the language-1.2 semantics, and a module that declares a text component imports the generated module rather than splicing any Lean text. | §17.10, §17.12 |
 
-**Total required capability IDs:** 496.
+**Total required capability IDs:** 497.
 
 No row may be downgraded to `some-true` or `open`. Upstream Lean facts are ledger/authority rows, not substitutions for these build behaviors.
 

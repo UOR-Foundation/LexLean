@@ -245,8 +245,13 @@ pub fn identity_bytes<'a>(path: &str, bytes: &'a [u8]) -> std::borrow::Cow<'a, [
 /// in four; this is sixteen times that, for modules that grow with the runtime.
 pub const READER_STACK: usize = 64 * 1024 * 1024;
 
-/// The §11.5 tree digest of the files of the embedded tree selected by `keep`.
-fn embedded_digest(keep: impl Fn(&str) -> bool) -> Sha256Digest {
+/// `(repository-relative path, bytes)` rows of the embedded tree, as the
+/// §11.5 tree digest reads them, in path order.
+pub type EmbeddedRows = Vec<(&'static str, std::borrow::Cow<'static, [u8]>)>;
+
+/// The rows of the embedded tree selected by `keep`, as the §11.5 tree digest
+/// reads them, in path order.
+fn embedded_rows(keep: impl Fn(&str) -> bool) -> EmbeddedRows {
     let selected: Vec<(&'static str, &'static [u8])> = embedded::FILES
         .iter()
         .filter(|(path, _)| keep(path))
@@ -274,16 +279,33 @@ fn embedded_digest(keep: impl Fn(&str) -> bool) -> Sha256Digest {
             });
         }
     });
-    let rows: Vec<(&str, std::borrow::Cow<'static, [u8]>)> = selected
+    selected
         .iter()
         .zip(slots)
         .map(|((path, _), slot)| (*path, slot.into_inner().expect("every file is read")))
-        .collect();
+        .collect()
+}
+
+/// The §11.5 tree digest of the files of the embedded tree selected by `keep`.
+fn embedded_digest(keep: impl Fn(&str) -> bool) -> Sha256Digest {
+    let rows = embedded_rows(keep);
     let files: Vec<(&str, &[u8])> = rows
         .iter()
         .map(|(path, bytes)| (*path, bytes.as_ref()))
         .collect();
     tree_digest(&files)
+}
+
+/// Which embedded files a language's compiler-semantics ID covers (§21.2):
+/// language 1.0 excludes every file introduced for 1.1 or 1.2, and 1.1 every
+/// file introduced for 1.2. `None` for an unsupported language.
+fn semantics_selection(language: &str) -> Option<fn(&str) -> bool> {
+    match language {
+        LANGUAGE_VERSION => Some(|path| !is_v1_1_file(path) && !is_v1_2_file(path)),
+        LANGUAGE_1_1 => Some(|path| !is_v1_2_file(path)),
+        LANGUAGE_1_2 => Some(|_| true),
+        _ => None,
+    }
 }
 
 /// The language-1.2 compiler-semantics ID of the full embedded tree, checked
@@ -296,6 +318,18 @@ fn embedded_digest(keep: impl Fn(&str) -> bool) -> Sha256Digest {
 pub const LANGUAGE_1_2_SEMANTICS_ID: &str =
     "a82990b56aa082f57e3bf3e2d6494d75a8170f26e269448de19110f5459655ad";
 
+/// The `(repository-relative path, bytes)` rows of the embedded tree whose §11.5
+/// digest is `language`'s compiler-semantics ID, in path order (§21.10).
+/// `None` for an unsupported language, and for language 1.2 without the
+/// `production-data` feature, whose embedded tree cannot cover it.
+#[must_use]
+pub fn compiler_semantics_files(language: &str) -> Option<EmbeddedRows> {
+    if language == LANGUAGE_1_2 && !embedded::PRODUCTION_DATA {
+        return None;
+    }
+    semantics_selection(language).map(embedded_rows)
+}
+
 /// The compiler-semantics ID for one selected language. Language 1.0 excludes
 /// all files introduced solely for 1.1 and 1.2, and Language 1.1 excludes
 /// all files introduced solely for 1.2, preserving historical identities.
@@ -306,13 +340,19 @@ pub fn compiler_semantics_id_for(language: &str) -> Sha256Digest {
     static V1_1: OnceLock<Sha256Digest> = OnceLock::new();
     static V1_2: OnceLock<Sha256Digest> = OnceLock::new();
     match language {
-        LANGUAGE_VERSION => {
-            *V1_0.get_or_init(|| embedded_digest(|path| !is_v1_1_file(path) && !is_v1_2_file(path)))
+        LANGUAGE_VERSION | LANGUAGE_1_1 => {
+            let slot = if language == LANGUAGE_VERSION {
+                &V1_0
+            } else {
+                &V1_1
+            };
+            *slot.get_or_init(|| {
+                embedded_digest(semantics_selection(language).expect("a supported language"))
+            })
         }
-        LANGUAGE_1_1 => *V1_1.get_or_init(|| embedded_digest(|path| !is_v1_2_file(path))),
         LANGUAGE_1_2 => *V1_2.get_or_init(|| {
             if embedded::PRODUCTION_DATA {
-                embedded_digest(|_| true)
+                embedded_digest(semantics_selection(language).expect("a supported language"))
             } else {
                 Sha256Digest::from_hex(LANGUAGE_1_2_SEMANTICS_ID)
                     .expect("RP-10 parses the checked-in language-1.2 ID")

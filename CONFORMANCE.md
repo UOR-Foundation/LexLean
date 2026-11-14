@@ -37,6 +37,7 @@ the error registry does not sanction (R5, `ERRORS.md`).
 | `AR-12` | `build` | Concurrent and failed builds preserve atomic content-addressed artifacts and never overwrite unexplained bytes. |
 | `AR-13` | `build` | Two clean builds in different absolute directories produce byte-identical platform-independent artifacts. |
 | `AR-14` | `build` | Platform-independent build evidence is distinguished from platform-bound oleans, process records, PDF bytes, and attestations. |
+| `AR-15` | `build` | Every content identity a committed artifact records, the source, semantic, build, and compiler-semantics IDs of each build manifest and lock, each lock workspace file, each committed build output, and each Rust package's files and program, is the SHA-256 of the canonical bytes of its kind, so its UOR address is `sha256:` and that digest, and a recorded identity that no longer names its artifact is refused. |
 
 ## authoring
 

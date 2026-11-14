@@ -17,6 +17,18 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- One address scheme for every content identity (SPEC.md §21.10, `AR-15`).
+  A UOR address is `sha256:` and the SHA-256 of an artifact's canonical
+  bytes, the label form of the UOR Foundation's `uor-addr`; every identity
+  LexLean records is already that digest, so no recorded byte moves.
+  `lexlean::artifact::address` has one function per artifact kind returning
+  its canonical bytes, written by the same recipe as the identity
+  (`content_id::*_frames` over a hash or a buffer), and the hidden
+  `api::content_identities` gives a checked project's, outside the seven
+  stable `Engine` entry points (§24.1). `AR-15` recomputes with
+  its own SHA-256 every identity the committed build manifests, locks,
+  build outputs, and Rust packages record, and requires each to equal the
+  recorded one. The register is 497 IDs.
 - Every part of a verification names its toolchain by address (SPEC.md
   §22.11, §9.4). A shard writes `toolchain.json` (`lexlean/verify-toolchain/1`)
   beside its output: the SHA-256 of the `lean`, `lake`, and `leanchecker` its
