@@ -1,0 +1,637 @@
+name: Isolated native writer stage
+on:
+  workflow_call:
+    inputs:
+      stage: {type: string, required: true}
+      export-sha256: {type: string, default: ''}
+      export-tree: {type: string, default: ''}
+    outputs:
+      patch-sha256:
+        value: ${{ jobs.writer.outputs.patch-sha256 }}
+      product-tree:
+        value: ${{ jobs.writer.outputs.product-tree }}
+permissions:
+  contents: read
+jobs:
+  writer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    outputs:
+      patch-sha256: ${{ steps.run.outputs.patch-sha256 }}
+      product-tree: ${{ steps.run.outputs.product-tree }}
+    env:
+      INPUT: 9fd01c31e40bb29577833825f902fafcceedb49a
+      TREE: ec744df3893e9648e6599c59fd27435bcc2f4877
+      STAGE: ${{ inputs.stage }}
+      EXPORT_SHA256: ${{ inputs.export-sha256 }}
+      EXPORT_TREE: ${{ inputs.export-tree }}
+      CARRIER: ${{ github.workflow_sha }}
+      CARGO_INCREMENTAL: '0'
+      CARGO_BUILD_JOBS: '1'
+      RUST_TEST_THREADS: '1'
+      LEXLEAN_VERIFY_WIDTH: '1'
+      LEXLEAN_CI_TELEMETRY: ${{ github.workspace }}/evidence/telemetry
+    steps:
+      - name: Reserve execution and capture deadlines
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf 'CARGO_TARGET_DIR=%s/target\nTMPDIR=%s/scratch\n' "$RUNNER_TEMP" "$RUNNER_TEMP" >> "$GITHUB_ENV"
+          mkdir -p evidence
+          deadline=$(( $(date +%s) + 330 * 60 ))
+          echo "PRODUCER_DEADLINE=$deadline" >> "$GITHUB_ENV"
+          printf '{"job_minutes":360,"producer_minutes_from_first_step":330,"kill_grace_seconds":30,"capture_step_minutes":10,"deadline_epoch":%s}\n' "$deadline" > evidence/deadlines.json
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: 9fd01c31e40bb29577833825f902fafcceedb49a
+          persist-credentials: false
+          fetch-depth: 1
+          path: source
+      - name: Bind isolated producer input
+        run: |
+          set -euo pipefail
+          mkdir -p evidence "$TMPDIR"
+          test "$(git -C source rev-parse HEAD)" = "$INPUT"
+          test "$(git -C source rev-parse HEAD^{tree})" = "$TREE"
+          test -z "$(git -C source status --porcelain)"
+          git -C source worktree add --detach "$RUNNER_TEMP/work" "$INPUT"
+      - name: Verify isolated child controls before expensive work
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/lexlean-containment.py" <<'CONTAINMENT'
+          """Carrier-only helper; installed outside the pinned producer worktree."""
+          import json, math, os, pathlib as P, selectors, shutil, signal, subprocess as S, sys, time
+          
+          ROOT = P.Path('/sys/fs/cgroup')
+          TEMP = P.Path(os.environ['RUNNER_TEMP'])
+          E = P.Path(os.environ['GITHUB_WORKSPACE']) / 'evidence'
+          STATE = TEMP / 'lexlean-containment'
+          GIB = 1024**3
+          KEYS = ('memory.max', 'memory.high', 'memory.current', 'memory.peak',
+                  'memory.events', 'memory.swap.max', 'memory.swap.current',
+                  'memory.oom.group', 'cpu.max', 'cpu.stat', 'cgroup.events')
+          
+          
+          def save(path, value):
+              path.parent.mkdir(parents=True, exist_ok=True)
+              tmp = path.with_suffix(path.suffix + '.tmp')
+              tmp.write_text(json.dumps(value, indent=2, sort_keys=True) + '\n')
+              tmp.replace(path)
+          
+          
+          def command(argv, check=True, timeout=40):
+              return S.run(argv, check=check, stdout=S.PIPE, stderr=S.PIPE, text=True, timeout=timeout)
+          
+          
+          def ctl(*args, check=True):
+              return command(['sudo', '-n', 'systemctl', *args], check=check)
+          
+          
+          def membership():
+              rows = P.Path('/proc/self/cgroup').read_text().splitlines()
+              return ROOT / next(x[3:] for x in rows if x.startswith('0::')).lstrip('/')
+          
+          
+          def chain(path):
+              path = path.resolve()
+              assert path == ROOT or ROOT in path.parents
+              while True:
+                  yield path
+                  if path == ROOT:
+                      break
+                  path = path.parent
+          
+          
+          def retained_terminal(unit, terminal, cg):
+              if not unit or not terminal: return False
+              try: row = json.loads(P.Path(terminal).read_text())
+              except FileNotFoundError: return False
+              info = properties(unit)
+              return (row.get('cgroup') == str(cg) and isinstance(row.get('result'), dict)
+                      and bool(row['result'].get('SERVICE_RESULT'))
+                      and set(row['result']) == {'SERVICE_RESULT', 'EXIT_CODE', 'EXIT_STATUS'}
+                      and info.get('LoadState') in ('loaded', 'not-found')
+                      and info.get('ActiveState') in ('inactive', 'failed'))
+          
+          
+          def values(cg, unit=None, terminal=None):
+              try:
+                  cg.stat()
+                  result = {k: (cg/k).read_text().strip() for k in KEYS if (cg/k).exists()}
+                  # Detect removal between stat and the per-file existence checks too.
+                  cg.stat()
+                  return result
+              except FileNotFoundError:
+                  if not retained_terminal(unit, terminal, cg): raise
+                  return {'unavailable': 'cgroup removed after retained terminal result; manager confirms stopped'}
+          
+          
+          def available(paths):
+              mem = {k: int(v.split()[0])*1024 for k, v in
+                     (line.split(':', 1) for line in P.Path('/proc/meminfo').read_text().splitlines())}
+              ram = min(mem['MemTotal'], mem['MemAvailable'])
+              cpus = float(len(os.sched_getaffinity(0)))
+              swap = mem['SwapFree']
+              for cg in {p for path in paths for p in chain(path)}:
+                  for limit, current, kind in [('memory.max', 'memory.current', 'ram'),
+                                               ('memory.swap.max', 'memory.swap.current', 'swap')]:
+                      if (cg/limit).exists() and (cg/limit).read_text().strip() != 'max':
+                          left = max(0, int((cg/limit).read_text()) - int((cg/current).read_text()))
+                          if kind == 'ram': ram = min(ram, left)
+                          else: swap = min(swap, left)
+                  if (cg/'cpuset.cpus.effective').exists():
+                      spec = (cg/'cpuset.cpus.effective').read_text().strip()
+                      count = sum(int(part.split('-')[-1])-int(part.split('-')[0])+1 for part in spec.split(',') if part)
+                      if count: cpus = min(cpus, count)
+                  if (cg/'cpu.max').exists():
+                      quota, period = (cg/'cpu.max').read_text().split()
+                      if quota != 'max': cpus = min(cpus, int(quota)/int(period))
+              return mem, ram, cpus, swap
+          
+          
+          def limits():
+              assert (ROOT/'cgroup.controllers').exists(), 'cgroup v2 unavailable'
+              assert {'memory', 'cpu'} <= set((ROOT/'cgroup.controllers').read_text().split())
+              assert P.Path('/run/systemd/system').is_dir(), 'system systemd unavailable'
+              command(['sudo', '-n', 'true'])
+              mem, ram, cpus, swap = available([membership(), ROOT/'system.slice'])
+              reserve = max(2*GIB, mem['MemTotal']//4)
+              maximum = (int((ram-reserve)*.9)//(1024**2))*(1024**2)
+              assert maximum >= GIB//2, 'insufficient observed RAM after supervisor reserve'
+              assert cpus > 1, 'cannot reserve one CPU of quota for host'
+              disk = shutil.disk_usage(TEMP)
+              disk_floor = max(4*GIB, min(16*GIB, disk.total//10))
+              assert disk.free > disk_floor+2*GIB, 'insufficient disk headroom'
+              assert E.stat().st_dev == TEMP.stat().st_dev, 'capture/work disk mismatch'
+              quota = math.floor((cpus-1)*100)
+              return {'memory': maximum, 'high': maximum*3//4, 'swap': min(GIB, swap//2),
+                      'quota_percent': quota, 'reserve_ram': reserve, 'disk_floor': disk_floor,
+                      'observed': {'mem_total': mem['MemTotal'], 'mem_available': mem['MemAvailable'],
+                                   'effective_ram_available': ram, 'effective_cpus': cpus,
+                                   'effective_swap_free': swap, 'disk_free': disk.free}}
+          
+          
+          def admit_capacity(budget, label):
+              # Supplied retained effective failure envelope, not an inference about the lost hosted run.
+              prior = 16*GIB
+              minimum = prior+GIB
+              usable = budget['memory']+budget['swap']
+              needed_swap = max(0, minimum-budget['memory'])
+              observed = budget['observed']
+              added_swap = max(0, 2*needed_swap-observed['effective_swap_free'])
+              disk_room = max(0, observed['disk_free']-budget['disk_floor']-3*GIB)
+              evidence = {'prior_effective_failure_bytes': prior, 'prior_source': 'retained executor confirmed 16 GiB OOM; not lost hosted run',
+                          'minimum_admission_bytes': minimum, 'child_ram_bytes': budget['memory'],
+                          'child_swap_bytes': budget['swap'], 'usable_child_bytes': usable,
+                          'reserve_ram_bytes': budget['reserve_ram'], 'admitted': usable >= minimum,
+                          'claim': 'larger budget only; neither sufficiency nor completion is established',
+                          'overflow_option': {'provisioning': 'not attempted or authorized by this carrier',
+                              'required_child_swap_bytes': needed_swap,
+                              'additional_host_swap_bytes_under_half_free_policy': added_swap,
+                              'disk_bytes_after_floor_capture_and_work_reserves': disk_room,
+                              'disk_arithmetic_fits': added_swap <= disk_room,
+                              'unverified_requirements': ['explicitly revise current 1 GiB child swap cap',
+                                  'filesystem supports a fully allocated swap file', 'swapon succeeds and is read back',
+                                  'ancestor swap limits permit the required budget',
+                                  'recompute free disk/RAM/swap after provisioning and preserve all reserves']}}
+              save(E/('capacity-'+label+'.json'), evidence)
+              print('CAPACITY '+json.dumps(evidence), flush=True)
+              assert evidence['admitted'], 'capacity blocker: usable child RAM+swap below 17 GiB admission minimum; no producer attempted'
+              return evidence
+          
+          
+          def child():
+              # Only this wait/exec shim and its descendants are inside the limited unit.
+              config = json.loads(P.Path(sys.argv[2]).read_text())
+              gate = P.Path(config['gate'])
+              end = time.monotonic()+30
+              while not gate.exists():
+                  if time.monotonic() > end: raise SystemExit(125)
+                  time.sleep(.05)
+              os.execvpe(config['argv'][0], config['argv'], config['env'])
+          
+          
+          def post():
+              # Executed after child cleanup, before the cgroup disappears. No env dump.
+              save(P.Path(sys.argv[2]), {'time': time.time(), 'cgroup': str(membership()),
+                   'values': values(membership()),
+                   'result': {k: os.environ.get(k) for k in ('SERVICE_RESULT', 'EXIT_CODE', 'EXIT_STATUS')}})
+          
+          
+          def properties(unit):
+              p = ctl('show', unit, '--property=LoadState,ActiveState,SubState,ControlGroup,MainPID,Result,ExecMainCode,ExecMainStatus,User,Group,KillMode,Restart,OOMPolicy', check=False)
+              return dict(line.split('=', 1) for line in p.stdout.splitlines() if '=' in line)
+          
+          
+          def empty(cg, unit=None, terminal=None):
+              try:
+                  return dict(line.split() for line in (cg/'cgroup.events').read_text().splitlines()).get('populated') == '0'
+              except FileNotFoundError:
+                  if not retained_terminal(unit, terminal, cg): raise
+                  return True
+          
+          
+          def cleanup_one(record):
+              unit = record['unit']; cg = P.Path(record['cgroup']) if record.get('cgroup') else None
+              ctl('stop', unit, check=False)
+              info = properties(unit)
+              # An absent/unknown path is not evidence of emptiness of a running service.
+              if cg is None and info.get('ControlGroup'): cg = ROOT/info['ControlGroup'].lstrip('/')
+              quiet = (cg is None or empty(cg, unit, record.get('terminal'))) and info.get('LoadState') in ('loaded', 'not-found') and info.get('ActiveState') in ('inactive', 'failed')
+              assert quiet, 'unit not confirmed stopped/empty: '+unit
+              return {'unit': unit, 'empty': True, 'properties': info}
+          
+          
+          def cleanup_all():
+              results = []
+              for path in sorted(STATE.glob('*.registry.json')):
+                  results.append(cleanup_one(json.loads(path.read_text())))
+              # A small real disk reserve is released only after every unit is confirmed empty.
+              (STATE/'capture.reserve').unlink(missing_ok=True)
+              save(E/'unit-cleanup.json', results)
+              return results
+          
+          
+          def run_unit(label, argv, cwd, env=None, probe=False):
+              budget = limits()
+              if probe: budget.update(memory=32*1024**2, high=24*1024**2, swap=0, quota_percent=50)
+              else: admit_capacity(budget, label)
+              remaining = int(os.environ['PRODUCER_DEADLINE'])-int(time.time())
+              assert remaining > 60, 'no producer time left'
+              runtime = min(25, remaining-45) if probe else remaining-45
+              unit = 'lexlean-'+os.environ['GITHUB_RUN_ID']+'-'+os.environ['GITHUB_RUN_ATTEMPT']+'-'+label+'.service'
+              STATE.mkdir(exist_ok=True)
+              path = STATE/(label+'.json'); gate = STATE/(label+'.go')
+              assert not path.exists() and not gate.exists(), 'no retry within a job'
+              # Explicit non-secret environment, including native tool paths; never inherit tokens.
+              names = ('HOME', 'PATH', 'USER', 'LOGNAME', 'LANG', 'LC_ALL', 'TMPDIR', 'RUSTUP_HOME',
+                       'CARGO_HOME', 'CARGO_TARGET_DIR', 'CARGO_INCREMENTAL', 'CARGO_BUILD_JOBS',
+                       'RUST_TEST_THREADS', 'LEXLEAN_VERIFY_WIDTH', 'LEXLEAN_CI_TELEMETRY',
+                       'CARGO_NET_OFFLINE', 'LEXLEAN_EXAMPLES_PART')
+              child_env = {k: (env or os.environ)[k] for k in names if k in (env or os.environ)}
+              save(path, {'argv': argv, 'env': child_env, 'gate': str(gate)})
+              path.chmod(0o600)
+              terminal = E/(label+'-terminal.json'); registry = STATE/(label+'.registry.json')
+              record = {'unit': unit, 'cgroup': None, 'terminal': str(terminal)}; save(registry, record)
+              props = {'Type': 'exec', 'User': str(os.getuid()), 'Group': str(os.getgid()),
+                       'WorkingDirectory': str(cwd), 'Restart': 'no', 'KillMode': 'control-group',
+                       'OOMPolicy': 'kill', 'MemoryAccounting': 'yes', 'CPUAccounting': 'yes',
+                       'MemoryHigh': str(budget['high']), 'MemoryMax': str(budget['memory']),
+                       'MemorySwapMax': str(budget['swap']), 'CPUQuota': str(budget['quota_percent'])+'%',
+                       'CPUQuotaPeriodSec': '100ms', 'TimeoutStartSec': '30s', 'TimeoutStopSec': '15s',
+                       'RuntimeMaxSec': str(runtime)+'s', 'SendSIGKILL': 'yes', 'NoNewPrivileges': 'yes',
+                       'ExecStopPost': '/usr/bin/python3 '+str(P.Path(__file__).resolve())+' post '+str(terminal)}
+              # ExecStopPost paths are parsed by systemd, so reject syntax rather than interpolate it.
+              for val in (str(P.Path(__file__).resolve()), str(terminal), str(cwd)):
+                  assert all(c.isalnum() or c in '/._-' for c in val), 'unsafe systemd property path'
+              args = ['sudo', '-n', 'systemd-run', '--unit='+unit, '--quiet', '--pipe', '--wait', '--expand-environment=no']
+              args += ['--setenv=RUNNER_TEMP='+str(TEMP), '--setenv=GITHUB_WORKSPACE='+str(E.parent)]
+              args += ['--property='+k+'='+v for k, v in props.items()]
+              args += ['/usr/bin/python3', str(P.Path(__file__).resolve()), 'child', str(path)]
+              proc = S.Popen(args, stdin=S.DEVNULL, stdout=S.PIPE, stderr=S.STDOUT)
+              selector = selectors.DefaultSelector(); selector.register(proc.stdout, selectors.EVENT_READ)
+              cg = None; released = False; reason = None; started = time.monotonic(); last = 0; written = 0
+              summary = {'unit': unit, 'limits': budget, 'supervisor_pid': os.getpid(), 'status': 'starting'}
+              save(E/(label+'-unit.json'), summary)
+              try:
+                  with (E/(label+'.log')).open('wb') as log, (E/(label+'-resources.jsonl')).open('a') as samples:
+                      while True:
+                          for key, _ in selector.select(.2):
+                              data = os.read(key.fd, 65536)
+                              if data:
+                                  sys.stdout.buffer.write(data); sys.stdout.buffer.flush()
+                                  keep = data[:max(0, 64*1024**2-written)]
+                                  log.write(keep); log.flush(); written += len(keep)
+                              else: selector.unregister(key.fileobj)
+                          now = time.monotonic()
+                          if not released:
+                              info = properties(unit)
+                              if info.get('ControlGroup') and int(info.get('MainPID', '0')):
+                                  cg = ROOT/info['ControlGroup'].lstrip('/')
+                                  record['cgroup'] = str(cg); save(registry, record)
+                                  observed = values(cg)
+                                  assert int(observed['memory.max']) == budget['memory']
+                                  assert int(observed['memory.high']) == budget['high']
+                                  assert int(observed['memory.swap.max']) == budget['swap']
+                                  assert observed['memory.oom.group'] == '1'
+                                  q, period = map(int, observed['cpu.max'].split())
+                                  assert period == 100000 and q == budget['quota_percent']*1000
+                                  assert info['User'] in (str(os.getuid()), os.environ['USER'])
+                                  assert info['Group'] in (str(os.getgid()), command(['id', '-gn']).stdout.strip())
+                                  assert info['Restart'] == 'no' and info['KillMode'] == 'control-group' and info['OOMPolicy'] == 'kill'
+                                  assert membership() != cg and cg not in membership().parents
+                                  # Recheck actual ancestors, excluding this unit's own imposed cap.
+                                  mem, ram, cpus, swap = available([membership(), cg.parent])
+                                  assert ram >= budget['memory']+budget['reserve_ram'] if not probe else ram > budget['reserve_ram']
+                                  assert cpus >= budget['quota_percent']/100+(.5 if probe else 1)
+                                  assert swap >= budget['swap']
+                                  summary.update(status='verified', cgroup=str(cg))
+                                  summary['readback'] = observed
+                                  save(E/(label+'-unit.json'), summary)
+                                  gate.touch(); released = True
+                              elif now-started > 20 or proc.poll() is not None:
+                                  raise RuntimeError('unit unavailable before gate release')
+                          if now-last >= 5:
+                              row = {'time': time.time(), 'unit': unit, 'values': values(cg, unit, terminal) if cg else {},
+                                     'disk_free': shutil.disk_usage(TEMP).free}
+                              samples.write(json.dumps(row)+'\n'); samples.flush()
+                              print('RESOURCE '+json.dumps(row), flush=True); last = now
+                          if shutil.disk_usage(TEMP).free < budget['disk_floor']:
+                              reason = 'disk-headroom'; raise RuntimeError(reason)
+                          if now-started > runtime+20:
+                              reason = 'supervisor-timeout'; raise TimeoutError(reason)
+                          if proc.poll() is not None and not selector.get_map(): break
+                  rc = proc.wait(timeout=1)
+                  terminal_result = json.loads(terminal.read_text())
+                  summary.update(status='finished', systemd_run_exit=rc, terminal=terminal_result,
+                                 log_bytes_retained=written, log_cap_bytes=64*1024**2)
+                  save(E/(label+'-unit.json'), summary)
+                  return rc, terminal_result
+              except BaseException as err:
+                  summary.update(status='interrupted', reason=reason or repr(err)); save(E/(label+'-unit.json'), summary)
+                  raise
+              finally:
+                  # Stop the entire service, not just its systemd-run client. Verify before capture.
+                  try: save(E/(label+'-cleanup.json'), cleanup_one(record))
+                  finally:
+                      if proc.poll() is None:
+                          proc.terminate()
+                          try: proc.wait(timeout=5)
+                          except S.TimeoutExpired: proc.kill(); proc.wait(timeout=5)
+                      selector.close(); proc.stdout.close()
+                      path.unlink(missing_ok=True); gate.unlink(missing_ok=True)
+          
+          
+          def checked(label, argv, cwd):
+              rc, terminal = run_unit(label, argv, cwd)
+              result = terminal['result']
+              if rc or result != {'SERVICE_RESULT': 'success', 'EXIT_CODE': 'exited', 'EXIT_STATUS': '0'}:
+                  raise RuntimeError(label+' child failed: '+json.dumps({'client_exit': rc, 'child': result}))
+          
+          
+          def preflight():
+              E.mkdir(exist_ok=True); STATE.mkdir(exist_ok=True)
+              b = limits()
+              b['systemd_version'] = command(['systemd-run', '--version']).stdout
+              b['kernel_release'] = os.uname().release
+              b['ancestor_readback'] = {str(cg): values(cg) for path in [membership(), ROOT/'system.slice'] for cg in chain(path)}
+              save(E/'host-budget.json', b)
+              admit_capacity(b, 'preflight')
+              command(['fallocate', '-l', str(GIB), str(STATE/'capture.reserve')])
+              # Bounded 128 MiB attempted allocation against a verified 32 MiB/no-swap child cap.
+              code = 'x=[]\nfor i in range(128):\n x.append(bytearray(1024*1024))\n'
+              rc, terminal = run_unit('probe', ['/usr/bin/python3', '-c', code], TEMP, probe=True)
+              result = terminal['result']; events = dict(line.split() for line in terminal['values']['memory.events'].splitlines())
+              assert rc != 0 and result['SERVICE_RESULT'] == 'oom-kill'
+              assert result['EXIT_CODE'] == 'killed' and result['EXIT_STATUS'] in ('KILL', '9')
+              assert int(events['oom_kill']) >= 1
+              save(E/'probe-passed.json', {'passed': True, 'supervisor_alive': True, 'supervisor_pid': os.getpid(),
+                                         'time': time.time(), 'child': result, 'events': events})
+              print('PREFLIGHT PASS: bounded child OOM; supervisor survived; unit empty', flush=True)
+          
+          
+          if __name__ == '__main__':
+              if sys.argv[1] == 'child': child()
+              elif sys.argv[1] == 'post': post()
+              elif sys.argv[1] == 'preflight': preflight()
+              elif sys.argv[1] == 'cleanup': cleanup_all()
+              else: raise SystemExit('unknown operation')
+          CONTAINMENT
+          python3 "$RUNNER_TEMP/lexlean-containment.py" preflight
+      - name: Retain preflight evidence before producer
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: native-${{ inputs.stage }}-preflight
+          path: |
+            evidence/host-budget.json
+            evidence/capacity-*.json
+            evidence/probe*
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333
+        if: inputs.stage == 'verify'
+        with:
+          name: native-export-products
+          path: incoming
+      - name: Install native pinned tools (one attempt)
+        working-directory: ${{ runner.temp }}/work
+        run: |
+          set -euo pipefail
+          rustup toolchain install
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+      - uses: taiki-e/install-action@b6b84cf49ebfe0176417bdce007c624f0db37f20
+        with:
+          tool: just
+      - name: Guard and run exactly one owning recipe
+        id: run
+        timeout-minutes: 335
+        shell: bash
+        run: |
+          set -euo pipefail
+          remaining=$(( PRODUCER_DEADLINE - $(date +%s) ))
+          if (( remaining <= 0 )); then
+            printf '{"status":"interrupted","reason":"deadline exhausted before producer"}\n' > evidence/supervisor.json
+            exit 124
+          fi
+          set +e
+          timeout --signal=TERM --kill-after=30s "${remaining}s" python3 - <<'PY'
+          import os, pathlib as P, subprocess as S, hashlib as H, json, time, threading, tarfile, stat
+          import importlib.util, signal
+          spec=importlib.util.spec_from_file_location('containment',P.Path(os.environ['RUNNER_TEMP'])/'lexlean-containment.py')
+          contained=importlib.util.module_from_spec(spec); spec.loader.exec_module(contained)
+          assert json.loads((P.Path('evidence')/'probe-passed.json').read_text())['passed'] is True
+          def terminated(signum,frame): raise TimeoutError('supervisor received signal '+str(signum))
+          signal.signal(signal.SIGTERM,terminated)
+          w=P.Path(os.environ['RUNNER_TEMP'])/'work'; e=P.Path('evidence').resolve()
+          e.mkdir(exist_ok=True); stage=os.environ['STAGE']; assert stage in ('export','verify')
+          def call(*a): return S.check_output(a,cwd=w).decode().strip()
+          def digest(p): return H.sha256(P.Path(p).read_bytes()).hexdigest()
+          def snap():
+              names=call('git','ls-files','--cached','--others','--exclude-standard','-z').split('\0')
+              return {n:H.sha256(os.readlink(w/n).encode() if (w/n).is_symlink() else (w/n).read_bytes()).hexdigest() for n in names if n and (w/n).exists()}
+          def save(n,v): (e/n).write_text(json.dumps(v,indent=2,sort_keys=True)+'\n')
+          def resources():
+              cg=P.Path('/sys/fs/cgroup'); membership=P.Path('/proc/self/cgroup').read_text()
+              rel=next((x.split(':',2)[2] for x in membership.splitlines() if x.startswith('0::')), '/')
+              nested=cg/rel.lstrip('/'); cg=nested if (nested/'memory.max').exists() else cg
+              return {'time':time.time(),'cgroup_path':str(cg),'membership':membership,'meminfo':P.Path('/proc/meminfo').read_text(),
+                'cgroup':{n:(cg/n).read_text() for n in ['memory.max','memory.high','memory.current','memory.peak','memory.events','memory.swap.max','memory.swap.current'] if (cg/n).exists()},
+                'disk':call('df','-B1',str(w)),'swap':call('swapon','--show','--bytes'),
+                'processes':call('ps','-eo','pid,ppid,stat,etimes,rss,vsz,comm')}
+          projects=[str(p.relative_to(w)) for p in sorted((w/'examples').iterdir()) if p.is_dir()]+['compiler','stdlib','std-models','std-reasoning','kappa','bootstrap']
+          assert len(projects)==24
+          def allowed(p,kind):
+              if kind=='export': return any(p.startswith('tests/production-export/'+n+'/packages/') for n in ['production','production-coverage','stdlib','bootstrap','helpdesk'])
+              return any(p.startswith(n+'/expected/verify/') for n in projects if n!='examples/production')
+          base=snap(); save('base-inputs.json',base)
+          def semantic_inventory():
+              result={}
+              def visit(path):
+                  info=path.lstat(); mode=stat.S_IMODE(info.st_mode)
+                  name=str(path.relative_to(w))
+                  if stat.S_ISLNK(info.st_mode): row={'type':'symlink','mode':mode,'target':os.readlink(path)}
+                  elif stat.S_ISREG(info.st_mode): row={'type':'file','mode':mode,'sha256':digest(path)}
+                  elif stat.S_ISDIR(info.st_mode): row={'type':'directory','mode':mode}
+                  else: raise RuntimeError('unsupported semantic file type: '+name)
+                  result[name]=row
+                  if row['type']=='directory':
+                      for child in sorted(path.iterdir()): visit(child)
+              for root in ['language','schemas','tests/golden/axiom-parser','tests/golden/canonical-json']: visit(w/root)
+              return result
+          semantic=semantic_inventory()
+          assert sum(v['type']=='file' for v in semantic.values())==906
+          assert all(v['type']!='symlink' for v in semantic.values())
+          save('semantic-inputs.json',semantic)
+          linked=w/'crates/lexlean/sha256_package.rs'; linked_hash=digest(linked)
+          production={str(p.relative_to(w)):digest(p) for p in (w/'examples/production/expected/verify').rglob('*') if p.is_file()}
+          def protected():
+              assert semantic_inventory()==semantic
+              assert digest(linked)==linked_hash
+              assert production=={str(p.relative_to(w)):digest(p) for p in (w/'examples/production/expected/verify').rglob('*') if p.is_file()}
+          if stage=='verify':
+              patch=P.Path('incoming/products.patch').resolve()
+              assert digest(patch)==os.environ['EXPORT_SHA256']
+              S.run(['git','apply','--index',str(patch)],cwd=w,check=True)
+              assert call('git','write-tree')==os.environ['EXPORT_TREE']
+              inherited=snap(); assert all(allowed(p,'export') for p in base.keys()|inherited.keys() if base.get(p)!=inherited.get(p))
+              protected()
+          stage_tree=call('git','write-tree')
+          start=snap(); save('stage-inputs.json',start); save('resources-before.json',resources())
+          receipt={'input':os.environ['INPUT'],'tree':os.environ['TREE'],'carrier':os.environ['CARRIER'],
+            'run':os.environ['GITHUB_RUN_ID'],'attempt':os.environ['GITHUB_RUN_ATTEMPT'],
+            'stage':stage,'stage_input_tree':stage_tree,'deadline_epoch':os.environ['PRODUCER_DEADLINE'],'export_sha256':os.environ['EXPORT_SHA256'],'export_tree':os.environ['EXPORT_TREE'],
+            'cargo_lock':digest(w/'Cargo.lock'),'status':'setup'}
+          save('receipt.json',receipt)
+          stop=threading.Event()
+          def sample():
+              with (e/'resources.jsonl').open('a') as f:
+                  while not stop.is_set(): f.write(json.dumps(resources())+'\n'); f.flush(); stop.wait(5)
+          monitor=threading.Thread(target=sample); monitor.start()
+          try:
+              contained.checked('fetch',['cargo','fetch','--locked'],w)
+              os.environ['CARGO_NET_OFFLINE']='true'
+              contained.checked('build',['cargo','build','--locked','-p','lexlean','--bin','lexlean'],w)
+              binary=P.Path(os.environ['CARGO_TARGET_DIR'])/'debug/lexlean'
+              identity=call(str(binary),'--version'); save('compiler.json',{'sha256':digest(binary),'version':identity})
+              for h in ['2c86ef849ec7b6e7cbae927ddf49126d781ce5003c7ecad5c379946c8169ee4c','e5f20a7b75f37d979fade759a4873fb5a029be5128dd5689bb9754a4d0b203a5','59f64efe727898bcf6a337630c38eb4ea7ffc08cd83a49a0ea669c61c3b23587']: assert h in identity
+              tool=P.Path.home()/'.elan/toolchains/leanprover--lean4---v4.32.2'
+              save('tools.json',{'lean_root':str(tool.resolve(strict=True)),'lean_hashes':{n:digest(tool/'bin'/n) for n in ['lean','lake','leanchecker']},'rust':call('rustc','-vV'),'cargo':call('cargo','-V'),'rust_hashes':{n:digest(call('rustup','which',n)) for n in ['rustc','cargo','rustfmt','clippy-driver']}})
+              assert [digest(tool/'bin'/n) for n in ['lean','lake','leanchecker']]==['e8baaa71855a616dc351028f3ad2200051b0671f423a1696a100e809302d5550','60330ab6f07dce20f3fa9ebb08e8b984ea9549eac172afeb15d9d2227060e2b3','c7c51e296d28dd443ed60f9414feef41253ede89dea76dbb2adde29768c3ed5f']
+              assert 'rustc 1.97.1 ' in call('rustc','-V'); assert '4.32.2' in call(str(tool/'bin/lean'),'--version')
+              protected(); assert snap()==start
+              if stage=='verify': os.environ['LEXLEAN_EXAMPLES_PART']='without:production'
+              recipe='production-export-write' if stage=='export' else 'verify-write'
+              receipt.update(status='running',command=['just',recipe],started=time.time()); save('receipt.json',receipt)
+              rc,child=contained.run_unit('writer',['/usr/bin/time','-v','-o',str(e/'writer-time.txt'),'just',recipe],w)
+              receipt.update(exit=rc,child=child,seconds=time.time()-receipt['started'])
+              assert rc==0 and child['result']=={'SERVICE_RESULT':'success','EXIT_CODE':'exited','EXIT_STATUS':'0'}
+              protected(); end=snap(); save('stage-outputs.json',end)
+              changed=[p for p in start.keys()|end.keys() if start.get(p)!=end.get(p)]
+              assert all(allowed(p,stage) for p in changed); save('changed-paths.json',sorted(changed))
+              S.run(['git','add','-A'],cwd=w,check=True)
+              def staged_scope(boundary,kinds,label):
+                  raw=S.check_output(['git','diff','--cached','--raw','-z','--no-renames',boundary],cwd=w)
+                  fields=raw.split(b'\0'); rows=[]; i=0
+                  while i<len(fields) and fields[i]:
+                      header=fields[i].decode().split(); path=fields[i+1].decode(); i+=2
+                      old_mode=header[0][1:]; new_mode=header[1]
+                      rows.append({'path':path,'old_mode':old_mode,'new_mode':new_mode,'status':header[4]})
+                  save(label,rows)
+                  assert all(any(allowed(row['path'],kind) for kind in kinds) for row in rows), label
+                  assert all(row['new_mode'] in ('000000','100644','100755') for row in rows), label
+              staged_scope(stage_tree,[stage],'staged-stage-diff.json')
+              staged_scope(os.environ['INPUT'],['export'] if stage=='export' else ['export','verify'],'staged-total-diff.json')
+              protected()
+              patch=S.check_output(['git','diff','--cached','--binary',os.environ['INPUT']],cwd=w)
+              (e/'products.patch').write_bytes(patch); tree=call('git','write-tree')
+              receipt.update(status='passed',product_tree=tree,patch_sha256=digest(e/'products.patch'))
+              with open(os.environ['GITHUB_OUTPUT'],'a') as f: f.write('patch-sha256='+receipt['patch_sha256']+'\nproduct-tree='+tree+'\n')
+          except BaseException as err:
+              receipt.update(status='failed',error=repr(err)); raise
+          finally:
+              stop.set(); monitor.join(); save('resources-after.json',resources()); save('receipt.json',receipt)
+              contained.cleanup_all()
+              final=snap(); save('final-inputs.json',final)
+              with tarfile.open(e/'partial-files.tar.gz','w:gz') as archive:
+                  for name in sorted(start.keys()|final.keys()):
+                      if start.get(name)!=final.get(name) and (w/name).exists(): archive.add(w/name,arcname=name,recursive=False)
+              (e/'partial.patch').write_bytes(S.check_output(['git','diff','--binary','HEAD'],cwd=w))
+          PY
+          rc=$?
+          python3 "$RUNNER_TEMP/lexlean-containment.py" cleanup
+          cleanup_rc=$?
+          if (( cleanup_rc != 0 )); then rc=125; fi
+          printf '{"supervisor_exit":%s,"finished_epoch":%s}\n' "$rc" "$(date +%s)" > evidence/supervisor.json
+          exit "$rc"
+      - name: Capture terminal or interrupted state independently
+        if: always()
+        timeout-minutes: 10
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          # No output capture while any registered child may still be running.
+          if [[ -f "$RUNNER_TEMP/lexlean-containment.py" ]]; then
+            python3 "$RUNNER_TEMP/lexlean-containment.py" cleanup
+          fi
+          python3 - <<'PY'
+          import os, pathlib as P, subprocess as S, json, time, tarfile
+          e=P.Path('evidence'); w=P.Path(os.environ['RUNNER_TEMP'])/'work'
+          receipt=e/'receipt.json'
+          try: r=json.loads(receipt.read_text())
+          except (OSError,ValueError): r={'status':'interrupted','reason':'no valid producer receipt'}
+          if r.get('status') not in ('passed','failed','interrupted'):
+              r.update(status='interrupted',reason='producer has no terminal outcome')
+          try: supervisor=json.loads((e/'supervisor.json').read_text())
+          except (OSError,ValueError): supervisor={}
+          accepted=r.get('status')=='passed' and supervisor.get('supervisor_exit')==0
+          if r.get('status')=='passed' and not accepted:
+              r.update(status='interrupted',reason='success not confirmed by supervisor')
+          (e/'capture-status.json').write_text(json.dumps({'observed_epoch':time.time(),'producer_receipt':r,'supervisor':supervisor,'accepted':accepted})+'\n')
+          def capture(name,argv):
+              with (e/name).open('wb') as f:
+                  try:
+                      p=S.run(argv,cwd=w if w.exists() else None,stdout=f,stderr=S.STDOUT,timeout=60)
+                      return p.returncode
+                  except Exception as err: f.write(repr(err).encode()); return -1
+          capture('capture-processes.txt',['ps','-eo','pid,ppid,stat,etimes,rss,vsz,comm'])
+          capture('capture-memory.txt',['free','-b'])
+          capture('capture-swap.txt',['swapon','--show','--bytes'])
+          capture('capture-disk.txt',['df','-B1'])
+          cg=P.Path('/sys/fs/cgroup'); membership=P.Path('/proc/self/cgroup').read_text()
+          rel=next((x.split(':',2)[2] for x in membership.splitlines() if x.startswith('0::')), '/')
+          nested=cg/rel.lstrip('/'); cg=nested if (nested/'memory.max').exists() else cg
+          (e/'capture-cgroup.json').write_text(json.dumps({'path':str(cg),'membership':membership,
+            'values':{n:(cg/n).read_text() for n in ['memory.max','memory.high','memory.current','memory.peak','memory.events','memory.swap.max','memory.swap.current'] if (cg/n).exists()}}))
+          if w.exists():
+              capture('capture-git-status.txt',['git','status','--porcelain=v1'])
+              capture('capture-partial.patch',['git','diff','--binary','HEAD'])
+              try:
+                  tracked=S.check_output(['git','diff','--name-only','-z','HEAD'],cwd=w).split(b'\0')
+                  untracked=S.check_output(['git','ls-files','--others','--exclude-standard','-z'],cwd=w).split(b'\0')
+                  with tarfile.open(e/'capture-partial-files.tar.gz','w:gz') as archive:
+                      for raw in sorted(set(tracked+untracked)-{b''}):
+                          name=os.fsdecode(raw); path=w/name
+                          if path.exists() or path.is_symlink(): archive.add(path,arcname=name,recursive=False)
+              except Exception as err: (e/'capture-error.txt').write_text(repr(err))
+          raise SystemExit(0 if accepted else 1)
+          PY
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: success()
+        with:
+          name: native-${{ inputs.stage }}-products
+          path: evidence/products.patch
+          if-no-files-found: error
+          retention-days: 14
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        if: always()
+        with:
+          name: native-${{ inputs.stage }}-evidence
+          path: evidence
+          if-no-files-found: warn
+          retention-days: 14
