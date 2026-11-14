@@ -1,0 +1,399 @@
+\begin{lexlean}{IrTerm}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{LexiconLse}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: CoreRef,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: CEq, fields: []},
+    {name: CAnd, fields: []},
+    {name: COr, fields: []},
+    {name: CNot, fields: []},
+    {name: CIff, fields: []},
+    {name: CExists, fields: []},
+    {name: CExistsUnique, fields: []}
+  ]
+}
+
+inductive{
+  name: GlobalRef,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: GCore, fields: [CoreRef]},
+    {name: GExternal, fields: [Bytes, Bytes, Bytes, Bytes, Bytes]},
+    {name: GDocument, fields: [Bytes, Bytes, Bytes]},
+    {name: GDefined, fields: [Bytes, Bytes, Bytes]}
+  ]
+}
+
+inductive{
+  name: Term,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TSort, fields: [LexiconLse::Universe]},
+    {name: TLocal, fields: [Nat]},
+    {name: TGlobal, fields: [GlobalRef, LexiconLse::Universe]},
+    {name: TApp, fields: [Term, Term, (List Nat)]},
+    {name: TPi, fields: [Term, Term]},
+    {name: TLam, fields: [Term, Term]},
+    {name: TLet, fields: [Nat, Nat, Bytes, Term, Term, Term]},
+    {name: TNat, fields: [Bytes, Term]},
+    {name: TNil, fields: []},
+    {name: TItem, fields: [Term, Term]},
+    {name: TBind, fields: [Nat, Nat, Bytes, Term, Term]}
+  ]
+}
+
+structure{
+  name: Renumber,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: table, type: (List (Nat * Nat))},
+    {name: next, type: Nat},
+    {name: keepFree, type: Bool}
+  ]
+}
+
+inductive{
+  name: Resolved,
+  type_parameters: [],
+  parameters: [],
+  constructors: [{name: RBound, fields: [Nat]}, {name: RFree, fields: [Nat]}]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: jtext,
+  parameters: [literal : String],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JStr (lit literal)),
+  executable: true
+}
+
+definition{
+  name: member,
+  parameters: [key : String, entry : LexLeanStd.Json::Json, rest : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JMember (lit key) entry rest),
+  executable: true
+}
+
+definition{
+  name: capped,
+  parameters: [number : Nat],
+  result: Nat,
+  body: (if (number <=? 9223372036854775807) then number else 9223372036854775807),
+  executable: true
+}
+
+definition{
+  name: jnat,
+  parameters: [number : Nat],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JInt false (capped number)),
+  executable: true
+}
+
+definition{
+  name: coreName,
+  parameters: [core : CoreRef],
+  result: Bytes,
+  body: (match core
+    | CoreRef.CEq => (lit "eq")
+    | CoreRef.CAnd => (lit "and")
+    | CoreRef.COr => (lit "or")
+    | CoreRef.CNot => (lit "not")
+    | CoreRef.CIff => (lit "iff")
+    | CoreRef.CExists => (lit "exists")
+    | CoreRef.CExistsUnique => (lit "exists-unique")),
+  executable: true
+}
+
+definition{
+  name: universeJson,
+  parameters: [level : LexiconLse::Universe],
+  result: LexLeanStd.Json::Json,
+  body: (match level
+    | LexiconLse::Universe.UNum number => (ctor LexLeanStd.Json::Json.JObj (member "num" (jnat number) (ctor LexLeanStd.Json::Json.JNil)))
+    | LexiconLse::Universe.UVar named => (ctor LexLeanStd.Json::Json.JObj (member "var" (ctor LexLeanStd.Json::Json.JStr named) (ctor LexLeanStd.Json::Json.JNil)))
+    | LexiconLse::Universe.USucc inner => (ctor LexLeanStd.Json::Json.JObj (member "succ" (universeJson inner) (ctor LexLeanStd.Json::Json.JNil)))
+    | LexiconLse::Universe.UMax levels => (ctor LexLeanStd.Json::Json.JObj (member "max" (ctor LexLeanStd.Json::Json.JArr (universeJson levels)) (ctor LexLeanStd.Json::Json.JNil)))
+    | LexiconLse::Universe.UIMax left right => (ctor LexLeanStd.Json::Json.JObj (member "imax" (ctor LexLeanStd.Json::Json.JArr (ctor LexLeanStd.Json::Json.JItem (universeJson left) (ctor LexLeanStd.Json::Json.JItem (universeJson right) (ctor LexLeanStd.Json::Json.JNil)))) (ctor LexLeanStd.Json::Json.JNil)))
+    | LexiconLse::Universe.UNil => (ctor LexLeanStd.Json::Json.JNil)
+    | LexiconLse::Universe.UItem head tail => (ctor LexLeanStd.Json::Json.JItem (universeJson head) (universeJson tail))),
+  executable: true,
+  recursive_argument: level
+}
+
+definition{
+  name: noLevels,
+  parameters: [levels : LexiconLse::Universe],
+  result: Bool,
+  body: (match levels
+    | LexiconLse::Universe.UNil => true
+    | LexiconLse::Universe.UNum number => false
+    | LexiconLse::Universe.UVar named => false
+    | LexiconLse::Universe.USucc inner => false
+    | LexiconLse::Universe.UMax inner => false
+    | LexiconLse::Universe.UIMax left right => false
+    | LexiconLse::Universe.UItem head tail => false),
+  executable: true
+}
+
+definition{
+  name: globalJson,
+  parameters: [global : GlobalRef],
+  result: LexLeanStd.Json::Json,
+  body: (match global
+    | GlobalRef.GCore core => (ctor LexLeanStd.Json::Json.JObj (member "kind" (jtext "core") (member "name" (ctor LexLeanStd.Json::Json.JStr (coreName core)) (ctor LexLeanStd.Json::Json.JNil))))
+    | GlobalRef.GExternal package entry leanModule leanName signature => (ctor LexLeanStd.Json::Json.JObj (member "kind" (jtext "external") (member "entry" (ctor LexLeanStd.Json::Json.JStr entry) (member "lean_module" (ctor LexLeanStd.Json::Json.JStr leanModule) (member "lean_name" (ctor LexLeanStd.Json::Json.JStr leanName) (member "signature_sha256" (ctor LexLeanStd.Json::Json.JStr (LexLeanStd.Numeral::hex signature)) (ctor LexLeanStd.Json::Json.JNil)))))))
+    | GlobalRef.GDocument sourceModule component leanName => (ctor LexLeanStd.Json::Json.JObj (member "kind" (jtext "document") (member "module" (ctor LexLeanStd.Json::Json.JStr sourceModule) (member "component" (ctor LexLeanStd.Json::Json.JStr component) (member "lean_name" (ctor LexLeanStd.Json::Json.JStr leanName) (ctor LexLeanStd.Json::Json.JNil))))))
+    | GlobalRef.GDefined package entry signature => (ctor LexLeanStd.Json::Json.JObj (member "kind" (jtext "defined") (member "entry" (ctor LexLeanStd.Json::Json.JStr entry) (member "signature_sha256" (ctor LexLeanStd.Json::Json.JStr (LexLeanStd.Numeral::hex signature)) (ctor LexLeanStd.Json::Json.JNil)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: lookupLocal,
+  parameters: [table : (List (Nat * Nat)), localId : Nat],
+  result: (Option Nat),
+  body: (prim list_fold (fun [localId] (found : (Option Nat)) (entry : (Nat * Nat)) => (if ((first entry) =? localId) then (ctor Option.some [Nat] (second entry)) else found)) (ctor Option.none [Nat]) table : (Option Nat)),
+  executable: true
+}
+
+definition{
+  name: fresh,
+  parameters: [state : Renumber, localId : Nat],
+  result: (Nat * Renumber),
+  body: ((project state next), (record Renumber {table := (cons (localId, (project state next)) (project state table)), next := ((project state next) + 1), keepFree := (project state keepFree)})),
+  executable: true
+}
+
+definition{
+  name: bind,
+  parameters: [state : Renumber, localId : Nat],
+  result: (Nat * Renumber),
+  body: (match (lookupLocal (project state table) localId)
+    | Option.some index => (index, state)
+    | Option.none => (fresh state localId)),
+  executable: true
+}
+
+definition{
+  name: resolve,
+  parameters: [state : Renumber, localId : Nat],
+  result: (Resolved * Renumber),
+  body: (match (lookupLocal (project state table) localId)
+    | Option.some index => ((ctor Resolved.RBound index), state)
+    | Option.none => (if (project state keepFree) then ((ctor Resolved.RFree localId), state) else (let bound : (Nat * Renumber) := (fresh state localId); ((ctor Resolved.RBound (first bound)), (second bound))))),
+  executable: true
+}
+
+definition{
+  name: hashing,
+  parameters: [],
+  result: Renumber,
+  body: (record Renumber {table := (nil (Nat * Nat)), next := 0, keepFree := false}),
+  executable: true
+}
+
+definition{
+  name: comparing,
+  parameters: [],
+  result: Renumber,
+  body: (record Renumber {table := (nil (Nat * Nat)), next := 0, keepFree := true}),
+  executable: true
+}
+
+definition{
+  name: localJson,
+  parameters: [resolved : Resolved],
+  result: LexLeanStd.Json::Json,
+  body: (match resolved
+    | Resolved.RBound index => (ctor LexLeanStd.Json::Json.JObj (member "k" (jtext "local") (member "id" (jnat index) (ctor LexLeanStd.Json::Json.JNil))))
+    | Resolved.RFree localId => (ctor LexLeanStd.Json::Json.JObj (member "k" (jtext "local") (member "free" (jnat localId) (ctor LexLeanStd.Json::Json.JNil))))),
+  executable: true
+}
+
+definition{
+  name: modeName,
+  parameters: [mode : Nat],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JStr (LexiconLse::modeText mode)),
+  executable: true
+}
+
+definition{
+  name: binderJson,
+  parameters: [index : Nat, mode : Nat, spelling : Bytes, typed : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (ctor LexLeanStd.Json::Json.JObj (member "id" (jnat index) (member "m" (modeName mode) (member "s" (ctor LexLeanStd.Json::Json.JStr spelling) (member "t" typed (ctor LexLeanStd.Json::Json.JNil)))))),
+  executable: true
+}
+
+definition{
+  name: implicitJson,
+  parameters: [implicits : (List Nat)],
+  result: LexLeanStd.Json::Json,
+  body: (prim list_fold (fun (acc : LexLeanStd.Json::Json) (index : Nat) => (ctor LexLeanStd.Json::Json.JItem (jnat index) acc)) (ctor LexLeanStd.Json::Json.JNil) (LexLeanStd.Order::reverseList [Nat] implicits) : LexLeanStd.Json::Json),
+  executable: true
+}
+
+definition{
+  name: appJson,
+  parameters: [
+    function : LexLeanStd.Json::Json,
+    arguments : LexLeanStd.Json::Json,
+    implicits : (List Nat)
+  ],
+  result: LexLeanStd.Json::Json,
+  body: (let tail : LexLeanStd.Json::Json := (match implicits
+    | List.nil => (ctor LexLeanStd.Json::Json.JNil)
+    | List.cons head rest => (member "i" (ctor LexLeanStd.Json::Json.JArr (implicitJson implicits)) (ctor LexLeanStd.Json::Json.JNil))); (ctor LexLeanStd.Json::Json.JObj (member "k" (jtext "app") (member "f" function (member "a" (ctor LexLeanStd.Json::Json.JArr arguments) tail))))),
+  executable: true
+}
+
+definition{
+  name: globalTermJson,
+  parameters: [global : GlobalRef, levels : LexiconLse::Universe],
+  result: LexLeanStd.Json::Json,
+  body: (let tail : LexLeanStd.Json::Json := (if (noLevels levels) then (ctor LexLeanStd.Json::Json.JNil) else (member "u" (ctor LexLeanStd.Json::Json.JArr (universeJson levels)) (ctor LexLeanStd.Json::Json.JNil))); (ctor LexLeanStd.Json::Json.JObj (member "k" (jtext "global") (member "g" (globalJson global) tail)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: termJson,
+  parameters: [term : Term, state : Renumber],
+  result: (LexLeanStd.Json::Json * Renumber),
+  body: (match term
+    | Term.TSort level => ((ctor LexLeanStd.Json::Json.JObj (member "k" (jtext "sort") (member "u" (universeJson level) (ctor LexLeanStd.Json::Json.JNil)))), state)
+    | Term.TLocal localId => (let resolved : (Resolved * Renumber) := (resolve state localId); ((localJson (first resolved)), (second resolved)))
+    | Term.TGlobal global levels => ((globalTermJson global levels), state)
+    | Term.TApp function arguments implicits => (let head : (LexLeanStd.Json::Json * Renumber) := (termJson function state); (let args : (LexLeanStd.Json::Json * Renumber) := (termJson arguments (second head)); ((appJson (first head) (first args) implicits), (second args))))
+    | Term.TPi binders body => (let bound : (LexLeanStd.Json::Json * Renumber) := (termJson binders state); (let inner : (LexLeanStd.Json::Json * Renumber) := (termJson body (second bound)); ((ctor LexLeanStd.Json::Json.JObj (member "k" (jtext "pi") (member "b" (ctor LexLeanStd.Json::Json.JArr (first bound)) (member "v" (first inner) (ctor LexLeanStd.Json::Json.JNil))))), (second inner))))
+    | Term.TLam binders body => (let bound : (LexLeanStd.Json::Json * Renumber) := (termJson binders state); (let inner : (LexLeanStd.Json::Json * Renumber) := (termJson body (second bound)); ((ctor LexLeanStd.Json::Json.JObj (member "k" (jtext "lam") (member "b" (ctor LexLeanStd.Json::Json.JArr (first bound)) (member "v" (first inner) (ctor LexLeanStd.Json::Json.JNil))))), (second inner))))
+    | Term.TLet localId mode spelling typed bound body => (let typeJson : (LexLeanStd.Json::Json * Renumber) := (termJson typed state); (let valueJson : (LexLeanStd.Json::Json * Renumber) := (termJson bound (second typeJson)); (let index : (Nat * Renumber) := (bind (second valueJson) localId); (let inner : (LexLeanStd.Json::Json * Renumber) := (termJson body (second index)); ((ctor LexLeanStd.Json::Json.JObj (member "k" (jtext "let") (member "b" (binderJson (first index) mode spelling (first typeJson)) (member "x" (first valueJson) (member "v" (first inner) (ctor LexLeanStd.Json::Json.JNil)))))), (second inner))))))
+    | Term.TNat decimal expected => (let inner : (LexLeanStd.Json::Json * Renumber) := (termJson expected state); ((ctor LexLeanStd.Json::Json.JObj (member "k" (jtext "nat") (member "d" (ctor LexLeanStd.Json::Json.JStr decimal) (member "t" (first inner) (ctor LexLeanStd.Json::Json.JNil))))), (second inner)))
+    | Term.TNil => ((ctor LexLeanStd.Json::Json.JNil), state)
+    | Term.TItem head tail => (let first_ : (LexLeanStd.Json::Json * Renumber) := (termJson head state); (let rest : (LexLeanStd.Json::Json * Renumber) := (termJson tail (second first_)); ((ctor LexLeanStd.Json::Json.JItem (first first_) (first rest)), (second rest))))
+    | Term.TBind localId mode spelling typed tail => (let typeJson : (LexLeanStd.Json::Json * Renumber) := (termJson typed state); (let index : (Nat * Renumber) := (bind (second typeJson) localId); (let rest : (LexLeanStd.Json::Json * Renumber) := (termJson tail (second index)); ((ctor LexLeanStd.Json::Json.JItem (binderJson (first index) mode spelling (first typeJson)) (first rest)), (second rest)))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: term
+}
+
+definition{
+  name: withoutSpellings,
+  parameters: [value : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (match value
+    | LexLeanStd.Json::Json.JBool flag => (ctor LexLeanStd.Json::Json.JBool flag)
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor LexLeanStd.Json::Json.JInt negative magnitude)
+    | LexLeanStd.Json::Json.JStr text => (ctor LexLeanStd.Json::Json.JStr text)
+    | LexLeanStd.Json::Json.JArr items => (ctor LexLeanStd.Json::Json.JArr (withoutSpellings items))
+    | LexLeanStd.Json::Json.JObj members => (ctor LexLeanStd.Json::Json.JObj (withoutSpellings members))
+    | LexLeanStd.Json::Json.JNil => (ctor LexLeanStd.Json::Json.JNil)
+    | LexLeanStd.Json::Json.JItem element rest => (ctor LexLeanStd.Json::Json.JItem (withoutSpellings element) (withoutSpellings rest))
+    | LexLeanStd.Json::Json.JMember key inner rest => (if (prim equal key (lit "s") : Bool) then (withoutSpellings rest) else (ctor LexLeanStd.Json::Json.JMember key (withoutSpellings inner) (withoutSpellings rest)))),
+  executable: true,
+  recursive_argument: value
+}
+
+definition{
+  name: termText,
+  parameters: [term : Term],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (first (termJson term (hashing)))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: canonicalKey,
+  parameters: [term : Term],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (withoutSpellings (first (termJson term (hashing))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: eqKey,
+  parameters: [term : Term],
+  result: Bytes,
+  body: (LexLeanStd.Json::writeJson (withoutSpellings (first (termJson term (comparing))))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+
+definition{
+  name: nodeCount,
+  parameters: [term : Term],
+  result: Nat,
+  body: (match term
+    | Term.TSort level => 1
+    | Term.TLocal localId => 1
+    | Term.TGlobal global levels => 1
+    | Term.TApp function arguments implicits => ((1 + (nodeCount function)) + (nodeCount arguments))
+    | Term.TPi binders body => ((1 + (nodeCount binders)) + (nodeCount body))
+    | Term.TLam binders body => ((1 + (nodeCount binders)) + (nodeCount body))
+    | Term.TLet localId mode spelling typed bound body => (((1 + (nodeCount typed)) + (nodeCount bound)) + (nodeCount body))
+    | Term.TNat decimal expected => (1 + (nodeCount expected))
+    | Term.TNil => 0
+    | Term.TItem head tail => ((nodeCount head) + (nodeCount tail))
+    | Term.TBind localId mode spelling typed tail => ((nodeCount typed) + (nodeCount tail))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]},
+  recursive_argument: term
+}
+
+definition{
+  name: larger,
+  parameters: [left : Nat, right : Nat],
+  result: Nat,
+  body: (if (left <? right) then right else left),
+  executable: true
+}
+
+definition{
+  name: termDepth,
+  parameters: [term : Term],
+  result: Nat,
+  body: (match term
+    | Term.TSort level => 1
+    | Term.TLocal localId => 1
+    | Term.TGlobal global levels => 1
+    | Term.TApp function arguments implicits => (1 + (larger (termDepth function) (termDepth arguments)))
+    | Term.TPi binders body => (1 + (larger (termDepth binders) (termDepth body)))
+    | Term.TLam binders body => (1 + (larger (termDepth binders) (termDepth body)))
+    | Term.TLet localId mode spelling typed bound body => (1 + (larger (larger (termDepth typed) (termDepth bound)) (termDepth body)))
+    | Term.TNat decimal expected => (1 + (termDepth expected))
+    | Term.TNil => 0
+    | Term.TItem head tail => (larger (termDepth head) (termDepth tail))
+    | Term.TBind localId mode spelling typed tail => (larger (termDepth typed) (termDepth tail))),
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]},
+  recursive_argument: term
+}
+\end{semanticmodule}
+\end{lexlean}

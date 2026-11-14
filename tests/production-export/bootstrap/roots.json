@@ -495,6 +495,46 @@
         "rust-std"
       ],
       "version": "1.0.0"
+    },
+    {
+      "name": "term_text",
+      "root": "LexLeanBoot.IrTerm.termText",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "canonical_key",
+      "root": "LexLeanBoot.IrTerm.canonicalKey",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "eq_key",
+      "root": "LexLeanBoot.IrTerm.eqKey",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "node_count",
+      "root": "LexLeanBoot.IrTerm.nodeCount",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
+    },
+    {
+      "name": "term_depth",
+      "root": "LexLeanBoot.IrTerm.termDepth",
+      "targets": [
+        "rust-std"
+      ],
+      "version": "1.0.0"
     }
   ]
 }

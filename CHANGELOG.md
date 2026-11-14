@@ -79,6 +79,16 @@ workspace carried at those versions without a tag.
   A landing that moves the language-1.2 ID now also updates the constant;
   `RP-10` names the new value when it is stale.
 
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, the maintainer's decision): with `BS-65` the Lean extraction of its
+  production export writes more than the 33,554,432 bytes it configured. A semantic
+  input, so its lock and every package move.
+- The linked term IR in its canonical JSON as language-1.2 source, first slice of the
+  typed IR (SPEC.md §17.23, §17.3, §17.9, `BS-65`, #269; no new diagnostic code, no
+  change to the language-1.2 identity). `termText`, `canonicalKey`, `eqKey`,
+  `nodeCount`, and `termDepth` of `IrTerm` return what `Term::to_json`,
+  `canonical_key`, `eq_key`, `node_count`, and `depth` return, and admit
+  `recursion`. The register is 497 IDs.
 - `RB-24`, the driver of a command root (#271). A `rust-std` root of the type of a
   command's step gets `src/main.rs` beside `src/lib.rs`: a loop, printed from the
   new language-1.2 module `RuntimeHost`, that calls the step and carries out each

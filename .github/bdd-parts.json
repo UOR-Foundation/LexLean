@@ -277,6 +277,9 @@
     ],
     "bootstrap-manifest-text": [
       "BS-34"
+    ],
+    "bootstrap-ir-term": [
+      "BS-65"
     ]
   },
   "targets": {
