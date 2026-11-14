@@ -150,7 +150,7 @@ fn text_option(value: Option<&String>) -> Value {
     option(value.map(|value| text(value)))
 }
 
-fn is_ordinary(declaration: &SemanticDeclaration) -> bool {
+pub(super) fn is_ordinary(declaration: &SemanticDeclaration) -> bool {
     matches!(
         declaration,
         SemanticDeclaration::Structure { .. }
@@ -162,7 +162,7 @@ fn is_ordinary(declaration: &SemanticDeclaration) -> bool {
     )
 }
 
-fn enc_declaration(declaration: &SemanticDeclaration) -> Value {
+pub(super) fn enc_declaration(declaration: &SemanticDeclaration) -> Value {
     match declaration {
         SemanticDeclaration::Structure {
             name,

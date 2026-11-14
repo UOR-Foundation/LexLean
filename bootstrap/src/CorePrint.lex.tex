@@ -1,0 +1,923 @@
+\begin{lexlean}{CorePrint}
+\useglossary{lexlean.std.nat@1.2.0}
+\importmodule{AxiomOutput}
+\importmodule{CoreJson}
+\importmodule{LexLeanStd.Json}
+\importmodule{LexLeanStd.Numeral}
+\importmodule{LexLeanStd.Order}
+\importmodule{LexLeanStd.Text}
+\importmodule{SurfaceDoc}
+\importmodule{SurfaceGeneric}
+\importmodule{SurfaceLex}
+\title{Natural number addition}
+\begin{semanticmodule}
+inductive{
+  name: Tdoc,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: TNil, fields: []},
+    {name: TText, fields: [Bytes]},
+    {name: TSeq, fields: [Tdoc, Tdoc]},
+    {name: TNest, fields: [Nat, Tdoc]},
+    {name: TLine, fields: []},
+    {name: TGroup, fields: [Tdoc]},
+    {name: TVar, fields: [Nat]},
+    {name: TConst, fields: [Bytes, Bytes]},
+    {name: TBind, fields: [Bytes, Tdoc]}
+  ]
+}
+
+inductive{
+  name: Term,
+  type_parameters: [],
+  parameters: [],
+  constructors: [
+    {name: Atom, fields: [Tdoc]},
+    {name: App, fields: [Tdoc, (List Tdoc)]},
+    {name: Prefix, fields: [Tdoc]},
+    {name: Low, fields: [Tdoc]}
+  ]
+}
+
+structure{
+  name: Head,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: head, type: Tdoc}, {name: args, type: (List Tdoc)}]
+}
+
+structure{
+  name: Shown,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: base, type: Bytes}, {name: zero, type: Bool}, {name: count, type: Nat}]
+}
+
+structure{
+  name: Slot,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: index, type: Nat},
+    {name: start, type: Nat},
+    {name: height, type: Nat},
+    {name: uses, type: Nat},
+    {name: term, type: Term}
+  ]
+}
+
+structure{
+  name: Take,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: stack, type: (List Slot)},
+    {name: terms, type: (List Term)},
+    {name: tallest, type: Nat}
+  ]
+}
+
+structure{
+  name: Pass,
+  type_parameters: [],
+  parameters: [],
+  fields: [
+    {name: index, type: Nat},
+    {name: stack, type: (List Slot)},
+    {name: refs, type: (List Nat)},
+    {name: proofs, type: (List Nat)},
+    {name: error, type: (Option Bytes)}
+  ]
+}
+
+structure{
+  name: Zeros,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: cursor, type: Nat}, {name: found, type: Bool}]
+}
+
+definition{
+  name: lit,
+  parameters: [literal : String],
+  result: Bytes,
+  body: (prim utf8_encode literal : Bytes),
+  executable: true
+}
+
+definition{
+  name: cat,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bytes,
+  body: (prim append left right : Bytes),
+  executable: true
+}
+
+definition{
+  name: both,
+  parameters: [left : Bool, right : Bool],
+  result: Bool,
+  body: (if left then right else false),
+  executable: true
+}
+
+definition{
+  name: same,
+  parameters: [left : Bytes, right : Bytes],
+  result: Bool,
+  body: (prim equal left right : Bool),
+  executable: true
+}
+
+definition{
+  name: num,
+  parameters: [number : Nat],
+  result: Bytes,
+  body: (LexLeanStd.Numeral::decimal number),
+  executable: true
+}
+
+definition{
+  name: listed,
+  parameters: [needle : Bytes, items : (List Bytes)],
+  result: Bool,
+  body: (prim list_fold (fun [needle] (found : Bool) (item : Bytes) => (if found then true else (prim equal item needle : Bool))) false items : Bool),
+  executable: true
+}
+
+definition{
+  name: joined,
+  parameters: [pieces : (List Bytes), separator : Bytes],
+  result: Bytes,
+  body: (second (prim list_fold (fun [separator] (state : (Bool * Bytes)) (piece : Bytes) => (false, (if (first state) then piece else (cat (cat (second state) separator) piece)))) (true, (lit "")) pieces : (Bool * Bytes))),
+  executable: true
+}
+
+definition{
+  name: codeAt,
+  parameters: [text : Bytes, position : Nat],
+  result: Nat,
+  body: (match (LexLeanStd.Text::byteAt text position)
+    | Option.some byte => (prim to_nat byte : Nat)
+    | Option.none => 0),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isDigit,
+  parameters: [code : Nat],
+  result: Bool,
+  body: (both (48 <=? code) (code <=? 57)),
+  executable: true
+}
+
+definition{
+  name: isAlpha,
+  parameters: [code : Nat],
+  result: Bool,
+  body: (if (both (65 <=? code) (code <=? 90)) then true else (both (97 <=? code) (code <=? 122))),
+  executable: true
+}
+
+definition{
+  name: nameByte,
+  parameters: [text : Bytes, position : Nat],
+  result: Bool,
+  body: (let code : Nat := (codeAt text position); (if (if (isAlpha code) then true else (isDigit code)) then true else (if (listed (LexLeanStd.Text::sliceOr text position 1) (cons (lit "_") (cons (lit "'") (cons (lit "!") (cons (lit "?") (cons (lit ".") (cons (lit "@") (cons (lit "#") (nil Bytes))))))))) then true else (if (code <? 128) then false else (if (code <? 192) then true else ((AxiomOutput::whiteLength text position) =? 0)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: nameStart,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let code : Nat := (codeAt text 0); (if (isAlpha code) then true else (if (code =? 95) then true else (both (192 <=? code) ((AxiomOutput::whiteLength text 0) =? 0))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: allName,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let stop : Nat := (first (prim iterate_until (fun [text] (position : Nat) => (if (both (position <? (prim length text : Nat)) (nameByte text position)) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))) ((prim length text : Nat) + 1) 0 : (Nat * Bool))); (stop =? (prim length text : Nat))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: digitsEnd,
+  parameters: [text : Bytes, from : Nat],
+  result: Nat,
+  body: (first (prim iterate_until (fun [text] (position : Nat) => (if (both (position <? (prim length text : Nat)) (isDigit (codeAt text position))) then (ctor Option.some [Nat] (position + 1)) else (ctor Option.none [Nat]))) ((prim length text : Nat) + 1) from : (Nat * Bool))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: zeroStep,
+  parameters: [text : Bytes, state : Zeros],
+  result: (Option Zeros),
+  body: (let position : Nat := (project state cursor); (if (if (project state found) then true else ((prim length text : Nat) <=? position)) then (ctor Option.none [Zeros]) else (if (isDigit (codeAt text position)) then (let stop : Nat := (digitsEnd text position); (let before : Nat := (codeAt text (prim subtract position 1 : Nat)); (let continues : Bool := (both (0 <? position) (if (isAlpha before) then true else (if (before =? 95) then true else (before =? 39)))); (ctor Option.some [Zeros] (record Zeros {cursor := stop, found := (both (1 <? (prim subtract stop position : Nat)) (both ((codeAt text position) =? 48) (if continues then false else true)))}))))) else (ctor Option.some [Zeros] (record Zeros {cursor := (position + 1), found := false}))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: redundantZero,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (project (first (prim iterate_until (fun [text] (state : Zeros) => (zeroStep text state)) ((prim length text : Nat) + 1) (record Zeros {cursor := 0, found := false}) : (Zeros * Bool))) found),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: keywords,
+  parameters: [],
+  result: (List Bytes),
+  body: (cons (lit "fun") (cons (lit "let") (cons (lit "have") (cons (lit "proof") (cons (lit "Sort") (cons (lit "proj") (cons (lit "annot") (cons (lit "const") (cons (lit "max") (cons (lit "imax") (cons (lit "true") (cons (lit "false") (cons (lit "bool") (cons (lit "nat") (cons (lit "int") (cons (lit "str") (cons (lit "name") (nil Bytes)))))))))))))))))),
+  executable: true
+}
+
+definition{
+  name: bare,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (both (0 <? (prim length text : Nat)) (both (nameStart text) (both (allName text) (both (if (LexLeanStd.Text::endsWith text (lit ".")) then false else true) (both (if (same text (lit "_")) then false else true) (both (if (listed text (keywords)) then false else true) (if (redundantZero text) then false else true))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: spell,
+  parameters: [text : Bytes],
+  result: Bytes,
+  body: (if (bare text) then text else (SurfaceLex::quoteText text)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: binderName,
+  parameters: [text : Bytes],
+  result: Bytes,
+  body: (if ((prim length text : Nat) =? 0) then (lit "_") else (spell text)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: canonicalNatural,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (both (0 <? (prim length text : Nat)) (both ((digitsEnd text 0) =? (prim length text : Nat)) (if (same text (lit "0")) then true else (if (LexLeanStd.Text::startsWith text (lit "0")) then false else true)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: canonicalInteger,
+  parameters: [text : Bytes],
+  result: Bool,
+  body: (let digits : Bytes := (if (LexLeanStd.Text::startsWith text (lit "-")) then (LexLeanStd.Text::sliceOr text 1 (prim subtract (prim length text : Nat) 1 : Nat)) else text); (both (canonicalNatural digits) (if (same text (lit "-0")) then false else true))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: shownText,
+  parameters: [shown : Shown],
+  result: Bytes,
+  body: (if ((project shown count) =? 0) then (if (project shown zero) then (lit "0") else (project shown base)) else (if (project shown zero) then (num (project shown count)) else (cat (cat (project shown base) (lit "+")) (num (project shown count))))),
+  executable: true
+}
+
+definition{
+  name: levelShown,
+  parameters: [level : CoreJson::Level],
+  result: Shown,
+  body: (match level
+    | CoreJson::Level.LZero => (record Shown {base := (lit ""), zero := true, count := 0})
+    | CoreJson::Level.LParam label => (record Shown {base := (spell label), zero := false, count := 0})
+    | CoreJson::Level.LSucc inner => (let below : Shown := (levelShown inner); (record Shown {base := (project below base), zero := (project below zero), count := ((project below count) + 1)}))
+    | CoreJson::Level.LMax low high => (let left : Shown := (levelShown low); (let right : Shown := (levelShown high); (record Shown {base := (cat (cat (cat (cat (lit "max(") (shownText left)) (lit ", ")) (shownText right)) (lit ")")), zero := false, count := 0})))
+    | CoreJson::Level.LIMax low high => (let left : Shown := (levelShown low); (let right : Shown := (levelShown high); (record Shown {base := (cat (cat (cat (cat (lit "imax(") (shownText left)) (lit ", ")) (shownText right)) (lit ")")), zero := false, count := 0})))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: level
+}
+
+definition{
+  name: levelText,
+  parameters: [level : CoreJson::Level],
+  result: Bytes,
+  body: (shownText (levelShown level)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: levelsText,
+  parameters: [levels : (List CoreJson::Level)],
+  result: Bytes,
+  body: (if ((prim length levels : Nat) =? 0) then (lit "") else (cat (cat (lit ".{") (joined (LexLeanStd.Order::reverseList [Bytes] (prim list_fold (fun (out : (List Bytes)) (level : CoreJson::Level) => (cons (levelText level) out)) (nil Bytes) levels : (List Bytes))) (lit ", "))) (lit "}"))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: metaText,
+  parameters: [entry : CoreJson::Entry],
+  result: Bytes,
+  body: (cat (cat (spell (project entry key)) (lit " := ")) (match (project entry value)
+    | CoreJson::Meta.MBool flag => (if flag then (lit "bool true") else (lit "bool false"))
+    | CoreJson::Meta.MNat text => (cat (lit "nat ") (if (canonicalNatural text) then text else (SurfaceLex::quoteText text)))
+    | CoreJson::Meta.MInt text => (cat (lit "int ") (if (canonicalInteger text) then text else (SurfaceLex::quoteText text)))
+    | CoreJson::Meta.MStr text => (cat (lit "str ") (SurfaceLex::quoteText text))
+    | CoreJson::Meta.MName text => (cat (lit "name ") (spell text)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: tt,
+  parameters: [text : Bytes],
+  result: Tdoc,
+  body: (ctor Tdoc.TText text),
+  executable: true
+}
+
+definition{
+  name: tseq,
+  parameters: [parts : (List Tdoc)],
+  result: Tdoc,
+  body: (prim list_fold (fun (rest : Tdoc) (part : Tdoc) => (ctor Tdoc.TSeq part rest)) (ctor Tdoc.TNil) (LexLeanStd.Order::reverseList [Tdoc] parts) : Tdoc),
+  executable: true
+}
+
+definition{
+  name: paren,
+  parameters: [inner : Tdoc],
+  result: Tdoc,
+  body: (tseq (cons (tt (lit "(")) (cons inner (cons (tt (lit ")")) (nil Tdoc))))),
+  executable: true
+}
+
+definition{
+  name: appDoc,
+  parameters: [head : Tdoc, argsRev : (List Tdoc)],
+  result: Tdoc,
+  body: (match argsRev
+    | List.nil => head
+    | List.cons last earlier => (ctor Tdoc.TGroup (tseq (cons head (cons (ctor Tdoc.TNest 2 (tseq (prim list_fold (fun (out : (List Tdoc)) (argument : Tdoc) => (cons (ctor Tdoc.TLine) (cons argument out))) (nil Tdoc) argsRev : (List Tdoc)))) (nil Tdoc)))))),
+  executable: true
+}
+
+definition{
+  name: whole,
+  parameters: [term : Term],
+  result: Tdoc,
+  body: (match term
+    | Term.Atom inner => inner
+    | Term.App head argsRev => (appDoc head argsRev)
+    | Term.Prefix inner => inner
+    | Term.Low inner => inner),
+  executable: true
+}
+
+definition{
+  name: asArgument,
+  parameters: [term : Term],
+  result: Tdoc,
+  body: (match term
+    | Term.Atom inner => inner
+    | Term.App head argsRev => (paren (whole term))
+    | Term.Prefix inner => (paren inner)
+    | Term.Low inner => (paren inner)),
+  executable: true
+}
+
+definition{
+  name: asDomain,
+  parameters: [term : Term],
+  result: Tdoc,
+  body: (match term
+    | Term.Low inner => (paren inner)
+    | Term.Atom inner => inner
+    | Term.App head argsRev => (whole term)
+    | Term.Prefix inner => inner),
+  executable: true
+}
+
+definition{
+  name: headOf,
+  parameters: [term : Term],
+  result: Head,
+  body: (match term
+    | Term.Atom inner => (record Head {head := inner, args := (nil Tdoc)})
+    | Term.App head argsRev => (record Head {head := head, args := argsRev})
+    | Term.Prefix inner => (record Head {head := (paren inner), args := (nil Tdoc)})
+    | Term.Low inner => (record Head {head := (paren inner), args := (nil Tdoc)})),
+  executable: true
+}
+
+definition{
+  name: binderDoc,
+  parameters: [info : CoreJson::Binder, label : Bytes, bound : Term],
+  result: Tdoc,
+  body: (let marks : (Bytes * Bytes) := (match info
+    | CoreJson::Binder.BExplicit => ((lit "("), (lit ")"))
+    | CoreJson::Binder.BImplicit => ((lit "{"), (lit "}"))
+    | CoreJson::Binder.BStrict => ((lit "{{"), (lit "}}"))
+    | CoreJson::Binder.BInstance => ((lit "["), (lit "]"))); (tseq (cons (tt (cat (cat (first marks) (binderName label)) (lit " : "))) (cons (whole bound) (cons (tt (second marks)) (nil Tdoc)))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: isExplicit,
+  parameters: [info : CoreJson::Binder],
+  result: Bool,
+  body: (match info
+    | CoreJson::Binder.BExplicit => true
+    | CoreJson::Binder.BImplicit => false
+    | CoreJson::Binder.BStrict => false
+    | CoreJson::Binder.BInstance => false),
+  executable: true
+}
+
+definition{
+  name: scalarValid,
+  parameters: [scalar : Nat],
+  result: Bool,
+  body: (both (scalar <=? 1114111) (if (both (55296 <=? scalar) (scalar <=? 57343)) then false else true)),
+  executable: true
+}
+
+definition{
+  name: utf8,
+  parameters: [scalar : Nat],
+  result: Bytes,
+  body: (if (scalar <? 128) then (SurfaceLex::byteOf scalar) else (if (scalar <? 2048) then (cat (SurfaceLex::byteOf (192 + (prim quotient scalar 64 0 : Nat))) (SurfaceLex::byteOf (128 + (prim remainder scalar 64 0 : Nat)))) else (if (scalar <? 65536) then (cat (cat (SurfaceLex::byteOf (224 + (prim quotient scalar 4096 0 : Nat))) (SurfaceLex::byteOf (128 + (prim remainder (prim quotient scalar 64 0 : Nat) 64 0 : Nat)))) (SurfaceLex::byteOf (128 + (prim remainder scalar 64 0 : Nat)))) else (cat (cat (cat (SurfaceLex::byteOf (240 + (prim quotient scalar 262144 0 : Nat))) (SurfaceLex::byteOf (128 + (prim remainder (prim quotient scalar 4096 0 : Nat) 64 0 : Nat)))) (SurfaceLex::byteOf (128 + (prim remainder (prim quotient scalar 64 0 : Nat) 64 0 : Nat)))) (SurfaceLex::byteOf (128 + (prim remainder scalar 64 0 : Nat))))))),
+  executable: true
+}
+
+definition{
+  name: termAt,
+  parameters: [terms : (List Term), position : Nat],
+  result: Term,
+  body: (match (prim index terms position : (Option Term))
+    | Option.some term => term
+    | Option.none => (ctor Term.Atom (ctor Tdoc.TNil))),
+  executable: true
+}
+
+definition{
+  name: stringError,
+  parameters: [index : Nat, scalars : (List Nat)],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [index] (found : (Option Bytes)) (scalar : Nat) => (match found
+    | Option.some message => found
+    | Option.none => (if (scalarValid scalar) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (cat (cat (cat (cat (lit "node ") (num index)) (lit ": ")) (num scalar)) (lit " is not a Unicode scalar value")))))) (ctor Option.none [Bytes]) scalars : (Option Bytes)),
+  executable: true
+}
+
+definition{
+  name: nodeTerm,
+  parameters: [node : CoreJson::Node, terms : (List Term)],
+  result: Term,
+  body: (match node
+    | CoreJson::Node.NBVar position => (ctor Term.Atom (ctor Tdoc.TVar position))
+    | CoreJson::Node.NSort level => (ctor Term.Prefix (tt (cat (lit "Sort ") (levelText level))))
+    | CoreJson::Node.NConst label levels => (ctor Term.Atom (ctor Tdoc.TConst label (levelsText levels)))
+    | CoreJson::Node.NApp function applied => (let head : Head := (headOf (termAt terms 0)); (ctor Term.App (project head head) (cons (asArgument (termAt terms 1)) (project head args))))
+    | CoreJson::Node.NLambda label info bound body => (ctor Term.Low (ctor Tdoc.TGroup (tseq (cons (tt (lit "fun ")) (cons (binderDoc info label (termAt terms 0)) (cons (tt (lit " =>")) (cons (ctor Tdoc.TLine) (cons (ctor Tdoc.TBind label (whole (termAt terms 1))) (nil Tdoc)))))))))
+    | CoreJson::Node.NForall label info bound body => (ctor Term.Low (ctor Tdoc.TGroup (tseq (cons (if (both ((prim length label : Nat) =? 0) (isExplicit info)) then (asDomain (termAt terms 0)) else (binderDoc info label (termAt terms 0))) (cons (tt (lit " ->")) (cons (ctor Tdoc.TLine) (cons (ctor Tdoc.TBind label (whole (termAt terms 1))) (nil Tdoc))))))))
+    | CoreJson::Node.NLet label bound value rest dependent => (ctor Term.Low (ctor Tdoc.TGroup (tseq (cons (tt (cat (cat (if dependent then (lit "have ") else (lit "let ")) (binderName label)) (lit " : "))) (cons (whole (termAt terms 0)) (cons (tt (lit " := ")) (cons (whole (termAt terms 1)) (cons (tt (lit ";")) (cons (ctor Tdoc.TLine) (cons (ctor Tdoc.TBind label (whole (termAt terms 2))) (nil Tdoc)))))))))))
+    | CoreJson::Node.NNat text => (ctor Term.Atom (tt (if (canonicalNatural text) then text else (cat (lit "nat ") (SurfaceLex::quoteText text)))))
+    | CoreJson::Node.NString scalars => (ctor Term.Atom (tt (SurfaceLex::quoteText (prim list_fold (fun (out : Bytes) (scalar : Nat) => (cat out (utf8 scalar))) (lit "") scalars : Bytes))))
+    | CoreJson::Node.NMdata entries inner => (ctor Term.Prefix (ctor Tdoc.TGroup (tseq (cons (tt (cat (cat (lit "annot [") (joined (LexLeanStd.Order::reverseList [Bytes] (prim list_fold (fun (out : (List Bytes)) (entry : CoreJson::Entry) => (cons (metaText entry) out)) (nil Bytes) entries : (List Bytes))) (lit ", "))) (lit "]"))) (cons (ctor Tdoc.TLine) (cons (asArgument (termAt terms 0)) (nil Tdoc)))))))
+    | CoreJson::Node.NProj label structure position inner => (ctor Term.Prefix (ctor Tdoc.TGroup (tseq (cons (tt (cat (cat (cat (cat (cat (lit "proj ") (spell structure)) (lit " ")) (spell label)) (lit " ")) (num position))) (cons (ctor Tdoc.TLine) (cons (asArgument (termAt terms 0)) (nil Tdoc)))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: childrenOf,
+  parameters: [node : CoreJson::Node],
+  result: (List Nat),
+  body: (match node
+    | CoreJson::Node.NApp function applied => (cons function (cons applied (nil Nat)))
+    | CoreJson::Node.NLambda label info bound body => (cons bound (cons body (nil Nat)))
+    | CoreJson::Node.NForall label info bound body => (cons bound (cons body (nil Nat)))
+    | CoreJson::Node.NLet label bound value rest dependent => (cons bound (cons value (cons rest (nil Nat))))
+    | CoreJson::Node.NMdata entries inner => (cons inner (nil Nat))
+    | CoreJson::Node.NProj label structure position inner => (cons inner (nil Nat))
+    | CoreJson::Node.NBVar position => (nil Nat)
+    | CoreJson::Node.NSort level => (nil Nat)
+    | CoreJson::Node.NConst label levels => (nil Nat)
+    | CoreJson::Node.NNat text => (nil Nat)
+    | CoreJson::Node.NString scalars => (nil Nat)),
+  executable: true
+}
+
+definition{
+  name: asNat,
+  parameters: [found : (Option LexLeanStd.Json::Json)],
+  result: (Option Nat),
+  body: (match found
+    | Option.some value => (match value
+      | LexLeanStd.Json::Json.JInt negative magnitude => (if negative then (ctor Option.none [Nat]) else (ctor Option.some [Nat] magnitude))
+      | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [Nat])
+      | LexLeanStd.Json::Json.JStr text => (ctor Option.none [Nat])
+      | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [Nat])
+      | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [Nat])
+      | LexLeanStd.Json::Json.JNil => (ctor Option.none [Nat])
+      | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [Nat])
+      | LexLeanStd.Json::Json.JMember key inner rest => (ctor Option.none [Nat]))
+    | Option.none => (ctor Option.none [Nat])),
+  executable: true
+}
+
+definition{
+  name: lookStep,
+  parameters: [key : Bytes, state : (LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))],
+  result: (Option (LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))),
+  body: (match (second state)
+    | Option.some hit => (ctor Option.none [(LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))])
+    | Option.none => (match (first state)
+      | LexLeanStd.Json::Json.JMember name value rest => (ctor Option.some [(LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))] (if (same name key) then ((ctor LexLeanStd.Json::Json.JNil), (ctor Option.some [LexLeanStd.Json::Json] value)) else (rest, (ctor Option.none [LexLeanStd.Json::Json]))))
+      | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [(LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))])
+      | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [(LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))])
+      | LexLeanStd.Json::Json.JStr text => (ctor Option.none [(LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))])
+      | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [(LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))])
+      | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [(LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))])
+      | LexLeanStd.Json::Json.JNil => (ctor Option.none [(LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))])
+      | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [(LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))]))),
+  executable: true
+}
+
+definition{
+  name: getIn,
+  parameters: [value : LexLeanStd.Json::Json, key : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match value
+    | LexLeanStd.Json::Json.JObj chain => (second (first (prim iterate_until (fun [key] (state : (LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json))) => (lookStep key state)) 1000000 (chain, (ctor Option.none [LexLeanStd.Json::Json])) : ((LexLeanStd.Json::Json * (Option LexLeanStd.Json::Json)) * Bool))))
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [LexLeanStd.Json::Json])
+    | LexLeanStd.Json::Json.JMember label inner rest => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: getOpt,
+  parameters: [value : (Option LexLeanStd.Json::Json), key : Bytes],
+  result: (Option LexLeanStd.Json::Json),
+  body: (match value
+    | Option.some inner => (getIn inner key)
+    | Option.none => (ctor Option.none [LexLeanStd.Json::Json])),
+  executable: true
+}
+
+definition{
+  name: itemStep,
+  parameters: [state : (LexLeanStd.Json::Json * (List LexLeanStd.Json::Json))],
+  result: (Option (LexLeanStd.Json::Json * (List LexLeanStd.Json::Json))),
+  body: (match (first state)
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.some [(LexLeanStd.Json::Json * (List LexLeanStd.Json::Json))] (rest, (cons element (second state))))
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [(LexLeanStd.Json::Json * (List LexLeanStd.Json::Json))])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [(LexLeanStd.Json::Json * (List LexLeanStd.Json::Json))])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [(LexLeanStd.Json::Json * (List LexLeanStd.Json::Json))])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [(LexLeanStd.Json::Json * (List LexLeanStd.Json::Json))])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [(LexLeanStd.Json::Json * (List LexLeanStd.Json::Json))])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [(LexLeanStd.Json::Json * (List LexLeanStd.Json::Json))])
+    | LexLeanStd.Json::Json.JMember key inner rest => (ctor Option.none [(LexLeanStd.Json::Json * (List LexLeanStd.Json::Json))])),
+  executable: true
+}
+
+definition{
+  name: itemsOf,
+  parameters: [value : (Option LexLeanStd.Json::Json)],
+  result: (List LexLeanStd.Json::Json),
+  body: (match value
+    | Option.some array => (match array
+      | LexLeanStd.Json::Json.JArr chain => (LexLeanStd.Order::reverseList [LexLeanStd.Json::Json] (second (first (prim iterate_until (fun (state : (LexLeanStd.Json::Json * (List LexLeanStd.Json::Json))) => (itemStep state)) 1000000 (chain, (nil LexLeanStd.Json::Json)) : ((LexLeanStd.Json::Json * (List LexLeanStd.Json::Json)) * Bool)))))
+      | LexLeanStd.Json::Json.JBool flag => (nil LexLeanStd.Json::Json)
+      | LexLeanStd.Json::Json.JInt negative magnitude => (nil LexLeanStd.Json::Json)
+      | LexLeanStd.Json::Json.JStr text => (nil LexLeanStd.Json::Json)
+      | LexLeanStd.Json::Json.JObj inner => (nil LexLeanStd.Json::Json)
+      | LexLeanStd.Json::Json.JNil => (nil LexLeanStd.Json::Json)
+      | LexLeanStd.Json::Json.JItem element rest => (nil LexLeanStd.Json::Json)
+      | LexLeanStd.Json::Json.JMember key inner rest => (nil LexLeanStd.Json::Json))
+    | Option.none => (nil LexLeanStd.Json::Json)),
+  executable: true
+}
+
+definition{
+  name: strOf,
+  parameters: [value : (Option LexLeanStd.Json::Json)],
+  result: Bytes,
+  body: (match value
+    | Option.some inner => (match inner
+      | LexLeanStd.Json::Json.JStr text => text
+      | LexLeanStd.Json::Json.JBool flag => (lit "")
+      | LexLeanStd.Json::Json.JInt negative magnitude => (lit "")
+      | LexLeanStd.Json::Json.JArr chain => (lit "")
+      | LexLeanStd.Json::Json.JObj chain => (lit "")
+      | LexLeanStd.Json::Json.JNil => (lit "")
+      | LexLeanStd.Json::Json.JItem element rest => (lit "")
+      | LexLeanStd.Json::Json.JMember key member rest => (lit ""))
+    | Option.none => (lit "")),
+  executable: true
+}
+
+definition{
+  name: pushOpt,
+  parameters: [out : (List Nat), found : (Option Nat)],
+  result: (List Nat),
+  body: (match found
+    | Option.some value => (prim append out (cons value (nil Nat)) : (List Nat))
+    | Option.none => out),
+  executable: true
+}
+
+definition{
+  name: rootsOf,
+  parameters: [declaration : LexLeanStd.Json::Json],
+  result: (List Nat),
+  body: (let equations : (Option LexLeanStd.Json::Json) := (getIn declaration (lit "eqn_info")); (let base : (List Nat) := (pushOpt (pushOpt (pushOpt (pushOpt (nil Nat) (asNat (getIn declaration (lit "type")))) (asNat (getIn declaration (lit "value")))) (asNat (getOpt equations (lit "type")))) (asNat (getOpt equations (lit "value")))); (prim list_fold (fun (out : (List Nat)) (field : LexLeanStd.Json::Json) => (pushOpt out (asNat (getIn field (lit "auto_param"))))) base (itemsOf (getOpt (getOpt (getIn declaration (lit "inductive")) (lit "structure")) (lit "fields"))) : (List Nat)))),
+  executable: true
+}
+
+definition{
+  name: edgeError,
+  parameters: [nodes : (List CoreJson::Node)],
+  result: (Option Bytes),
+  body: (second (prim list_fold (fun (state : (Nat * (Option Bytes))) (node : CoreJson::Node) => (let index : Nat := (first state); ((index + 1), (match (second state)
+    | Option.some message => (second state)
+    | Option.none => (prim list_fold (fun [index] (found : (Option Bytes)) (child : Nat) => (match found
+      | Option.some message => found
+      | Option.none => (if (index <=? child) then (ctor Option.some [Bytes] (cat (cat (cat (cat (lit "node ") (num index)) (lit " points to the node ")) (num child)) (lit ", which is not earlier"))) else (ctor Option.none [Bytes])))) (ctor Option.none [Bytes]) (childrenOf node) : (Option Bytes)))))) (0, (ctor Option.none [Bytes])) nodes : (Nat * (Option Bytes)))),
+  executable: true
+}
+
+definition{
+  name: proofError,
+  parameters: [proofs : (List Nat), count : Nat],
+  result: (Option Bytes),
+  body: (let fine : (Bool * (Option Nat)) := (prim list_fold (fun [count] (state : (Bool * (Option Nat))) (proof : Nat) => ((both (first state) (both (proof <? count) (match (second state)
+    | Option.some prior => (prior <? proof)
+    | Option.none => true))), (ctor Option.some [Nat] proof))) (true, (ctor Option.none [Nat])) proofs : (Bool * (Option Nat))); (if (first fine) then (ctor Option.none [Bytes]) else (ctor Option.some [Bytes] (lit "the proof nodes are not strictly increasing nodes of the module")))),
+  executable: true
+}
+
+definition{
+  name: rootError,
+  parameters: [declarations : (List LexLeanStd.Json::Json), count : Nat],
+  result: (Option Bytes),
+  body: (prim list_fold (fun [count] (found : (Option Bytes)) (declaration : LexLeanStd.Json::Json) => (match found
+    | Option.some message => found
+    | Option.none => (if (prim list_fold (fun [count] (bad : Bool) (root : Nat) => (if bad then true else (count <=? root))) false (rootsOf declaration) : Bool) then (ctor Option.some [Bytes] (cat (cat (lit "`") (strOf (getIn declaration (lit "name")))) (lit "` has a root that is not a node of the module"))) else (ctor Option.none [Bytes])))) (ctor Option.none [Bytes]) declarations : (Option Bytes)),
+  executable: true
+}
+
+definition{
+  name: keyOf,
+  parameters: [value : Nat],
+  result: Bytes,
+  body: (second (prim iterate (fun (state : (Nat * Bytes)) => ((prim quotient (first state) 256 0 : Nat), (cat (SurfaceLex::byteOf (prim remainder (first state) 256 0 : Nat)) (second state)))) 8 (value, (lit "")) : (Nat * Bytes))),
+  executable: true
+}
+
+definition{
+  name: sortedRefs,
+  parameters: [nodes : (List CoreJson::Node), declarations : (List LexLeanStd.Json::Json)],
+  result: (List Nat),
+  body: (let all : (List Nat) := (prim list_fold (fun (out : (List Nat)) (declaration : LexLeanStd.Json::Json) => (prim list_fold (fun (inner : (List Nat)) (root : Nat) => (cons root inner)) out (rootsOf declaration) : (List Nat))) (prim list_fold (fun (out : (List Nat)) (node : CoreJson::Node) => (prim list_fold (fun (inner : (List Nat)) (child : Nat) => (cons child inner)) out (childrenOf node) : (List Nat))) (nil Nat) nodes : (List Nat)) declarations : (List Nat)); (prim list_fold (fun (out : (List Nat)) (entry : (Bytes * Nat)) => (cons (second entry) out)) (nil Nat) (LexLeanStd.Order::reverseList [(Bytes * Nat)] (LexLeanStd.Order::sortByKey [Nat] (prim list_fold (fun (out : (List (Bytes * Nat))) (value : Nat) => (cons ((keyOf value), value) out)) (nil (Bytes * Nat)) all : (List (Bytes * Nat))))) : (List Nat))),
+  axioms: [propext],
+  executable: true
+}
+
+definition{
+  name: popCount,
+  parameters: [refs : (List Nat), index : Nat],
+  result: (Nat * (List Nat)),
+  body: (first (prim iterate_until (fun [index] (state : (Nat * (List Nat))) => (match (second state)
+    | List.cons head tail => (if (head =? index) then (ctor Option.some [(Nat * (List Nat))] (((first state) + 1), tail)) else (ctor Option.none [(Nat * (List Nat))]))
+    | List.nil => (ctor Option.none [(Nat * (List Nat))]))) ((prim length refs : Nat) + 1) (0, refs) : ((Nat * (List Nat)) * Bool))),
+  executable: true
+}
+
+definition{
+  name: takeStep,
+  parameters: [take : Take, child : Nat],
+  result: Take,
+  body: (let fallback : Take := (record Take {stack := (project take stack), terms := (cons (ctor Term.Atom (tt (cat (lit "@") (num child)))) (project take terms)), tallest := (project take tallest)}); (match (project take stack)
+    | List.cons top below => (if (both ((project top index) =? child) (both ((project top uses) =? 1) ((project top height) <? 48))) then (record Take {stack := below, terms := (cons (project top term) (project take terms)), tallest := (if ((project take tallest) <? (project top height)) then (project top height) else (project take tallest))}) else fallback)
+    | List.nil => fallback)),
+  executable: true
+}
+
+definition{
+  name: wrapProof,
+  parameters: [term : Term, proof : Bool],
+  result: Term,
+  body: (if proof then (ctor Term.Atom (tseq (cons (tt (lit "proof(")) (cons (ctor Tdoc.TNest 2 (whole term)) (cons (tt (lit ")")) (nil Tdoc)))))) else term),
+  executable: true
+}
+
+definition{
+  name: passStep,
+  parameters: [pass : Pass, node : CoreJson::Node],
+  result: Pass,
+  body: (match (project pass error)
+    | Option.some message => pass
+    | Option.none => (let index : Nat := (project pass index); (let counted : (Nat * (List Nat)) := (popCount (project pass refs) index); (let proof : Bool := (match (project pass proofs)
+      | List.cons head tail => (head =? index)
+      | List.nil => false); (let take : Take := (prim list_fold (fun (state : Take) (child : Nat) => (takeStep state child)) (record Take {stack := (project pass stack), terms := (nil Term), tallest := 0}) (LexLeanStd.Order::reverseList [Nat] (childrenOf node)) : Take); (let failure : (Option Bytes) := (match node
+      | CoreJson::Node.NString scalars => (stringError index scalars)
+      | CoreJson::Node.NBVar position => (ctor Option.none [Bytes])
+      | CoreJson::Node.NSort level => (ctor Option.none [Bytes])
+      | CoreJson::Node.NConst label levels => (ctor Option.none [Bytes])
+      | CoreJson::Node.NApp function applied => (ctor Option.none [Bytes])
+      | CoreJson::Node.NLambda label info bound body => (ctor Option.none [Bytes])
+      | CoreJson::Node.NForall label info bound body => (ctor Option.none [Bytes])
+      | CoreJson::Node.NLet label bound value rest dependent => (ctor Option.none [Bytes])
+      | CoreJson::Node.NNat text => (ctor Option.none [Bytes])
+      | CoreJson::Node.NMdata entries inner => (ctor Option.none [Bytes])
+      | CoreJson::Node.NProj label structure position inner => (ctor Option.none [Bytes])); (let start : Nat := (match (project take stack)
+      | List.cons top below => ((project top index) + 1)
+      | List.nil => 0); (record Pass {index := (index + 1), stack := (cons (record Slot {index := index, start := start, height := ((project take tallest) + 1), uses := (first counted), term := (wrapProof (nodeTerm node (project take terms)) proof)}) (project take stack)), refs := (second counted), proofs := (if proof then (match (project pass proofs)
+      | List.cons head tail => tail
+      | List.nil => (nil Nat)) else (project pass proofs)), error := failure})))))))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+structure{
+  name: Near,
+  type_parameters: [],
+  parameters: [],
+  fields: [{name: seen, type: Nat}, {name: hit, type: Bool}]
+}
+
+definition{
+  name: nearStep,
+  parameters: [state : Near, nearer : Bytes, label : Bytes, position : Nat],
+  result: Near,
+  body: (record Near {seen := ((project state seen) + 1), hit := (if (project state hit) then true else (both ((project state seen) <? position) (same nearer label)))}),
+  executable: true
+}
+
+definition{
+  name: variable,
+  parameters: [scope : (List Bytes), position : Nat],
+  result: Bytes,
+  body: (let fallback : Bytes := (cat (lit "#") (num position)); (match (prim index scope position : (Option Bytes))
+    | Option.some label => (if (both (bare label) (if (project (prim list_fold (fun [label, position] (state : Near) (nearer : Bytes) => (nearStep state nearer label position)) (record Near {seen := 0, hit := false}) scope : Near) hit) then false else true)) then label else fallback)
+    | Option.none => fallback)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: resolve,
+  parameters: [node : Tdoc, scope : (List Bytes)],
+  result: SurfaceDoc::Doc,
+  body: (match node
+    | Tdoc.TNil => (ctor SurfaceDoc::Doc.DNil)
+    | Tdoc.TText text => (ctor SurfaceDoc::Doc.DText text)
+    | Tdoc.TSeq head tail => (ctor SurfaceDoc::Doc.DSeq (resolve head scope) (resolve tail scope))
+    | Tdoc.TNest amount inner => (ctor SurfaceDoc::Doc.DNest amount (resolve inner scope))
+    | Tdoc.TLine => (ctor SurfaceDoc::Doc.DLine)
+    | Tdoc.TGroup inner => (ctor SurfaceDoc::Doc.DGroup (resolve inner scope))
+    | Tdoc.TVar position => (ctor SurfaceDoc::Doc.DText (variable scope position))
+    | Tdoc.TConst label levels => (ctor SurfaceDoc::Doc.DText (if (both (bare label) (if (listed label scope) then false else true)) then (cat label levels) else (cat (cat (lit "const ") (SurfaceLex::quoteText label)) levels)))
+    | Tdoc.TBind label inner => (resolve inner (cons label scope))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  recursive_argument: node
+}
+
+definition{
+  name: render,
+  parameters: [node : SurfaceDoc::Doc],
+  result: Bytes,
+  body: (SurfaceDoc::renderDoc node 100 (SurfaceGeneric::docNodes node)),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: withoutKeys,
+  parameters: [chain : LexLeanStd.Json::Json],
+  result: LexLeanStd.Json::Json,
+  body: (let kept : (List (Bytes * LexLeanStd.Json::Json)) := (second (first (prim iterate_until (fun (state : (LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))) => (match (first state)
+    | LexLeanStd.Json::Json.JMember key value rest => (ctor Option.some [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))] (rest, (if (listed key (cons (lit "kind") (cons (lit "name") (cons (lit "levels") (cons (lit "type") (cons (lit "value") (nil Bytes))))))) then (second state) else (cons (key, value) (second state)))))
+    | LexLeanStd.Json::Json.JBool flag => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JStr text => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JArr inner => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JObj inner => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JNil => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))])
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Option.none [(LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json)))]))) 1000000 (chain, (nil (Bytes * LexLeanStd.Json::Json))) : ((LexLeanStd.Json::Json * (List (Bytes * LexLeanStd.Json::Json))) * Bool)))); (prim list_fold (fun (rest : LexLeanStd.Json::Json) (entry : (Bytes * LexLeanStd.Json::Json)) => (ctor LexLeanStd.Json::Json.JMember (first entry) (second entry) rest)) (ctor LexLeanStd.Json::Json.JNil) kept : LexLeanStd.Json::Json)),
+  executable: true
+}
+
+definition{
+  name: declarationText,
+  parameters: [declaration : LexLeanStd.Json::Json],
+  result: (Result Bytes Bytes),
+  body: (match declaration
+    | LexLeanStd.Json::Json.JObj chain => (match (getIn declaration (lit "kind"))
+      | Option.some kind => (match kind
+        | LexLeanStd.Json::Json.JStr written => (let levels : (List Bytes) := (prim list_fold (fun (out : (List Bytes)) (level : LexLeanStd.Json::Json) => (prim append out (cons (spell (strOf (ctor Option.some [LexLeanStd.Json::Json] level))) (nil Bytes)) : (List Bytes))) (nil Bytes) (itemsOf (getIn declaration (lit "levels"))) : (List Bytes)); (let head : Bytes := (cat (cat (cat (cat (cat written (lit " ")) (spell (strOf (getIn declaration (lit "name"))))) (if ((prim length levels : Nat) =? 0) then (lit "") else (cat (cat (lit ".{") (joined levels (lit ", "))) (lit "}")))) (match (asNat (getIn declaration (lit "type")))
+          | Option.some root => (cat (lit " : @") (num root))
+          | Option.none => (lit ""))) (match (asNat (getIn declaration (lit "value")))
+          | Option.some root => (cat (lit " := @") (num root))
+          | Option.none => (lit ""))); (let rest : LexLeanStd.Json::Json := (withoutKeys chain); (ctor Result.ok [Bytes, Bytes] (render (match rest
+          | LexLeanStd.Json::Json.JNil => (ctor SurfaceDoc::Doc.DText head)
+          | LexLeanStd.Json::Json.JBool flag => (ctor SurfaceDoc::Doc.DText head)
+          | LexLeanStd.Json::Json.JInt negative magnitude => (ctor SurfaceDoc::Doc.DText head)
+          | LexLeanStd.Json::Json.JStr text => (ctor SurfaceDoc::Doc.DText head)
+          | LexLeanStd.Json::Json.JArr inner => (ctor SurfaceDoc::Doc.DText head)
+          | LexLeanStd.Json::Json.JObj inner => (ctor SurfaceDoc::Doc.DText head)
+          | LexLeanStd.Json::Json.JItem element tail => (ctor SurfaceDoc::Doc.DText head)
+          | LexLeanStd.Json::Json.JMember key value tail => (ctor SurfaceDoc::Doc.DSeq (ctor SurfaceDoc::Doc.DText head) (ctor SurfaceDoc::Doc.DSeq (ctor SurfaceDoc::Doc.DText (lit " ")) (ctor SurfaceDoc::Doc.DSeq (SurfaceGeneric::docValue (ctor LexLeanStd.Json::Json.JObj rest)) (ctor SurfaceDoc::Doc.DNil))))))))))
+        | LexLeanStd.Json::Json.JBool flag => (ctor Result.error [Bytes, Bytes] (lit "a declaration has a kind"))
+        | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Result.error [Bytes, Bytes] (lit "a declaration has a kind"))
+        | LexLeanStd.Json::Json.JArr inner => (ctor Result.error [Bytes, Bytes] (lit "a declaration has a kind"))
+        | LexLeanStd.Json::Json.JObj inner => (ctor Result.error [Bytes, Bytes] (lit "a declaration has a kind"))
+        | LexLeanStd.Json::Json.JNil => (ctor Result.error [Bytes, Bytes] (lit "a declaration has a kind"))
+        | LexLeanStd.Json::Json.JItem element rest => (ctor Result.error [Bytes, Bytes] (lit "a declaration has a kind"))
+        | LexLeanStd.Json::Json.JMember key value rest => (ctor Result.error [Bytes, Bytes] (lit "a declaration has a kind")))
+      | Option.none => (ctor Result.error [Bytes, Bytes] (lit "a declaration has a kind")))
+    | LexLeanStd.Json::Json.JBool flag => (ctor Result.error [Bytes, Bytes] (lit "a declaration is an object"))
+    | LexLeanStd.Json::Json.JInt negative magnitude => (ctor Result.error [Bytes, Bytes] (lit "a declaration is an object"))
+    | LexLeanStd.Json::Json.JStr text => (ctor Result.error [Bytes, Bytes] (lit "a declaration is an object"))
+    | LexLeanStd.Json::Json.JArr inner => (ctor Result.error [Bytes, Bytes] (lit "a declaration is an object"))
+    | LexLeanStd.Json::Json.JNil => (ctor Result.error [Bytes, Bytes] (lit "a declaration is an object"))
+    | LexLeanStd.Json::Json.JItem element rest => (ctor Result.error [Bytes, Bytes] (lit "a declaration is an object"))
+    | LexLeanStd.Json::Json.JMember key value rest => (ctor Result.error [Bytes, Bytes] (lit "a declaration is an object"))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: refusal,
+  parameters: [message : Bytes],
+  result: (Result Bytes SurfaceLex::Failure),
+  body: (ctor Result.error [Bytes, SurfaceLex::Failure] (record SurfaceLex::Failure {offset := 0, message := message})),
+  executable: true
+}
+
+definition{
+  name: firstOf,
+  parameters: [options : (List (Option Bytes))],
+  result: (Option Bytes),
+  body: (prim list_fold (fun (found : (Option Bytes)) (option : (Option Bytes)) => (match found
+    | Option.some message => found
+    | Option.none => option)) (ctor Option.none [Bytes]) options : (Option Bytes)),
+  executable: true
+}
+
+definition{
+  name: statements,
+  parameters: [module : CoreJson::Module],
+  result: (Result Bytes Bytes),
+  body: (let final : Pass := (prim list_fold (fun (pass : Pass) (node : CoreJson::Node) => (passStep pass node)) (record Pass {index := 0, stack := (nil Slot), refs := (sortedRefs (project module nodes) (project module declarations)), proofs := (project module proofNodes), error := (ctor Option.none [Bytes])}) (project module nodes) : Pass); (match (project final error)
+    | Option.some message => (ctor Result.error [Bytes, Bytes] message)
+    | Option.none => (ctor Result.ok [Bytes, Bytes] (prim list_fold (fun (out : Bytes) (slot : Slot) => (cat out (cat (render (resolve (tseq (cons (tt (cat (cat (lit "@") (num (project slot index))) (lit " := "))) (cons (ctor Tdoc.TNest 2 (whole (project slot term))) (nil Tdoc)))) (nil Bytes))) (lit "\n")))) (lit "") (LexLeanStd.Order::reverseList [Slot] (project final stack)) : Bytes)))),
+  axioms: [Quot.sound, propext],
+  executable: true
+}
+
+definition{
+  name: printCoreModule,
+  parameters: [module : CoreJson::Module],
+  result: (Result Bytes SurfaceLex::Failure),
+  body: (if (same (project module spec) (lit "lexlean/core-module/2")) then (let count : Nat := (prim length (project module nodes) : Nat); (match (firstOf (cons (edgeError (project module nodes)) (cons (proofError (project module proofNodes) count) (cons (rootError (project module declarations) count) (nil (Option Bytes))))))
+    | Option.some message => (refusal message)
+    | Option.none => (let declared : (Result Bytes Bytes) := (prim list_fold (fun (state : (Result Bytes Bytes)) (declaration : LexLeanStd.Json::Json) => (match state
+      | Result.ok text => (match (declarationText declaration)
+        | Result.ok line => (ctor Result.ok [Bytes, Bytes] (cat (cat text line) (lit "\n")))
+        | Result.error message => (ctor Result.error [Bytes, Bytes] message))
+      | Result.error message => state)) (ctor Result.ok [Bytes, Bytes] (lit "")) (project module declarations) : (Result Bytes Bytes)); (match declared
+      | Result.error message => (refusal message)
+      | Result.ok lines => (match (statements module)
+        | Result.error message => (refusal message)
+        | Result.ok body => (ctor Result.ok [Bytes, SurfaceLex::Failure] (cat (cat (cat (cat (render (ctor SurfaceDoc::Doc.DSeq (ctor SurfaceDoc::Doc.DText (lit "imports ")) (ctor SurfaceDoc::Doc.DSeq (SurfaceGeneric::delimitedRev (lit "[") (lit "]") (prim list_fold (fun (out : (List SurfaceDoc::Doc)) (name : Bytes) => (cons (ctor SurfaceDoc::Doc.DText (spell name)) out)) (nil SurfaceDoc::Doc) (project module imports) : (List SurfaceDoc::Doc))) (ctor SurfaceDoc::Doc.DNil)))) (lit "\n\n")) lines) (lit "\n")) body))))))) else (refusal (cat (cat (lit "the notation names the schema `lexlean/core-module/2`, not `") (project module spec)) (lit "`")))),
+  axioms: [Quot.sound, propext],
+  executable: true,
+  production: {effects: [allocation, overflow, recursion], targets: [rust-std]}
+}
+\end{semanticmodule}
+\end{lexlean}

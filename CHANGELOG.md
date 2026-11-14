@@ -17,6 +17,112 @@ workspace carried at those versions without a tag.
 
 ## Unreleased
 
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, §10.2), by the maintainer's decision: the extraction of its export wrote
+  more than the default 33,554,432 bytes on `lean`'s output once the front end's
+  components (`BS-35`) joined it. The register is unchanged.
+- The text channel and the simple proof sentences as language-1.2 source
+  (SPEC.md §17.23, §15.5, §16.2, `BS-35`, #269; no new diagnostic code, no
+  change to the language-1.2 identity). `textTokens` and `parseProofSentence`
+  of `GrammarProof` return what `grammar::chart::text_tokens` and
+  `grammar::proof::parse_proof_sentence` return and admit no `recursion`. The
+  register is 495 IDs.
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, §10.2), by the maintainer's decision: the extraction of its export wrote
+  more than the default 33,554,432 bytes on `lean`'s output once the front end's
+  components (`BS-36`) joined it. The register is unchanged.
+- The printer of the semantic notation as language-1.2 source (SPEC.md
+  §17.23, §17.21, `BS-36`, #269; no new diagnostic code, no change to the
+  language-1.2 identity). `printAt` and `printSemanticModule` of
+  `SemanticPrint` return what `surface::semantic::print_at` and `print_module`
+  return, with the semantic-module schema as their input, and admit
+  `recursion`. The register is 494 IDs.
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, §10.2), by the maintainer's decision: the extraction of its export wrote
+  more than the default 33,554,432 bytes on `lean`'s output once the front end's
+  components (`BS-37`) joined it. The register is unchanged.
+- The reader of the semantic notation as language-1.2 source (SPEC.md
+  §17.23, §17.21, `BS-37`, #269; no new diagnostic code, no change to the
+  language-1.2 identity). `parseAt`, `parseSemanticModule`, and
+  `semanticSpans` of `SemanticRead` return what `surface::semantic::parse_at`,
+  `parse_module`, and `declaration_spans` return, with the semantic-module
+  schema as their input, and admit no `recursion`. The register is 494 IDs.
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, §10.2), by the maintainer's decision: the extraction of its export wrote
+  more than the default 33,554,432 bytes on `lean`'s output once the front end's
+  components (`BS-38`) joined it. The register is unchanged.
+- The canonical JSON of a native core module as language-1.2 source
+  (SPEC.md §17.23, §17.10, §21.7, `BS-38`, #269; no new diagnostic code, no
+  change to the language-1.2 identity). `coreJson` of `CoreJson` returns what
+  `surface::core::canonical_json` returns and admits `recursion`. The register
+  is 494 IDs.
+- The printer of the core notation as language-1.2 source (SPEC.md §17.23,
+  §17.21, `BS-39`, #269; no new diagnostic code, no change to the
+  language-1.2 identity). `printCoreModule` of `CorePrint` returns what
+  `surface::core::print_module` returns and admits `recursion`. The register
+  is 495 IDs.
+- The reader of the core notation as language-1.2 source (SPEC.md §17.23,
+  §17.21, `BS-40`, #269; no new diagnostic code, no change to the
+  language-1.2 identity). `readCoreModule` of `CoreRead` returns what
+  `surface::core::read_module` returns, the reader of `parse_module` before the
+  decoding of a declaration, and admits no `recursion`. `parse_module_with_spans`
+  reads with `read_module` and then decodes, with the same results and errors.
+  The register is 496 IDs.
+- The bootstrap project configures `max_child_output_bytes = 268435456` (SPEC.md
+  §17.23, §10.2), by the maintainer's decision: the extraction of its export wrote
+  more than the default 33,554,432 bytes on `lean`'s output once the front end's
+  components (`BS-42`) joined it. The register is unchanged.
+- The grammar of a mathematical island as language-1.2 source (SPEC.md
+  §17.23, §15.5, `BS-42`, #269; no new diagnostic code, no change to the
+  language-1.2 identity). `parseMath` of `GrammarMath` returns what
+  `grammar::math::parse_math` returns, with the glossary closure's projection
+  as its input, and admits no `recursion`. The register is 494 IDs.
+- The grammar keywords, the unknown-atom diagnosis, the binders, and the term
+  phrases of the text channel as language-1.2 source (SPEC.md §17.23, §15.3,
+  §15.4, `BS-43`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `keywordEntry`, `unknownAtom`, `binderAlternatives`, and
+  `termPhrase` of `PropositionTerms` return what `keyword_entry` and the
+  `TextParser` methods return, with the glossary closure's projection as their
+  input, and admit no `recursion`. The register is 495 IDs.
+- The tables and predicates of the lexicon entry schema as language-1.2 source,
+  the first slice of the lexicon closure (SPEC.md §17.23, §13.1 to §13.6, `BS-50`,
+  #269; no new diagnostic code, no change to the language-1.2 identity).
+  `tokenIndex`, `shapeFacts`, `surfaceSafety`, `isLeanName`, `tomlCommentAt`,
+  and `entryPath` of `LexiconSchema` return what the schema's token tables,
+  `frame_permitted` with the category and frame facts, `surface_safety`,
+  `is_lean_name`, `toml_comment_at`, and `entry_path` return; `surfaceSafety`
+  reads the atoms of `scanSource`. None admits `recursion`.
+- The scopes, references, and outer shape of a LexLean Semantic Expression as
+  language-1.2 source, the second slice of the lexicon closure (SPEC.md §17.23,
+  §13.8, `BS-51`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `checkScopes`, `referencedConsts`, and `outerShape` of `LseScopes`
+  return what `Lse::check_scopes`, `referenced_consts`, and
+  `outer_explicit_binders` with `result` return, over the expressions of
+  `BS-25`. None admits `recursion`.
+- The conservative checker of LexLean Semantic Expressions as language-1.2
+  source, the third slice of the lexicon closure (SPEC.md §17.23, §13.7,
+  `BS-52`, #269; no new diagnostic code, no change to the language-1.2
+  identity). `checkSignature` and `checkValue` of `LseTypes` return what
+  `lse::check_signature` and `check_value` return, the zonked type and the
+  literal types or the first error, with what the lookup answers given as a
+  table. Both admit `recursion`, structural over a bound on nesting the host
+  passes.
+- Every part of a verification names its toolchain by address (SPEC.md
+  §22.11, §9.4). A shard writes `toolchain.json` (`lexlean/verify-toolchain/1`)
+  beside its output: the SHA-256 of the `lean`, `lake`, and `leanchecker` its
+  preflight hashed, of the running `lexlean`, and the address of the `rustc`
+  that compiled it (its executable and `rustc_driver` library, which the build
+  script hashes). A part that reads another refuses it (`LLI9001`, naming the
+  part, the tool, and both addresses) unless all five equal its own. A record
+  names only the executable it ran, so a part that ran another `lake`,
+  `lexlean`, or `rustc` was accepted before. `VR-23` plants another `lake`
+  address in a shard's output, and on unix a join whose own `lake` differs by
+  one byte. The bootstrap export's custody record becomes
+  `lexlean/ci-bootstrap-export/2`: it also names the SHA-256 of the pinned
+  `lake`, `lean`, and `leanchecker` and the address of the `rustc` that built
+  the exporting binary, and a leg whose own differ refuses the export (`RP-14`
+  plants another `leanchecker` and another `rustc`). Published directories,
+  attestations, and `expected/verify` are unchanged.
 - Releases and regeneration need no hand steps (SPEC.md §9.4). `regenerate.yml`
   gains the job `deliver`: when the regenerated commit heads one open pull
   request of this repository, the patch is committed on it, pushed to the pull
@@ -58,6 +164,12 @@ workspace carried at those versions without a tag.
   A landing that moves the language-1.2 ID now also updates the constant;
   `RP-10` names the new value when it is stale.
 
+- The declarations of reasoning and text components, and semantic modules of every
+  kind, as language-1.2 source, eighth slice of the typed IR (SPEC.md §17.23, §17.12,
+  `BS-72`, #269; no new diagnostic code, no change to the language-1.2 identity).
+  `reasoningDeclarationText` and `wholeSemanticModuleText` of `SemanticReasoning` return the
+  canonical JSON of the serde form of those declarations and of `SemanticModule`, for
+  every committed semantic module. The register is 504 IDs.
 - The declarations of artifacts, contracts, realizations, evidence, and models as
   language-1.2 source, seventh slice of the typed IR (SPEC.md §17.23, §17.12, `BS-71`,
   #269; no new diagnostic code, no change to the language-1.2 identity).

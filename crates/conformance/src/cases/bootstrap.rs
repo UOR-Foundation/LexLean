@@ -30,7 +30,10 @@ mod ir_proof;
 mod ir_term;
 mod lexicon_lre;
 mod lexicon_lse;
+mod lexicon_schema;
 mod lock_text;
+mod lse_scopes;
+mod lse_types;
 mod manifest_text;
 mod project_text;
 mod runtime_validate;
@@ -47,6 +50,7 @@ mod rust_validate;
 mod scan;
 mod semantic_decls;
 mod semantic_models;
+mod semantic_reasoning;
 mod semantic_terms;
 mod semantic_types;
 mod structural_grammar;
@@ -56,6 +60,14 @@ mod surface_lex;
 mod surface_module;
 mod surface_tooling;
 mod tooling_latex;
+mod grammar_proof;
+mod semantic_print;
+mod semantic_read;
+mod core_json;
+mod core_print;
+mod core_read;
+mod grammar_math;
+mod proposition_terms;
 
 /// The module the first component lives in.
 const MODULE: &str = "LexLeanBoot.AxiomOutput";
@@ -2581,6 +2593,17 @@ fn case(id: &str) {
         "BS-32" => content_id::case(),
         "BS-33" => project_text::case(),
         "BS-34" => manifest_text::case(),
+        "BS-35" => grammar_proof::case(),
+        "BS-36" => semantic_print::case(),
+        "BS-37" => semantic_read::case(),
+        "BS-38" => core_json::case(),
+        "BS-39" => core_print::case(),
+        "BS-40" => core_read::case(),
+        "BS-42" => grammar_math::case(),
+        "BS-43" => proposition_terms::case(),
+        "BS-50" => lexicon_schema::case(),
+        "BS-51" => lse_scopes::case(),
+        "BS-52" => lse_types::case(),
         "BS-65" => ir_term::case(),
         "BS-66" => ir_proof::case(),
         "BS-67" => ir_document::case(),
@@ -2588,6 +2611,7 @@ fn case(id: &str) {
         "BS-69" => semantic_terms::case(),
         "BS-70" => semantic_decls::case(),
         "BS-71" => semantic_models::case(),
+        "BS-72" => semantic_reasoning::case(),
         other => panic!("no bootstrap case is wired for {other}"),
     }
 }

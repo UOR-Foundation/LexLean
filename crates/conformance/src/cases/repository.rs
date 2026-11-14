@@ -1091,7 +1091,7 @@ pub(crate) fn run(id: &str) {
             let model = repo_model::Model::load(&root.join("model").into_std_path_buf())
                 .expect("the model loads");
             let table = spec_table();
-            assert_eq!(table.len(), 503, "§31 has 503 rows");
+            assert_eq!(table.len(), 515, "§31 has 515 rows");
             assert_eq!(model.ids.id.len(), table.len(), "register row count");
             for ((spec_id, spec_suite, spec_statement), row) in
                 table.iter().zip(model.ids.id.iter())
@@ -3968,6 +3968,15 @@ fn bootstrap_custody_decisions() {
             .into_iter()
             .map(|(name, text)| (name.to_owned(), text.to_owned()))
             .collect();
+    let executables: BTreeMap<String, String> = [
+        ("lake", "5"),
+        ("lean", "6"),
+        ("leanchecker", "7"),
+        ("rustc", "8"),
+    ]
+    .into_iter()
+    .map(|(name, digit)| (name.to_owned(), digit.repeat(64)))
+    .collect();
     let here = Identity {
         repository: "UOR-Foundation/LexLean".to_owned(),
         run_id: "100".to_owned(),
@@ -3976,6 +3985,7 @@ fn bootstrap_custody_decisions() {
         tree: "2".repeat(40),
         pins: pins.clone(),
         toolchains: toolchains.clone(),
+        executables: executables.clone(),
     };
     let bundle = ("d".repeat(64), 162);
     let record = Custody {
@@ -3987,6 +3997,7 @@ fn bootstrap_custody_decisions() {
         tree: here.tree.clone(),
         pins,
         toolchains,
+        executables,
         bundle_path: ".lexlean/production/bundle".to_owned(),
         bundle_sha256: bundle.0.clone(),
         bundle_files: bundle.1,
@@ -4020,6 +4031,25 @@ fn bootstrap_custody_decisions() {
                 record
                     .toolchains
                     .insert("rustc".to_owned(), "rustc 1.97.0".to_owned());
+            }),
+        ),
+        // An export whose toolchain reports the pinned versions but whose
+        // executables are other bytes: a changed `leanchecker`, or a binary
+        // built by another `rustc` (§22.11).
+        (
+            "executables",
+            Box::new(|record| {
+                record
+                    .executables
+                    .insert("leanchecker".to_owned(), "9".repeat(64));
+            }),
+        ),
+        (
+            "executables",
+            Box::new(|record| {
+                record
+                    .executables
+                    .insert("rustc".to_owned(), "0".repeat(64));
             }),
         ),
         (
