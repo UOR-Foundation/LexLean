@@ -11,7 +11,7 @@
   {
     "part": "examples",
     "recipes": "examples",
-    "examples_part": "without:uor-atlas",
+    "examples_part": "without:uor-atlas,bootstrap",
     "bdd_part": "",
     "width": "2",
     "memory_kib": "12582912",
@@ -355,6 +355,24 @@
     "recipes": "bdd",
     "examples_part": "",
     "bdd_part": "bootstrap-manifest-text",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-stdlib",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "stdlib",
+    "width": "",
+    "memory_kib": "",
+    "hints": ""
+  },
+  {
+    "part": "bdd-language-models",
+    "recipes": "bdd",
+    "examples_part": "",
+    "bdd_part": "language-models",
     "width": "",
     "memory_kib": "",
     "hints": ""

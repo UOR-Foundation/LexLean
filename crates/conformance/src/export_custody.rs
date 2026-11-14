@@ -328,13 +328,14 @@ fn copy_files(from: &Utf8Path, to: &Utf8Path) -> Result<(), String> {
 
 /// Export the bootstrap project once for the run, require its packages to
 /// equal the committed packages, and write the bundle and its custody record
-/// to `output`. Returns the record.
+/// to `output`. Returns the record, and the export, whose verified directory
+/// the `examples` recipe then holds to its records (§9.4).
 ///
 /// # Errors
 ///
 /// When the run or checkout cannot be named, the export fails, a package
 /// differs from the committed one, or `output` cannot be written.
-pub fn publish(output: &Utf8Path) -> Result<Custody, String> {
+pub fn publish(output: &Utf8Path) -> Result<(Custody, Exported), String> {
     let root = support::repo_root();
     let before = identity(&root)?;
     let exported = harness::export(BOOTSTRAP)?;
@@ -372,7 +373,7 @@ pub fn publish(output: &Utf8Path) -> Result<Custody, String> {
         harness::canonical(&custody),
     )
     .map_err(|error| format!("{output}/{CUSTODY_FILE}: {error}"))?;
-    Ok(custody)
+    Ok((custody, exported))
 }
 
 /// Wait in `directory` for the run's export, check its custody record
