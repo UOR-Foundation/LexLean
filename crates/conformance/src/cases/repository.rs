@@ -4014,7 +4014,7 @@ fn intel_host_workflow(ci: &str) -> Result<(), String> {
         )?;
         require(
             body,
-            "run: rustup toolchain install",
+            "run: bash .github/retry.sh rustup toolchain install",
             "Intel execution uses the Rust pin",
         )?;
         let timeout = body
@@ -4327,7 +4327,11 @@ fn windows_host_workflow(ci: &str) -> Result<(), String> {
         ),
         (&part, "      fail-fast: false\n", "a failing lane stops no other"),
         (&part, "    runs-on: windows-2022\n", "the lanes run on the host"),
-        (&part, "        run: rustup toolchain install\n", "the Rust pin"),
+        (
+            &part,
+            "        run: bash .github/retry.sh rustup toolchain install\n",
+            "the Rust pin",
+        ),
         (
             &part,
             "if [ \"$host\" != x86_64-pc-windows-msvc ]; then",
