@@ -55,9 +55,9 @@ const EVALUATOR_NODES: usize = 300;
 const BASE_NODES: usize = 150;
 /// The mutants drawn, of which the checker and the filters keep some.
 const MUTANT_DRAWS: usize = 3_000;
-const VECTORS: usize = 157;
-const VECTORS_WITHIN: usize = 156;
-const EVALUATOR_MUTANTS: usize = 283;
+const VECTORS: usize = 158;
+const VECTORS_WITHIN: usize = 157;
+const EVALUATOR_MUTANTS: usize = 278;
 
 /// A program with what the roots are given and the oracle's items.
 pub(super) struct Vector {

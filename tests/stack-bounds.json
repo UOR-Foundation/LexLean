@@ -42,6 +42,12 @@
     "bootstrap/check_program": {
       "debug": 13697024
     },
+    "bootstrap/check_signature": {
+      "debug": 2031616
+    },
+    "bootstrap/check_value": {
+      "debug": 2228224
+    },
     "bootstrap/correspond_crate": {
       "debug": 4915200
     },

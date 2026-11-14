@@ -1,0 +1,142 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{SWork}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{SExpr}: \texttt{(LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Constructor \texttt{SBind}: \texttt{(ByteArray)}.\par
+\noindent Constructor \texttt{STrunc}: \texttt{(Nat)}.\par
+\noindent Constructor \texttt{SUni}: \texttt{(LexLeanBoot.LexiconLse.Universe)}.\par
+\subsection*{\texttt{Sc}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{work}: \texttt{List (SWork)}.\par
+\noindent Field \texttt{scope}: \texttt{List (ByteArray)}.\par
+\noindent Field \texttt{depth}: \texttt{Nat}.\par
+\noindent Field \texttt{error}: \texttt{Option (ByteArray)}.\par
+\subsection*{\texttt{Rc}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{stack}: \texttt{List (LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Field \texttt{found}: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (left) (right) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{member}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray)) (wanted : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, item)}, captures \texttt{(wanted)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (item : ByteArray) => (if found then true else (LexLeanRuntime.equal (item) (wanted) : Bool)))) (false) (items) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{dropFront}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(items : List (ByteArray)) (count : Nat)}.\par
+\noindent Closure 1: binds \texttt{(rest)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterateUntil ((fun (rest : List (ByteArray)) => (match rest with | List.nil => Option.none | List.cons \_ tail => Option.some (tail)))) (count) (items) : (Prod (List (ByteArray)) (Bool)))).1}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{scGo}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Sc) (work : List (SWork))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Sc)}.\par
+\noindent Definition: \texttt{Option.some ((\{ work := work, scope := (st).scope, depth := (st).depth, error := Option.none \} : Sc))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{scFail}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Sc) (message : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Sc)}.\par
+\noindent Definition: \texttt{Option.some ((\{ work := (st).work, scope := (st).scope, depth := (st).depth, error := Option.some (message) \} : Sc))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{uniStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Sc) (rest : List (SWork)) (universes : List (ByteArray)) (u : LexLeanBoot.LexiconLse.Universe)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Sc)}.\par
+\noindent Definition: \texttt{(match u with | LexLeanBoot.LexiconLse.Universe.UNum \_ => scGo (st) (rest) | LexLeanBoot.LexiconLse.Universe.UVar name => (if member (universes) (name) then scGo (st) (rest) else scFail (st) (cat (cat (lit ("universe variable `")) (name)) (lit ("` is not declared")))) | LexLeanBoot.LexiconLse.Universe.USucc inner => scGo (st) ((SWork.SUni (inner) :: rest)) | LexLeanBoot.LexiconLse.Universe.UMax items => scGo (st) ((SWork.SUni (items) :: rest)) | LexLeanBoot.LexiconLse.Universe.UIMax a b => scGo (st) ((SWork.SUni (a) :: (SWork.SUni (b) :: rest))) | LexLeanBoot.LexiconLse.Universe.UNil => scGo (st) (rest) | LexLeanBoot.LexiconLse.Universe.UItem head tail => scGo (st) ((SWork.SUni (head) :: (SWork.SUni (tail) :: rest))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{exprStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Sc) (rest : List (SWork)) (expr : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Sc)}.\par
+\noindent Definition: \texttt{(match expr with | LexLeanBoot.LexiconLse.Lse.LSortProp => scGo (st) (rest) | LexLeanBoot.LexiconLse.Lse.LSortType u => scGo (st) ((SWork.SUni (u) :: rest)) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ us => scGo (st) ((SWork.SUni (us) :: rest)) | LexLeanBoot.LexiconLse.Lse.LLocal name => (if member ((st).scope) (name) then scGo (st) (rest) else scFail (st) (cat (cat (lit ("local `")) (name)) (lit ("` is not in scope")))) | LexLeanBoot.LexiconLse.Lse.LApp f args => scGo (st) ((SWork.SExpr (f) :: (SWork.SExpr (args) :: rest))) | LexLeanBoot.LexiconLse.Lse.LPi binders body => scGo (st) ((SWork.SExpr (binders) :: (SWork.SExpr (body) :: (SWork.STrunc ((st).depth) :: rest)))) | LexLeanBoot.LexiconLse.Lse.LLam binders body => scGo (st) ((SWork.SExpr (binders) :: (SWork.SExpr (body) :: (SWork.STrunc ((st).depth) :: rest)))) | LexLeanBoot.LexiconLse.Lse.LLet name ty value body => scGo (st) ((SWork.SExpr (ty) :: (SWork.SExpr (value) :: (SWork.SBind (name) :: (SWork.SExpr (body) :: (SWork.STrunc ((st).depth) :: rest)))))) | LexLeanBoot.LexiconLse.Lse.LNat \_ => scGo (st) (rest) | LexLeanBoot.LexiconLse.Lse.LNil => scGo (st) (rest) | LexLeanBoot.LexiconLse.Lse.LArg head tail => scGo (st) ((SWork.SExpr (head) :: (SWork.SExpr (tail) :: rest))) | LexLeanBoot.LexiconLse.Lse.LBinder \_ name ty more => scGo (st) ((SWork.SExpr (ty) :: (SWork.SBind (name) :: (SWork.SExpr (more) :: rest)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{scStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(universes : List (ByteArray)) (st : Sc)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Sc)}.\par
+\noindent Definition: \texttt{(match (st).error with | Option.some \_ => Option.none | Option.none => (match (st).work with | List.nil => Option.none | List.cons item rest => (match item with | SWork.SExpr expr => exprStep (st) (rest) (expr) | SWork.SBind name => Option.some ((\{ work := rest, scope := (name :: (st).scope), depth := ((st).depth + 1), error := Option.none \} : Sc)) | SWork.STrunc wanted => Option.some ((\{ work := rest, scope := dropFront ((st).scope) ((LexLeanRuntime.subtract ((st).depth) (wanted) : Nat)), depth := wanted, error := Option.none \} : Sc)) | SWork.SUni u => uniStep (st) (rest) (universes) (u))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{checkScopes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expr : LexLeanBoot.LexiconLse.Lse) (universes : List (ByteArray)) (bound : Nat)}.\par
+\noindent Closure 1: binds \texttt{(st)}, captures \texttt{(universes)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(((LexLeanCollections.iterateUntil ((fun (st : Sc) => scStep (universes) (st))) (((LexLeanRuntime.multiply (bound) (4) : Nat) + 4)) ((\{ work := (SWork.SExpr (expr) :: ([] : List (SWork))), scope := ([] : List (ByteArray)), depth := 0, error := Option.none \} : Sc)) : (Prod (Sc) (Bool)))).1).error}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rcGo}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rc) (stack : List (LexLeanBoot.LexiconLse.Lse))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Rc)}.\par
+\noindent Definition: \texttt{Option.some ((\{ stack := stack, found := (st).found \} : Rc))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{rcStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rc)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Rc)}.\par
+\noindent Definition: \texttt{(match (st).stack with | List.nil => Option.none | List.cons expr rest => (match expr with | LexLeanBoot.LexiconLse.Lse.LSortProp => rcGo (st) (rest) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => rcGo (st) (rest) | LexLeanBoot.LexiconLse.Lse.LConst p e \_ => Option.some ((\{ stack := rest, found := ((p, e) :: (st).found) \} : Rc)) | LexLeanBoot.LexiconLse.Lse.LLocal \_ => rcGo (st) (rest) | LexLeanBoot.LexiconLse.Lse.LApp f args => rcGo (st) ((f :: (args :: rest))) | LexLeanBoot.LexiconLse.Lse.LPi binders body => rcGo (st) ((binders :: (body :: rest))) | LexLeanBoot.LexiconLse.Lse.LLam binders body => rcGo (st) ((binders :: (body :: rest))) | LexLeanBoot.LexiconLse.Lse.LLet \_ ty value body => rcGo (st) ((ty :: (value :: (body :: rest)))) | LexLeanBoot.LexiconLse.Lse.LNat \_ => rcGo (st) (rest) | LexLeanBoot.LexiconLse.Lse.LNil => rcGo (st) (rest) | LexLeanBoot.LexiconLse.Lse.LArg head tail => rcGo (st) ((head :: (tail :: rest))) | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ ty more => rcGo (st) ((ty :: (more :: rest)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{referencedConsts}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expr : LexLeanBoot.LexiconLse.Lse) (bound : Nat)}.\par
+\noindent Closure 1: binds \texttt{(st)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (ByteArray)))}.\par
+\noindent Definition: \texttt{LexLeanStd.Order.reverseList ((Prod (ByteArray) (ByteArray))) ((((LexLeanCollections.iterateUntil ((fun (st : Rc) => rcStep (st))) (((LexLeanRuntime.multiply (bound) (4) : Nat) + 4)) ((\{ stack := (expr :: ([] : List (LexLeanBoot.LexiconLse.Lse))), found := ([] : List ((Prod (ByteArray) (ByteArray)))) \} : Rc)) : (Prod (Rc) (Bool)))).1).found)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isSort}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expr : LexLeanBoot.LexiconLse.Lse)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match expr with | LexLeanBoot.LexiconLse.Lse.LSortProp => true | LexLeanBoot.LexiconLse.Lse.LSortType \_ => true | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => false | LexLeanBoot.LexiconLse.Lse.LLocal \_ => false | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => false | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => false | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => false | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => false | LexLeanBoot.LexiconLse.Lse.LNat \_ => false | LexLeanBoot.LexiconLse.Lse.LNil => false | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => false | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{explicitStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : (Prod (LexLeanBoot.LexiconLse.Lse) (Nat)))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option ((Prod (LexLeanBoot.LexiconLse.Lse) (Nat)))}.\par
+\noindent Definition: \texttt{(match (state).1 with | LexLeanBoot.LexiconLse.Lse.LBinder mode \_ \_ more => Option.some ((more, (if (Nat.beq (mode) (0)) then ((state).2 + 1) else (state).2))) | LexLeanBoot.LexiconLse.Lse.LSortProp => Option.none | LexLeanBoot.LexiconLse.Lse.LSortType \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LLocal \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LPi \_ \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LNat \_ => Option.none | LexLeanBoot.LexiconLse.Lse.LNil => Option.none | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{outerShape}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(expr : LexLeanBoot.LexiconLse.Lse) (bound : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{(Prod (Nat) (Bool))}.\par
+\noindent Definition: \texttt{(match expr with | LexLeanBoot.LexiconLse.Lse.LPi binders body => ((((LexLeanCollections.iterateUntil ((fun (state : (Prod (LexLeanBoot.LexiconLse.Lse) (Nat))) => explicitStep (state))) ((bound + 1)) ((binders, 0)) : (Prod ((Prod (LexLeanBoot.LexiconLse.Lse) (Nat))) (Bool)))).1).2, isSort (body)) | LexLeanBoot.LexiconLse.Lse.LSortProp => (0, true) | LexLeanBoot.LexiconLse.Lse.LSortType \_ => (0, true) | LexLeanBoot.LexiconLse.Lse.LConst \_ \_ \_ => (0, false) | LexLeanBoot.LexiconLse.Lse.LLocal \_ => (0, false) | LexLeanBoot.LexiconLse.Lse.LApp \_ \_ => (0, false) | LexLeanBoot.LexiconLse.Lse.LLam \_ \_ => (0, false) | LexLeanBoot.LexiconLse.Lse.LLet \_ \_ \_ \_ => (0, false) | LexLeanBoot.LexiconLse.Lse.LNat \_ => (0, false) | LexLeanBoot.LexiconLse.Lse.LNil => (0, false) | LexLeanBoot.LexiconLse.Lse.LArg \_ \_ => (0, false) | LexLeanBoot.LexiconLse.Lse.LBinder \_ \_ \_ \_ => (0, false))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\end{document}

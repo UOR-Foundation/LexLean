@@ -1,0 +1,889 @@
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\begin{document}
+\section*{Semantic declarations}
+\subsection*{\texttt{Pos}}
+\noindent Kind: \texttt{inductive}.\par
+\noindent Constructor \texttt{PTerm}: \texttt{()}.\par
+\noindent Constructor \texttt{PType}: \texttt{()}.\par
+\noindent Constructor \texttt{PMember}: \texttt{()}.\par
+\noindent Constructor \texttt{PParam}: \texttt{()}.\par
+\noindent Constructor \texttt{PNode}: \texttt{(LexLeanStd.Json.Json)}.\par
+\noindent Constructor \texttt{PAny}: \texttt{()}.\par
+\subsection*{\texttt{Cell}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{key}: \texttt{ByteArray}.\par
+\noindent Field \texttt{value}: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Field \texttt{rest}: \texttt{LexLeanStd.Json.Json}.\par
+\subsection*{\texttt{Elem}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{value}: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Field \texttt{rest}: \texttt{LexLeanStd.Json.Json}.\par
+\subsection*{\texttt{Look}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{rest}: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Field \texttt{found}: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\subsection*{\texttt{Gather}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{rest}: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Field \texttt{items}: \texttt{List (LexLeanStd.Json.Json)}.\par
+\subsection*{\texttt{Slash}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{cursor}: \texttt{Nat}.\par
+\noindent Field \texttt{after}: \texttt{Nat}.\par
+\subsection*{\texttt{Frame}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{op}: \texttt{Nat}.\par
+\noindent Field \texttt{stage}: \texttt{Nat}.\par
+\noindent Field \texttt{depth}: \texttt{Nat}.\par
+\noindent Field \texttt{offset}: \texttt{Nat}.\par
+\noindent Field \texttt{word}: \texttt{ByteArray}.\par
+\noindent Field \texttt{place}: \texttt{Pos}.\par
+\noindent Field \texttt{scope}: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\noindent Field \texttt{values}: \texttt{List (LexLeanStd.Json.Json)}.\par
+\noindent Field \texttt{members}: \texttt{List ((Prod (ByteArray) (LexLeanStd.Json.Json)))}.\par
+\noindent Field \texttt{held}: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Field \texttt{heldMore}: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Field \texttt{spans}: \texttt{List ((Prod (Nat) (Nat)))}.\par
+\subsection*{\texttt{Rd}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{pos}: \texttt{Nat}.\par
+\noindent Field \texttt{stack}: \texttt{List (Frame)}.\par
+\noindent Field \texttt{value}: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Field \texttt{mode}: \texttt{Nat}.\par
+\noindent Field \texttt{goal}: \texttt{Nat}.\par
+\noindent Field \texttt{place}: \texttt{Pos}.\par
+\noindent Field \texttt{depth}: \texttt{Nat}.\par
+\noindent Field \texttt{error}: \texttt{Option (LexLeanBoot.SurfaceLex.Failure)}.\par
+\noindent Field \texttt{spans}: \texttt{List ((Prod (Nat) (Nat)))}.\par
+\subsection*{\texttt{Got}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{value}: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Field \texttt{pos}: \texttt{Nat}.\par
+\noindent Field \texttt{error}: \texttt{Option (LexLeanBoot.SurfaceLex.Failure)}.\par
+\subsection*{\texttt{Names}}
+\noindent Kind: \texttt{structure}.\par
+\noindent Field \texttt{items}: \texttt{List (LexLeanStd.Json.Json)}.\par
+\noindent Field \texttt{pos}: \texttt{Nat}.\par
+\noindent Field \texttt{more}: \texttt{Bool}.\par
+\noindent Field \texttt{error}: \texttt{Option (LexLeanBoot.SurfaceLex.Failure)}.\par
+\subsection*{\texttt{lit}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(literal : String)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.utf8Encode (literal) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{cat}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.append (left) (right) : ByteArray)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{both}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : Bool) (right : Bool)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(if left then right else false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{same}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(left : ByteArray) (right : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanRuntime.equal (left) (right) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{ticked}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(word : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{cat (cat (lit ("`")) (word)) (lit ("`"))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{listed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(needle : ByteArray) (items : List (ByteArray))}.\par
+\noindent Closure 1: binds \texttt{(found, item)}, captures \texttt{(needle)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(LexLeanCollections.listFold ((fun (found : Bool) (item : ByteArray) => (if found then true else (LexLeanRuntime.equal (item) (needle) : Bool)))) (false) (items) : Bool)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{nextMember}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(chain : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Cell)}.\par
+\noindent Definition: \texttt{(match chain with | LexLeanStd.Json.Json.JMember key value rest => Option.some ((\{ key := key, value := value, rest := rest \} : Cell)) | LexLeanStd.Json.Json.JBool \_ => Option.none | LexLeanStd.Json.Json.JInt \_ \_ => Option.none | LexLeanStd.Json.Json.JStr \_ => Option.none | LexLeanStd.Json.Json.JArr \_ => Option.none | LexLeanStd.Json.Json.JObj \_ => Option.none | LexLeanStd.Json.Json.JNil => Option.none | LexLeanStd.Json.Json.JItem \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{nextItem}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(chain : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Elem)}.\par
+\noindent Definition: \texttt{(match chain with | LexLeanStd.Json.Json.JItem element rest => Option.some ((\{ value := element, rest := rest \} : Elem)) | LexLeanStd.Json.Json.JBool \_ => Option.none | LexLeanStd.Json.Json.JInt \_ \_ => Option.none | LexLeanStd.Json.Json.JStr \_ => Option.none | LexLeanStd.Json.Json.JArr \_ => Option.none | LexLeanStd.Json.Json.JObj \_ => Option.none | LexLeanStd.Json.Json.JNil => Option.none | LexLeanStd.Json.Json.JMember \_ \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{asObj}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match value with | LexLeanStd.Json.Json.JObj inner => Option.some (inner) | LexLeanStd.Json.Json.JBool \_ => Option.none | LexLeanStd.Json.Json.JInt \_ \_ => Option.none | LexLeanStd.Json.Json.JStr \_ => Option.none | LexLeanStd.Json.Json.JArr \_ => Option.none | LexLeanStd.Json.Json.JNil => Option.none | LexLeanStd.Json.Json.JItem \_ \_ => Option.none | LexLeanStd.Json.Json.JMember \_ \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{asArr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match value with | LexLeanStd.Json.Json.JArr inner => Option.some (inner) | LexLeanStd.Json.Json.JBool \_ => Option.none | LexLeanStd.Json.Json.JInt \_ \_ => Option.none | LexLeanStd.Json.Json.JStr \_ => Option.none | LexLeanStd.Json.Json.JObj \_ => Option.none | LexLeanStd.Json.Json.JNil => Option.none | LexLeanStd.Json.Json.JItem \_ \_ => Option.none | LexLeanStd.Json.Json.JMember \_ \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{asStr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match value with | LexLeanStd.Json.Json.JStr text => Option.some (text) | LexLeanStd.Json.Json.JBool \_ => Option.none | LexLeanStd.Json.Json.JInt \_ \_ => Option.none | LexLeanStd.Json.Json.JArr \_ => Option.none | LexLeanStd.Json.Json.JObj \_ => Option.none | LexLeanStd.Json.Json.JNil => Option.none | LexLeanStd.Json.Json.JItem \_ \_ => Option.none | LexLeanStd.Json.Json.JMember \_ \_ \_ => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lookStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : ByteArray) (state : Look)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Look)}.\par
+\noindent Definition: \texttt{(match (state).found with | Option.some \_ => Option.none | Option.none => (match nextMember ((state).rest) with | Option.some cell => (if same ((cell).key) (key) then Option.some ((\{ rest := LexLeanStd.Json.Json.JNil, found := Option.some ((cell).value) \} : Look)) else Option.some ((\{ rest := (cell).rest, found := Option.none \} : Look))) | Option.none => Option.none))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{getIn}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(value : LexLeanStd.Json.Json) (key : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(key)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match asObj (value) with | Option.some chain => (((LexLeanCollections.iterateUntil ((fun (state : Look) => lookStep (key) (state))) (1000000) ((\{ rest := chain, found := Option.none \} : Look)) : (Prod (Look) (Bool)))).1).found | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{present}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Option (LexLeanStd.Json.Json))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match found with | Option.some \_ => true | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{strOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Option (LexLeanStd.Json.Json))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(match found with | Option.some value => asStr (value) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{arrOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(found : Option (LexLeanStd.Json.Json))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match found with | Option.some value => asArr (value) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{gatherStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(state : Gather)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Gather)}.\par
+\noindent Definition: \texttt{(match nextItem ((state).rest) with | Option.some elem => Option.some ((\{ rest := (elem).rest, items := ((elem).value :: (state).items) \} : Gather)) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{itemsOfChain}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(chain : LexLeanStd.Json.Json)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{()}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{LexLeanStd.Order.reverseList (LexLeanStd.Json.Json) ((((LexLeanCollections.iterateUntil ((fun (state : Gather) => gatherStep (state))) (1000000) ((\{ rest := chain, items := ([] : List (LexLeanStd.Json.Json)) \} : Gather)) : (Prod (Gather) (Bool)))).1).items)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{slashStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray) (state : Slash)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Slash)}.\par
+\noindent Definition: \texttt{(let position : Nat := (state).cursor; (match LexLeanStd.Text.byteAt (text) (position) with | Option.some byte => Option.some ((\{ cursor := (position + 1), after := (if (Nat.beq ((toNat (byte) : Nat)) (47)) then (position + 1) else (state).after) \} : Slash)) | Option.none => Option.none))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{lastSegment}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(text)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{(let after : Nat := (((LexLeanCollections.iterateUntil ((fun (state : Slash) => slashStep (text) (state))) (((LexLeanRuntime.length (text) : Nat) + 1)) ((\{ cursor := 0, after := 0 \} : Slash)) : (Prod (Slash) (Bool)))).1).after; LexLeanStd.Text.sliceOr (text) (after) ((LexLeanRuntime.subtract ((LexLeanRuntime.length (text) : Nat)) (after) : Nat)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{defNamed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (name : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match getIn (schema) (lit ("\$defs")) with | Option.some defs => getIn (defs) (name) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{resolveStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (node : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match strOf (getIn (node) (lit ("\$ref"))) with | Option.some reference => defNamed (schema) (lastSegment (reference)) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{resolve}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (node : LexLeanStd.Json.Json)}.\par
+\noindent Closure 1: binds \texttt{(current)}, captures \texttt{(schema)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{((LexLeanCollections.iterateUntil ((fun (current : LexLeanStd.Json.Json) => resolveStep (schema) (current))) (4096) (node) : (Prod (LexLeanStd.Json.Json) (Bool)))).1}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{classify}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (node : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Pos}.\par
+\noindent Definition: \texttt{(match strOf (getIn (node) (lit ("\$ref"))) with | Option.some reference => (let segment : ByteArray := lastSegment (reference); (if same (segment) (lit ("term")) then Pos.PTerm else (if same (segment) (lit ("type")) then Pos.PType else (if same (segment) (lit ("member")) then Pos.PMember else (if same (segment) (lit ("parameter")) then Pos.PParam else Pos.PNode (resolve (schema) (node))))))) | Option.none => Pos.PNode (node))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{itemsOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (node : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Pos}.\par
+\noindent Definition: \texttt{(match getIn (resolve (schema) (node)) (lit ("items")) with | Option.some items => classify (schema) (items) | Option.none => Pos.PAny)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{memberOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (object : Option (LexLeanStd.Json.Json)) (key : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Pos}.\par
+\noindent Definition: \texttt{(match object with | Option.some node => (match getIn (resolve (schema) (node)) (lit ("properties")) with | Option.some properties => (match getIn (properties) (key) with | Option.some member => classify (schema) (member) | Option.none => Pos.PAny) | Option.none => Pos.PAny) | Option.none => Pos.PAny)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{tagIs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(alternative : LexLeanStd.Json.Json) (kind : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, item)}, captures \texttt{(kind)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match getIn (alternative) (lit ("properties")) with | Option.some properties => (match getIn (properties) (lit ("kind")) with | Option.some tag => (if (match strOf (getIn (tag) (lit ("const"))) with | Option.some constant => same (constant) (kind) | Option.none => false) then true else (match arrOf (getIn (tag) (lit ("enum"))) with | Option.some kinds => (LexLeanCollections.listFold ((fun (found : Bool) (item : LexLeanStd.Json.Json) => (if found then true else (match asStr (item) with | Option.some text => same (text) (kind) | Option.none => false)))) (false) (itemsOfChain (kinds)) : Bool) | Option.none => false)) | Option.none => false) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{alternativeOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (union : LexLeanStd.Json.Json) (kind : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(found, item)}, captures \texttt{(kind, schema)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match arrOf (getIn (resolve (schema) (union)) (lit ("oneOf"))) with | Option.some alternatives => (LexLeanCollections.listFold ((fun (found : Option (LexLeanStd.Json.Json)) (item : LexLeanStd.Json.Json) => (match found with | Option.some \_ => found | Option.none => (let resolved : LexLeanStd.Json.Json := resolve (schema) (item); (if tagIs (resolved) (kind) then Option.some (resolved) else Option.none))))) (Option.none) (itemsOfChain (alternatives)) : Option (LexLeanStd.Json.Json)) | Option.none => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{isUnion}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (node : LexLeanStd.Json.Json)}.\par
+\noindent Closure 1: binds \texttt{(fine, item)}, captures \texttt{(schema)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match arrOf (getIn (resolve (schema) (node)) (lit ("oneOf"))) with | Option.some alternatives => (LexLeanCollections.listFold ((fun (fine : Bool) (item : LexLeanStd.Json.Json) => (if fine then (match getIn (resolve (schema) (item)) (lit ("properties")) with | Option.some properties => present (getIn (properties) (lit ("kind"))) | Option.none => false) else false))) (true) (itemsOfChain (alternatives)) : Bool) | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{kindScope}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (place : Pos) (kind : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match place with | Pos.PTerm => (match defNamed (schema) (lit ("term")) with | Option.some union => alternativeOf (schema) (union) (kind) | Option.none => Option.none) | Pos.PType => (match defNamed (schema) (lit ("type")) with | Option.some union => alternativeOf (schema) (union) (kind) | Option.none => Option.none) | Pos.PNode node => (if isUnion (schema) (node) then alternativeOf (schema) (node) (kind) else Option.some (node)) | Pos.PMember => Option.none | Pos.PParam => Option.none | Pos.PAny => Option.none)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{braceScope}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (place : Pos)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match place with | Pos.PNode node => Option.some (node) | Pos.PParam => defNamed (schema) (lit ("parameter")) | Pos.PTerm => Option.none | Pos.PType => Option.none | Pos.PMember => Option.none | Pos.PAny => Option.none)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{itemPlace}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (place : Pos)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Pos}.\par
+\noindent Definition: \texttt{(match place with | Pos.PNode node => itemsOf (schema) (node) | Pos.PTerm => Pos.PAny | Pos.PType => Pos.PAny | Pos.PMember => Pos.PAny | Pos.PParam => Pos.PAny | Pos.PAny => Pos.PAny)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{code}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{LexLeanBoot.SurfaceGeneric.codeAt (toks) (position)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{txt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanBoot.SurfaceGeneric.textAt (toks) (position)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wordIs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (position : Nat) (expected : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{both ((Nat.beq (code (toks) (position)) (12))) (same (txt (toks) (position)) (expected))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{lastEnd}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Nat}.\par
+\noindent Definition: \texttt{(if (Nat.beq (position) (0)) then 0 else (match LexLeanBoot.SurfaceGeneric.tokenAt (toks) ((LexLeanRuntime.subtract (position) (1) : Nat)) with | Option.some found => (found).stop | Option.none => 0))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{allDigits}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{both ((Nat.blt (0) ((LexLeanRuntime.length (text) : Nat)))) ((Nat.beq (LexLeanBoot.SurfaceGeneric.digitsEnd (text) (0)) ((LexLeanRuntime.length (text) : Nat))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{lowerHex}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(position)}, captures \texttt{(text)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(let stop : Nat := ((LexLeanCollections.iterateUntil ((fun (position : Nat) => (match LexLeanStd.Text.byteAt (text) (position) with | Option.some byte => (let number : Nat := (toNat (byte) : Nat); (if (if both ((Nat.ble (48) (number))) ((Nat.ble (number) (57))) then true else both ((Nat.ble (97) (number))) ((Nat.ble (number) (102)))) then Option.some ((position + 1)) else Option.none)) | Option.none => Option.none))) (((LexLeanRuntime.length (text) : Nat) + 1)) (0) : (Prod (Nat) (Bool)))).1; both ((Nat.beq (stop) ((LexLeanRuntime.length (text) : Nat)))) ((Nat.beq ((LexLeanRuntime.remainder ((LexLeanRuntime.length (text) : Nat)) (2) (0) : Nat)) (0))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{tailFrom}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray) (skip : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{ByteArray}.\par
+\noindent Definition: \texttt{LexLeanStd.Text.sliceOr (text) (skip) ((LexLeanRuntime.subtract ((LexLeanRuntime.length (text) : Nat)) (skip) : Nat))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reservedTerm}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(lit ("let") :: (lit ("if") :: (lit ("match") :: (lit ("fun") :: (lit ("forall") :: (lit ("nil") :: (lit ("cons") :: (lit ("first") :: (lit ("second") :: (lit ("not") :: (lit ("apply") :: (lit ("ctor") :: (lit ("record") :: (lit ("project") :: (lit ("prim") :: (lit ("ref") :: (lit ("checked") :: (lit ("then") :: (lit ("else") :: (lit ("with") :: (lit ("true") :: ([] : List (ByteArray)))))))))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{plain}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(name : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{both (LexLeanBoot.SurfaceGeneric.isBare (name)) (both ((if listed (name) (reservedTerm) then false else true)) ((if same (name) (lit ("false")) then false else true)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{nullaryKind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(word : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(if same (word) (lit ("Bool")) then Option.some (lit ("bool")) else (if same (word) (lit ("Bytes")) then Option.some (lit ("bytes")) else (if same (word) (lit ("Int")) then Option.some (lit ("int")) else (if same (word) (lit ("Int8")) then Option.some (lit ("int8")) else (if same (word) (lit ("Int16")) then Option.some (lit ("int16")) else (if same (word) (lit ("Int32")) then Option.some (lit ("int32")) else (if same (word) (lit ("Int64")) then Option.some (lit ("int64")) else (if same (word) (lit ("Nat")) then Option.some (lit ("nat")) else (if same (word) (lit ("Ordering")) then Option.some (lit ("ordering")) else (if same (word) (lit ("Prop")) then Option.some (lit ("prop")) else (if same (word) (lit ("String")) then Option.some (lit ("string")) else (if same (word) (lit ("Type")) then Option.some (lit ("type")) else (if same (word) (lit ("UInt8")) then Option.some (lit ("uint8")) else (if same (word) (lit ("UInt16")) then Option.some (lit ("uint16")) else (if same (word) (lit ("UInt32")) then Option.some (lit ("uint32")) else (if same (word) (lit ("UInt64")) then Option.some (lit ("uint64")) else (if same (word) (lit ("Unit")) then Option.some (lit ("unit")) else (if same (word) (lit ("ContractViolation")) then Option.some (lit ("contract\_violation")) else (if same (word) (lit ("ReasoningFailure")) then Option.some (lit ("reasoning\_failure")) else Option.none)))))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{heads}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List (ByteArray)}.\par
+\noindent Definition: \texttt{(lit ("List") :: (lit ("Option") :: (lit ("Result") :: (lit ("Set") :: (lit ("Map") :: (lit ("Fn") :: ([] : List (ByteArray))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{reservedType}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(word : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match nullaryKind (word) with | Option.some \_ => true | Option.none => listed (word) (heads))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{representationOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(spelling : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(if same (spelling) (lit ("Int")) then Option.some (lit ("int")) else (if same (spelling) (lit ("Int8")) then Option.some (lit ("int8")) else (if same (spelling) (lit ("Int16")) then Option.some (lit ("int16")) else (if same (spelling) (lit ("Int32")) then Option.some (lit ("int32")) else (if same (spelling) (lit ("Int64")) then Option.some (lit ("int64")) else (if same (spelling) (lit ("UInt8")) then Option.some (lit ("uint8")) else (if same (spelling) (lit ("UInt16")) then Option.some (lit ("uint16")) else (if same (spelling) (lit ("UInt32")) then Option.some (lit ("uint32")) else (if same (spelling) (lit ("UInt64")) then Option.some (lit ("uint64")) else Option.none)))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{infixKind}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(spelling : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (ByteArray)}.\par
+\noindent Definition: \texttt{(if same (spelling) (lit ("+")) then Option.some (lit ("add")) else (if same (spelling) (lit ("=")) then Option.some (lit ("eq")) else (if same (spelling) (lit ("<=")) then Option.some (lit ("le")) else (if same (spelling) (lit ("<")) then Option.some (lit ("lt")) else (if same (spelling) (lit ("=?")) then Option.some (lit ("beq")) else (if same (spelling) (lit ("<=?")) then Option.some (lit ("ble")) else (if same (spelling) (lit ("<?")) then Option.some (lit ("blt")) else (if same (spelling) (lit ("\&\&")) then Option.some (lit ("and")) else (if same (spelling) (lit ("||")) then Option.some (lit ("or")) else (if same (spelling) (lit ("/\textbackslash{}\textbackslash{}")) then Option.some (lit ("prop\_and")) else (if same (spelling) (lit ("<->")) then Option.some (lit ("iff")) else (if same (spelling) (lit ("->")) then Option.some (lit ("implies")) else Option.none))))))))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{isInfix}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(spelling : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Bool}.\par
+\noindent Definition: \texttt{(match infixKind (spelling) with | Option.some \_ => true | Option.none => false)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{objectOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(members : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JObj (LexLeanBoot.SurfaceGeneric.memberChain (LexLeanStd.Order.sortByKey (LexLeanStd.Json.Json) (members)))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{kindNode}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(kind : ByteArray) (members : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{objectOf (((lit ("kind"), LexLeanStd.Json.Json.JStr (kind)) :: members))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{str}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(text : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JStr (text)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{arr}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(itemsRev : List (LexLeanStd.Json.Json))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{LexLeanStd.Json.Json}.\par
+\noindent Definition: \texttt{LexLeanStd.Json.Json.JArr (LexLeanBoot.SurfaceGeneric.itemChain (itemsRev))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{one}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (value : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (LexLeanStd.Json.Json)))}.\par
+\noindent Definition: \texttt{((lit (key), value) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json)))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{two}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(key : String) (value : LexLeanStd.Json.Json) (other : String) (more : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (LexLeanStd.Json.Json)))}.\par
+\noindent Definition: \texttt{((lit (key), value) :: ((lit (other), more) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{withTypes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(members : List ((Prod (ByteArray) (LexLeanStd.Json.Json)))) (types : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{List ((Prod (ByteArray) (LexLeanStd.Json.Json)))}.\par
+\noindent Definition: \texttt{(match asArr (types) with | Option.some \_ => ((lit ("type\_arguments"), types) :: members) | Option.none => members)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{failure}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(offset : Nat) (message : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (LexLeanBoot.SurfaceLex.Failure)}.\par
+\noindent Definition: \texttt{Option.some ((\{ offset := offset, message := message \} : LexLeanBoot.SurfaceLex.Failure))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{readName}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (position : Nat) (what : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Got}.\par
+\noindent Definition: \texttt{(let word : ByteArray := txt (toks) (position); (if both ((Nat.beq (code (toks) (position)) (12))) (LexLeanBoot.SurfaceGeneric.isBare (word)) then (\{ value := str (word), pos := (position + 1), error := Option.none \} : Got) else (\{ value := LexLeanStd.Json.Json.JNil, pos := position, error := failure (LexLeanBoot.SurfaceGeneric.offsetAt (toks) (size) (position)) (cat (cat (cat (lit ("expected ")) (what)) (lit (", found "))) (LexLeanBoot.SurfaceGeneric.describeAt (toks) (position))) \} : Got)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{memberPath}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Got}.\par
+\noindent Definition: \texttt{(let head : Got := readName (toks) (size) (position) (lit ("a name")); (match (head).error with | Option.some \_ => head | Option.none => (let after : Nat := (head).pos; (if (Nat.beq (code (toks) (after)) (9)) then (let name : Got := readName (toks) (size) ((after + 1)) (lit ("a name after `::`")); (match (name).error with | Option.some \_ => name | Option.none => (\{ value := objectOf (two ("module") ((head).value) ("name") ((name).value)), pos := (name).pos, error := Option.none \} : Got))) else (\{ value := objectOf (one ("name") ((head).value)), pos := after, error := Option.none \} : Got)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{namesStep}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (what : ByteArray) (state : Names)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Names)}.\par
+\noindent Definition: \texttt{(match (state).error with | Option.some \_ => Option.none | Option.none => (if (state).more then (let position : Nat := (state).pos; (if (Nat.beq (code (toks) (position)) (3)) then Option.none else (let name : Got := readName (toks) (size) (position) (what); (match (name).error with | Option.some \_ => Option.some ((\{ items := (state).items, pos := position, more := false, error := (name).error \} : Names)) | Option.none => (if (Nat.beq (code (toks) ((name).pos)) (6)) then Option.some ((\{ items := ((name).value :: (state).items), pos := ((name).pos + 1), more := true, error := Option.none \} : Names)) else Option.some ((\{ items := ((name).value :: (state).items), pos := (name).pos, more := false, error := Option.none \} : Names))))))) else Option.none))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{readNames}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (position : Nat) (what : ByteArray)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(size, toks, what)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Got}.\par
+\noindent Definition: \texttt{(if (Nat.beq (code (toks) (position)) (2)) then (let final : Names := ((LexLeanCollections.iterateUntil ((fun (state : Names) => namesStep (toks) (size) (what) (state))) (((LexLeanRuntime.length (toks) : Nat) + 2)) ((\{ items := ([] : List (LexLeanStd.Json.Json)), pos := (position + 1), more := true, error := Option.none \} : Names)) : (Prod (Names) (Bool)))).1; (match (final).error with | Option.some \_ => (\{ value := LexLeanStd.Json.Json.JNil, pos := (final).pos, error := (final).error \} : Got) | Option.none => (if (Nat.beq (code (toks) ((final).pos)) (3)) then (\{ value := arr ((final).items), pos := ((final).pos + 1), error := Option.none \} : Got) else (\{ value := LexLeanStd.Json.Json.JNil, pos := (final).pos, error := failure (LexLeanBoot.SurfaceGeneric.offsetAt (toks) (size) ((final).pos)) (lit ("expected `,` or `]`")) \} : Got)))) else (\{ value := LexLeanStd.Json.Json.JNil, pos := position, error := failure (LexLeanBoot.SurfaceGeneric.offsetAt (toks) (size) (position)) (lit ("expected `[`")) \} : Got))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{frame}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(op : Nat) (depth : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Frame}.\par
+\noindent Definition: \texttt{(\{ op := op, stage := 0, depth := depth, offset := 0, word := lit (""), place := Pos.PAny, scope := Option.none, values := ([] : List (LexLeanStd.Json.Json)), members := ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json)))), held := LexLeanStd.Json.Json.JNil, heldMore := LexLeanStd.Json.Json.JNil, spans := ([] : List ((Prod (Nat) (Nat)))) \} : Frame)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{staged}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(top : Frame) (stage : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Frame}.\par
+\noindent Definition: \texttt{(\{ op := (top).op, stage := stage, depth := (top).depth, offset := (top).offset, word := (top).word, place := (top).place, scope := (top).scope, values := (top).values, members := (top).members, held := (top).held, heldMore := (top).heldMore, spans := (top).spans \} : Frame)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{worded}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(top : Frame) (word : ByteArray) (offset : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Frame}.\par
+\noindent Definition: \texttt{(\{ op := (top).op, stage := (top).stage, depth := (top).depth, offset := offset, word := word, place := (top).place, scope := (top).scope, values := (top).values, members := (top).members, held := (top).held, heldMore := (top).heldMore, spans := (top).spans \} : Frame)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{holding}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(top : Frame) (held : LexLeanStd.Json.Json) (heldMore : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Frame}.\par
+\noindent Definition: \texttt{(\{ op := (top).op, stage := (top).stage, depth := (top).depth, offset := (top).offset, word := (top).word, place := (top).place, scope := (top).scope, values := (top).values, members := (top).members, held := held, heldMore := heldMore, spans := (top).spans \} : Frame)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{adding}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(top : Frame) (value : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Frame}.\par
+\noindent Definition: \texttt{(\{ op := (top).op, stage := (top).stage, depth := (top).depth, offset := (top).offset, word := (top).word, place := (top).place, scope := (top).scope, values := (value :: (top).values), members := (top).members, held := (top).held, heldMore := (top).heldMore, spans := (top).spans \} : Frame)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{placed}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(top : Frame) (place : Pos) (scope : Option (LexLeanStd.Json.Json)) (members : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Frame}.\par
+\noindent Definition: \texttt{(\{ op := (top).op, stage := (top).stage, depth := (top).depth, offset := (top).offset, word := (top).word, place := place, scope := scope, values := (top).values, members := members, held := (top).held, heldMore := (top).heldMore, spans := (top).spans \} : Frame)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{spanned}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(top : Frame) (span : (Prod (Nat) (Nat))) (offset : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Frame}.\par
+\noindent Definition: \texttt{(\{ op := (top).op, stage := (top).stage, depth := (top).depth, offset := offset, word := (top).word, place := (top).place, scope := (top).scope, values := (top).values, members := (top).members, held := (top).held, heldMore := (top).heldMore, spans := (span :: (top).spans) \} : Frame)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{halt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rd) (offset : Nat) (message : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(\{ pos := (st).pos, stack := (st).stack, value := (st).value, mode := 9, goal := (st).goal, place := (st).place, depth := (st).depth, error := failure (offset) (message), spans := (st).spans \} : Rd)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{haltWith}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rd) (problem : Option (LexLeanBoot.SurfaceLex.Failure))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(\{ pos := (st).pos, stack := (st).stack, value := (st).value, mode := 9, goal := (st).goal, place := (st).place, depth := (st).depth, error := problem, spans := (st).spans \} : Rd)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{haltAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (position : Nat) (message : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{halt (st) (LexLeanBoot.SurfaceGeneric.offsetAt (toks) (size) (position)) (message)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{give}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rd) (position : Nat) (value : LexLeanStd.Json.Json)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(\{ pos := position, stack := (st).stack, value := value, mode := 1, goal := (st).goal, place := (st).place, depth := (st).depth, error := Option.none, spans := (st).spans \} : Rd)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{goto}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rd) (position : Nat) (goal : Nat) (place : Pos) (depth : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(\{ pos := position, stack := (st).stack, value := LexLeanStd.Json.Json.JNil, mode := 0, goal := goal, place := place, depth := depth, error := Option.none, spans := (st).spans \} : Rd)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{push}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rd) (top : Frame) (position : Nat) (goal : Nat) (place : Pos) (depth : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(\{ pos := position, stack := (top :: (st).stack), value := LexLeanStd.Json.Json.JNil, mode := 0, goal := goal, place := place, depth := depth, error := Option.none, spans := (st).spans \} : Rd)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wantTerm}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{push (st) (top) (position) (3) (Pos.PTerm) (((top).depth + 1))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wantType}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{push (st) (top) (position) (2) (Pos.PType) (((top).depth + 1))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{wantParam}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{push (st) (top) (position) (4) (Pos.PParam) (((top).depth + 1))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{finished}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(st : Rd) (value : LexLeanStd.Json.Json) (spans : List ((Prod (Nat) (Nat))))}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(\{ pos := (st).pos, stack := (st).stack, value := value, mode := 9, goal := (st).goal, place := (st).place, depth := (st).depth, error := Option.none, spans := spans \} : Rd)}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{fieldsNext}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (schema : LexLeanStd.Json.Json) (st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let token : Nat := code (toks) (position); (if (Nat.beq (token) (1)) then give (st) ((position + 1)) (objectOf ((top).members)) else (let offset : Nat := LexLeanBoot.SurfaceGeneric.offsetAt (toks) (size) (position); (let key : ByteArray := txt (toks) (position); (if (if (Nat.beq (token) (11)) then true else both ((Nat.beq (token) (12))) (LexLeanBoot.SurfaceGeneric.isBare (key))) then (if (Nat.beq (code (toks) ((position + 1))) (7)) then push (st) (worded (top) (key) (offset)) ((position + 2)) (0) (memberOf (schema) ((top).scope) (key)) (((top).depth + 1)) else haltAt (toks) (size) (st) ((position + 1)) (lit ("expected `:` after a member name"))) else halt (st) (offset) (lit ("expected a member name")))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{startTagged}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (schema : LexLeanStd.Json.Json) (st : Rd)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let position : Nat := (st).pos; (let depth : Nat := (st).depth; (let place : Pos := (st).place; (let token : Nat := code (toks) (position); (if (Nat.beq (token) (2)) then (if (Nat.beq (code (toks) ((position + 1))) (3)) then give (st) ((position + 2)) (arr (([] : List (LexLeanStd.Json.Json)))) else (let item : Pos := itemPlace (schema) (place); push (st) (placed (frame (1) (depth)) (item) (Option.none) (([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json)))))) ((position + 1)) (0) (item) ((depth + 1)))) else (if (Nat.beq (token) (0)) then fieldsNext (toks) (size) (schema) (st) (placed (frame (2) (depth)) (place) (braceScope (schema) (place)) (([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json)))))) ((position + 1)) else (let word : ByteArray := txt (toks) (position); (if both ((Nat.beq (token) (12))) (both ((Nat.beq (code (toks) ((position + 1))) (0))) (both (LexLeanBoot.SurfaceGeneric.isBare (word)) ((if allDigits (word) then false else true)))) then fieldsNext (toks) (size) (schema) (st) (placed (frame (2) (depth)) (place) (kindScope (schema) (place) (word)) (((lit ("kind"), str (word)) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json))))))) ((position + 2)) else goto (st) (position) (5) (place) (depth)))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{startGeneric}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (depth : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let scanned : LexLeanBoot.SurfaceGeneric.Rd := LexLeanBoot.SurfaceGeneric.readFrom (toks) (size) ((st).pos) (depth); (match (scanned).error with | Option.some \_ => haltWith (st) ((scanned).error) | Option.none => give (st) ((scanned).pos) ((scanned).value)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{startAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (schema : LexLeanStd.Json.Json) (st : Rd)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let position : Nat := (st).pos; (let depth : Nat := (st).depth; (if (Nat.blt (256) (depth)) then haltAt (toks) (size) (st) (position) (lit ("nested more deeply than the notation reads")) else (match (st).place with | Pos.PTerm => goto (st) (position) (3) (Pos.PTerm) (depth) | Pos.PType => goto (st) (position) (2) (Pos.PType) (depth) | Pos.PMember => (if (Nat.beq (code (toks) (position)) (0)) then startGeneric (toks) (size) (st) (0) else (let member : Got := memberPath (toks) (size) (position); (match (member).error with | Option.some \_ => haltWith (st) ((member).error) | Option.none => give (st) ((member).pos) ((member).value)))) | Pos.PParam => goto (st) (position) (4) (Pos.PParam) (depth) | Pos.PNode \_ => goto (st) (position) (1) ((st).place) (depth) | Pos.PAny => goto (st) (position) (5) (Pos.PAny) (depth)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{startParam}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let position : Nat := (st).pos; (let depth : Nat := (st).depth; (if (Nat.beq (code (toks) (position)) (0)) then goto (st) (position) (1) (Pos.PParam) (depth) else (let name : Got := readName (toks) (size) (position) (lit ("a parameter name")); (match (name).error with | Option.some \_ => haltWith (st) ((name).error) | Option.none => (if (Nat.beq (code (toks) ((name).pos)) (7)) then push (st) (holding (frame (20) (depth)) ((name).value) (LexLeanStd.Json.Json.JNil)) (((name).pos + 1)) (2) (Pos.PType) ((depth + 1)) else haltAt (toks) (size) (st) ((name).pos) (lit ("expected `:` after a parameter name"))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{fnParams}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(if (Nat.beq (code (toks) (position)) (5)) then wantType (st) (staged (top) (1)) ((position + 1)) else wantType (st) (top) (position))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{namedArgs}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(if (Nat.beq (code (toks) (position)) (5)) then give (st) (position) (kindNode (lit ("named")) (two ("member") ((top).held) ("arguments") (arr ((top).values)))) else wantType (st) (top) (position))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{typeParen}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (position : Nat) (depth : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let word : ByteArray := txt (toks) (position); (let isWord : Bool := (Nat.beq (code (toks) (position)) (12)); (if both (isWord) ((if same (word) (lit ("List")) then true else (if same (word) (lit ("Set")) then true else same (word) (lit ("Option"))))) then push (st) (worded (frame (12) (depth)) (word) (0)) ((position + 1)) (2) (Pos.PType) ((depth + 1)) else (if both (isWord) ((if same (word) (lit ("Result")) then true else same (word) (lit ("Map")))) then push (st) (worded (frame (13) (depth)) (word) (0)) ((position + 1)) (2) (Pos.PType) ((depth + 1)) else (if both (isWord) (same (word) (lit ("Fn"))) then (if (Nat.beq (code (toks) ((position + 1))) (4)) then fnParams (toks) (size) (st) (frame (14) (depth)) ((position + 2)) else haltAt (toks) (size) (st) ((position + 1)) (lit ("expected `(` before the parameter types"))) else (let after : Nat := (if (Nat.beq (code (toks) ((position + 1))) (9)) then 3 else 1); (let infixAfter : Bool := wordIs (toks) ((position + after)) (lit ("*")); (if both (isWord) (both ((if infixAfter then false else true)) (both ((if LexLeanStd.Text.startsWith (word) (lit ("'")) then false else true)) ((if reservedType (word) then false else true)))) then (let member : Got := memberPath (toks) (size) (position); (match (member).error with | Option.some \_ => haltWith (st) ((member).error) | Option.none => namedArgs (toks) (size) (st) (holding (frame (16) (depth)) ((member).value) (LexLeanStd.Json.Json.JNil)) ((member).pos))) else push (st) (frame (17) (depth)) (position) (2) (Pos.PType) ((depth + 1))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{startType}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let position : Nat := (st).pos; (let depth : Nat := (st).depth; (if (Nat.blt (256) (depth)) then haltAt (toks) (size) (st) (position) (lit ("nested more deeply than the notation reads")) else (let token : Nat := code (toks) (position); (let word : ByteArray := txt (toks) (position); (if (Nat.beq (token) (12)) then (if both ((Nat.beq (code (toks) ((position + 1))) (0))) (LexLeanBoot.SurfaceGeneric.isBare (word)) then goto (st) (position) (1) (Pos.PType) (depth) else (match nullaryKind (word) with | Option.some kind => give (st) ((position + 1)) (kindNode (kind) (([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json)))))) | Option.none => (if both (LexLeanStd.Text.startsWith (word) (lit ("'"))) (LexLeanBoot.SurfaceGeneric.isBare (tailFrom (word) (1))) then give (st) ((position + 1)) (kindNode (lit ("parameter")) (one ("name") (str (tailFrom (word) (1))))) else (if listed (word) (heads) then haltAt (toks) (size) (st) (position) (cat (cat (cat (cat (lit ("`")) (word)) (lit ("` takes arguments: write `("))) (word)) (lit (" <U+2026>)`"))) else (let member : Got := memberPath (toks) (size) (position); (match (member).error with | Option.some \_ => haltWith (st) ((member).error) | Option.none => give (st) ((member).pos) (kindNode (lit ("named")) (two ("member") ((member).value) ("arguments") (arr (([] : List (LexLeanStd.Json.Json)))))))))))) else (if (Nat.beq (token) (4)) then typeParen (toks) (size) (push (st) (frame (11) (depth)) ((position + 1)) (2) (Pos.PType) (depth)) ((position + 1)) (depth) else haltAt (toks) (size) (st) (position) (cat (lit ("expected a type, found ")) (LexLeanBoot.SurfaceGeneric.describeAt (toks) (position))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{typesNext}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(if (Nat.beq (code (toks) (position)) (3)) then give (st) ((position + 1)) (arr ((top).values)) else wantType (st) (top) (position))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{startTypes}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let position : Nat := (st).pos; (if (Nat.beq (code (toks) (position)) (2)) then typesNext (toks) (size) (st) (frame (18) ((st).depth)) ((position + 1)) else haltAt (toks) (size) (st) (position) (lit ("expected `[`"))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{termWord}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (position : Nat) (word : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let offset : Nat := LexLeanBoot.SurfaceGeneric.offsetAt (toks) (size) (position); (if same (word) (lit ("true")) then give (st) ((position + 1)) (kindNode (lit ("bool")) (one ("value") (LexLeanStd.Json.Json.JBool (true)))) else (if same (word) (lit ("false")) then give (st) ((position + 1)) (kindNode (lit ("bool")) (one ("value") (LexLeanStd.Json.Json.JBool (false)))) else (if allDigits (word) then (if both ((Nat.blt (1) ((LexLeanRuntime.length (word) : Nat)))) (LexLeanStd.Text.startsWith (word) (lit ("0"))) then halt (st) (offset) (cat (ticked (word)) (lit (" has a leading zero"))) else give (st) ((position + 1)) (kindNode (lit ("nat")) (one ("value") (str (word))))) else (if LexLeanStd.Text.startsWith (word) (lit ("0x")) then (if lowerHex (tailFrom (word) (2)) then give (st) ((position + 1)) (kindNode (lit ("bytes")) (one ("hex") (str (tailFrom (word) (2))))) else halt (st) (offset) (lit ("a byte string is `0x` and an even number of lower-case hexadecimal digits"))) else (if plain (word) then give (st) ((position + 1)) (kindNode (lit ("var")) (one ("name") (str (word)))) else halt (st) (offset) ((if listed (word) (reservedTerm) then cat (cat (cat (ticked (word)) (lit (" is a keyword; write `var\{name: "))) (word)) (lit ("\}` for a variable of that name")) else cat (ticked (word)) (lit (" is not a term"))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{integerLiteral}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (position : Nat) (word : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let offset : Nat := LexLeanBoot.SurfaceGeneric.offsetAt (toks) (size) (position); (let numeral : ByteArray := (if LexLeanStd.Text.startsWith (word) (lit ("-")) then tailFrom (word) (1) else word); (let spelling : Got := readName (toks) (size) ((position + 2)) (lit ("an integer type")); (match (spelling).error with | Option.some \_ => haltWith (st) ((spelling).error) | Option.none => (let typeName : ByteArray := (match asStr ((spelling).value) with | Option.some text => text | Option.none => lit ("")); (match representationOf (typeName) with | Option.some representation => (if (if same (word) (lit ("-0")) then true else both ((Nat.blt (1) ((LexLeanRuntime.length (numeral) : Nat)))) (LexLeanStd.Text.startsWith (numeral) (lit ("0")))) then halt (st) (offset) (cat (ticked (word)) (lit (" is not a canonical integer"))) else give (st) ((spelling).pos) (kindNode (lit ("integer")) (two ("representation") (str (representation)) ("value") (str (word))))) | Option.none => halt (st) (offset) (cat (ticked (typeName)) (lit (" is not an integer type")))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{finishUntil}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let op : Nat := (top).op; (let arguments : LexLeanStd.Json.Json := arr ((top).values); (if (Nat.beq (op) (38)) then give (st) (position) (kindNode (lit ("apply")) (two ("function") ((top).held) ("arguments") (arguments))) else (if (Nat.beq (op) (40)) then give (st) (position) (kindNode (lit ("constructor")) (withTypes (two ("constructor") ((top).held) ("arguments") (arguments)) ((top).heldMore))) else (if (Nat.beq (op) (46)) then give (st) (position) (kindNode (lit ("call")) (withTypes (two ("function") ((top).held) ("arguments") (arguments)) ((top).heldMore))) else (let checks : Got := readNames (toks) (size) ((position + 1)) (lit ("a check")); (match (checks).error with | Option.some \_ => haltWith (st) ((checks).error) | Option.none => give (st) ((checks).pos) (kindNode (lit ("checked\_apply")) (withTypes (((lit ("checks"), (checks).value) :: two ("model") ((top).held) ("arguments") (arguments))) ((top).heldMore))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{untilNext}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let stop : ByteArray := (top).word; (if (if (Nat.beq ((LexLeanRuntime.length (stop) : Nat)) (0)) then (Nat.beq (code (toks) (position)) (5)) else wordIs (toks) (position) (stop)) then finishUntil (toks) (size) (st) (top) (position) else (if (Nat.beq (code (toks) (position)) (99)) then halt (st) (size) (lit ("expected `)`")) else wantTerm (st) (top) (position))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{recordNext}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(if (Nat.beq (code (toks) (position)) (1)) then give (st) ((position + 1)) (kindNode (lit ("record")) (withTypes (two ("type") ((top).held) ("fields") (arr ((top).values))) ((top).heldMore))) else (let field : Got := readName (toks) (size) (position) (lit ("a field name")); (match (field).error with | Option.some \_ => haltWith (st) ((field).error) | Option.none => (if (Nat.beq (code (toks) ((field).pos)) (8)) then wantTerm (st) (worded (top) ((match asStr ((field).value) with | Option.some text => text | Option.none => lit (""))) (0)) (((field).pos + 1)) else haltAt (toks) (size) (st) ((field).pos) (lit ("expected `:=` after a field name"))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{resumeTyped}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let position : Nat := (st).pos; (let op : Nat := (top).op; (let typed : Frame := holding (top) ((top).held) ((st).value); (if (Nat.beq (op) (41)) then give (st) (position) (kindNode (lit ("function\_ref")) (withTypes (one ("function") ((top).held)) ((st).value))) else (if (Nat.beq (op) (42)) then (if (Nat.beq (code (toks) (position)) (0)) then recordNext (toks) (size) (st) (staged (typed) (1)) ((position + 1)) else haltAt (toks) (size) (st) (position) (lit ("expected `\{` before the fields"))) else untilNext (toks) (size) (st) (staged (typed) (1)) (position))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{afterMember}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(if (Nat.beq (code (toks) (position)) (2)) then push (st) (top) (position) (6) (Pos.PAny) ((top).depth) else resumeTyped (toks) (size) ((\{ pos := position, stack := (st).stack, value := LexLeanStd.Json.Json.JNil, mode := 1, goal := (st).goal, place := (st).place, depth := (st).depth, error := Option.none, spans := (st).spans \} : Rd)) (top))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{primNext}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let token : Nat := code (toks) (position); (if (Nat.beq (token) (7)) then wantType (st) (staged (top) (1)) ((position + 1)) else (if (if (Nat.beq (token) (99)) then true else (Nat.beq (token) (5))) then haltAt (toks) (size) (st) (position) (lit ("expected `:` and the result type")) else wantTerm (st) (top) (position))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{matchNext}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Closure 1: binds \texttt{(state)}, captures \texttt{(size, toks)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(if wordIs (toks) (position) (lit ("|")) then (let member : Got := memberPath (toks) (size) ((position + 1)); (match (member).error with | Option.some \_ => haltWith (st) ((member).error) | Option.none => (let binders : Names := ((LexLeanCollections.iterateUntil ((fun (state : Names) => (match (state).error with | Option.some \_ => Option.none | Option.none => (if wordIs (toks) ((state).pos) (lit ("=>")) then Option.none else (let name : Got := readName (toks) (size) ((state).pos) (lit ("a binder name")); (match (name).error with | Option.some \_ => Option.some ((\{ items := (state).items, pos := (state).pos, more := false, error := (name).error \} : Names)) | Option.none => Option.some ((\{ items := ((name).value :: (state).items), pos := (name).pos, more := true, error := Option.none \} : Names)))))))) (((LexLeanRuntime.length (toks) : Nat) + 2)) ((\{ items := ([] : List (LexLeanStd.Json.Json)), pos := (member).pos, more := true, error := Option.none \} : Names)) : (Prod (Names) (Bool)))).1; (match (binders).error with | Option.some \_ => haltWith (st) ((binders).error) | Option.none => wantTerm (st) (placed (staged (top) (1)) ((top).place) ((top).scope) (two ("constructor") ((member).value) ("binders") (arr ((binders).items)))) (((binders).pos + 1)))))) else (match (top).values with | List.nil => haltAt (toks) (size) (st) (position) (lit ("a match has at least one `| <U+2026>` branch")) | List.cons \_ \_ => give (st) (position) (kindNode (lit ("match")) (two ("scrutinee") ((top).held) ("branches") (arr ((top).values))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{funParams}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(if (Nat.beq (code (toks) (position)) (4)) then wantParam (st) (top) ((position + 1)) else (match (top).values with | List.nil => haltAt (toks) (size) (st) (position) (lit ("a function takes at least one parameter")) | List.cons \_ \_ => (if wordIs (toks) (position) (lit ("=>")) then wantTerm (st) (staged (top) (1)) ((position + 1)) else haltAt (toks) (size) (st) (position) (lit ("expected `=>`")))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{callOrOperand}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (position : Nat) (depth : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let word : ByteArray := txt (toks) (position); (let after : Nat := (if (Nat.beq (code (toks) ((position + 1))) (9)) then 3 else 1); (let infixAfter : Bool := (if (Nat.beq (code (toks) ((position + after))) (6)) then true else both ((Nat.beq (code (toks) ((position + after))) (12))) (isInfix (txt (toks) ((position + after))))); (let tagged : Bool := (Nat.beq (code (toks) ((position + 1))) (0)); (if both ((Nat.beq (code (toks) (position)) (12))) (both (plain (word)) (both ((if infixAfter then false else true)) (both ((if tagged then false else true)) ((if allDigits (word) then false else true))))) then (let member : Got := memberPath (toks) (size) (position); (match (member).error with | Option.some \_ => haltWith (st) ((member).error) | Option.none => afterMember (toks) (size) (st) (holding (frame (46) (depth)) ((member).value) (LexLeanStd.Json.Json.JNil)) ((member).pos))) else wantTerm (st) (frame (47) (depth)) (position))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{termKeyword}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (position : Nat) (depth : Nat) (keyword : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let next : Nat := (position + 1); (if (if same (keyword) (lit ("not")) then true else (if same (keyword) (lit ("first")) then true else same (keyword) (lit ("second")))) then wantTerm (st) (worded (frame (31) (depth)) (keyword) (0)) (next) else (if same (keyword) (lit ("cons")) then wantTerm (st) (frame (32) (depth)) (next) else (if same (keyword) (lit ("nil")) then wantType (st) (frame (33) (depth)) (next) else (if same (keyword) (lit ("if")) then wantTerm (st) (frame (34) (depth)) (next) else (if same (keyword) (lit ("let")) then wantParam (st) (frame (35) (depth)) (next) else (if same (keyword) (lit ("forall")) then (if (Nat.beq (code (toks) (next)) (4)) then wantParam (st) (frame (36) (depth)) ((next + 1)) else haltAt (toks) (size) (st) (next) (lit ("expected `(` before the bound variable"))) else (if same (keyword) (lit ("fun")) then (if (Nat.beq (code (toks) (next)) (2)) then (let captures : Got := readNames (toks) (size) (next) (lit ("a name")); (match (captures).error with | Option.some \_ => haltWith (st) ((captures).error) | Option.none => funParams (toks) (size) (st) (holding (frame (37) (depth)) ((captures).value) (LexLeanStd.Json.Json.JNil)) ((captures).pos))) else funParams (toks) (size) (st) (holding (frame (37) (depth)) (arr (([] : List (LexLeanStd.Json.Json)))) (LexLeanStd.Json.Json.JNil)) (next)) else (if same (keyword) (lit ("apply")) then wantTerm (st) (frame (38) (depth)) (next) else (if same (keyword) (lit ("project")) then wantTerm (st) (frame (39) (depth)) (next) else (if (if same (keyword) (lit ("ctor")) then true else (if same (keyword) (lit ("ref")) then true else (if same (keyword) (lit ("record")) then true else same (keyword) (lit ("checked"))))) then (let member : Got := memberPath (toks) (size) (next); (match (member).error with | Option.some \_ => haltWith (st) ((member).error) | Option.none => afterMember (toks) (size) (st) (worded (holding (frame ((if same (keyword) (lit ("ctor")) then 40 else (if same (keyword) (lit ("ref")) then 41 else (if same (keyword) (lit ("record")) then 42 else 44)))) (depth)) ((member).value) (LexLeanStd.Json.Json.JNil)) ((if same (keyword) (lit ("checked")) then lit ("with") else lit (""))) (0)) ((member).pos))) else (if same (keyword) (lit ("prim")) then (let operation : Got := readName (toks) (size) (next) (lit ("a primitive operation")); (match (operation).error with | Option.some \_ => haltWith (st) ((operation).error) | Option.none => primNext (toks) (size) (st) (holding (frame (43) (depth)) ((operation).value) (LexLeanStd.Json.Json.JNil)) ((operation).pos))) else (if same (keyword) (lit ("match")) then wantTerm (st) (frame (45) (depth)) (next) else callOrOperand (toks) (size) (st) (position) (depth))))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{termParen}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (position : Nat) (depth : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let token : Nat := code (toks) (position); (let word : ByteArray := txt (toks) (position); (if (Nat.beq (token) (5)) then give (st) (position) (kindNode (lit ("unit")) (([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json)))))) else (if (Nat.beq (token) (12)) then (let numeral : ByteArray := (if LexLeanStd.Text.startsWith (word) (lit ("-")) then tailFrom (word) (1) else word); (if both (allDigits (numeral)) ((Nat.beq (code (toks) ((position + 1))) (7))) then integerLiteral (toks) (size) (st) (position) (word) else (let genericBinder : Bool := both (same (word) (lit ("let"))) (wordIs (toks) ((position + 2)) (lit ("name"))); (let keyword : ByteArray := (if both ((Nat.beq (code (toks) ((position + 1))) (0))) ((if genericBinder then false else true)) then lit ("") else word); termKeyword (toks) (size) (st) (position) (depth) (keyword))))) else wantTerm (st) (frame (47) (depth)) (position)))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{startTerm}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let position : Nat := (st).pos; (let depth : Nat := (st).depth; (if (Nat.blt (256) (depth)) then haltAt (toks) (size) (st) (position) (lit ("nested more deeply than the notation reads")) else (let token : Nat := code (toks) (position); (let word : ByteArray := txt (toks) (position); (if (Nat.beq (token) (11)) then give (st) ((position + 1)) (kindNode (lit ("string")) (one ("value") (str (word)))) else (if (Nat.beq (token) (4)) then termParen (toks) (size) (push (st) (frame (30) (depth)) ((position + 1)) (3) (Pos.PTerm) (depth)) ((position + 1)) (depth) else (if (Nat.beq (token) (12)) then (if both ((Nat.beq (code (toks) ((position + 1))) (0))) (LexLeanBoot.SurfaceGeneric.isBare (word)) then goto (st) (position) (1) (Pos.PTerm) (depth) else termWord (toks) (size) (st) (position) (word)) else haltAt (toks) (size) (st) (position) (cat (lit ("expected a term, found ")) (LexLeanBoot.SurfaceGeneric.describeAt (toks) (position)))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{resumeTerm}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let position : Nat := (st).pos; (let value : LexLeanStd.Json.Json := (st).value; (let op : Nat := (top).op; (let stage : Nat := (top).stage; (if (Nat.beq (op) (30)) then (if (Nat.beq (code (toks) (position)) (5)) then give (st) ((position + 1)) (value) else haltAt (toks) (size) (st) (position) (lit ("expected `)`"))) else (if (Nat.beq (op) (31)) then give (st) (position) (kindNode ((top).word) (one ("value") (value))) else (if (Nat.beq (op) (32)) then (if (Nat.beq (stage) (0)) then wantTerm (st) (staged (holding (top) (value) (LexLeanStd.Json.Json.JNil)) (1)) (position) else give (st) (position) (kindNode (lit ("cons")) (two ("head") ((top).held) ("tail") (value)))) else (if (Nat.beq (op) (33)) then give (st) (position) (kindNode (lit ("nil")) (one ("element") (value))) else (if (Nat.beq (op) (34)) then (if (Nat.beq (stage) (0)) then (if wordIs (toks) (position) (lit ("then")) then wantTerm (st) (staged (holding (top) (value) (LexLeanStd.Json.Json.JNil)) (1)) ((position + 1)) else haltAt (toks) (size) (st) (position) (lit ("expected `then`"))) else (if (Nat.beq (stage) (1)) then (if wordIs (toks) (position) (lit ("else")) then wantTerm (st) (staged (holding (top) ((top).held) (value)) (2)) ((position + 1)) else haltAt (toks) (size) (st) (position) (lit ("expected `else`"))) else give (st) (position) (kindNode (lit ("if")) (((lit ("else\_value"), value) :: two ("condition") ((top).held) ("then\_value") ((top).heldMore)))))) else (if (Nat.beq (op) (35)) then (if (Nat.beq (stage) (0)) then (if (Nat.beq (code (toks) (position)) (8)) then wantTerm (st) (staged (holding (top) (value) (LexLeanStd.Json.Json.JNil)) (1)) ((position + 1)) else haltAt (toks) (size) (st) (position) (lit ("expected `:=`"))) else (if (Nat.beq (stage) (1)) then (if (Nat.beq (code (toks) (position)) (10)) then wantTerm (st) (staged (holding (top) ((top).held) (value)) (2)) ((position + 1)) else haltAt (toks) (size) (st) (position) (lit ("expected `;`"))) else give (st) (position) (kindNode (lit ("let")) (((lit ("body"), value) :: two ("binder") ((top).held) ("value") ((top).heldMore)))))) else (if (Nat.beq (op) (36)) then (if (Nat.beq (stage) (0)) then (if (Nat.beq (code (toks) (position)) (5)) then (if (Nat.beq (code (toks) ((position + 1))) (6)) then wantTerm (st) (staged (holding (top) (value) (LexLeanStd.Json.Json.JNil)) (1)) ((position + 2)) else haltAt (toks) (size) (st) ((position + 1)) (lit ("expected `,` before the body"))) else haltAt (toks) (size) (st) (position) (lit ("expected `)`"))) else give (st) (position) (kindNode (lit ("forall")) (two ("binder") ((top).held) ("body") (value)))) else (if (Nat.beq (op) (37)) then (if (Nat.beq (stage) (0)) then (if (Nat.beq (code (toks) (position)) (5)) then funParams (toks) (size) (st) (adding (top) (value)) ((position + 1)) else haltAt (toks) (size) (st) (position) (lit ("expected `)`"))) else give (st) (position) (kindNode (lit ("lambda")) (((lit ("body"), value) :: two ("parameters") (arr ((top).values)) ("captures") ((top).held))))) else (if (Nat.beq (op) (38)) then (if (Nat.beq (stage) (0)) then untilNext (toks) (size) (st) (staged (holding (top) (value) (LexLeanStd.Json.Json.JNil)) (1)) (position) else untilNext (toks) (size) (st) (adding (top) (value)) (position)) else (if (Nat.beq (op) (39)) then (let field : Got := readName (toks) (size) (position) (lit ("a field name")); (match (field).error with | Option.some \_ => haltWith (st) ((field).error) | Option.none => give (st) ((field).pos) (kindNode (lit ("project")) (two ("value") (value) ("field") ((field).value))))) else (if (if (Nat.beq (op) (40)) then true else (if (Nat.beq (op) (44)) then true else (Nat.beq (op) (46)))) then (if (Nat.beq (stage) (0)) then resumeTyped (toks) (size) (st) (top) else untilNext (toks) (size) (st) (adding (top) (value)) (position)) else (if (Nat.beq (op) (41)) then resumeTyped (toks) (size) (st) (top) else (if (Nat.beq (op) (42)) then (if (Nat.beq (stage) (0)) then resumeTyped (toks) (size) (st) (top) else (let assigned : Frame := adding (top) (objectOf (two ("field") (str ((top).word)) ("value") (value))); (if (Nat.beq (code (toks) (position)) (6)) then recordNext (toks) (size) (st) (assigned) ((position + 1)) else (if (Nat.beq (code (toks) (position)) (1)) then recordNext (toks) (size) (st) (assigned) (position) else haltAt (toks) (size) (st) (position) (lit ("expected `,` or `\}`")))))) else (if (Nat.beq (op) (43)) then (if (Nat.beq (stage) (0)) then primNext (toks) (size) (st) (adding (top) (value)) (position) else give (st) (position) (kindNode (lit ("primitive")) (((lit ("result"), value) :: two ("operation") ((top).held) ("arguments") (arr ((top).values)))))) else (if (Nat.beq (op) (45)) then (if (Nat.beq (stage) (0)) then matchNext (toks) (size) (st) (staged (holding (top) (value) (LexLeanStd.Json.Json.JNil)) (2)) (position) else (if (Nat.beq (stage) (1)) then matchNext (toks) (size) (st) (staged (adding (top) (objectOf (((lit ("body"), value) :: (top).members)))) (2)) (position) else matchNext (toks) (size) (st) (top) (position))) else (if (Nat.beq (stage) (0)) then (if (Nat.beq (code (toks) (position)) (6)) then wantTerm (st) (staged (holding (top) (value) (LexLeanStd.Json.Json.JNil)) (1)) ((position + 1)) else (match infixKind (txt (toks) (position)) with | Option.some kind => (if (Nat.beq (code (toks) (position)) (12)) then wantTerm (st) (worded (staged (holding (top) (value) (LexLeanStd.Json.Json.JNil)) (2)) (kind) (0)) ((position + 1)) else haltAt (toks) (size) (st) (position) (lit ("expected an operator or `,` after the first operand"))) | Option.none => haltAt (toks) (size) (st) (position) (lit ("expected an operator or `,` after the first operand")))) else (if (Nat.beq (stage) (1)) then give (st) (position) (kindNode (lit ("pair")) (two ("left") ((top).held) ("right") (value))) else (let kind : ByteArray := (top).word; (let implication : Bool := same (kind) (lit ("implies")); give (st) (position) (kindNode (kind) ((((if implication then lit ("premise") else lit ("left")), (top).held) :: (((if implication then lit ("conclusion") else lit ("right")), value) :: ([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json)))))))))))))))))))))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{resumeType}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (st : Rd) (top : Frame)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let position : Nat := (st).pos; (let value : LexLeanStd.Json.Json := (st).value; (let op : Nat := (top).op; (let stage : Nat := (top).stage; (if (Nat.beq (op) (11)) then (if (Nat.beq (code (toks) (position)) (5)) then give (st) ((position + 1)) (value) else haltAt (toks) (size) (st) (position) (lit ("expected `)`"))) else (if (Nat.beq (op) (12)) then (let word : ByteArray := (top).word; give (st) (position) ((if same (word) (lit ("List")) then kindNode (lit ("list")) (one ("element") (value)) else (if same (word) (lit ("Set")) then kindNode (lit ("set")) (one ("element") (value)) else kindNode (lit ("option")) (one ("value") (value)))))) else (if (Nat.beq (op) (13)) then (if (Nat.beq (stage) (0)) then wantType (st) (staged (holding (top) (value) (LexLeanStd.Json.Json.JNil)) (1)) (position) else give (st) (position) ((if same ((top).word) (lit ("Result")) then kindNode (lit ("result")) (two ("ok") ((top).held) ("error") (value)) else kindNode (lit ("map")) (two ("key") ((top).held) ("value") (value))))) else (if (Nat.beq (op) (14)) then (if (Nat.beq (stage) (0)) then fnParams (toks) (size) (st) (adding (top) (value)) (position) else give (st) (position) (kindNode (lit ("function")) (two ("parameters") (arr ((top).values)) ("result") (value)))) else (if (Nat.beq (op) (16)) then namedArgs (toks) (size) (st) (adding (top) (value)) (position) else (if (Nat.beq (op) (17)) then (if (Nat.beq (stage) (0)) then (if wordIs (toks) (position) (lit ("*")) then wantType (st) (staged (holding (top) (value) (LexLeanStd.Json.Json.JNil)) (1)) ((position + 1)) else haltAt (toks) (size) (st) (position) (lit ("expected `*` between the two types of a product"))) else give (st) (position) (kindNode (lit ("product")) (two ("left") ((top).held) ("right") (value)))) else (if (Nat.beq (op) (18)) then (let collected : Frame := adding (top) (value); (if (Nat.beq (code (toks) (position)) (6)) then typesNext (toks) (size) (st) (collected) ((position + 1)) else (if (Nat.beq (code (toks) (position)) (3)) then give (st) ((position + 1)) (arr ((collected).values)) else haltAt (toks) (size) (st) (position) (lit ("expected `,` or `]`"))))) else give (st) (position) (objectOf (two ("name") ((top).held) ("type") (value))))))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [propext]}.\par
+\subsection*{\texttt{resumeTop}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (schema : LexLeanStd.Json.Json) (st : Rd) (top : Frame)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let position : Nat := (st).pos; (let value : LexLeanStd.Json.Json := (st).value; (if (Nat.beq ((top).stage) (0)) then (if (Nat.beq (code (toks) (position)) (99)) then finished (st) (value) (([] : List ((Prod (Nat) (Nat))))) else haltAt (toks) (size) (st) (position) (lit ("unexpected text after the value"))) else (let collected : Frame := spanned (adding (top) (value)) (((top).offset, lastEnd (toks) (position))) (0); (if (Nat.beq (code (toks) (position)) (99)) then finished (st) (arr ((collected).values)) ((collected).spans) else push (st) (worded (collected) (lit ("")) (LexLeanBoot.SurfaceGeneric.offsetAt (toks) (size) (position))) (position) (0) ((top).place) (1))))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{resumeGeneric}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (schema : LexLeanStd.Json.Json) (st : Rd) (top : Frame)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let position : Nat := (st).pos; (let value : LexLeanStd.Json.Json := (st).value; (if (Nat.beq ((top).op) (1)) then (let collected : Frame := adding (top) (value); (if (Nat.beq (code (toks) (position)) (6)) then (if (Nat.beq (code (toks) ((position + 1))) (3)) then give (st) ((position + 2)) (arr ((collected).values)) else push (st) (collected) ((position + 1)) (0) ((top).place) (((top).depth + 1))) else (if (Nat.beq (code (toks) (position)) (3)) then give (st) ((position + 1)) (arr ((collected).values)) else haltAt (toks) (size) (st) (position) (lit ("expected `,` or `]`"))))) else (let key : ByteArray := (top).word; (if LexLeanBoot.SurfaceGeneric.hasKey ((top).members) (key) then halt (st) ((top).offset) (cat (cat (lit ("the member `")) (key)) (lit ("` is written twice"))) else (let collected : Frame := placed (top) ((top).place) ((top).scope) (((key, value) :: (top).members)); (if (Nat.beq (code (toks) (position)) (6)) then fieldsNext (toks) (size) (schema) (st) (collected) ((position + 1)) else (if (Nat.beq (code (toks) (position)) (1)) then give (st) ((position + 1)) (objectOf ((collected).members)) else haltAt (toks) (size) (st) (position) (lit ("expected `,` or `\}`"))))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{deliver}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (schema : LexLeanStd.Json.Json) (st : Rd)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(match (st).stack with | List.nil => finished (st) ((st).value) (([] : List ((Prod (Nat) (Nat))))) | List.cons top below => (let popped : Rd := (\{ pos := (st).pos, stack := below, value := (st).value, mode := 1, goal := (st).goal, place := (st).place, depth := (st).depth, error := Option.none, spans := (st).spans \} : Rd); (let op : Nat := (top).op; (if (Nat.beq (op) (0)) then resumeTop (toks) (size) (schema) (popped) (top) else (if (Nat.blt (op) (10)) then resumeGeneric (toks) (size) (schema) (popped) (top) else (if (Nat.blt (op) (30)) then resumeType (toks) (size) (popped) (top) else resumeTerm (toks) (size) (popped) (top)))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{start}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (schema : LexLeanStd.Json.Json) (st : Rd)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let goal : Nat := (st).goal; (if (Nat.beq (goal) (0)) then startAt (toks) (size) (schema) (st) else (if (Nat.beq (goal) (1)) then startTagged (toks) (size) (schema) (st) else (if (Nat.beq (goal) (2)) then startType (toks) (size) (st) else (if (Nat.beq (goal) (3)) then startTerm (toks) (size) (st) else (if (Nat.beq (goal) (4)) then startParam (toks) (size) (st) else (if (Nat.beq (goal) (5)) then startGeneric (toks) (size) (st) ((st).depth) else startTypes (toks) (size) (st))))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{step}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (schema : LexLeanStd.Json.Json) (st : Rd)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Option (Rd)}.\par
+\noindent Definition: \texttt{(match (st).error with | Option.some \_ => Option.none | Option.none => (let mode : Nat := (st).mode; (if (Nat.beq (mode) (9)) then Option.none else Option.some ((if (Nat.beq (mode) (0)) then start (toks) (size) (schema) (st) else deliver (toks) (size) (schema) (st))))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{run}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat) (schema : LexLeanStd.Json.Json) (top : Frame) (place : Pos)}.\par
+\noindent Closure 1: binds \texttt{(st)}, captures \texttt{(schema, size, toks)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let initial : Rd := (\{ pos := 0, stack := (top :: ([] : List (Frame))), value := LexLeanStd.Json.Json.JNil, mode := 0, goal := 0, place := place, depth := 1, error := Option.none, spans := ([] : List ((Prod (Nat) (Nat)))) \} : Rd); ((LexLeanCollections.iterateUntil ((fun (st : Rd) => step (toks) (size) (schema) (st))) (((LexLeanRuntime.multiply ((LexLeanRuntime.length (toks) : Nat)) (16) : Nat) + 64)) (initial) : (Prod (Rd) (Bool)))).1)}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{positionOf}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Pos}.\par
+\noindent Definition: \texttt{(if (Nat.beq (position) (0)) then (match getIn (schema) (lit ("properties")) with | Option.some properties => (match getIn (properties) (lit ("declarations")) with | Option.some declarations => itemsOf (schema) (declarations) | Option.none => Pos.PAny) | Option.none => Pos.PAny) else (if (Nat.beq (position) (1)) then Pos.PTerm else (if (Nat.beq (position) (2)) then Pos.PType else (match defNamed (schema) (lit ("proof")) with | Option.some proof => Pos.PNode (proof) | Option.none => Pos.PAny))))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{outcome}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(final : Rd)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Except (LexLeanBoot.SurfaceLex.Failure) (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match (final).error with | Option.some problem => Except.error (problem) | Option.none => (if (Nat.beq ((final).mode) (9)) then Except.ok ((final).value) else Except.error ((\{ offset := 0, message := lit ("the reader ran out of steps") \} : LexLeanBoot.SurfaceLex.Failure))))}.\par
+\noindent Axiom policy: \texttt{none}.\par
+\subsection*{\texttt{readAll}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (toks : List (LexLeanBoot.SurfaceLex.Spanned)) (size : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Type: \texttt{Rd}.\par
+\noindent Definition: \texttt{(let place : Pos := positionOf (schema) (0); (if (Nat.beq ((LexLeanRuntime.length (toks) : Nat)) (0)) then (\{ pos := 0, stack := ([] : List (Frame)), value := arr (([] : List (LexLeanStd.Json.Json))), mode := 9, goal := 0, place := place, depth := 1, error := Option.none, spans := ([] : List ((Prod (Nat) (Nat)))) \} : Rd) else run (toks) (size) (schema) (worded (staged (placed (frame (0) (1)) (place) (Option.none) (([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json)))))) (1)) (lit ("")) (LexLeanBoot.SurfaceGeneric.offsetAt (toks) (size) (0))) (place)))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{parseAt}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (text : ByteArray) (position : Nat)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Except (LexLeanBoot.SurfaceLex.Failure) (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match LexLeanBoot.SurfaceLex.lexText (text) with | Except.ok toks => (let place : Pos := positionOf (schema) (position); outcome (run (toks) ((LexLeanRuntime.length (text) : Nat)) (schema) (placed (frame (0) (1)) (place) (Option.none) (([] : List ((Prod (ByteArray) (LexLeanStd.Json.Json)))))) (place))) | Except.error problem => Except.error (problem))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{parseSemanticModule}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (text : ByteArray) (spec : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Except (LexLeanBoot.SurfaceLex.Failure) (LexLeanStd.Json.Json)}.\par
+\noindent Definition: \texttt{(match LexLeanBoot.SurfaceLex.lexText (text) with | Except.ok toks => (match outcome (readAll (schema) (toks) ((LexLeanRuntime.length (text) : Nat))) with | Except.ok declarations => Except.ok (objectOf (two ("spec") (str (spec)) ("declarations") (declarations))) | Except.error problem => Except.error (problem)) | Except.error problem => Except.error (problem))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\subsection*{\texttt{semanticSpans}}
+\noindent Kind: \texttt{definition}.\par
+\noindent Parameters: \texttt{(schema : LexLeanStd.Json.Json) (text : ByteArray)}.\par
+\noindent Execution: executable, non-escaping closures only.\par
+\noindent Production root for targets \texttt{rust-std}; admitted effects: \texttt{allocation, overflow}.\par
+\noindent Type: \texttt{Except (LexLeanBoot.SurfaceLex.Failure) (List ((Prod (Nat) (Nat))))}.\par
+\noindent Definition: \texttt{(match LexLeanBoot.SurfaceLex.lexText (text) with | Except.ok toks => (let final : Rd := readAll (schema) (toks) ((LexLeanRuntime.length (text) : Nat)); (match outcome (final) with | Except.ok \_ => Except.ok (LexLeanStd.Order.reverseList ((Prod (Nat) (Nat))) ((final).spans)) | Except.error problem => Except.error (problem))) | Except.error problem => Except.error (problem))}.\par
+\noindent Axiom policy: \texttt{exact [Quot.sound, propext]}.\par
+\end{document}
